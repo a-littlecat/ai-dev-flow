@@ -275,14 +275,13 @@ skills/ai-dev-flow/CHANGELOG.md
 
 ## License
 
-No license has been selected yet.
+This project is released under the MIT License.
 
-Before publishing this repository publicly, choose and add a `LICENSE` file. Common choices:
+See:
 
-- `MIT` for a short and very permissive license.
-- `Apache-2.0` for a permissive license with explicit patent terms.
-
-Without a license, the repository is visible but not clearly open source for reuse.
+```text
+LICENSE
+```
 
 ## Contributing
 
