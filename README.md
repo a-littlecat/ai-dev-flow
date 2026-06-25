@@ -285,7 +285,7 @@ LICENSE
 
 ## Contributing
 
-Issues and pull requests are welcome once a license is added.
+Issues and pull requests are welcome.
 
 Good contributions should keep the workflow:
 
