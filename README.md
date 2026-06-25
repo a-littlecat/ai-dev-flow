@@ -1,80 +1,81 @@
 # ai-dev-flow
 
-A reusable AI-assisted development workflow for solo developers who want coding agents to work on real projects without turning the repo into a mystery box.
+[English](README.en.md)
 
-`ai-dev-flow` is a Markdown-first Skill that helps Codex, Claude Code, Gemini CLI, Cursor, DeepSeek, and other coding agents manage long-running software work with clear task files, Git baselines, diff reviews, validation evidence, and human acceptance decisions.
+面向个人开发者的 AI 辅助开发工作流 Skill。
 
-The goal is simple: let AI move faster, but keep the project understandable, reviewable, and under your control.
+`ai-dev-flow` 是一套 Markdown-first、Git-first 的通用项目工作流，帮助 Codex、Claude Code、Gemini CLI、Cursor、DeepSeek 以及其他 coding agent 在长期软件项目里更稳地工作：拆任务、记录状态、建立 Git 基线、做 diff 审查、沉淀验证证据，并明确用户到底需要如何验收。
 
-## Why This Exists
+它的目标很直接：让 AI 写代码更快，但项目仍然清楚、可审查、可回退，并且始终由你控制。
 
-AI coding agents are excellent at making changes, but long-running projects need more than code edits.
+## 为什么需要它
 
-Without a workflow, it is easy to lose track of:
+AI coding agent 很擅长改代码，但长期项目真正麻烦的地方通常不是“能不能改”，而是：
 
-- what task the agent is doing;
-- which files were supposed to change;
-- what diff belongs to which task;
-- whether a task was reviewed or only "looked done";
-- what the human actually needs to verify;
-- whether multiple agents are about to edit the same module;
-- when it is safe to merge.
+- 当前到底在做哪个任务；
+- 这个任务允许改哪些文件；
+- 哪些 diff 属于这个任务；
+- 任务是真的完成了，还是只是“看起来完成”；
+- 审查意见有没有写回项目文件；
+- 用户到底需要看摘要、读文档、看证据、运行测试，还是做决策；
+- 多个 AI 会话会不会同时改同一模块；
+- 什么时候才可以合并。
 
-`ai-dev-flow` turns those fuzzy moments into explicit project files and reusable checklists.
+`ai-dev-flow` 把这些容易散在聊天里的状态，变成项目里的任务文件、看板、审查记录和验收建议。
 
-## What You Get
+## 你会得到什么
 
-- Task decomposition for long-running solo projects.
-- A `TASK_BOARD` and per-task Markdown records.
-- Git baseline and precheck rules.
-- A/B/C/D task risk levels.
-- Branch / Worktree guidance without forcing every tiny task into a branch.
-- Diff-based code review instead of vague file reading.
-- Review severity levels: `P0 / P1 / P2 / P3`.
-- User action levels: `UA0` through `UA7`.
-- Batch flow for small A/B tasks.
-- Parallel Wave flow for safe multi-agent scheduling.
-- Safety rules for merge, push, release, deletion, secrets, and local config.
-- Prompt templates that work even in agents without native Skill support.
+- 长期项目的需求拆分流程。
+- `TASK_BOARD` 和每个任务一个 Markdown 文件。
+- Git baseline 和任务前 Git precheck。
+- A/B/C/D 任务分级。
+- 分支 / Worktree 使用规则，但不强迫每个小任务都建分支。
+- 基于 diff 的代码审查，而不是泛泛读文件。
+- 审查严重等级：`P0 / P1 / P2 / P3`。
+- 用户动作等级：`UA0` 到 `UA7`。
+- A/B 小任务批量处理 Batch。
+- 多执行会话并行调度 Parallel Wave。
+- 合并、发布、删除、密钥、本机配置等安全边界。
+- 可复制提示词，不支持 Skill 的 agent 也能按 Markdown 使用。
 
-## Core Idea
+## 核心理念
 
-`TASK` is always the smallest responsibility unit.
+`TASK` 永远是最小责任单位。
 
-Batch and Wave are only execution strategies:
+Batch 和 Wave 只是执行组织方式：
 
-- `Single Task`: one session works on one task.
-- `Batch`: one session sequentially completes several low-risk A/B tasks.
-- `Parallel Wave`: multiple sessions work on multiple non-conflicting tasks after lock and dependency checks.
+- `Single Task`：一个执行会话只处理一个任务。
+- `Batch`：一个执行会话顺序处理多个低风险 A/B 小任务。
+- `Parallel Wave`：多个执行会话同时处理多个互不冲突的任务。
 
-No Batch or Wave is allowed to hide task boundaries. Reviews, diffs, validation, and user action levels stay per task.
+无论使用 Batch 还是 Wave，都不能吞掉任务边界。每个任务仍然要独立记录 diff、验证结果、审查结论和用户动作等级。
 
-## Who It Is For
+## 适合谁
 
-Use this if you are a solo developer who:
+适合你，如果你：
 
-- uses AI agents for real software projects;
-- wants persistent task state outside chat history;
-- wants AI edits to be diff-reviewable;
-- wants to avoid accidental broad refactors;
-- wants clear rules for when humans need to read, run, test, or decide;
-- sometimes uses multiple AI sessions and needs conflict control.
+- 在真实软件项目里使用 AI agent；
+- 希望任务状态不要只留在聊天记录里；
+- 希望 AI 的改动可以稳定 diff 审查；
+- 不想 AI 顺手做大范围无关重构；
+- 希望明确哪些任务需要用户验收，哪些只需要看证据；
+- 会同时使用多个 AI 会话，需要避免文件和模块冲突。
 
-It is intentionally generic. It does not assume a specific language, framework, product domain, or coding agent.
+它不绑定任何业务领域、语言、框架或特定 agent。
 
-## Who It Is Not For
+## 不适合什么
 
-This is probably too much process for:
+如果只是下面这些场景，这套流程可能太重：
 
-- one-off scripts;
-- throwaway demos;
-- quick experiments;
-- pure Q&A with no project files;
-- projects where you do not want Git, task records, or review checkpoints.
+- 一次性小脚本；
+- 临时 demo；
+- 快速试验；
+- 只问问题，不修改项目文件；
+- 不需要 Git、任务记录和审查的小草稿。
 
-## Install
+## 安装
 
-This repository contains the Skill at:
+本仓库的 Skill 位于：
 
 ```text
 skills/ai-dev-flow/
@@ -82,35 +83,35 @@ skills/ai-dev-flow/
 
 ### Codex
 
-Copy the Skill folder into your Codex skills directory:
+复制 Skill 到 Codex 的 skills 目录：
 
 ```text
 ~/.codex/skills/ai-dev-flow/
 ```
 
-On Windows, this is usually:
+Windows 通常是：
 
 ```text
 C:\Users\<you>\.codex\skills\ai-dev-flow\
 ```
 
-Then ask Codex:
+然后对 Codex 说：
 
 ```text
-Use ai-dev-flow to initialize this project workflow.
+请使用 ai-dev-flow，为当前项目初始化 AI 辅助开发工作流。
 ```
 
-You can also use Chinese trigger phrases such as:
+也可以直接使用中文唤醒词：
 
 ```text
 用 AI开发流程，帮我拆任务。
 ```
 
-### Claude Code, Gemini CLI, Cursor, DeepSeek, or Other Agents
+### Claude Code、Gemini CLI、Cursor、DeepSeek 或其他 agent
 
-If your agent supports Skills or custom instruction packs, copy `skills/ai-dev-flow/` to that agent's Skill directory.
+如果你的 agent 支持 Skill 或自定义指令包，把 `skills/ai-dev-flow/` 复制到对应目录即可。
 
-If it does not support Skills, ask the agent to read these files as plain Markdown:
+如果不支持 Skill，让 agent 把下面三个文件当成普通 Markdown 工作流说明读取：
 
 ```text
 skills/ai-dev-flow/SKILL.md
@@ -118,19 +119,17 @@ skills/ai-dev-flow/references/WORKFLOW.md
 skills/ai-dev-flow/references/PROMPTS.md
 ```
 
-That is enough to use the workflow manually.
+## 快速开始
 
-## Quick Start
-
-### 1. Initialize a Project Workflow
+### 1. 初始化项目工作流
 
 ```text
-Use ai-dev-flow to initialize the workflow for this project.
-Read the existing README, AGENTS.md, docs/, and key config files first.
-Do not modify business code.
+请使用 ai-dev-flow 初始化当前项目工作流。
+先读取已有 README、AGENTS.md、docs/ 和关键配置。
+不要修改业务代码。
 ```
 
-The agent should create or suggest a minimal structure like:
+agent 会创建或建议创建类似结构：
 
 ```text
 docs/
@@ -144,87 +143,89 @@ docs/
 └── waves/
 ```
 
-### 2. Break a Requirement Into Tasks
+### 2. 把需求拆成任务
 
 ```text
-Use ai-dev-flow to split this requirement into small tasks:
-<paste requirement>
+请使用 ai-dev-flow，把下面需求拆成小任务：
+<粘贴需求>
 ```
 
-The agent should create task entries with goals, non-goals, validation, risk level, and execution boundaries.
+任务会带上目标、非目标、完成标准、风险等级、建议执行位置和验证方式。
 
-### 3. Execute One Task
+### 3. 执行单个任务
 
 ```text
-Use ai-dev-flow to execute docs/tasks/TASK-001.md.
+请使用 ai-dev-flow，执行 docs/tasks/TASK-001.md。
 ```
 
-The agent should check Git status, record the base commit, follow the task boundary, update the task file, and provide validation evidence.
+agent 应先检查 Git 状态、记录 base commit、遵守任务边界，完成后更新任务文件并提供验证证据。
 
-### 4. Review the Diff
+### 4. 基于 diff 审查
 
 ```text
-Use ai-dev-flow to review docs/tasks/TASK-001.md based on its diff.
+请使用 ai-dev-flow，基于 diff 审查 docs/tasks/TASK-001.md。
 ```
 
-The review should be based on the task diff, not a vague read-through of files.
+审查应基于当前任务 diff，而不是泛泛读一遍文件。
 
-### 5. Decide the Human Action Level
+### 5. 明确用户动作等级
 
-Every task should end with a clear `UA` recommendation:
+每个任务完成后都应给出 `UA` 建议：
 
-- `UA0`: no user acceptance needed; agent evidence is enough.
-- `UA1`: user only reads the summary.
-- `UA2`: user reads the document or plan.
-- `UA3`: user checks evidence, not local runtime.
-- `UA4`: user runs locally.
-- `UA5`: user tests in a real business environment.
-- `UA6`: user performs regression acceptance.
-- `UA7`: user decision required.
+- `UA0`：无需用户验收，agent 自证即可。
+- `UA1`：用户只看摘要。
+- `UA2`：用户读文档或方案。
+- `UA3`：用户只看验证证据，不自己运行。
+- `UA4`：用户本地运行验收。
+- `UA5`：用户在真实业务环境测试。
+- `UA6`：用户做回归验收。
+- `UA7`：必须用户决策。
 
-The agent should not simply say "needs human acceptance." It must say what the human actually needs to do.
+agent 不应该只写“需要人工验收”，而要写清楚用户到底要做什么。
 
-## Batch and Parallel Wave
+## Batch 和 Parallel Wave
 
-### Batch
+### Batch：批量小任务
 
-Batch is for small low-risk tasks.
+Batch 用来处理多个低风险小任务。
 
-One execution session sequentially completes several A/B tasks, then one review session reviews them in a batch.
+一个执行会话顺序完成多个 A/B 任务，再由一个审查会话批量审查。
 
-Rules:
+规则：
 
-- A/B tasks only.
-- C/D tasks stay separate.
-- The diff must stay clear and separable per task.
-- Review must output a conclusion for every task.
+- 只用于 A/B 小任务。
+- C/D 任务仍然单独处理。
+- diff 必须能按任务拆分。
+- 批量审查必须逐任务输出结论。
 
-### Parallel Wave
+### Parallel Wave：并行波次
 
-Parallel Wave is for safe parallel execution.
+Parallel Wave 用来安全地并行处理多个互不冲突任务。
 
-Multiple sessions work on multiple non-conflicting tasks after checking:
+并行前必须检查：
 
-- expected modified files;
-- affected modules;
-- dependencies;
-- file locks;
-- module locks;
-- task risk level;
-- user action level.
+- 预计修改文件；
+- 影响模块；
+- 依赖关系；
+- 文件锁；
+- 模块锁；
+- 任务风险等级；
+- 用户动作等级。
 
-Rules:
+规则：
 
-- Parallel execution is not automatic.
-- The user must confirm it.
-- D-level and `UA5 / UA6 / UA7` code tasks do not enter code parallelism by default.
-- Review Hub may review a Wave, but must output per-task conclusions.
+- 并行执行不是默认行为。
+- 必须用户确认。
+- D 级和 `UA5 / UA6 / UA7` 代码任务默认不进入代码并行。
+- Review Hub 可以集中审查 Wave，但必须逐任务输出结论。
 
-## Repository Structure
+## 仓库结构
 
 ```text
 ai-dev-flow/
 ├── README.md
+├── README.en.md
+├── LICENSE
 ├── skills/
 │   └── ai-dev-flow/
 │       ├── SKILL.md
@@ -236,38 +237,36 @@ ai-dev-flow/
 └── .gitignore
 ```
 
-The root `README.md` is the public project introduction.
+根目录 `README.md` 是开源仓库首页。
 
-The Skill's detailed manual is here:
+Skill 的详细使用手册在：
 
 ```text
 skills/ai-dev-flow/README.md
 ```
 
-## Important Safety Defaults
+## 安全默认值
 
-`ai-dev-flow` is intentionally conservative:
+`ai-dev-flow` 默认保守：
 
-- no automatic merge;
-- no automatic push;
-- no automatic release;
-- no blind `git add .`;
-- no branch deletion without confirmation;
-- no Worktree deletion without confirmation;
-- no secret, local config, build artifact, dependency folder, or log submission;
-- no code task without Git baseline;
-- no review without a clear diff;
-- no task completion claim without validation evidence.
+- 不自动 merge；
+- 不自动 push；
+- 不自动 release；
+- 不盲目 `git add .`；
+- 不自动删除分支；
+- 不自动删除 Worktree；
+- 不提交密钥、本机配置、构建产物、依赖目录或日志；
+- 没有 Git baseline 不开始代码任务；
+- 没有明确 diff 不做代码审查；
+- 没有验证证据不声称任务完成。
 
-## Version
-
-Current Skill version:
+## 当前版本
 
 ```text
 0.5.1
 ```
 
-See:
+变更记录见：
 
 ```text
 skills/ai-dev-flow/CHANGELOG.md
@@ -275,41 +274,41 @@ skills/ai-dev-flow/CHANGELOG.md
 
 ## License
 
-This project is released under the MIT License.
+本项目使用 MIT License。
 
-See:
+详见：
 
 ```text
 LICENSE
 ```
 
-## Contributing
+## 贡献
 
-Issues and pull requests are welcome.
+欢迎提交 issue 和 pull request。
 
-Good contributions should keep the workflow:
+好的贡献应保持这套流程：
 
-- generic;
-- Markdown-first;
-- agent-neutral;
-- Git-aware;
-- safe by default;
-- clear about human confirmation;
-- free of project-specific business rules.
+- 通用；
+- Markdown-first；
+- agent-neutral；
+- Git-aware；
+- 默认安全；
+- 清楚区分 AI 验证和用户确认；
+- 不写入特定项目业务规则。
 
-## Public Release Checklist
+## 发布前检查
 
-Before pushing to GitHub:
+公开 push 前建议运行：
 
 ```text
 git status --short
 git diff --cached --name-only
 ```
 
-Also confirm:
+并确认：
 
-- `LICENSE` has been added.
-- no `.env` or secrets are included;
-- no local paths are included;
-- no logs, attachments, caches, or dependency folders are included;
-- only the intended `skills/ai-dev-flow/` files are committed.
+- 已包含 `LICENSE`；
+- 没有 `.env` 或密钥；
+- 没有本机路径；
+- 没有日志、附件、缓存或依赖目录；
+- 只提交了预期的 `skills/ai-dev-flow/` 文件和仓库说明文件。
