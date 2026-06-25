@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2
+
+- 强化 Parallel Wave 中代码任务的工作区隔离规则。
+- 明确并行代码任务默认应使用独立分支或 Worktree。
+- 强化 B 级小代码 Batch 的 per-task diff / commit 归属要求。
+- 明确 Batch diff 无法按任务拆分时不得强行通过审查。
+
 ## 0.5.1
 
 - 泛化开源文档中的具体技术示例。

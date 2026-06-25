@@ -119,7 +119,12 @@ Git 在本 Skill 中不是形式化流程，而是任务边界和审查证据的
 ## Batch / Wave Git 规则
 
 - Batch 不等于一个大任务；每个 TASK 仍要记录 base commit、diff 范围和验证结果。
-- Wave 不等于共享工作区；每个并行任务应有清晰执行位置，必要时使用独立分支或 Worktree。
+- A 级文档 Batch 可以使用一个 commit。
+- B 级小代码 Batch 推荐每个 TASK 单独 commit；如果不单独 commit，必须记录每个 TASK 的修改文件、diff 归属和验证结果。
+- 多个 B 级任务修改同一文件时，默认不得进入同一个 Batch，应拆成单任务执行或等待用户确认。
+- Wave 不等于共享工作区；进入 Parallel Wave 的代码任务默认必须使用独立分支或 Worktree。
+- 多个代码执行会话不得共享同一个工作区直接改代码。
+- B/C 代码任务如果并行，必须记录各自执行位置、base commit、HEAD 和 diff 范围。
 - 不得让多个任务共享一个无法拆分的 diff。
 - 不得在来源不明的脏工作区启动 Batch 或 Wave。
 - Review Hub 审查 Batch / Wave 时，必须逐任务审查 diff。

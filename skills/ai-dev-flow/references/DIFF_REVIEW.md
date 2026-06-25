@@ -60,7 +60,10 @@ git log --oneline <base_commit>..HEAD
 - 如果任务没有记录 base commit，审查前必须补充或停止。
 - 如果存在未提交改动，需要明确是否属于当前任务。
 - Batch 审查必须能按任务拆分 diff；拆不清时不得强行通过。
+- B 级小代码 Batch 推荐每个 TASK 单独 commit；如不单独 commit，必须审查 per-task 修改文件、diff 归属和验证结果。
+- 多个 B 级任务修改同一文件时，默认要求拆分任务或拆分 commit；用户确认例外时必须标记风险。
 - Wave 审查必须按任务使用各自 base commit、HEAD 和 diff 范围。
+- Wave 中代码任务默认应来自独立分支或 Worktree；无法确认工作区隔离时，不得通过代码并行审查。
 - 不得让多个任务共享一个模糊 diff 作为审查依据。
 
 ## 审查结论格式
@@ -100,6 +103,8 @@ Diff 范围：<base_commit>..HEAD 或 当前工作区未提交 diff
 ## Batch / Wave diff 审查
 
 - Batch 适合 A/B 小任务，仍需逐任务列出修改文件和 diff 范围。
+- B 级代码 Batch 必须确认 diff 能归属到具体 TASK；如果出现“diff 归属不清”，停止批量审查并建议拆分任务或拆分 commit。
 - Wave 中每个任务必须单独记录 base commit、当前 HEAD 和 diff 范围。
+- Wave 中每个代码任务必须记录自己的执行位置和分支 / Worktree。
 - Review Hub 可以集中审查 Batch / Wave，但输出必须逐任务给结论。
 - 如果发现任务间 diff 交叉、文件冲突或模块冲突，应标记为范围越界或并行风险。

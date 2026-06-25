@@ -538,9 +538,11 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 2. 只执行列入批次的任务，不加入新任务。
 3. 不处理 C/D 任务；发现风险升高时停止并拆分。
 4. 同一个执行会话中按顺序完成任务，不并行写代码。
-5. 每个任务单独更新任务文件、修改文件、验证结果、diff 范围和 UA 等级。
-6. 生成批量审查交接包。
-7. 不自动合并、push、release、删除分支或删除 Worktree。
+5. 如果包含 B 级小代码任务，推荐每个 TASK 单独 commit；如果不单独 commit，必须记录每个 TASK 的修改文件、per-task diff 归属和验证结果。
+6. 多个 B 级任务修改同一文件时，默认停止并建议拆分，除非用户明确确认风险。
+7. 每个任务单独更新任务文件、修改文件、验证结果、diff 范围和 UA 等级。
+8. 生成批量审查交接包。
+9. 不自动合并、push、release、删除分支或删除 Worktree。
 ```
 
 ## 39. 批量审查 A/B 小任务
@@ -553,7 +555,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 2. 只审查，不修改业务代码。
 3. 按任务逐项审查，不得只输出 Batch 总结论。
 4. 每个任务输出 P0/P1/P2/P3、审查结论、UA 等级和是否允许进入验收建议。
-5. 发现任一任务风险升高、P0/P1、范围越界或 diff 无法拆分时，将该任务单独拉出复审。
+5. 发现任一任务风险升高、P0/P1、范围越界或 diff 无法按任务拆分时，停止相关批量审查，标记“diff 归属不清”，并建议拆分任务或拆分 commit。
 6. 将结论写回每个 TASK 文件和可选 BATCH 文件。
 ```
 
@@ -580,9 +582,10 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 2. 输出推荐 Wave 编号、候选任务、每个任务等级。
 3. 列出每个任务预计修改文件和预计影响模块。
 4. 检查是否存在文件冲突、模块冲突和依赖关系。
-5. 检查是否涉及 D 级或 UA5 / UA6 / UA7。
-6. 输出是否需要用户确认和推荐执行会话数量。
-7. 不要默认启动多个执行会话。
+5. 检查代码任务是否能使用独立分支或 Worktree。
+6. 检查是否涉及 D 级或 UA5 / UA6 / UA7。
+7. 输出是否需要用户确认和推荐执行会话数量。
+8. 不要默认启动多个执行会话。
 ```
 
 ## 42. 创建 Parallel Wave
@@ -593,9 +596,11 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 要求：
 1. 读取 PARALLEL_WAVE_GUIDE.md、TASK_BOARD 和候选 TASK 文件。
 2. 记录包含任务、文件锁、模块锁、base commit 和执行会话。
-3. 标记可并行任务和必须串行任务。
-4. 明确是否需要用户确认。
-5. 未经用户确认，不要启动执行会话或 subagent 写代码。
+3. 检查每个代码任务是否有独立分支或 Worktree，并记录各自执行位置。
+4. 标记可并行任务和必须串行任务。
+5. 如果多个代码任务共享同一工作区，标记高风险并要求用户确认。
+6. 明确是否需要用户确认。
+7. 未经用户确认，不要启动执行会话或 subagent 写代码。
 ```
 
 ## 43. 并行任务冲突检查
@@ -610,7 +615,8 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 3. 列出冲突文件、冲突模块和依赖关系。
 4. 说明不建议并行的原因。
 5. 文件或模块冲突时不得并行。
-6. D 级和 UA5 / UA6 / UA7 任务默认不得进入代码并行。
+6. 代码任务无法确认独立分支或 Worktree 时不得并行。
+7. D 级和 UA5 / UA6 / UA7 任务默认不得进入代码并行。
 ```
 
 ## 44. 执行 Wave 中的单个任务
@@ -621,9 +627,11 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 要求：
 1. 读取 PARALLEL_WAVE_GUIDE.md、WAVE 文件和当前 TASK 文件。
 2. 只执行自己负责的任务，不修改其他 Wave 任务文件的业务内容。
-3. 遵守预计修改文件、影响模块、文件锁和模块锁。
-4. 记录 base commit、HEAD、diff 范围、验证结果和交接包。
-5. 发现冲突、范围越界或风险升高时立即停止并标记 Blocked。
+3. 确认当前执行会话只处理分配给自己的任务，不处理其他 Wave 任务。
+4. 如果是代码任务，确认本会话使用自己的独立分支或 Worktree；无法确认时停止。
+5. 遵守预计修改文件、影响模块、文件锁和模块锁。
+6. 记录 base commit、HEAD、diff 范围、验证结果和交接包。
+7. 发现冲突、范围越界或风险升高时立即停止并标记 Blocked。
 ```
 
 ## 45. Review Hub 审查 Wave

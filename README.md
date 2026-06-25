@@ -196,6 +196,9 @@ Batch 用来处理多个低风险小任务。
 - 只用于 A/B 小任务。
 - C/D 任务仍然单独处理。
 - diff 必须能按任务拆分。
+- A 级文档 Batch 可以一个 commit。
+- B 级小代码 Batch 推荐每个 TASK 单独 commit；不单独 commit 时必须记录 per-task diff 归属。
+- 多个 B 级任务修改同一文件时，默认拆成单任务或等待用户确认。
 - 批量审查必须逐任务输出结论。
 
 ### Parallel Wave：并行波次
@@ -217,6 +220,8 @@ Parallel Wave 用来安全地并行处理多个互不冲突任务。
 - 并行执行不是默认行为。
 - 必须用户确认。
 - D 级和 `UA5 / UA6 / UA7` 代码任务默认不进入代码并行。
+- 进入 Parallel Wave 的代码任务默认使用独立分支或 Worktree。
+- 多个代码执行会话不得默认共享同一工作区。
 - Review Hub 可以集中审查 Wave，但必须逐任务输出结论。
 
 ## 仓库结构
@@ -263,7 +268,7 @@ skills/ai-dev-flow/README.md
 ## 当前版本
 
 ```text
-0.5.1
+0.5.2
 ```
 
 变更记录见：

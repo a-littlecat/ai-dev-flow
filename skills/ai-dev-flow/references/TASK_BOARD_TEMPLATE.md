@@ -25,6 +25,8 @@
 
 如果看板过宽，`批次`、`Wave`、`可批量`、`可并行`、`锁定模块` 均为可选字段。详细批次信息写入 `docs/batches/BATCH-xxx.md` 或任务文件；详细并行信息写入 `docs/waves/WAVE-xxx.md` 或任务文件。
 
+并行代码任务建议至少在任务文件或 `WAVE` 文件中记录执行位置和分支 / Worktree。B 级小代码 Batch 建议在任务文件或 `BATCH` 文件中记录是否 per-task commit，不建议为了这些细节把轻量看板无限加宽。
+
 详细信息应放入对应任务文件，例如：
 
 - 分支
@@ -41,6 +43,8 @@
 - 批次 / Wave
 - 可批量 / 可并行
 - 锁定模块
+- 并行代码任务的执行位置和分支 / Worktree
+- B 级代码 Batch 是否 per-task commit
 
 ## 完整看板模板
 

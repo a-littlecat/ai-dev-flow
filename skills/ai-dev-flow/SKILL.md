@@ -133,10 +133,13 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - Batch 和 Wave 不同：批量执行不是多任务并行写代码，Parallel Wave 才是多执行会话并行。
 - 并行执行不是默认行为，必须用户确认；不得默认启动多个执行会话，不得默认使用 subagent 写代码。
 - 并行前必须检查文件锁、模块锁、依赖、任务等级和 UA 等级。
+- Parallel Wave 中代码任务默认需要独立分支或 Worktree。
+- 多个代码执行会话不得默认共享同一工作区。
 - D 级和 UA5 / UA6 / UA7 任务默认不得进入代码并行。
 - Batch / Wave 中每个任务仍是独立记录、审查和验收单位。
 - Review Hub 可以审查 Batch / Wave，但必须逐任务输出结论。
-- 批量任务必须保持 diff 可按任务拆分；diff 无法拆分时必须标记风险并停止强行通过。
+- B 级小代码 Batch 必须保持 per-task diff 归属清晰。
+- 批量任务必须保持 diff 可按任务拆分；diff 无法拆分时必须标记“diff 归属不清”并停止强行通过。
 - 修改前先给简短计划，说明目标、拟改文件、风险和验证方式。
 - 修改后更新任务状态，不要只把状态留在聊天记录里。
 - 所有状态必须写入项目文件；不要把聊天记录作为唯一状态来源。
@@ -187,6 +190,6 @@ description: A reusable Git-first AI development workflow for solo developers. U
 
 如果用户要求“批量执行小任务”或“批量审查小任务”，先读取 `BATCH_TASK_GUIDE.md`、`TASK_BOARD.md` 和候选 TASK 文件，只允许 A/B 小任务进入 Batch；批量执行顺序完成，批量审查逐任务给结论。
 
-如果用户要求“并行处理任务”或“开一组 Wave”，先读取 `PARALLEL_WAVE_GUIDE.md`、`TASK_BOARD.md` 和候选 TASK 文件，完成文件锁、模块锁、依赖、UA 等级和用户确认检查后，才允许启动并行执行会话。
+如果用户要求“并行处理任务”或“开一组 Wave”，先读取 `PARALLEL_WAVE_GUIDE.md`、`TASK_BOARD.md` 和候选 TASK 文件，完成文件锁、模块锁、依赖、UA 等级、工作区隔离和用户确认检查后，才允许启动并行执行会话。代码任务默认使用独立分支或 Worktree，多个代码执行会话不得默认共享同一工作区。
 
 如果用户要求“审查任务”，按 `review_task` 模式只读取当前 TASK 文件、`DIFF_REVIEW.md`、`CODE_REVIEW_CHECKLIST.md`、验证记录，以及 base commit 到 HEAD 或当前工作区 diff。必须将审查结论写回当前任务文件的“代码审查”和“Diff 审查”段落，必要时更新 `docs/TASK_BOARD.md` 的 Review 状态；只在聊天中输出不算完成审查，不得直接改业务代码。

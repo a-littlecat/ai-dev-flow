@@ -199,6 +199,9 @@ Rules:
 - A/B tasks only.
 - C/D tasks stay separate.
 - The diff must stay clear and separable per task.
+- A-level documentation Batch may use one commit.
+- B-level small code Batch should preferably use one commit per TASK; if not, record per-task diff ownership.
+- If multiple B-level tasks modify the same file, split them by default or require explicit user confirmation.
 - Review must output a conclusion for every task.
 
 ### Parallel Wave
@@ -220,6 +223,8 @@ Rules:
 - Parallel execution is not automatic.
 - The user must confirm it.
 - D-level and `UA5 / UA6 / UA7` code tasks do not enter code parallelism by default.
+- Code tasks in a Parallel Wave should use an independent branch or Worktree by default.
+- Multiple code execution sessions must not share the same workspace by default.
 - Review Hub may review a Wave, but must output per-task conclusions.
 
 ## Repository Structure
@@ -266,7 +271,7 @@ skills/ai-dev-flow/README.md
 Current Skill version:
 
 ```text
-0.5.1
+0.5.2
 ```
 
 See:
