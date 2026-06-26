@@ -52,6 +52,22 @@ Batch、Wave 和 Loop 都只是组织方式：
 
 无论使用 Batch、Wave 还是 Loop，都不能吞掉任务边界。每个任务仍然要独立记录 diff、验证结果、审查结论和用户动作等级。
 
+## 角色不等于会话
+
+v0.6.0 的角色机制用于约束职责，不要求每个角色都单独开一个会话。
+
+默认最小会话模型是：
+
+- 总览会话：Orchestrator / Planner / Archivist。
+- 执行会话：Engineer / Verifier / Repairer。
+- 审核会话：Reviewer。
+
+同一会话可以在不同阶段切换多个角色，但每一轮都要声明当前角色和当前模式。Reviewer 不直接修复，Engineer / Repairer 不自我批准。
+
+如果你的 harness 支持可靠子 agent，可以把 Reviewer / Verifier 交给子 agent 来减少额外审核会话。子 agent 只是可选加速手段，不是默认依赖；更适合只读审查、验证、状态分拣和文档检查。
+
+不推荐默认让多个写代码的子 agent 共享同一工作区。代码并行仍必须使用独立分支或 Worktree，并且逐任务记录 diff、验证和审查结论。子 agent 也不得自动 merge、push、release 或 delete。
+
 ## 适合谁
 
 适合你，如果你：

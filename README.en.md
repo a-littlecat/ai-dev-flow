@@ -53,6 +53,22 @@ Batch, Wave, and Loop are only organization strategies:
 
 No Batch, Wave, or Loop is allowed to hide task boundaries. Reviews, diffs, validation, and user action levels stay per task.
 
+## Roles Are Not Sessions
+
+The v0.6.0 role model constrains responsibilities. It does not require one separate session for every role.
+
+The default minimal session model is:
+
+- Overview session: Orchestrator / Planner / Archivist.
+- Execution session: Engineer / Verifier / Repairer.
+- Review session: Reviewer.
+
+One session may switch roles across different phases, but each round should declare the current role and mode. Reviewer does not repair, and Engineer / Repairer do not self-approve.
+
+If your harness supports reliable subagents, Reviewer / Verifier subagents may reduce the need for extra review sessions. Subagents are optional acceleration, not a default dependency. They are best used for read-only review, validation, status triage, and documentation checks.
+
+Do not default to multiple coding subagents sharing the same workspace. Code parallelism still requires independent branches or Worktrees, plus per-task diff, validation, and review records. Subagents must not automatically merge, push, release, or delete.
+
 ## Who It Is For
 
 Use this if you are a solo developer who:

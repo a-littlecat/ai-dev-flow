@@ -10,6 +10,27 @@
 - 如果 harness 不支持 Worktree，不得启动 Parallel Wave 代码任务。
 - 如果 harness 不支持 subagent，应使用独立会话替代 Reviewer。
 - 所有危险命令仍需用户确认。
+- 不要声称当前版本具备自动多 agent 调度能力；本文件只说明人工可控的兼容方式和降级路径。
+
+## 角色、会话与子 agent
+
+角色不是会话。ai-dev-flow 中的 Orchestrator、Planner、Engineer、Reviewer、Verifier、Repairer、Archivist 是职责标签，不要求每个角色都开一个独立会话。
+
+默认最小会话模型：
+
+- 总览会话：Orchestrator / Planner / Archivist。
+- 执行会话：Engineer / Verifier / Repairer。
+- 审核会话：Reviewer。
+
+如果同一会话切换角色，每一轮必须声明当前角色和当前模式，并遵守角色边界：Reviewer 不修复，Engineer / Repairer 不自我批准。
+
+子 agent 是可选加速手段，不是默认依赖。推荐把子 agent 用于只读审查、验证、状态分拣和文档检查；不推荐默认让多个写代码的子 agent 共享同一工作区。
+
+如果 harness 支持可靠子 agent，可以用 Reviewer / Verifier 子 agent 减少额外审核会话。但中高风险任务仍建议独立审核会话；写代码的子 agent 不得自我批准。
+
+子 agent 不得自动执行 merge、push、release、delete、reset、rebase、删除分支、删除 Worktree 或 GitHub 同步。任何危险操作仍必须用户确认。
+
+代码并行仍必须遵守 Parallel Wave：代码任务默认使用独立分支或 Worktree，多个代码执行会话不得默认共享同一工作区，并且必须逐任务审查。
 
 ## Codex
 
