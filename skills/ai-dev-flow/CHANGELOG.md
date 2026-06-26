@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0 Unreleased
+
+- Add Intake guide for requirement capture before task creation.
+- Add Loop Engineering guide for triage, goal, review-repair, and status loops.
+- Add Review Repair Loop guide with bounded repair rounds and escalation rules.
+- Add Role Guide for Orchestrator, Planner, Engineer, Reviewer, Verifier, Repairer, and Archivist.
+- Add Project Constitution template using MUST / SHOULD / MUST NOT rules.
+- Add Memory Guide for durable project knowledge under docs/memory/.
+- Add optional GitHub Issues backend design without automatic sync.
+- Add Harness Compatibility guide for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
+- Add Loop State template for loop run summaries.
+- Update prompts, task template, workflow, safety rules, and scripts roadmap.
+
 ## 0.5.2
 
 - 强化 Parallel Wave 中代码任务的工作区隔离规则。

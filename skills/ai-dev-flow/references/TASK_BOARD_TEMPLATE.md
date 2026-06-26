@@ -23,7 +23,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | TASK-000 | 示例任务 | A / B / C / D | Draft / Ready / In Progress / Blocked / Review / Needs Fix / Accepted / Closed / Deferred / Cancelled | BATCH-000 / 无 | WAVE-000 / 无 | 是 / 否 / 待确认 | 是 / 否 / 待确认 | 主项目 / Worktree / 分支 | 未审查 | UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认 | 是 / 否 / 待确认 | 任务文件：`docs/tasks/TASK-000.md` |
 
-如果看板过宽，`批次`、`Wave`、`可批量`、`可并行`、`锁定模块` 均为可选字段。详细批次信息写入 `docs/batches/BATCH-xxx.md` 或任务文件；详细并行信息写入 `docs/waves/WAVE-xxx.md` 或任务文件。
+如果看板过宽，`批次`、`Wave`、`可批量`、`可并行`、`锁定模块`、`Intake`、`Loop 归属`、`Memory` 均为可选字段。详细批次信息写入 `docs/batches/BATCH-xxx.md` 或任务文件；详细并行信息写入 `docs/waves/WAVE-xxx.md` 或任务文件；Loop 轮次、停止原因和运行状态写入 `docs/loops/LOOP_STATE.md` 或任务文件，不写入看板状态字段。
 
 并行代码任务建议至少在任务文件或 `WAVE` 文件中记录执行位置和分支 / Worktree。B 级小代码 Batch 建议在任务文件或 `BATCH` 文件中记录是否 per-task commit，不建议为了这些细节把轻量看板无限加宽。
 
@@ -45,12 +45,15 @@
 - 锁定模块
 - 并行代码任务的执行位置和分支 / Worktree
 - B 级代码 Batch 是否 per-task commit
+- Intake 文件
+- Loop 归属
+- 是否需要更新 Memory / Constitution
 
 ## 完整看板模板
 
-| 任务编号 | 任务名称 | 模式 | 任务类型 | 等级 | 状态 | 优先级 | 风险等级 | 批次 | Wave | 可批量 | 可并行 | 锁定模块 | 执行位置 | 分支 | Base commit | 当前 HEAD | Diff 范围 | Worktree | 依赖 | 冲突 | Review 状态 | 验收状态 | 关闭状态 | Commit 状态 | Merge 状态 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-000 | 示例任务 | execute_task | 文档 / 方案 / 代码 / 审查 / 修复 / 测试 | A / B / C / D | Draft / Ready / In Progress / Blocked / Review / Needs Fix / Accepted / Closed / Deferred / Cancelled | 高 / 中 / 低 / 待确认 | 低 / 中 / 高 | BATCH-000 / 无 | WAVE-000 / 无 | 是 / 否 / 待确认 | 是 / 否 / 待确认 | 待填写 | 主项目 / Worktree / 分支 | main | 待填写 | 待填写 | 待填写 | 不适用 | 无 | 无 | 未审查 | 未验收 | 未关闭 | 未提交 | 不适用 | 任务文件：`docs/tasks/TASK-000.md` |
+| 任务编号 | 任务名称 | 模式 | 任务类型 | 等级 | 状态 | 优先级 | 风险等级 | Intake | Loop 归属 | 批次 | Wave | 可批量 | 可并行 | 锁定模块 | 执行位置 | 分支 | Base commit | 当前 HEAD | Diff 范围 | Worktree | 依赖 | 冲突 | Review 状态 | 验收状态 | 关闭状态 | Commit 状态 | Merge 状态 | Memory | 备注 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TASK-000 | 示例任务 | execute_task | 文档 / 方案 / 代码 / 审查 / 修复 / 测试 | A / B / C / D | Draft / Ready / In Progress / Blocked / Review / Needs Fix / Accepted / Closed / Deferred / Cancelled | 高 / 中 / 低 / 待确认 | 低 / 中 / 高 | INTAKE-000 / 无 | goal_loop / 无 | BATCH-000 / 无 | WAVE-000 / 无 | 是 / 否 / 待确认 | 是 / 否 / 待确认 | 待填写 | 主项目 / Worktree / 分支 | main | 待填写 | 待填写 | 待填写 | 不适用 | 无 | 无 | 未审查 | 未验收 | 未关闭 | 未提交 | 不适用 | 无 / 待更新 | 任务文件：`docs/tasks/TASK-000.md` |
 
 ## 字段说明
 
@@ -64,6 +67,8 @@
 | 状态 | 使用上方状态说明。 |
 | 优先级 | 高、中、低或待确认；只用于排期，不使用 P0/P1/P2/P3。 |
 | 风险等级 | 低、中、高或待确认。 |
+| Intake | 需求来源文件；没有 Intake 时写“无”。 |
+| Loop 归属 | 只记录任务是否被某个 Loop 引用或建议编排，例如 `triage_loop 建议`、`goal_loop 执行中` 或“无”；Loop 不是任务状态。Loop 轮次、停止原因和运行状态写入 `docs/loops/LOOP_STATE.md` 或任务文件，不写入看板状态字段。 |
 | 批次 | 所属 `BATCH-xxx`；无批次写“无”。 |
 | Wave | 所属 `WAVE-xxx`；无并行波次写“无”。 |
 | 可批量 | 是否允许进入 Batch。C/D 默认否。 |
@@ -82,4 +87,5 @@
 | 关闭状态 | 未关闭、可关闭、已关闭、暂缓关闭。 |
 | Commit 状态 | 未提交、已提交、不适用。 |
 | Merge 状态 | 不适用、未合并、用户已确认待合并、已合并、暂不合并。 |
+| Memory | 是否建议更新 `docs/memory/` 或 Constitution。 |
 | 备注 | 任务文件路径、风险或其他简短说明。 |

@@ -36,6 +36,7 @@ Without a workflow, it is easy to lose track of:
 - User action levels: `UA0` through `UA7`.
 - Batch flow for small A/B tasks.
 - Parallel Wave flow for safe multi-agent scheduling.
+- v0.6.0 Unreleased design-level guides for Intake, Loop Engineering, Review-Repair Loop, Roles, Project Constitution, Memory, optional GitHub Issues backend, and harness compatibility.
 - Safety rules for merge, push, release, deletion, secrets, and local config.
 - Prompt templates that work even in agents without native Skill support.
 
@@ -43,13 +44,30 @@ Without a workflow, it is easy to lose track of:
 
 `TASK` is always the smallest responsibility unit.
 
-Batch and Wave are only execution strategies:
+Batch, Wave, and Loop are only organization strategies:
 
 - `Single Task`: one session works on one task.
 - `Batch`: one session sequentially completes several low-risk A/B tasks.
 - `Parallel Wave`: multiple sessions work on multiple non-conflicting tasks after lock and dependency checks.
+- `Loop`: an outer orchestration layer for existing modes; it does not replace task state.
 
-No Batch or Wave is allowed to hide task boundaries. Reviews, diffs, validation, and user action levels stay per task.
+No Batch, Wave, or Loop is allowed to hide task boundaries. Reviews, diffs, validation, and user action levels stay per task.
+
+## Roles Are Not Sessions
+
+The v0.6.0 role model constrains responsibilities. It does not require one separate session for every role.
+
+The default minimal session model is:
+
+- Overview session: Orchestrator / Planner / Archivist.
+- Execution session: Engineer / Verifier / Repairer.
+- Review session: Reviewer.
+
+One session may switch roles across different phases, but each round should declare the current role and mode. Reviewer does not repair, and Engineer / Repairer do not self-approve.
+
+If your harness supports reliable subagents, Reviewer / Verifier subagents may reduce the need for extra review sessions. Subagents are optional acceleration, not a default dependency. They are best used for read-only review, validation, status triage, and documentation checks.
+
+Do not default to multiple coding subagents sharing the same workspace. Code parallelism still requires independent branches or Worktrees, plus per-task diff, validation, and review records. Subagents must not automatically merge, push, release, or delete.
 
 ## Who It Is For
 
@@ -146,6 +164,16 @@ docs/
 └── waves/
 ```
 
+Optional v0.6.0 structure for long-running projects that need Intake, Loop, Memory, or project-level hard rules. These files and folders are not required for initialization:
+
+```text
+docs/
+├── intake/
+├── loops/
+├── memory/
+└── PROJECT_CONSTITUTION.md
+```
+
 ### 2. Break a Requirement Into Tasks
 
 ```text
@@ -227,6 +255,21 @@ Rules:
 - Multiple code execution sessions must not share the same workspace by default.
 - Review Hub may review a Wave, but must output per-task conclusions.
 
+## v0.6.0 Unreleased: Design-Level Guides
+
+v0.6.0 adds Markdown-first design-level workflow guides for:
+
+- Intake before task creation.
+- Loop Engineering for triage, goal, review-repair, and status loops.
+- Review-Repair Loop with bounded repair rounds.
+- Role Guide for Orchestrator, Planner, Engineer, Reviewer, Verifier, Repairer, and Archivist.
+- Project Constitution using MUST / SHOULD / MUST NOT rules.
+- Memory under `docs/memory/`.
+- Optional GitHub Issues backend mapping without automatic sync.
+- Harness compatibility for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
+
+These are documents, templates, prompts, and roadmap notes. They do not mean ai-dev-flow now has automatic scripts, automatic GitHub sync, automatic multi-agent scheduling, automatic merge, or automatic release.
+
 ## Repository Structure
 
 ```text
@@ -273,6 +316,8 @@ Current Skill version:
 ```text
 0.5.2
 ```
+
+`0.6.0` is currently tracked as an Unreleased documentation upgrade in `skills/ai-dev-flow/CHANGELOG.md`.
 
 See:
 
