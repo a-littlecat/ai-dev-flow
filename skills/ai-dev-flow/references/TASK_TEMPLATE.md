@@ -67,6 +67,35 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 是否需要 Worktree：否 / 建议 / 必须
 - 是否需要独立代码审查：否 / 建议 / 必须
 
+## Intake / 需求来源
+
+- Intake 文件：docs/intake/INTAKE-xxx.md / 无
+- 原始需求摘要：待填写
+- 澄清状态：已清楚 / 部分清楚 / 阻塞
+- 关键假设：无 / 待填写
+
+## Loop 编排
+
+- 是否允许进入 Loop：是 / 否 / 待确认
+- Loop 类型：triage_loop / goal_loop / review_repair_loop / status_loop / 不适用
+- Loop 停止条件：
+  - 待填写
+- 最大循环次数：1 / 2 / 3 / 待确认
+- 当前循环轮次：0
+- 上一轮结果：无 / 待填写
+- 是否触发人工接管：否 / 是 / 待确认
+- 人工接管原因：无 / 待填写
+
+> Loop 不是任务状态，不替代 `Draft / Ready / In Progress / Review / Needs Fix / Accepted / Closed`。
+
+## Memory / Constitution
+
+- 是否需要读取 PROJECT_CONSTITUTION：是 / 否 / 待确认
+- 是否需要更新 docs/memory/：是 / 否 / 待确认
+- 需要更新的 memory 文件：无 / 待填写
+- 是否涉及长期项目决策：是 / 否 / 待确认
+- 是否需要更新 DECISIONS.md：是 / 否 / 待确认
+
 ## 批量执行 / 批量审查
 
 - 是否允许批量执行：是 / 否 / 待确认

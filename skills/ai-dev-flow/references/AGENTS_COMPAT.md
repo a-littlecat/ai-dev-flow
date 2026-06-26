@@ -13,6 +13,9 @@
 - 先读取项目已有规则和关键文档，包括 `AGENTS.md`、`README.md`、`docs/PROJECT_INDEX.md`、`docs/TASK_BOARD.md` 和当前任务文件。
 - 开始前判断当前工作模式：init_project、create_task、plan_task、execute_task、review_task、repair_task、close_task 或 status_report。
 - 不同模式不得混用。
+- 如果需求模糊，先进入 Intake；Intake 不是 TASK，不直接执行代码。
+- 如果使用 Loop，必须声明 Loop 类型和当前子模式；Loop 不是任务状态。
+- 当前轮输出应声明角色：Orchestrator、Planner、Engineer、Reviewer、Verifier、Repairer 或 Archivist。
 - 所有任务必须有明确状态。
 - 不确定状态不得猜测，必须写“待确认”或标记为 `Blocked`。
 - 如果任务文件不存在，先建议或创建任务文件，不要只依赖聊天记录。
@@ -52,6 +55,11 @@
 - 任务膨胀时必须停止并拆分。
 - 不要擅自新增大型依赖、替换技术栈、改变数据结构或修改发布流程。
 - 需要用户确认的操作不得擅自执行。
+- Reviewer 不得直接修复。
+- Engineer 不得自我批准。
+- Repairer 只处理审查指出的问题。
+- Orchestrator 默认只做总览、分拣和状态报告，不直接改业务代码。
+- Verifier 只验证和整理证据，不扩大修改范围。
 - 不要提交密钥、Token、证书、私有配置、个人文件或本机敏感信息。
 - 不得提交构建产物、依赖目录、日志、本机配置或密钥文件。
 - 不得盲目执行 `git add .`。
@@ -73,6 +81,8 @@
 - UA7 任务必须用户明确决策。
 - 用户不需要逐行审代码。
 - 不要把聊天记录作为唯一状态来源。
+- Memory 只记录稳定、可复用项目知识；不得写入聊天全文、密钥、本机路径、私有账号或未确认猜测。
+- 如果任务涉及长期规则，应检查 `PROJECT_CONSTITUTION.md`；违反 MUST / MUST NOT 时应标记 P0/P1。
 - 如果无法完成或无法验证，明确写出原因和阻塞点。
 
 ## 代码审查
@@ -87,6 +97,7 @@
 - 审查必须基于任务文件、base commit、明确 diff、验证记录和代码审查清单。
 - 审查线程只审查，不修复。
 - 修复线程只处理审查指出的问题。
+- Review-Repair Loop 默认最多 2 轮 repair；两轮后仍有 P0/P1 时必须停止并交给用户。
 - 审查结论必须明确为：通过、需要修改或不建议合并。
 - 审查结论必须写回当前任务文件的“代码审查”和“Diff 审查”段落，或项目约定的审查记录。
 - 只在聊天中输出审查意见不算完成审查。
@@ -98,6 +109,9 @@
 
 - 未经用户明确确认，不得合并。
 - 未经用户明确确认，不得 push、release、reset、rebase、force push、删除分支、删除 Worktree 或删除文件。
+- 不得自动创建、关闭或同步 GitHub Issue；GitHub Issues backend 在 v0.6.0 只是可选设计和 mapping preview。
+- 不得自动启动多 agent 调度。
+- 如果当前 harness 不支持 Worktree，不得启动 Parallel Wave 代码任务；如果不支持 subagent，应使用独立会话替代 Reviewer。
 - 不得在工作区混乱时建议合并。
 - 合并前必须确认任务完成标准、审查状态、用户动作等级、必要验收或决策状态和剩余风险。
 

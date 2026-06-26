@@ -662,3 +662,203 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 5. 更新 WAVE 文件、相关 TASK 文件和 TASK_BOARD。
 6. 等待用户确认后再继续。
 ```
+
+## 47. Intake 需求收集（ADF-PROMPT-31）
+
+```text
+请使用 ai-dev-flow 的 Intake 流程整理以下需求。
+
+当前模式：create_task 前的 Intake
+输入文件：用户需求文本、README、AGENTS.md、必要的项目索引
+输出文件：docs/intake/INTAKE-xxx.md 草案或聊天中的同结构内容
+是否允许修改业务代码：否
+是否需要用户确认：如果存在阻塞模糊点，需要
+
+要求：
+1. 读取 INTAKE_GUIDE.md。
+2. 记录原始需求、目标、非目标、成功标准、约束、模糊点和可逆性判断。
+3. 合理假设必须显式标记。
+4. 不创建 TASK，不拆任务，不执行代码。
+5. 输出建议下一步：plan_task / create_task / status_report / Blocked。
+```
+
+## 48. Triage Loop（ADF-PROMPT-32）
+
+```text
+请使用 ai-dev-flow 运行只读 triage_loop。
+
+当前模式：status_report + triage_loop
+输入文件：TASK_BOARD、相关 TASK 文件、BATCH_TASK_GUIDE.md、PARALLEL_WAVE_GUIDE.md
+输出文件：docs/loops/LOOP_STATE.md 或同结构总结
+是否允许修改业务代码：否
+是否需要用户确认：启动执行、Batch 或 Wave 前需要
+
+要求：
+1. 读取 LOOP_ENGINEERING_GUIDE.md 和 LOOP_STATE_TEMPLATE.md。
+2. 找出 Ready、Review、Needs Fix、Blocked。
+3. 推荐可 Batch 的 A/B 小任务。
+4. 推荐可 Wave 的互不冲突任务，但不要启动执行会话。
+5. 输出 next / blocked / review / repair 候选。
+```
+
+## 49. Goal Loop（ADF-PROMPT-33）
+
+```text
+请使用 ai-dev-flow 对单个任务运行 goal_loop。
+
+当前模式：execute_task -> validation -> review_task -> repair_task -> review_task -> acceptance suggestion
+输入文件：当前 TASK 文件、AGENTS.md、Git precheck、验证记录、审查清单
+输出文件：更新后的 TASK 文件和 TASK_BOARD
+是否允许修改业务代码：仅在 execute_task / repair_task 子模式中允许
+是否需要用户确认：危险操作、范围扩大、超过循环次数或合并前需要
+
+要求：
+1. 每一步声明当前子模式。
+2. 不跳过验证和审查。
+3. Review 不修复，Repair 只处理审查指出的问题。
+4. 达到停止条件后输出用户动作等级和验收建议。
+5. 不自动 merge、push、release 或删除文件。
+```
+
+## 50. Review Repair Loop（ADF-PROMPT-34）
+
+```text
+请使用 ai-dev-flow 对 docs/tasks/<TASK-ID>.md 运行 review_repair_loop。
+
+当前模式：review_repair_loop，子模式在 review_task 和 repair_task 间切换
+输入文件：任务文件、明确 diff、审查结论、REVIEW_REPAIR_LOOP_GUIDE.md
+输出文件：任务文件中的每轮 repair / review 记录
+是否允许修改业务代码：仅 repair_task 子模式中允许
+是否需要用户确认：超过 2 轮、范围扩大、P0/P1 无法修复时需要
+
+要求：
+1. 默认最多 2 轮 repair。
+2. P0/P1 必须修复。
+3. P2 可转后续任务，P3 不阻塞。
+4. 每轮结束必须重新进入 review_task。
+5. repair_task 不得直接标记 Accepted。
+```
+
+## 51. Status / Standup（ADF-PROMPT-35）
+
+```text
+请使用 ai-dev-flow 生成项目状态 standup。
+
+当前模式：status_report / status_loop
+输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
+输出文件：状态汇总；如用户确认，可更新 LOOP_STATE.md
+是否允许修改业务代码：否
+是否需要用户确认：改变任务状态前需要
+
+要求：
+1. 按 Ready、In Progress、Blocked、Review、Needs Fix、Accepted 分类。
+2. 输出昨天/最近完成、当前阻塞、下一步候选。
+3. 不改变任务状态，除非用户明确要求。
+```
+
+## 52. What's Next（ADF-PROMPT-36）
+
+```text
+请使用 ai-dev-flow 输出下一步候选。
+
+当前模式：status_report / triage_loop
+输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
+输出文件：下一步候选列表
+是否允许修改业务代码：否
+是否需要用户确认：执行任何候选任务前需要
+
+要求：
+1. 按优先级和阻塞情况排序。
+2. 标出建议动作：execute_task / review_task / repair_task / create_task / plan_task。
+3. 标出是否可 Batch 或可 Wave。
+4. 不直接执行。
+```
+
+## 53. What's Blocked（ADF-PROMPT-37）
+
+```text
+请使用 ai-dev-flow 汇总阻塞项。
+
+当前模式：status_report / status_loop
+输入文件：TASK_BOARD、Blocked 任务文件、LOOP_STATE.md
+输出文件：阻塞清单
+是否允许修改业务代码：否
+是否需要用户确认：解除阻塞或改变状态前需要
+
+要求：
+1. 列出每个阻塞任务、阻塞原因、需要用户动作。
+2. 区分需求不清、权限缺失、验证失败、冲突、风险无法判断。
+3. 不猜测状态。
+```
+
+## 54. Project Constitution 初始化（ADF-PROMPT-38）
+
+```text
+请使用 ai-dev-flow 初始化 PROJECT_CONSTITUTION。
+
+当前模式：init_project / plan_task
+输入文件：PROJECT_CONSTITUTION_TEMPLATE.md、AGENTS.md、README、项目已有规则
+输出文件：docs/PROJECT_CONSTITUTION.md 草案
+是否允许修改业务代码：否
+是否需要用户确认：写入或修改 MUST / MUST NOT 前需要
+
+要求：
+1. 区分 MUST、SHOULD、MUST NOT。
+2. 不覆盖已有项目规则。
+3. 说明与 CODE_REVIEW_CHECKLIST、DECISIONS、PROJECT_INDEX、docs/memory 的区别。
+4. 不把临时偏好写成硬规则。
+```
+
+## 55. Memory Hydrate（ADF-PROMPT-39）
+
+```text
+请使用 ai-dev-flow 从完成任务中提炼 Memory 更新建议。
+
+当前模式：close_task / status_report
+输入文件：已 Accepted 或 Closed 的 TASK、审查记录、验证记录、MEMORY_GUIDE.md
+输出文件：docs/memory/ 更新建议；用户确认后才写入
+是否允许修改业务代码：否
+是否需要用户确认：写入 Memory 前需要
+
+要求：
+1. 只提炼稳定、可复用知识。
+2. 不写聊天全文、密钥、Token、本机路径、个人隐私或未确认猜测。
+3. 如果 Memory 与代码冲突，标记冲突，不编造现状。
+```
+
+## 56. Harness Compatibility 检查（ADF-PROMPT-40）
+
+```text
+请使用 ai-dev-flow 检查当前 agent / harness 兼容性。
+
+当前模式：status_report / init_project
+输入文件：HARNESS_COMPAT.md、SKILL.md、项目 AGENTS.md
+输出文件：兼容性检查结果
+是否允许修改业务代码：否
+是否需要用户确认：降级执行或启动并行前需要
+
+要求：
+1. 判断是否支持 Skill、Markdown 读取、Git、Worktree、独立 Reviewer。
+2. 如果不支持 Worktree，不得启动 Parallel Wave 代码任务。
+3. 如果不支持 subagent，使用独立会话替代 Reviewer。
+4. 不假设不同 CLI 参数通用。
+```
+
+## 57. GitHub Issues Backend 规划（ADF-PROMPT-41）
+
+```text
+请使用 ai-dev-flow 生成 GitHub Issues backend mapping preview。
+
+当前模式：plan_task / status_report
+输入文件：GITHUB_ISSUES_BACKEND.md、TASK_BOARD、相关 TASK 文件
+输出文件：TASK 到 Issue 的字段映射预览
+是否允许修改业务代码：否
+是否需要用户确认：创建、编辑、关闭 issue 前必须确认
+
+要求：
+1. 只生成 mapping preview。
+2. 不自动创建 issue。
+3. 不自动关闭 issue。
+4. 不自动同步 labels。
+5. 不把敏感信息、本机路径、私有账号或日志写入公开 issue。
+```

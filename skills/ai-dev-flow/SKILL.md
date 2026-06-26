@@ -33,6 +33,14 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - `先写方案`
 - `状态汇总`
 - `验收总结`
+- `需求 Intake`
+- `Loop Engineering`
+- `triage_loop`
+- `goal_loop`
+- `review_repair_loop`
+- `项目宪法`
+- `项目记忆`
+- `Harness 兼容`
 
 推荐说法：
 
@@ -43,6 +51,8 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - `基于 diff审查这个任务。`
 - `按代码审查流程复审这个任务。`
 - `这个需求太大，先写方案。`
+- `先做 Intake，不要直接拆任务。`
+- `跑一次 triage_loop，只输出下一步建议。`
 
 ## 使用模式
 
@@ -106,6 +116,17 @@ description: A reusable Git-first AI development workflow for solo developers. U
 13. 按用户动作等级完成必要的摘要确认、文档阅读、证据验收、本地运行、实机业务测试、回归验收或用户决策后，再关闭任务。
 14. 仅在用户明确确认后，执行需要确认的操作并更新最终状态。
 
+v0.6.0 新增设计级能力：
+
+- Intake：需求进入 `plan_task` / `create_task` 前的记录层，不是 TASK，不直接执行代码。
+- Loop Engineering：编排已有模式，不替代 TASK、Batch、Wave 或任务状态。
+- Review-Repair Loop：有限轮次审查修复循环，Reviewer 不修复，Repairer 不扩大范围。
+- Role Guide：声明 Orchestrator / Planner / Engineer / Reviewer / Verifier / Repairer / Archivist 当前角色。
+- Project Constitution：项目 MUST / SHOULD / MUST NOT 硬规则模板。
+- Memory：长期项目知识沉淀，不写聊天全文、密钥、本机路径或未确认猜测。
+- GitHub Issues Optional Backend：仅提供映射设计，不自动同步 issue。
+- Harness Compatibility：说明不同 agent / CLI / IDE 的能力边界和降级方式。
+
 ## Single / Batch / Wave
 
 - Single Task：一个执行会话只执行一个任务，适合 C/D、高风险、边界不清、核心模块、真实环境、回归验收或用户决策任务。
@@ -113,6 +134,7 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - Parallel Wave：多个执行会话同时执行多个互不冲突任务；并行前必须检查文件锁、模块锁、依赖、UA 等级和用户确认。
 - `TASK` 是最小责任单位；Batch 是小任务执行 / 审查打包方式；Wave 是多个执行会话的并行调度方式。
 - Batch / Wave 都不得吞掉 TASK 边界，不得只输出“Batch 通过”或“Wave 通过”。
+- Loop 不得吞掉 TASK 边界；Loop 完成不等于任务 Accepted 或 Closed。
 
 ## Agent 行为规则
 
@@ -120,6 +142,9 @@ description: A reusable Git-first AI development workflow for solo developers. U
 
 - 先读项目已有规则，包括 `AGENTS.md`、`README.md`、`docs/PROJECT_INDEX.md`、`docs/TASK_BOARD.md` 和相关任务文件。
 - 开始前必须判断当前工作模式，不同模式不得混用。
+- 如果需求模糊，先做 Intake；Intake 不是 TASK，不直接执行代码。
+- 如果使用 Loop，必须声明 Loop 类型和当前子模式；Loop 不是任务状态。
+- 当前轮输出应声明角色；Reviewer 不修复，Engineer 不自我批准。
 - 代码任务开始前必须检查 Git 状态；没有 Git baseline 不得开始代码任务。
 - 代码任务必须记录 base commit；审查必须基于 base commit 到当前工作区或 HEAD 的 diff。
 - 任务是否需要分支取决于任务等级：小任务不强制分支，中等任务建议分支，大任务或高风险任务必须使用分支或 Worktree。
@@ -152,10 +177,13 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - 代码质量和 diff 风险由 AI 审查、自动验证和 diff 审查辅助判断。
 - 未通过代码审查时，不得建议合并。
 - 审查线程只做审查和判断，不直接改代码。
+- Review-Repair Loop 默认最多 2 轮 repair，超过次数或仍有 P0/P1 时必须人工接管。
 - `review_task` 必须把审查结论写回当前任务文件的“代码审查”和“Diff 审查”段落，或项目约定的审查记录；只在聊天中输出审查意见不算完成审查。
 - 审查线程可以更新审查记录和 `docs/TASK_BOARD.md` 的 Review 状态，但不得修改业务代码。
 - 不要盲目执行 `git add .`；提交前必须检查暂存内容。
 - 不要自动执行危险 Git 操作，包括未确认的 merge、push、release、reset、rebase、删除分支或清理文件。
+- 不要自动创建、关闭或同步 GitHub Issue；v0.6.0 只提供可选后端设计。
+- 不要声称当前 Skill 具备自动脚本、自动 GitHub 同步或自动多 agent 调度能力。
 - 不依赖某个 agent 的私有能力；默认使用 Markdown、Git、命令行和项目内文档。
 - 状态必须写入项目文件，聊天记录只能作为补充说明。
 
@@ -171,6 +199,15 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - 安全规则和停止条件：[`references/SAFETY_RULES.md`](references/SAFETY_RULES.md)
 - 验证指南：[`references/VALIDATION_GUIDE.md`](references/VALIDATION_GUIDE.md)
 - 用户动作等级和验收指南：[`references/ACCEPTANCE_GUIDE.md`](references/ACCEPTANCE_GUIDE.md)
+- Intake 指南：[`references/INTAKE_GUIDE.md`](references/INTAKE_GUIDE.md)
+- Loop Engineering 指南：[`references/LOOP_ENGINEERING_GUIDE.md`](references/LOOP_ENGINEERING_GUIDE.md)
+- Review-Repair Loop：[`references/REVIEW_REPAIR_LOOP_GUIDE.md`](references/REVIEW_REPAIR_LOOP_GUIDE.md)
+- 角色指南：[`references/ROLE_GUIDE.md`](references/ROLE_GUIDE.md)
+- 项目宪法模板：[`references/PROJECT_CONSTITUTION_TEMPLATE.md`](references/PROJECT_CONSTITUTION_TEMPLATE.md)
+- 项目记忆指南：[`references/MEMORY_GUIDE.md`](references/MEMORY_GUIDE.md)
+- GitHub Issues 可选后端：[`references/GITHUB_ISSUES_BACKEND.md`](references/GITHUB_ISSUES_BACKEND.md)
+- Harness 兼容说明：[`references/HARNESS_COMPAT.md`](references/HARNESS_COMPAT.md)
+- Loop 状态模板：[`references/LOOP_STATE_TEMPLATE.md`](references/LOOP_STATE_TEMPLATE.md)
 - 批量小任务：[`references/BATCH_TASK_GUIDE.md`](references/BATCH_TASK_GUIDE.md)
 - 并行波次：[`references/PARALLEL_WAVE_GUIDE.md`](references/PARALLEL_WAVE_GUIDE.md)
 - 项目适配模板：[`references/PROJECT_OVERLAY_TEMPLATE.md`](references/PROJECT_OVERLAY_TEMPLATE.md)
@@ -185,6 +222,10 @@ description: A reusable Git-first AI development workflow for solo developers. U
 ## 默认执行建议
 
 如果用户只是要求“建立项目工作流”，按 `init_project` 模式读取 `WORKFLOW.md`、`STATUS_MACHINE.md`、`VALIDATION_GUIDE.md`、`ACCEPTANCE_GUIDE.md`、`TASK_TEMPLATE.md`、`TASK_BOARD_TEMPLATE.md` 和 `AGENTS_COMPAT.md`，然后在项目中创建最小文档结构。初始化时应建议将 `AGENTS_COMPAT.md` 中适合本项目的关键规则合并到项目 `AGENTS.md`，但不得覆盖已有项目规则。如需完整安装到项目，还必须读取 `GIT_PRECHECK.md`、`GIT_WORKFLOW.md` 和 `DIFF_REVIEW.md`。
+
+如果用户要求“先收集需求”或需求边界不清，按 Intake 流程读取 `INTAKE_GUIDE.md`，输出 `INTAKE-xxx.md` 草案或同结构内容；不得直接拆任务或改代码。
+
+如果用户要求“跑 Loop”或“下一步建议”，先读取 `LOOP_ENGINEERING_GUIDE.md` 和 `LOOP_STATE_TEMPLATE.md`。`triage_loop` 和 `status_loop` 默认只读；`goal_loop` 必须逐步声明子模式；`review_repair_loop` 还需读取 `REVIEW_REPAIR_LOOP_GUIDE.md`。
 
 如果用户要求“执行某个任务”，按 `execute_task` 模式读取当前 TASK 文件、`AGENTS.md`、`README.md`、`docs/PROJECT_INDEX.md`、`docs/TASK_BOARD.md`、`SAFETY_RULES.md`、`VALIDATION_GUIDE.md`、`GIT_PRECHECK.md`、`GIT_WORKFLOW.md` 和 `CODE_REVIEW_CHECKLIST.md`，确认状态、边界、等级、完成标准、验证方式和停止条件，再开始修改。
 

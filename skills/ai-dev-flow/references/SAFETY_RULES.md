@@ -13,6 +13,10 @@
 - 生成审查报告。
 - 推荐一组可批量的小任务。
 - 推荐一组候选 Parallel Wave，但不启动执行会话。
+- 创建 Intake 草稿。
+- 运行只读 `triage_loop` 或 `status_loop`。
+- 生成 GitHub Issue mapping preview，但不创建或修改 issue。
+- 生成 Memory 更新建议，但不写入敏感信息。
 
 ## 需要用户确认
 
@@ -29,6 +33,11 @@
 - 改动安全、账号、密钥相关逻辑。
 - 启动 Parallel Wave 或多个执行会话。
 - 让 C 级任务与其他代码任务并行。
+- 修改 `PROJECT_CONSTITUTION.md` 中的 MUST / MUST NOT 规则。
+- 写入或修改长期 Memory。
+- 创建、编辑、关闭 GitHub Issue。
+- 让 loop 超过默认最大循环次数。
+- 使用不支持 Worktree 的 harness 执行 Parallel Wave 代码任务。
 
 ## 默认禁止
 
@@ -44,6 +53,12 @@
 - 未经用户确认启动多个执行会话。
 - 默认让 subagent 写代码。
 - 让 D 级或 UA5 / UA6 / UA7 任务进入代码并行。
+- 自动 GitHub issue sync。
+- 自动启动多 agent 调度。
+- 让 Reviewer 直接修复。
+- 让 Engineer 自我批准。
+- 将 Loop 写成任务状态。
+- 将 Intake 当作 TASK 直接执行。
 
 ## 必须停止并询问用户的情况
 
@@ -60,6 +75,12 @@
 - Batch 中出现 C/D 风险、P0/P1 或 diff 无法按任务拆分。
 - Wave 候选任务存在文件冲突、模块冲突、依赖不清或锁不清。
 - 用户尚未确认并行执行。
+- Loop 达到最大轮次但仍未满足停止条件。
+- Review-Repair Loop 两轮后仍存在 P0/P1。
+- 当前 harness 不支持所需能力，且无法安全降级。
+- Memory 候选内容包含敏感信息、本机路径或未确认事实。
+- GitHub Issue 映射涉及公开敏感信息。
+- 需要修改 Project Constitution 的硬规则。
 
 ## 停止时应做什么
 
