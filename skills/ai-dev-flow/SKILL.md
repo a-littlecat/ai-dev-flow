@@ -1,6 +1,6 @@
 ---
 name: ai-dev-flow
-description: A reusable Git-first AI development workflow for solo developers. Use it to create tasks, plan changes, batch low-risk tasks, coordinate parallel waves, review diffs, validate results, choose user action levels, and manage acceptance decisions.
+description: A reusable Git-first AI development workflow for solo developers. Use it to intake requirements, create tasks, plan changes, run bounded loops, batch low-risk work, coordinate waves, review diffs, hydrate memory, check harness compatibility, and manage acceptance.
 ---
 
 # AI Dev Flow

@@ -148,6 +148,16 @@ docs/
 └── waves/
 ```
 
+Optional v0.6.0 structure for long-running projects that need Intake, Loop, Memory, or project-level hard rules. These files and folders are not required for initialization:
+
+```text
+docs/
+├── intake/
+├── loops/
+├── memory/
+└── PROJECT_CONSTITUTION.md
+```
+
 ### 2. Break a Requirement Into Tasks
 
 ```text

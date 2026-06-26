@@ -663,12 +663,15 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 6. 等待用户确认后再继续。
 ```
 
-## 47. Intake 需求收集（ADF-PROMPT-31）
+## 47. Intake 需求收集（ADF-0610-01）
 
 ```text
 请使用 ai-dev-flow 的 Intake 流程整理以下需求。
 
-当前模式：create_task 前的 Intake
+当前模式：create_task
+当前 Loop：不适用
+当前子模式：不适用
+当前阶段：Intake，不直接创建 TASK
 输入文件：用户需求文本、README、AGENTS.md、必要的项目索引
 输出文件：docs/intake/INTAKE-xxx.md 草案或聊天中的同结构内容
 是否允许修改业务代码：否
@@ -682,12 +685,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 5. 输出建议下一步：plan_task / create_task / status_report / Blocked。
 ```
 
-## 48. Triage Loop（ADF-PROMPT-32）
+## 48. Triage Loop（ADF-0610-02）
 
 ```text
 请使用 ai-dev-flow 运行只读 triage_loop。
 
-当前模式：status_report + triage_loop
+当前模式：status_report
+当前 Loop：triage_loop
+当前子模式：status_report
 输入文件：TASK_BOARD、相关 TASK 文件、BATCH_TASK_GUIDE.md、PARALLEL_WAVE_GUIDE.md
 输出文件：docs/loops/LOOP_STATE.md 或同结构总结
 是否允许修改业务代码：否
@@ -701,31 +706,35 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 5. 输出 next / blocked / review / repair 候选。
 ```
 
-## 49. Goal Loop（ADF-PROMPT-33）
+## 49. Goal Loop（ADF-0610-03）
 
 ```text
 请使用 ai-dev-flow 对单个任务运行 goal_loop。
 
-当前模式：execute_task -> validation -> review_task -> repair_task -> review_task -> acceptance suggestion
+当前模式：execute_task
+当前 Loop：goal_loop
+当前子模式：execute_task / review_task / repair_task / close_task（每一步按实际声明一个合法模式）
 输入文件：当前 TASK 文件、AGENTS.md、Git precheck、验证记录、审查清单
 输出文件：更新后的 TASK 文件和 TASK_BOARD
 是否允许修改业务代码：仅在 execute_task / repair_task 子模式中允许
 是否需要用户确认：危险操作、范围扩大、超过循环次数或合并前需要
 
 要求：
-1. 每一步声明当前子模式。
+1. 每一步声明当前子模式，且只能使用合法模式：execute_task、review_task、repair_task、close_task。
 2. 不跳过验证和审查。
 3. Review 不修复，Repair 只处理审查指出的问题。
 4. 达到停止条件后输出用户动作等级和验收建议。
 5. 不自动 merge、push、release 或删除文件。
 ```
 
-## 50. Review Repair Loop（ADF-PROMPT-34）
+## 50. Review Repair Loop（ADF-0610-04）
 
 ```text
 请使用 ai-dev-flow 对 docs/tasks/<TASK-ID>.md 运行 review_repair_loop。
 
-当前模式：review_repair_loop，子模式在 review_task 和 repair_task 间切换
+当前模式：repair_task
+当前 Loop：review_repair_loop
+当前子模式：review_task / repair_task（每轮按实际声明一个合法模式）
 输入文件：任务文件、明确 diff、审查结论、REVIEW_REPAIR_LOOP_GUIDE.md
 输出文件：任务文件中的每轮 repair / review 记录
 是否允许修改业务代码：仅 repair_task 子模式中允许
@@ -736,15 +745,18 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 2. P0/P1 必须修复。
 3. P2 可转后续任务，P3 不阻塞。
 4. 每轮结束必须重新进入 review_task。
-5. repair_task 不得直接标记 Accepted。
+5. 每轮必须声明当前子模式，且只能使用合法模式：review_task 或 repair_task。
+6. repair_task 不得直接标记 Accepted。
 ```
 
-## 51. Status / Standup（ADF-PROMPT-35）
+## 51. Status / Standup（ADF-0610-05）
 
 ```text
 请使用 ai-dev-flow 生成项目状态 standup。
 
-当前模式：status_report / status_loop
+当前模式：status_report
+当前 Loop：status_loop
+当前子模式：status_report
 输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
 输出文件：状态汇总；如用户确认，可更新 LOOP_STATE.md
 是否允许修改业务代码：否
@@ -756,12 +768,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 3. 不改变任务状态，除非用户明确要求。
 ```
 
-## 52. What's Next（ADF-PROMPT-36）
+## 52. What's Next（ADF-0610-06）
 
 ```text
 请使用 ai-dev-flow 输出下一步候选。
 
-当前模式：status_report / triage_loop
+当前模式：status_report
+当前 Loop：triage_loop
+当前子模式：status_report
 输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
 输出文件：下一步候选列表
 是否允许修改业务代码：否
@@ -774,12 +788,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 4. 不直接执行。
 ```
 
-## 53. What's Blocked（ADF-PROMPT-37）
+## 53. What's Blocked（ADF-0610-07）
 
 ```text
 请使用 ai-dev-flow 汇总阻塞项。
 
-当前模式：status_report / status_loop
+当前模式：status_report
+当前 Loop：status_loop
+当前子模式：status_report
 输入文件：TASK_BOARD、Blocked 任务文件、LOOP_STATE.md
 输出文件：阻塞清单
 是否允许修改业务代码：否
@@ -791,12 +807,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 3. 不猜测状态。
 ```
 
-## 54. Project Constitution 初始化（ADF-PROMPT-38）
+## 54. Project Constitution 初始化（ADF-0610-08）
 
 ```text
 请使用 ai-dev-flow 初始化 PROJECT_CONSTITUTION。
 
-当前模式：init_project / plan_task
+当前模式：init_project
+当前 Loop：不适用
+当前子模式：不适用
 输入文件：PROJECT_CONSTITUTION_TEMPLATE.md、AGENTS.md、README、项目已有规则
 输出文件：docs/PROJECT_CONSTITUTION.md 草案
 是否允许修改业务代码：否
@@ -809,12 +827,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 4. 不把临时偏好写成硬规则。
 ```
 
-## 55. Memory Hydrate（ADF-PROMPT-39）
+## 55. Memory Hydrate（ADF-0610-09）
 
 ```text
 请使用 ai-dev-flow 从完成任务中提炼 Memory 更新建议。
 
-当前模式：close_task / status_report
+当前模式：close_task
+当前 Loop：不适用
+当前子模式：不适用
 输入文件：已 Accepted 或 Closed 的 TASK、审查记录、验证记录、MEMORY_GUIDE.md
 输出文件：docs/memory/ 更新建议；用户确认后才写入
 是否允许修改业务代码：否
@@ -826,12 +846,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 3. 如果 Memory 与代码冲突，标记冲突，不编造现状。
 ```
 
-## 56. Harness Compatibility 检查（ADF-PROMPT-40）
+## 56. Harness Compatibility 检查（ADF-0610-10）
 
 ```text
 请使用 ai-dev-flow 检查当前 agent / harness 兼容性。
 
-当前模式：status_report / init_project
+当前模式：status_report
+当前 Loop：不适用
+当前子模式：不适用
 输入文件：HARNESS_COMPAT.md、SKILL.md、项目 AGENTS.md
 输出文件：兼容性检查结果
 是否允许修改业务代码：否
@@ -844,12 +866,14 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 4. 不假设不同 CLI 参数通用。
 ```
 
-## 57. GitHub Issues Backend 规划（ADF-PROMPT-41）
+## 57. GitHub Issues Backend 规划（ADF-0610-11）
 
 ```text
 请使用 ai-dev-flow 生成 GitHub Issues backend mapping preview。
 
-当前模式：plan_task / status_report
+当前模式：plan_task
+当前 Loop：不适用
+当前子模式：不适用
 输入文件：GITHUB_ISSUES_BACKEND.md、TASK_BOARD、相关 TASK 文件
 输出文件：TASK 到 Issue 的字段映射预览
 是否允许修改业务代码：否

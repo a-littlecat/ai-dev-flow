@@ -145,6 +145,16 @@ docs/
 └── waves/
 ```
 
+v0.6.0 可选结构如下，适合需要 Intake、Loop、Memory 或项目硬规则的长期项目；这些目录不是初始化必需项：
+
+```text
+docs/
+├── intake/
+├── loops/
+├── memory/
+└── PROJECT_CONSTITUTION.md
+```
+
 ### 2. 把需求拆成任务
 
 ```text
