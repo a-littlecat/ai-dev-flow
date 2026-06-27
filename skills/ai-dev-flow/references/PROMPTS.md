@@ -903,13 +903,13 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 输入文件：当前 TASK 文件、验收建议、用户实机测试反馈、验证记录、base commit 到 HEAD 或当前工作区 diff
 输出文件：更新后的 TASK 文件、必要时更新 TASK_BOARD
 是否允许修改业务代码：否
-是否需要用户确认：进入 repair_task、扩大范围、创建新任务、关闭任务或标记无法判断前需要
+是否需要用户确认：实际进入 repair_task、扩大范围、创建新 TASK、关闭任务或改变已确认状态前需要；记录“证据不足 / 待确认 / Blocked 建议”不需要先确认，但必须列出最小补充信息
 
 用户反馈：
 <粘贴实机测试报告、日志、截图描述、复现步骤、期望结果、实际结果>
 
 要求：
-1. 先只读诊断，不修改业务代码、测试、配置或文档以外的工作流记录。
+1. 先只读诊断，不修改业务代码、测试代码、配置文件、构建脚本或依赖声明；仅允许更新 TASK、TASK_BOARD、审查记录等工作流文档。
 2. 读取任务文件、完成标准、验收建议、验证记录、审查结论和当前 diff。
 3. 判断反馈属于哪一类：
    - 原任务完成标准未满足；
@@ -939,7 +939,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 
 是否允许进入 repair_task：是 / 否 / 待用户确认
 
-建议任务状态：Needs Fix / Blocked / Review / Deferred / 待确认
+建议任务状态：Needs Fix / Blocked / Review / 待确认
 
 根因候选：
 1. 根因：
@@ -957,6 +957,22 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
    - 涉及文件 / 模块 / 代码路径：
    - 验证方式：
    - 是否当前范围：
+
+Repair 输入清单（仅当建议进入 review_repair_loop 时输出）：
+1. 修复项：
+   - 严重等级：P0 / P1 / P2 / P3
+   - 证据：
+   - 允许修改范围：
+   - 禁止修改范围：
+   - 验证方式：
+2. 修复项：
+   - 严重等级：P0 / P1 / P2 / P3
+   - 证据：
+   - 允许修改范围：
+   - 禁止修改范围：
+   - 验证方式：
+
+Repairer 只能处理上述 Repair 输入清单，不得扩大范围或自我批准。
 
 下一步：
 - 进入 review_repair_loop / 创建新 TASK / Blocked 等待用户补充信息 / 保持 Review / 建议关闭
