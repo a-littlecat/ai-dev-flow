@@ -45,11 +45,11 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 
 ## 当前模式
 
-- init_project / create_task / plan_task / execute_task / review_task / repair_task / close_task / status_report
+- 初始化项目（init_project）/ 创建任务（create_task）/ 规划任务（plan_task）/ 执行任务（execute_task）/ 审查任务（review_task）/ 修复任务（repair_task）/ 关闭任务（close_task）/ 状态汇总（status_report）
 
 ## 任务状态
 
-- Draft / Ready / In Progress / Blocked / Review / Needs Fix / Accepted / Closed / Deferred / Cancelled
+- 草稿（Draft）/ 可执行（Ready）/ 执行中（In Progress）/ 阻塞（Blocked）/ 待审查（Review）/ 需修复（Needs Fix）/ 已验收（Accepted）/ 已关闭（Closed）/ 延期（Deferred）/ 已取消（Cancelled）
 
 ## 优先级
 
@@ -78,7 +78,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 ## Loop 编排
 
 - 是否允许进入 Loop：是 / 否 / 待确认
-- Loop 类型：triage_loop / goal_loop / review_repair_loop / status_loop / 不适用
+- Loop 类型：分拣循环（triage_loop）/ 目标循环（goal_loop）/ 审查-修复循环（review_repair_loop）/ 状态循环（status_loop）/ 不适用
 - Loop 停止条件：
   - 待填写
 - 最大循环次数：1 / 2 / 3 / 待确认
@@ -273,7 +273,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 审查状态：未审查 / 通过 / 需要修改 / 不建议合并
 - 审查人或审查 agent：待填写
 - 审查记录位置：当前任务文件 / `docs/reviews/<TASK-ID>-review.md` / 待确认
-- 审查严重等级：P0 / P1 / P2 / P3 / 无
+- 审查严重等级：P0（阻止合并或验收，必须修复）/ P1（高风险，验收前必须修复）/ P2（建议修复，可转后续任务）/ P3（风格或可选建议，不阻塞）/ 无
 - 审查结论：待填写
 - P0 / P1 必须修改项：无
 - P2 建议修改项：无
@@ -297,7 +297,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 
 ## 用户动作等级 / 验收建议
 
-- 用户动作等级：UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认
+- 用户动作等级：UA0（无需用户验收）/ UA1（用户看摘要确认）/ UA2（用户读文档或方案）/ UA3（用户看验证证据）/ UA4（用户本地运行）/ UA5（真实环境或实机业务测试）/ UA6（核心流程或回归验收）/ UA7（用户决策或高风险确认）/ 待确认
 - 是否需要用户实机测试：是 / 否 / 待确认
 - 用户需要做什么：
   1. 待填写
@@ -322,7 +322,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 验收轮次：0 / 1 / 2 / 待确认
 - 验收环境：本地运行 / 真实业务环境 / 实机设备 / 回归验收 / 不适用 / 待确认
 - 测试人：用户 / agent / 其他 / 待确认
-- 当前反馈关联的 UA 等级：UA4 / UA5 / UA6 / UA7 / 待确认
+- 当前反馈关联的 UA 等级：UA4（用户本地运行）/ UA5（真实环境或实机业务测试）/ UA6（核心流程或回归验收）/ UA7（用户决策或高风险确认）/ 待确认
 - 复现步骤：待填写
 - 期望结果：待填写
 - 实际结果：待填写
@@ -332,7 +332,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 反馈分类：原任务未完成 / 本轮回归 / 新需求或范围扩大 / 环境或配置问题 / 证据不足 / 待确认
 - 是否属于当前 TASK 范围：是 / 否 / 待确认
 - 验收失败反馈闸门结论：待填写
-- 下一步建议：进入 review_repair_loop / 创建新 TASK / Blocked 等待信息 / 保持 Review / 建议关闭 / 待确认
+- 下一步建议：进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待信息 / 保持待审查（Review）/ 建议关闭 / 待确认
 
 > 当用户 UA4 / UA5 / UA6 / UA7 验收失败时，不得直接进入 `repair_task`。必须先经过“验收失败反馈闸门”做只读诊断和分类，再决定下一步。
 > 没有用户反馈时，本区块可以保持“无反馈 / 待确认”，不要求在任务创建时完整填写。

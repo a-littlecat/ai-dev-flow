@@ -669,7 +669,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 的 Intake 流程整理以下需求。
 
-当前模式：create_task
+当前模式：创建任务（create_task）
 当前 Loop：不适用
 当前子模式：不适用
 当前阶段：Intake，不直接创建 TASK
@@ -691,9 +691,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 运行只读 triage_loop。
 
-当前模式：status_report
-当前 Loop：triage_loop
-当前子模式：status_report
+当前模式：状态汇总（status_report）
+当前 Loop：分拣循环（triage_loop）
+当前子模式：状态汇总（status_report）
 输入文件：TASK_BOARD、相关 TASK 文件、BATCH_TASK_GUIDE.md、PARALLEL_WAVE_GUIDE.md
 输出文件：docs/loops/LOOP_STATE.md 或同结构总结
 是否允许修改业务代码：否
@@ -712,9 +712,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 对单个任务运行 goal_loop。
 
-当前模式：execute_task
-当前 Loop：goal_loop
-当前子模式：execute_task / review_task / repair_task / close_task（每一步按实际声明一个合法模式）
+当前模式：执行任务（execute_task）
+当前 Loop：目标循环（goal_loop）
+当前子模式：执行任务（execute_task）/ 审查任务（review_task）/ 修复任务（repair_task）/ 关闭任务（close_task）（每一步按实际声明一个合法模式）
 输入文件：当前 TASK 文件、AGENTS.md、Git precheck、验证记录、审查清单
 输出文件：更新后的 TASK 文件和 TASK_BOARD
 是否允许修改业务代码：仅在 execute_task / repair_task 子模式中允许
@@ -733,9 +733,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 对 docs/tasks/<TASK-ID>.md 运行 review_repair_loop。
 
-当前模式：repair_task
-当前 Loop：review_repair_loop
-当前子模式：review_task / repair_task（每轮按实际声明一个合法模式）
+当前模式：修复任务（repair_task）
+当前 Loop：审查-修复循环（review_repair_loop）
+当前子模式：审查任务（review_task）/ 修复任务（repair_task）（每轮按实际声明一个合法模式）
 输入文件：任务文件、明确 diff、审查结论、REVIEW_REPAIR_LOOP_GUIDE.md
 输出文件：任务文件中的每轮 repair / review 记录
 是否允许修改业务代码：仅 repair_task 子模式中允许
@@ -755,9 +755,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 生成项目状态 standup。
 
-当前模式：status_report
-当前 Loop：status_loop
-当前子模式：status_report
+当前模式：状态汇总（status_report）
+当前 Loop：状态循环（status_loop）
+当前子模式：状态汇总（status_report）
 输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
 输出文件：状态汇总；如用户确认，可更新 LOOP_STATE.md
 是否允许修改业务代码：否
@@ -774,9 +774,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 输出下一步候选。
 
-当前模式：status_report
-当前 Loop：triage_loop
-当前子模式：status_report
+当前模式：状态汇总（status_report）
+当前 Loop：分拣循环（triage_loop）
+当前子模式：状态汇总（status_report）
 输入文件：TASK_BOARD、相关 TASK 文件、LOOP_STATE.md
 输出文件：下一步候选列表
 是否允许修改业务代码：否
@@ -794,9 +794,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 汇总阻塞项。
 
-当前模式：status_report
-当前 Loop：status_loop
-当前子模式：status_report
+当前模式：状态汇总（status_report）
+当前 Loop：状态循环（status_loop）
+当前子模式：状态汇总（status_report）
 输入文件：TASK_BOARD、Blocked 任务文件、LOOP_STATE.md
 输出文件：阻塞清单
 是否允许修改业务代码：否
@@ -813,7 +813,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 初始化 PROJECT_CONSTITUTION。
 
-当前模式：init_project
+当前模式：初始化项目（init_project）
 当前 Loop：不适用
 当前子模式：不适用
 输入文件：PROJECT_CONSTITUTION_TEMPLATE.md、AGENTS.md、README、项目已有规则
@@ -833,7 +833,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 从完成任务中提炼 Memory 更新建议。
 
-当前模式：close_task
+当前模式：关闭任务（close_task）
 当前 Loop：不适用
 当前子模式：不适用
 输入文件：已 Accepted 或 Closed 的 TASK、审查记录、验证记录、MEMORY_GUIDE.md
@@ -852,7 +852,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 检查当前 agent / harness 兼容性。
 
-当前模式：status_report
+当前模式：状态汇总（status_report）
 当前 Loop：不适用
 当前子模式：不适用
 输入文件：HARNESS_COMPAT.md、SKILL.md、项目 AGENTS.md
@@ -877,7 +877,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 生成 GitHub Issues backend mapping preview。
 
-当前模式：plan_task
+当前模式：规划任务（plan_task）
 当前 Loop：不适用
 当前子模式：不适用
 输入文件：GITHUB_ISSUES_BACKEND.md、TASK_BOARD、相关 TASK 文件
@@ -898,8 +898,8 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 ```text
 请使用 ai-dev-flow 处理下面的用户验收失败反馈。
 
-当前模式：review_task
-当前子模式：acceptance_feedback_triage
+当前模式：审查任务（review_task）
+当前子模式：验收失败反馈分拣（acceptance_feedback_triage）
 输入文件：当前 TASK 文件、验收建议、用户实机测试反馈、验证记录、base commit 到 HEAD 或当前工作区 diff
 输出文件：更新后的 TASK 文件、必要时更新 TASK_BOARD
 是否允许修改业务代码：否
@@ -922,11 +922,11 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
    - 涉及文件 / 模块 / 代码路径；
    - 如何验证；
    - 是否属于当前 TASK 范围。
-5. 如果属于“原任务完成标准未满足”或“本轮修改引入回归”，将任务建议转为 Needs Fix，并建议进入 review_repair_loop。
+5. 如果属于“原任务完成标准未满足”或“本轮修改引入回归”，将任务建议转为需修复（Needs Fix），并建议进入审查-修复循环（review_repair_loop）。
 6. 如果属于“新需求或范围扩大”，不得在当前任务里顺手修，建议创建新 TASK。
-7. 如果属于“用户环境 / 配置 / 权限 / 数据 / 外部设备问题”，将任务建议标记为 Blocked，并列出用户需要补充的最小信息。
-8. 如果证据不足，只输出诊断问题清单和最小补充信息，不进入 repair_task。
-9. 如果进入 review_repair_loop，必须遵守默认最多 2 轮 repair；每轮 repair 前说明本轮假设、证据、拟修改文件和验证方式。
+7. 如果属于“用户环境 / 配置 / 权限 / 数据 / 外部设备问题”，将任务建议标记为阻塞（Blocked），并列出用户需要补充的最小信息。
+8. 如果证据不足，只输出诊断问题清单和最小补充信息，不进入修复任务（repair_task）。
+9. 如果进入审查-修复循环（review_repair_loop），必须遵守默认最多 2 轮 repair；每轮 repair 前说明本轮假设、证据、拟修改文件和验证方式。
 10. 不得在没有明确证据时扩大修改范围。
 
 输出格式：
@@ -937,9 +937,9 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 
 是否属于当前 TASK 范围：是 / 否 / 待确认
 
-是否允许进入 repair_task：是 / 否 / 待用户确认
+是否允许进入修复任务（repair_task）：是 / 否 / 待用户确认
 
-建议任务状态：Needs Fix / Blocked / Review / 待确认
+建议任务状态：需修复（Needs Fix）/ 阻塞（Blocked）/ 待审查（Review）/ 待确认
 
 根因候选：
 1. 根因：
@@ -958,7 +958,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
    - 验证方式：
    - 是否当前范围：
 
-Repair 输入清单（仅当建议进入 review_repair_loop 时输出）：
+Repair 输入清单（仅当建议进入审查-修复循环（review_repair_loop）时输出）：
 1. 修复项：
    - 严重等级：P0 / P1 / P2 / P3
    - 证据：
@@ -975,7 +975,7 @@ Repair 输入清单（仅当建议进入 review_repair_loop 时输出）：
 Repairer 只能处理上述 Repair 输入清单，不得扩大范围或自我批准。
 
 下一步：
-- 进入 review_repair_loop / 创建新 TASK / Blocked 等待用户补充信息 / 保持 Review / 建议关闭
+- 进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待用户补充信息 / 保持待审查（Review）/ 建议关闭
 
 需要用户补充的信息：
 - 无 / 待填写

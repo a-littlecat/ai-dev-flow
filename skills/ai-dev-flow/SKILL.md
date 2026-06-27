@@ -168,6 +168,7 @@ v0.6.0 新增设计级能力：
 - 修改前先给简短计划，说明目标、拟改文件、风险和验证方式。
 - 修改后更新任务状态，不要只把状态留在聊天记录里。
 - 所有状态必须写入项目文件；不要把聊天记录作为唯一状态来源。
+- 面向用户的状态、模式、Loop、UA、P 等字段应优先显示中文说明，并保留英文标识；示例：任务状态：需修复（Needs Fix）；当前模式：审查任务（review_task）。
 - 完成标准必须可验证；没有验证方式的任务不能标记为验收通过。
 - 完成任务后必须给出用户动作等级：UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认。
 - UA0 表示无需用户验收，不表示 agent 默认可以把任务标记为 `Closed`；除非用户或项目规则授权，agent 只能建议关闭。
@@ -216,6 +217,7 @@ v0.6.0 新增设计级能力：
 - 任务看板模板：[`references/TASK_BOARD_TEMPLATE.md`](references/TASK_BOARD_TEMPLATE.md)
 - 代码审查清单：[`references/CODE_REVIEW_CHECKLIST.md`](references/CODE_REVIEW_CHECKLIST.md)
 - 决策记录模板：[`references/DECISIONS_TEMPLATE.md`](references/DECISIONS_TEMPLATE.md)
+- 中文术语表：[`references/GLOSSARY.zh-CN.md`](references/GLOSSARY.zh-CN.md)
 - 可复制提示词：[`references/PROMPTS.md`](references/PROMPTS.md)
 - 可合并到项目 `AGENTS.md` 的规则：[`references/AGENTS_COMPAT.md`](references/AGENTS_COMPAT.md)
 - 脚本预留说明：[`scripts/README.md`](scripts/README.md)
