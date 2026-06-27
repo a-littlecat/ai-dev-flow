@@ -470,7 +470,7 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 - Wave 是多个执行会话同时执行多个互不冲突任务。
 - Batch 和 Wave 不同；Batch 是顺序批处理，Wave 是并行调度。
 - 并行执行不是默认行为，必须用户确认。
-- 不得默认启动多个执行会话，不得默认使用 subagent 写代码。
+- ai-dev-flow 不禁止 harness 或模型自动使用 subagents；只读 subagents 默认允许，写代码 subagents 必须受控，多个写代码 subagents 并行默认需要用户确认和工作区隔离。
 - 并行前必须做文件锁 / 模块锁检查、依赖检查、任务等级检查和 UA 等级检查。
 - A/B 任务可并行，B 级小代码任务需要谨慎并行。
 - C 级任务默认不推荐和其他代码任务并行，但可与 A 级文档任务并行；如需与代码任务并行，必须使用独立 Worktree 且用户确认。

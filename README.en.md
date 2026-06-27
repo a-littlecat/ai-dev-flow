@@ -65,9 +65,9 @@ The default minimal session model is:
 
 One session may switch roles across different phases, but each round should declare the current role and mode. Reviewer does not repair, and Engineer / Repairer do not self-approve.
 
-If your harness supports reliable subagents, Reviewer / Verifier subagents may reduce the need for extra review sessions. Subagents are optional acceleration, not a default dependency. They are best used for read-only review, validation, status triage, and documentation checks.
+ai-dev-flow does not forbid a model or harness from automatically using subagents, including ultra mode-like internal acceleration. Subagents are optional capability, not a default dependency. Agents without subagent support can still run the workflow through Markdown, Git, and TASK files.
 
-Do not default to multiple coding subagents sharing the same workspace. Code parallelism still requires independent branches or Worktrees, plus per-task diff, validation, and review records. Subagents must not automatically merge, push, release, or delete.
+Read-only subagents are a good fit for review, validation, status triage, documentation checks, log cleanup, and test result summarization. Coding subagents are allowed only with boundaries: task id, role, mode, allowed scope, forbidden scope, validation method, and final Reviewer review. Parallel coding subagents require user confirmation, independent branches or Worktrees by default, lock checks, and per-task diff review. Subagents must not automatically merge, push, release, or delete.
 
 ## Who It Is For
 
@@ -268,7 +268,7 @@ v0.6.0 adds Markdown-first design-level workflow guides for:
 - Optional GitHub Issues backend mapping without automatic sync.
 - Harness compatibility for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
 
-These are documents, templates, prompts, and roadmap notes. They do not mean ai-dev-flow now has automatic scripts, automatic GitHub sync, automatic multi-agent scheduling, automatic merge, or automatic release.
+These are documents, templates, prompts, and roadmap notes. They do not mean ai-dev-flow now has automatic scripts, automatic GitHub sync, automatic subagent scheduling, automatic multi-agent scheduling, automatic merge, or automatic release.
 
 ## Repository Structure
 

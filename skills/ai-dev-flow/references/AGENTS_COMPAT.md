@@ -49,7 +49,7 @@
 - 多个 B 级任务修改同一文件时，默认不进入同一 Batch。
 - D 级任务默认不得和其他代码任务并行。
 - UA5 / UA6 / UA7 任务默认不得进入代码并行。
-- 不得默认启动多个执行会话，不得默认使用 subagent 写代码；并行执行必须用户确认。
+- ai-dev-flow 不禁止 harness 或模型自动使用 subagents；只读 subagents 默认允许，写代码 subagents 必须受控，并行写代码 subagents 默认需要用户确认。
 - 不要跨任务修改无关模块。
 - 不要顺手做无关重构。
 - 任务膨胀时必须停止并拆分。
@@ -110,8 +110,9 @@
 - 未经用户明确确认，不得合并。
 - 未经用户明确确认，不得 push、release、reset、rebase、force push、删除分支、删除 Worktree 或删除文件。
 - 不得自动创建、关闭或同步 GitHub Issue；GitHub Issues backend 在 v0.6.0 只是可选设计和 mapping preview。
-- 不得自动启动多 agent 调度。
-- 如果当前 harness 不支持 Worktree，不得启动 Parallel Wave 代码任务；如果不支持 subagent，应使用独立会话替代 Reviewer。
+- 不得声称当前流程具备自动 subagent 调度或自动多 agent 调度能力。
+- subagents 不得自动 merge、push、release、delete、reset、rebase、删除分支、删除 Worktree 或 GitHub 同步。
+- 如果当前 harness 不支持 Worktree，不得启动 Parallel Wave 代码任务；如果不支持 subagents，应使用普通总览 / 执行 / 审核会话流程。
 - 不得在工作区混乱时建议合并。
 - 合并前必须确认任务完成标准、审查状态、用户动作等级、必要验收或决策状态和剩余风险。
 

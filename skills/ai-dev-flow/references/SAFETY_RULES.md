@@ -17,6 +17,7 @@
 - 运行只读 `triage_loop` 或 `status_loop`。
 - 生成 GitHub Issue mapping preview，但不创建或修改 issue。
 - 生成 Memory 更新建议，但不写入敏感信息。
+- 使用只读 subagents 辅助审查、验证、状态分拣、文档检查、日志整理、Markdown 链接检查或测试结果整理。
 
 ## 需要用户确认
 
@@ -38,6 +39,9 @@
 - 创建、编辑、关闭 GitHub Issue。
 - 让 loop 超过默认最大循环次数。
 - 使用不支持 Worktree 的 harness 执行 Parallel Wave 代码任务。
+- 启动多个写代码 subagents 并行。
+- 让多个写代码 subagents 共享同一工作区修改同一批文件。
+- 允许写代码 subagent 处理 C/D、高风险或 UA5 / UA6 / UA7 任务。
 
 ## 默认禁止
 
@@ -51,7 +55,9 @@
 - 未经确认安装大量依赖。
 - 绕过审查直接标记完成。
 - 未经用户确认启动多个执行会话。
-- 默认让 subagent 写代码。
+- 让 subagents 绕过 `review_task`、Git baseline、diff 记录、验证记录或用户确认。
+- 让写代码 subagent 自我批准。
+- 在无法确认工作区隔离或 diff 归属时继续并行写代码。
 - 让 D 级或 UA5 / UA6 / UA7 任务进入代码并行。
 - 自动 GitHub issue sync。
 - 自动启动多 agent 调度。
@@ -59,6 +65,18 @@
 - 让 Engineer 自我批准。
 - 将 Loop 写成任务状态。
 - 将 Intake 当作 TASK 直接执行。
+
+## Subagent 安全边界
+
+- ai-dev-flow 不禁止 harness 或模型自动使用 subagents。
+- subagents 是可选加速能力，不是默认依赖；不支持 subagents 的 agent 仍可按 Markdown、Git 和 TASK 文件流程执行。
+- 只读 subagents 默认允许，但不得修改业务代码、测试、配置或文档；不得改变任务状态，除非用户或项目规则允许。
+- 写代码 subagents 谨慎允许，但必须声明任务编号、当前角色、当前模式、允许修改范围、禁止修改范围和验证方式。
+- 写代码 subagents 必须遵守 TASK 边界，记录修改文件、验证结果和遗留风险，最终仍需 Reviewer 审查。
+- 多个写代码 subagents 并行默认需要用户确认和工作区隔离，默认使用独立分支或 Worktree。
+- 多个写代码 subagents 并行前必须检查文件锁、模块锁、依赖关系和 diff 归属。
+- subagents 不得自动 merge、push、release、delete、reset、rebase、删除分支、删除 Worktree 或 GitHub 同步。
+- 如果 model / harness 内部使用不可见 subagents，主 agent 至少必须保证 TASK 边界、最终 diff、验证证据、未验证项和风险清楚。
 
 ## 必须停止并询问用户的情况
 
@@ -75,6 +93,8 @@
 - Batch 中出现 C/D 风险、P0/P1 或 diff 无法按任务拆分。
 - Wave 候选任务存在文件冲突、模块冲突、依赖不清或锁不清。
 - 用户尚未确认并行执行。
+- 写代码 subagent 缺少任务编号、角色、模式、修改范围或验证方式。
+- 多个写代码 subagents 的工作区隔离、文件锁、模块锁或 diff 归属无法确认。
 - Loop 达到最大轮次但仍未满足停止条件。
 - Review-Repair Loop 两轮后仍存在 P0/P1。
 - 当前 harness 不支持所需能力，且无法安全降级。

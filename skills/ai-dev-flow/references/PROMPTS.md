@@ -600,7 +600,8 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 4. 标记可并行任务和必须串行任务。
 5. 如果多个代码任务共享同一工作区，标记高风险并要求用户确认。
 6. 明确是否需要用户确认。
-7. 未经用户确认，不要启动执行会话或 subagent 写代码。
+7. 未经用户确认，不要启动多个写代码执行会话或多个写代码 subagents 并行。
+8. 如果 harness 自动使用 subagents，必须记录 subagent 使用情况，并确保 TASK 边界、diff、验证和审查可追踪。
 ```
 
 ## 43. 并行任务冲突检查
@@ -862,8 +863,13 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 要求：
 1. 判断是否支持 Skill、Markdown 读取、Git、Worktree、独立 Reviewer。
 2. 如果不支持 Worktree，不得启动 Parallel Wave 代码任务。
-3. 如果不支持 subagent，使用独立会话替代 Reviewer。
-4. 不假设不同 CLI 参数通用。
+3. 判断是否支持 subagents / ultra mode-like capability，并区分只读、写代码、混合或内部不可见。
+4. 如果不支持 subagents，降级为普通总览 / 执行 / 审核会话流程。
+5. 如果支持自动 subagents，说明是否可用于 Reviewer / Verifier / Orchestrator 辅助工作。
+6. 写代码 subagents 必须声明任务编号、角色、模式、允许修改范围、禁止修改范围和验证方式。
+7. 多个写代码 subagents 并行默认需要用户确认、独立分支或 Worktree、文件锁 / 模块锁检查和 diff 归属检查。
+8. 输出“Subagent 使用情况”汇总；如果内部 subagents 不可见，标记“不可见”并保证最终 diff、验证证据、未验证项和风险清楚。
+9. 不假设不同 CLI 参数通用。
 ```
 
 ## 57. GitHub Issues Backend 规划（ADF-0610-11）
