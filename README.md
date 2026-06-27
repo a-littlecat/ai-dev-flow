@@ -38,6 +38,7 @@
 - 代码审查基于 diff，而不是泛泛读文件。
 - 审查问题用 `P0 / P1 / P2 / P3` 表达严重程度。
 - 任务完成后用 `UA0` 到 `UA7` 告诉你到底需要做什么。
+- 用户在 UA4 / UA5 / UA6 / UA7 验收失败时，先用 Acceptance Feedback Gate 做只读诊断和分类，再决定是否进入有限的 Review-Repair Loop。
 - A/B 小任务可以 Batch 批量处理，互不冲突的任务可以 Parallel Wave 并行推进。
 - 支持 Intake、Loop、角色边界、Memory、Project Constitution 和 Harness 兼容说明。
 
@@ -235,6 +236,21 @@ agent 应先检查 Git 状态、记录 base commit、遵守任务边界，完成
 - `UA7`：必须用户决策。
 
 agent 不应该只写“需要人工验收”，而要写清楚用户到底要做什么。
+
+### 6. 处理验收失败反馈
+
+如果用户在本地运行、真实业务环境、实机设备或回归验收中发现问题，不应该让 agent 直接猜测改代码。
+
+推荐先说：
+
+```text
+请使用 ai-dev-flow 处理这次 UA5 实机验收失败反馈。
+先走验收失败反馈闸门，只读诊断，不要修改业务代码。
+判断这是原任务未完成、本轮回归、新需求、环境问题还是证据不足。
+只有确认属于当前任务范围内的问题，才建议进入 review_repair_loop。
+```
+
+这个闸门不是新任务状态，也不是新 Loop。它只是 `review_task` 下的只读诊断子模式，用来记录证据、判断范围，并决定下一步是 `Needs Fix`、`Blocked`、创建新 TASK，还是保持 Review。
 
 ## Batch 和 Parallel Wave
 
