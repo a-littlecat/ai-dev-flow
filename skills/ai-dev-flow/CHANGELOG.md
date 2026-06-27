@@ -12,6 +12,14 @@
 - Add Harness Compatibility guide for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
 - Add Loop State template for loop run summaries.
 - Update prompts, task template, workflow, safety rules, and scripts roadmap.
+- Add Bug Diagnosis guide for evidence-first debugging.
+- Add TDD guide for behavior-first red/green development.
+- Add Requirement Grilling guide for high-risk or unclear requirements.
+- Add Project Context guide for durable domain vocabulary.
+- Add Session Handoff guide for cross-session continuity.
+- Add Architecture Review guide for read-only architecture friction reports.
+- Add Real Environment Signal guide for RED/GREEN/SIGNAL handling of user acceptance failures.
+- Integrate feedback-loop guides with Acceptance, Validation, Task Template, Prompts, Glossary, and AGENTS compatibility rules.
 
 ## 0.5.2
 

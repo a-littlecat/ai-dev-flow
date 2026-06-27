@@ -41,6 +41,20 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - `项目宪法`
 - `项目记忆`
 - `Harness 兼容`
+- `Bug 诊断`
+- `反馈闭环`
+- `测试先行`
+- `TDD`
+- `需求拷问`
+- `项目语境`
+- `会话交接`
+- `架构巡检`
+- `实机信号`
+- `实机复现`
+- `测试信号`
+- `RED GREEN`
+- `HITL 复现`
+- `用户回传证据`
 
 推荐说法：
 
@@ -126,6 +140,13 @@ v0.6.0 新增设计级能力：
 - Memory：长期项目知识沉淀，不写聊天全文、密钥、本机路径或未确认猜测。
 - GitHub Issues Optional Backend：仅提供映射设计，不自动同步 issue。
 - Harness Compatibility：说明不同 agent / CLI / IDE 的能力边界和降级方式。
+- Bug 诊断（bug_diagnosis）：根因不清时先建立证据、假设和复现信号，不直接猜测修复。
+- 测试先行（tdd_task）：用 RED / GREEN 记录行为级失败和通过信号。
+- 需求拷问（requirement_grilling）：需求模糊或高风险时先问阻塞问题并记录默认假设。
+- 项目语境（project_context）：沉淀长期项目术语、验证经验和常见误解。
+- 会话交接（session_handoff）：跨会话继续任务时记录下一会话应读文件和不要重复尝试的路线。
+- 架构巡检（architecture_review）：只读分析反复返工、无测试缝隙或边界混乱，不直接重构。
+- 实机测试信号复现（real_env_signal）：把用户实机反馈转换成 RED / GREEN / SIGNAL 和 HITL 回传证据。
 
 ## Single / Batch / Wave
 
@@ -176,6 +197,10 @@ v0.6.0 新增设计级能力：
 - 不要默认要求用户实机测试，也不要默认跳过验收。
 - 用户主要验证可观察行为、关键流程、输出结果、错误提示、回归影响和是否符合需求。
 - 当用户反馈 UA4 / UA5 / UA6 / UA7 验收失败时，先执行 Acceptance Feedback Gate：只读诊断、分类并记录证据；只有确认属于当前 TASK 范围内的原任务未完成或本轮回归，才建议进入 `review_repair_loop`。
+- 用户反馈 bug、变慢、不符合预期或验收失败时，先定义 RED 失败信号、GREEN 通过信号和 SIGNAL 证据来源；agent 不能亲自复现时，应进入 `real_env_signal` 并给出用户实机 HITL 回传模板。
+- 根因不清时先进入 Bug 诊断（bug_diagnosis）；没有测试信号或证据时，任务应建议阻塞（Blocked）或等待补充，不得盲修。
+- 可测试代码优先使用测试先行（tdd_task）；bug 修复验证必须证明用户描述的 RED 消失，而不只是构建通过。
+- 临时诊断日志必须有唯一前缀，修复后必须清理或明确转为正式日志。
 - 代码质量和 diff 风险由 AI 审查、自动验证和 diff 审查辅助判断。
 - 未通过代码审查时，不得建议合并。
 - 审查线程只做审查和判断，不直接改代码。
@@ -209,6 +234,13 @@ v0.6.0 新增设计级能力：
 - 项目记忆指南：[`references/MEMORY_GUIDE.md`](references/MEMORY_GUIDE.md)
 - GitHub Issues 可选后端：[`references/GITHUB_ISSUES_BACKEND.md`](references/GITHUB_ISSUES_BACKEND.md)
 - Harness 兼容说明：[`references/HARNESS_COMPAT.md`](references/HARNESS_COMPAT.md)
+- Bug 诊断：[`references/BUG_DIAGNOSIS_GUIDE.md`](references/BUG_DIAGNOSIS_GUIDE.md)
+- 测试先行：[`references/TDD_GUIDE.md`](references/TDD_GUIDE.md)
+- 需求拷问：[`references/REQUIREMENT_GRILLING_GUIDE.md`](references/REQUIREMENT_GRILLING_GUIDE.md)
+- 项目语境：[`references/PROJECT_CONTEXT_GUIDE.md`](references/PROJECT_CONTEXT_GUIDE.md)
+- 会话交接：[`references/HANDOFF_GUIDE.md`](references/HANDOFF_GUIDE.md)
+- 架构巡检：[`references/ARCHITECTURE_REVIEW_GUIDE.md`](references/ARCHITECTURE_REVIEW_GUIDE.md)
+- 实机测试信号复现：[`references/REAL_ENV_SIGNAL_GUIDE.md`](references/REAL_ENV_SIGNAL_GUIDE.md)
 - Loop 状态模板：[`references/LOOP_STATE_TEMPLATE.md`](references/LOOP_STATE_TEMPLATE.md)
 - 批量小任务：[`references/BATCH_TASK_GUIDE.md`](references/BATCH_TASK_GUIDE.md)
 - 并行波次：[`references/PARALLEL_WAVE_GUIDE.md`](references/PARALLEL_WAVE_GUIDE.md)
@@ -227,6 +259,20 @@ v0.6.0 新增设计级能力：
 如果用户只是要求“建立项目工作流”，按 `init_project` 模式读取 `WORKFLOW.md`、`STATUS_MACHINE.md`、`VALIDATION_GUIDE.md`、`ACCEPTANCE_GUIDE.md`、`TASK_TEMPLATE.md`、`TASK_BOARD_TEMPLATE.md` 和 `AGENTS_COMPAT.md`，然后在项目中创建最小文档结构。初始化时应建议将 `AGENTS_COMPAT.md` 中适合本项目的关键规则合并到项目 `AGENTS.md`，但不得覆盖已有项目规则。如需完整安装到项目，还必须读取 `GIT_PRECHECK.md`、`GIT_WORKFLOW.md` 和 `DIFF_REVIEW.md`。
 
 如果用户要求“先收集需求”或需求边界不清，按 Intake 流程读取 `INTAKE_GUIDE.md`，输出 `INTAKE-xxx.md` 草案或同结构内容；不得直接拆任务或改代码。
+
+如果用户反馈 bug、慢、不符合预期或验收失败，读取 `BUG_DIAGNOSIS_GUIDE.md` 和 `ACCEPTANCE_GUIDE.md`；先建立证据和 RED / GREEN / SIGNAL，不得直接猜测修复。
+
+如果用户反馈 UA4 / UA5 / UA6 / UA7 验收失败且 agent 无法亲自复现，读取 `ACCEPTANCE_GUIDE.md`、`REAL_ENV_SIGNAL_GUIDE.md` 和 `BUG_DIAGNOSIS_GUIDE.md`；先输出用户实机 HITL 步骤和回传证据模板。
+
+如果用户要求测试先行、TDD、RED GREEN，或 bug 已有复现路径、涉及复杂逻辑，读取 `TDD_GUIDE.md`，优先建立行为级失败测试或替代验证信号。
+
+如果需求模糊、高风险或可能扩大范围，读取 `REQUIREMENT_GRILLING_GUIDE.md` 和 `INTAKE_GUIDE.md`；只问阻塞问题，非阻塞模糊点写入 Intake 或风险。
+
+如果需要沉淀项目术语、长期知识或跨任务验证经验，读取 `PROJECT_CONTEXT_GUIDE.md` 和 `MEMORY_GUIDE.md`，更新 `docs/memory/` 前不得记录聊天全文、密钥、本机路径或未确认猜测。
+
+如果用户要求交接、换会话或当前任务需要后续会话继续，读取 `HANDOFF_GUIDE.md`，输出会话交接（session_handoff）摘要。
+
+如果任务反复返工、没有测试缝隙、AI 容易误改或架构边界混乱，读取 `ARCHITECTURE_REVIEW_GUIDE.md`；架构巡检只读，不直接重构。
 
 如果用户要求“跑 Loop”或“下一步建议”，先读取 `LOOP_ENGINEERING_GUIDE.md` 和 `LOOP_STATE_TEMPLATE.md`。`triage_loop` 和 `status_loop` 默认只读；`goal_loop` 必须逐步声明子模式；`review_repair_loop` 还需读取 `REVIEW_REPAIR_LOOP_GUIDE.md`。
 

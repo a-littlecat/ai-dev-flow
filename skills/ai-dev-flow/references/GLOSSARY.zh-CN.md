@@ -60,3 +60,24 @@
 | P1 | 高风险，验收前必须修复 |
 | P2 | 建议修复，可转后续任务 |
 | P3 | 风格或可选建议，不阻塞 |
+
+## 反馈闭环术语
+
+| 中文名称 | 英文标识 | 说明 |
+| --- | --- | --- |
+| Bug 诊断 | bug_diagnosis | 根因不清时先建立证据、假设和复现信号。 |
+| 反馈闭环 | feedback_loop | 从用户反馈到诊断、修复、复测和记录的闭环纪律。 |
+| 测试先行 | tdd_task | 先建立 RED / GREEN 行为验证，再做最小实现或修复。 |
+| 需求拷问 | requirement_grilling | 对模糊或高风险需求只追问阻塞问题。 |
+| 项目语境 | project_context | 长期稳定的项目术语、验证经验和常见误解。 |
+| 会话交接 | session_handoff | 跨会话继续任务时的状态、证据和下一步摘要。 |
+| 架构巡检 | architecture_review | 只读检查架构阻力、测试缝隙和边界混乱。 |
+| 实机测试信号复现 | real_env_signal | 把真实环境失败转成 RED / GREEN / SIGNAL 和 HITL 回传证据。 |
+| RED 失败信号 | RED | 当前可观察、可判定的失败现象。 |
+| GREEN 通过信号 | GREEN | 修复后应观察到的通过条件。 |
+| SIGNAL 证据来源 | SIGNAL | 判断 RED 或 GREEN 的命令、日志、截图、录屏、输出文件或用户步骤。 |
+| 用户实机 HITL | human-in-the-loop | agent 无法亲自复现时，由用户在真实环境执行并回传证据。 |
+| 回传证据 | returned evidence | 用户提供的日志、截图、录屏、输出文件摘要或脱敏样例。 |
+| 临时诊断日志 | temporary diagnostic log | 带唯一前缀、修复后必须清理的临时定位日志。 |
+| 测试缝隙 | test seam | 可插入测试、替代验证或可观察信号的位置。 |
+| 最小复现 | minimal reproduction | 能触发同一失败的最小输入、步骤或样例。 |

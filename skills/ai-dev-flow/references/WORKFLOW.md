@@ -140,6 +140,23 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 
 项目可维护 `docs/memory/`，记录稳定、可复用的项目知识和踩坑经验。Memory 不保存聊天全文、密钥、本机路径或未确认猜测。详细规则见 `MEMORY_GUIDE.md`。
 
+### 反馈闭环层
+
+反馈闭环不是新任务状态，也不替代 TASK、Batch、Wave 或 Loop。它是任务执行、验收失败、Bug 诊断和修复时的工程纪律：先把用户反馈转成 RED 失败信号、GREEN 通过信号和 SIGNAL 证据来源，再决定诊断、修复、阻塞或拆新任务。
+
+推荐链路：
+
+```text
+验收失败反馈
+→ Acceptance Feedback Gate
+→ 实机测试信号复现（real_env_signal）
+→ Bug 诊断（bug_diagnosis）
+→ 修复任务（repair_task）/ 审查-修复循环（review_repair_loop）
+→ 同一信号复测
+```
+
+如果 agent 能亲自复现，可直接记录 RED / GREEN / SIGNAL 并进入 Bug 诊断。如果 agent 不能亲自复现，应先提供用户实机 HITL 步骤和回传证据模板；没有任何信号或证据时，任务应建议阻塞（Blocked）或等待补充，不得盲目修复。
+
 ## 1. 角色分工
 
 ### 用户
@@ -273,6 +290,13 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 
 - `GITHUB_ISSUES_BACKEND.md`：GitHub Issues 可选后端设计和字段映射；v0.6.0 不自动同步。
 - `HARNESS_COMPAT.md`：Codex、Claude Code、Cursor、Gemini CLI、DeepSeek 和 generic agent 的兼容边界。
+- `BUG_DIAGNOSIS_GUIDE.md`：Bug 诊断（bug_diagnosis）流程，先建立证据、假设和复现信号。
+- `TDD_GUIDE.md`：测试先行（tdd_task）流程，记录 RED / GREEN 行为验证。
+- `REQUIREMENT_GRILLING_GUIDE.md`：需求拷问（requirement_grilling）规则，只问阻塞问题。
+- `PROJECT_CONTEXT_GUIDE.md`：项目语境（project_context）沉淀规则。
+- `HANDOFF_GUIDE.md`：会话交接（session_handoff）摘要模板。
+- `ARCHITECTURE_REVIEW_GUIDE.md`：架构巡检（architecture_review）只读报告模板。
+- `REAL_ENV_SIGNAL_GUIDE.md`：实机测试信号复现（real_env_signal）规则，处理用户 HITL 回传证据。
 
 ## 3. 任务类型
 
@@ -525,6 +549,8 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 - UA7 是用户决策，不是测试。
 
 用户主要验证可观察行为、关键流程、输出结果、错误提示、回归影响和是否符合需求。验收建议写入任务文件，并在看板中保留简短状态。
+
+当 UA4 / UA5 / UA6 / UA7 验收失败时，先走 Acceptance Feedback Gate。若 agent 无法亲自复现，先进入实机测试信号复现（real_env_signal），把用户反馈转成 RED / GREEN / SIGNAL；用户回传证据后，再进入 Bug 诊断（bug_diagnosis）或按明确清单进入修复任务（repair_task）/ 审查-修复循环（review_repair_loop）。
 
 ### 11. 合并
 
