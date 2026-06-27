@@ -333,7 +333,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 反馈分类：原任务未完成 / 本轮回归 / 新需求或范围扩大 / 环境或配置问题 / 证据不足 / 待确认
 - 是否属于当前 TASK 范围：是 / 否 / 待确认
 - 验收失败反馈闸门结论：待填写
-- 下一步建议：进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待信息 / 保持待审查（Review）/ 建议关闭 / 待确认
+- 下一步建议：进入实机测试信号复现（real_env_signal）/ 进入 Bug 诊断（bug_diagnosis）/ 进入修复任务（repair_task）/ 进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待信息 / 保持待审查（Review）/ 建议关闭 / 待确认
 
 > 当用户 UA4 / UA5 / UA6 / UA7 验收失败时，不得直接进入 `repair_task`。必须先经过“验收失败反馈闸门”做只读诊断和分类，再决定下一步。
 > 没有用户反馈时，本区块可以保持“无反馈 / 待确认”，不要求在任务创建时完整填写。
@@ -347,7 +347,7 @@ C/D 中大型任务、高风险任务、分支任务和 Worktree 任务应使用
 - 用户需要回传：无 / 待填写
 - 临时诊断日志前缀：无 / 待填写
 - 临时诊断是否已清理：是 / 否 / 不适用 / 待确认
-- 下一步建议：进入 bug_diagnosis / repair_task / review_repair_loop / 创建新 TASK / Blocked / 待确认
+- 下一步建议：进入实机测试信号复现（real_env_signal）/ 进入 Bug 诊断（bug_diagnosis）/ 进入修复任务（repair_task）/ 进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待信息 / 保持待审查（Review）/ 建议关闭 / 待确认
 
 > 本区块是可选区块，只在真实环境问题、验收失败、用户实机 HITL 复测或跨环境反馈时填写。没有 RED / GREEN / SIGNAL 时，不得直接猜测修复。
 

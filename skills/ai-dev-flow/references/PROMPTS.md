@@ -911,23 +911,30 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 要求：
 1. 先只读诊断，不修改业务代码、测试代码、配置文件、构建脚本或依赖声明；仅允许更新 TASK、TASK_BOARD、审查记录等工作流文档。
 2. 读取任务文件、完成标准、验收建议、验证记录、审查结论和当前 diff。
-3. 判断反馈属于哪一类：
+3. 先判断是否已有 RED 失败信号、GREEN 通过信号和 SIGNAL 证据来源。
+4. 如果没有 RED / GREEN / SIGNAL，不得输出确定根因，不得进入修复任务（repair_task），不得进入审查-修复循环（review_repair_loop）；应先进入实机测试信号复现（real_env_signal），生成用户实机 HITL 步骤和回传证据模板。
+5. 判断反馈属于哪一类：
    - 原任务完成标准未满足；
    - 本轮修改引入的回归；
    - 新需求或范围扩大；
    - 用户环境 / 配置 / 权限 / 数据 / 外部设备问题；
    - 证据不足，无法判断。
-4. 输出最可能的 3 个根因；每个根因都必须说明：
+6. 输出最多 3 个根因候选；如果信号不足，只能写待验证假设和最小补充证据。每个根因候选都必须说明：
    - 证据；
    - 涉及文件 / 模块 / 代码路径；
    - 如何验证；
    - 是否属于当前 TASK 范围。
-5. 如果属于“原任务完成标准未满足”或“本轮修改引入回归”，将任务建议转为需修复（Needs Fix），并建议进入审查-修复循环（review_repair_loop）。
-6. 如果属于“新需求或范围扩大”，不得在当前任务里顺手修，建议创建新 TASK。
-7. 如果属于“用户环境 / 配置 / 权限 / 数据 / 外部设备问题”，将任务建议标记为阻塞（Blocked），并列出用户需要补充的最小信息。
-8. 如果证据不足，只输出诊断问题清单和最小补充信息，不进入修复任务（repair_task）。
-9. 如果进入审查-修复循环（review_repair_loop），必须遵守默认最多 2 轮 repair；每轮 repair 前说明本轮假设、证据、拟修改文件和验证方式。
-10. 不得在没有明确证据时扩大修改范围。
+7. 只有同时满足以下条件，才允许建议进入审查-修复循环（review_repair_loop）：
+   - 已有 RED / GREEN / SIGNAL；
+   - 反馈属于当前 TASK；
+   - Repair 输入清单明确；
+   - 允许修改范围和验证方式明确。
+8. 如果属于“原任务完成标准未满足”或“本轮修改引入回归”，但不满足第 7 条全部条件，只能建议进入实机测试信号复现（real_env_signal）、Bug 诊断（bug_diagnosis）或阻塞（Blocked）等待证据。
+9. 如果属于“新需求或范围扩大”，不得在当前任务里顺手修，建议创建新 TASK。
+10. 如果属于“用户环境 / 配置 / 权限 / 数据 / 外部设备问题”，将任务建议标记为阻塞（Blocked），并列出用户需要补充的最小信息。
+11. 如果证据不足或 agent 无法亲自复现，下一步优先建议实机测试信号复现（real_env_signal）或阻塞（Blocked）等待证据；不进入修复任务（repair_task）。
+12. 如果进入审查-修复循环（review_repair_loop），必须遵守默认最多 2 轮 repair；每轮 repair 前说明本轮假设、证据、拟修改文件和验证方式。
+13. 不得在没有明确证据时扩大修改范围。
 
 输出格式：
 
@@ -941,18 +948,24 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 
 建议任务状态：需修复（Needs Fix）/ 阻塞（Blocked）/ 待审查（Review）/ 待确认
 
+信号状态：
+- RED 失败信号：已有 / 缺失 / 待确认
+- GREEN 通过信号：已有 / 缺失 / 待确认
+- SIGNAL 证据来源：已有 / 缺失 / 待确认
+- 信号不足时的下一步：进入实机测试信号复现（real_env_signal）/ 阻塞（Blocked）等待证据 / 待确认
+
 根因候选：
-1. 根因：
+1. 根因候选 / 待验证假设：
    - 证据：
    - 涉及文件 / 模块 / 代码路径：
    - 验证方式：
    - 是否当前范围：
-2. 根因：
+2. 根因候选 / 待验证假设：
    - 证据：
    - 涉及文件 / 模块 / 代码路径：
    - 验证方式：
    - 是否当前范围：
-3. 根因：
+3. 根因候选 / 待验证假设：
    - 证据：
    - 涉及文件 / 模块 / 代码路径：
    - 验证方式：
@@ -975,7 +988,7 @@ Repair 输入清单（仅当建议进入审查-修复循环（review_repair_loop
 Repairer 只能处理上述 Repair 输入清单，不得扩大范围或自我批准。
 
 下一步：
-- 进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待用户补充信息 / 保持待审查（Review）/ 建议关闭
+- 进入实机测试信号复现（real_env_signal）/ 进入 Bug 诊断（bug_diagnosis）/ 进入审查-修复循环（review_repair_loop）/ 创建新 TASK / 阻塞（Blocked）等待用户补充信息 / 保持待审查（Review）/ 建议关闭
 
 需要用户补充的信息：
 - 无 / 待填写
@@ -999,7 +1012,7 @@ Repairer 只能处理上述 Repair 输入清单，不得扩大范围或自我批
 3. 列出 3 到 5 个可证伪根因假设，每个假设都写证据、验证方式和是否属于当前 TASK 范围。
 4. 如果证据不足，只列最小补充信息，不修改代码。
 5. 如果需要临时诊断日志，必须给唯一前缀，并说明修复后清理方式。
-6. 输出下一步：进入 real_env_signal / repair_task / review_repair_loop / 创建新 TASK / Blocked / 待确认。
+6. 输出下一步：进入 real_env_signal / bug_diagnosis / repair_task / review_repair_loop / 创建新 TASK / Blocked / 待确认；只有 RED / GREEN / SIGNAL、当前 TASK 范围、Repair 输入清单和验证方式都明确时，才建议 repair_task 或 review_repair_loop。
 ```
 
 ## 60. TDD 执行任务（tdd_task）
@@ -1121,7 +1134,7 @@ Repairer 只能处理上述 Repair 输入清单，不得扩大范围或自我批
 2. 定义 RED 失败信号、GREEN 通过信号和 SIGNAL 证据来源。
 3. 如果需要用户实机 HITL，输出最短复测步骤和回传证据模板。
 4. 如果没有 RED，不得建议直接修复。
-5. 下一步只能建议：进入 bug_diagnosis / repair_task / review_repair_loop / 创建新 TASK / Blocked / 待确认。
+5. 下一步只能建议：进入 bug_diagnosis / repair_task / review_repair_loop / 创建新 TASK / Blocked / 待确认；没有 RED / GREEN / SIGNAL 时，只能建议 bug_diagnosis、Blocked 或继续 real_env_signal，不得建议 repair_task 或 review_repair_loop。
 ```
 
 ## 66. 用户实机回传证据后继续诊断
