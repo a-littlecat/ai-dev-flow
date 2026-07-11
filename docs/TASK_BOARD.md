@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-11
 > - 当前模式：`CONTRACT-001` 第 1 轮修复完成，等待独立复审（`review_task`）
-> - 当前阶段：实现 `021175a`、Review 记录 `a628fc7`；4 项 finding 已修复并通过自动验证
+> - 当前阶段：实现 `021175a`、Review 记录 `a628fc7`、修复 `8427eef`；正在独立复审
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -69,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`CONTRACT-001` 第 1 轮 bounded repair 已处理 3 个 P1、1 个 P2并通过自动验证。下一步提交修复并对 `a628fc7..修复提交` 做独立复审；复审通过前不进入 UA2 或 `CONTRACT-002`。
+`CONTRACT-001` 第 1 轮修复 commit 为 `8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`，正在对 `a628fc7..8427eef` 和完整任务 diff 做独立复审；复审通过前不进入 UA2 或 `CONTRACT-002`。
 
 ## 整体停止条件
 

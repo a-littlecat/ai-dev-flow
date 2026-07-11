@@ -207,10 +207,10 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## 提交 / 合并
 
-- Commit 状态：实现结果与 Review 记录已提交；第 1 轮修复待提交
+- Commit 状态：实现结果、Review 记录和第 1 轮修复均已提交；复审记录待提交
 - 实现 commit：`021175a374381c48294e23ea2d24f6a987a78176`
 - Review 记录 commit：`a628fc7b1114c82279a7c4f4d047d425bc7025b5`
-- 第 1 轮修复 commit：待本轮提交后填写
+- 第 1 轮修复 commit：`8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
@@ -223,6 +223,6 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 执行开始 HEAD：`b198abce89e18dc417b935fa219be8ed6a56711a`
 - 开始时工作区：干净，无来源不明改动；未发现不应提交文件
 - 计划分支：`codex/contract-001-semantics`
-- Diff 范围：原实现审查为 `b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；第 1 轮复审使用 `a628fc7b1114c82279a7c4f4d047d425bc7025b5..修复提交`
+- Diff 范围：原实现审查为 `b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；第 1 轮复审使用 `a628fc7b1114c82279a7c4f4d047d425bc7025b5..8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`，完整任务复核使用执行 Base 到最新证据提交
 - 下一任务：`CONTRACT-002`，仅在本任务 `Accepted` 后转为 `Ready`
 - 不要重复尝试：在规范未冻结前先写 Reader 或 Compact Template
