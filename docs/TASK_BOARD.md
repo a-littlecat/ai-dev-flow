@@ -1,22 +1,21 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-11
-> - 当前模式：`CONTRACT-001` 执行准备完成，等待用户明确指定执行
-> - 当前阶段：`REL-001` 已形成 Accepted baseline；`CONTRACT-001` 已转为 `Ready`，尚未开始实现
+> - 当前模式：`CONTRACT-001` 执行完成，等待独立审查（`review_task`）
+> - 当前阶段：规范、Schema、验证和预审已完成；尚未通过正式 Review 或 UA2
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
 
-用户回复“按推荐方案执行”，按 RFC 第 20 节约定，仅授权创建 `REL-001` 和 `CONTRACT-001`–`CONTRACT-006` 的正式任务记录。
+用户于 2026-07-11 明确要求“完成 CONTRACT-001~006”，授权按既定串行依赖逐项进入执行、验证、独立 Review 和对应 UA 门禁，并允许为任务建立必要的独立分支 / Worktree 与可追溯 commit。
 
-本轮不授权：
+本轮仍不授权：
 
-- 执行任何一个任务。
-- 修改 `VERSION`、README、CHANGELOG、Skill、Prompt、模板或脚本。
-- 创建分支、Worktree、commit 或 tag。
 - merge、push、发布版本或同步本机 Skill 副本。
+- 创建或删除 Git tag、GitHub Release。
+- 跳过前置 Accepted、独立 Review 或任务规定的用户动作等级。
 
-后续开始执行时，用户需明确指定任务，例如：`执行 REL-001`。
+任务必须保持逐项可审查 diff；后继任务只有在前置任务满足 Accepted 与祖先关系门禁后才能开始。
 
 ## 真相源与状态规则
 
@@ -61,7 +60,7 @@ REL-001
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Ready | 高 | 高 | REL-001 Accepted baseline `752b11f` | 未审查 | UA2 | Single / 独立分支或 Worktree | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Review | 高 | 高 | REL-001 Accepted baseline `752b11f` | 待独立审查 | UA2 待确认 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
@@ -70,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`REL-001` Accepted baseline 为 `752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`，祖先关系验证已通过。下一步只有在用户明确指定 `执行 CONTRACT-001` 后，才建立对应执行分支或 Worktree 并进入 `execute_task`；本次准备不授权实际实现、merge、tag、push、GitHub Release 或本机 Skill 同步。
+`CONTRACT-001` 已通过完整自动验证和三路最终预审。下一步形成实现 commit，并基于 `b198abce89e18dc417b935fa219be8ed6a56711a...HEAD` 执行独立 post-commit Review；无 P0/P1 后提交 UA2 摘要给用户确认，未 Accepted 前不启动 `CONTRACT-002`。
 
 ## 整体停止条件
 

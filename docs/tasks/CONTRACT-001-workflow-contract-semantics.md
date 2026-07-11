@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 执行准备完成，等待用户明确指定执行 |
-| 下一允许模式 | 执行任务（`execute_task`） |
-| 任务状态 | 可执行（`Ready`） |
+| 当前模式 | 执行任务（`execute_task`）已完成，等待独立审查 |
+| 下一允许模式 | 审查任务（`review_task`） |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定语义接口并影响后续全部实现 |
@@ -72,7 +72,7 @@ v0.7 RFC 已确定一个 Markdown-first、agent-agnostic、只读优先的 Workf
 - [x] `REL-001` 已 `Accepted`，版本身份形成可引用 Git baseline：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`。
 - [x] `git merge-base --is-ancestor 752b11f1a8bd6fd2b8e0b7e13309457f9a072f33 752b11f1a8bd6fd2b8e0b7e13309457f9a072f33` 成功，证明准备基线包含前置结果。
 - [x] RFC 三项默认决策仍有效；若需改变，先回到 `plan_task` 并取得用户确认。
-- [ ] 当前工作区干净，执行位置、Base commit、HEAD 和 Diff 范围已记录。
+- [x] 当前工作区干净，执行位置、Base commit、HEAD 和 Diff 范围已记录。
 - [x] v0.6 发布改动已形成独立 Accepted commit，后续规范产物可以从该 baseline 形成独立 diff。
 
 ## 执行步骤
@@ -87,16 +87,16 @@ v0.7 RFC 已确定一个 Markdown-first、agent-agnostic、只读优先的 Workf
 
 ## 完成标准
 
-- [ ] `WORKFLOW_CONTRACT.md` 是字段、枚举、不变量、诊断码和兼容规则的唯一规范入口。
-- [ ] 8 个核心字段与所有条件字段均有精确语法、大小写、重复键、未知键和多值规则。
-- [ ] `adf/v0.7.0` 与 Skill `VERSION` 的关系清楚，`0.7.x` 兼容规则可验证。
-- [ ] JSON Schema 可被标准 JSON parser 读取，且不包含模型名或外部运行时依赖。
-- [ ] `mode` 明确属于调用上下文，不进入持久 Contract。
-- [ ] UA7 的 Passed/Failed/Deferred 只允许 `User Confirmed`。
-- [ ] `merge_status=Merged` 只允许本次用户授权。
-- [ ] 诊断码标出首批与 `CONTRACT-007` 后才启用的阶段边界。
-- [ ] 规范包含 legacy 标题、字段和值的显式别名矩阵；禁止模糊匹配，并定义一致重复值与冲突值的 provenance/diagnostic 规则。
-- [ ] 未改变现有 lifecycle 合法流转。
+- [x] `WORKFLOW_CONTRACT.md` 是字段、枚举、不变量、诊断码和兼容规则的唯一规范入口。
+- [x] 8 个核心字段与所有条件字段均有精确语法、大小写、重复键、未知键和多值规则。
+- [x] `adf/v0.7.0` 与 Skill `VERSION` 的关系清楚，`0.7.x` 兼容规则可验证。
+- [x] JSON Schema 可被标准 JSON parser 读取，且不包含模型名或外部运行时依赖。
+- [x] `mode` 明确属于调用上下文，不进入持久 Contract。
+- [x] UA7 的 Passed/Failed/Deferred 只允许 `User Confirmed`。
+- [x] `merge_status=Merged` 只允许本次用户授权。
+- [x] 诊断码标出首批与 `CONTRACT-007` 后才启用的阶段边界。
+- [x] 规范包含 legacy 标题、字段和值的显式别名矩阵；禁止模糊匹配，并定义一致重复值与冲突值的 provenance/diagnostic 规则。
+- [x] 未改变现有 lifecycle 合法流转。
 - [ ] 独立 Review 无 P0/P1；用户按 UA2 确认规范与 RFC 一致。
 
 ## 验证方式
@@ -115,6 +115,23 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 使用标准库脚本读取 JSON Schema 的 `required`、`enum` 和 conditional rules，与规范表逐项比对。
 - 对照 `STATUS_MACHINE.md` 的 18 条合法流转，确认没有新增或漏写。
 - 当本机 Skill validator 可用时运行 `quick_validate.py`；不可用时记录替代检查。
+
+## 执行与验证记录
+
+- 执行结果：规范与 Schema 候选实现及三路预审修复均完成，正式进入独立 post-commit Review；未开始 Reader、CLI、模板或 Prompt。
+- 新增 `skills/ai-dev-flow/references/WORKFLOW_CONTRACT.md`：冻结 canonical grammar、字段/枚举、18 条 lifecycle 流转、14 条跨轴不变量、Legacy 精确别名、provenance、Git 只读历史、diagnostic phase 和九字段 board projection 契约。
+- 新增 `skills/ai-dev-flow/schemas/workflow-contract.schema.json`：Draft 2020-12 JSON Schema，仅描述默认注入前的 `CanonicalContractInput`；8 个核心字段必填，表达 UA evidence、UA7 authority、Accepted/Closed、close 与 merge authority 的可表达条件。
+- `python -X utf8 -m json.tool ...`：通过。
+- 标准库 Schema 对照脚本：通过；`required=8`，6 组核心枚举与关键 conditional token 均匹配规范。
+- `jsonschema.Draft202012Validator.check_schema` 与样例矩阵：通过；10 个 valid 样例通过，13 个 invalid 样例被拒绝。
+- lifecycle 对照：通过；与 `STATUS_MACHINE.md` 一致，共 18 条合法流转。
+- `quick_validate.py skills/ai-dev-flow`：通过，输出 `Skill is valid!`。
+- runtime/model 中立检查：通过；Schema 不含 GPT、Codex、Claude、Gemini 或 OpenAI 专属字段。
+- `git merge-base --is-ancestor 752b11f... b198abc...`：通过，执行 Base 包含前置 Accepted baseline。
+- `git diff --check`：通过，无 whitespace error；PowerShell 仅提示现有文档的 LF/CRLF 转换策略。
+- 范围检查：当前 diff 仅包含规范、Schema、本任务文件与 TASK_BOARD；未修改禁止范围。
+- 三路预审：Schema/规范一致性、Legacy 实样兼容和任务完成标准复核最终均无 findings；预审不替代正式 post-commit Review。
+- 未验证项：独立 post-commit Review、UA2 用户阅读确认。
 
 ## 停止条件
 
@@ -145,8 +162,8 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA2
-- 用户需要做什么：阅读规范摘要、字段表和不变量差异，确认与已批准 RFC 一致
-- agent 已提供的证据：待执行后填写
+- 用户需要做什么：独立 Review 通过后，阅读规范摘要、字段表和不变量差异，确认与已批准 RFC 一致
+- agent 已提供的证据：JSON/Schema 检查、18 条状态流转对照、Skill validation、范围检查和后续独立 Review 记录
 - 是否允许关闭任务：否 / 待用户确认
 
 ## 用户验收反馈 / 实机测试反馈
@@ -154,7 +171,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 验收反馈状态：无反馈
 - 当前反馈关联的 UA 等级：UA2
 - 反馈分类：不适用
-- 下一步建议：等待任务执行、Review 和用户阅读确认
+- 下一步建议：等待独立 Review；Review 无 P0/P1 后进入 UA2 用户阅读确认
 
 ## 合并状态
 
@@ -171,11 +188,13 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## Git 与交接
 
-- 当前分支：准备阶段位于 `codex/rel-001-close-v06-release-identity`；执行时切换到计划分支或独立 Worktree
+- 当前分支：`codex/contract-001-semantics`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
 - 准备 Base / 前置 Accepted commit：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`
-- 执行 Base commit：进入 `execute_task` 时填写，必须是上述准备 Base 或其 descendant
+- 执行 Base commit：`b198abce89e18dc417b935fa219be8ed6a56711a`；已验证包含前置 Accepted commit
+- 执行开始 HEAD：`b198abce89e18dc417b935fa219be8ed6a56711a`
+- 开始时工作区：干净，无来源不明改动；未发现不应提交文件
 - 计划分支：`codex/contract-001-semantics`
-- Diff 范围：进入 `execute_task` 时填写为 `<执行 Base>...HEAD`
+- Diff 范围：`b198abce89e18dc417b935fa219be8ed6a56711a...HEAD`（提交前为同一 Base 到工作区）
 - 下一任务：`CONTRACT-002`，仅在本任务 `Accepted` 后转为 `Ready`
 - 不要重复尝试：在规范未冻结前先写 Reader 或 Compact Template

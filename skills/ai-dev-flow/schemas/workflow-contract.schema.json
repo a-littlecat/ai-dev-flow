@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/a-littlecat/ai-dev-flow/schemas/workflow-contract.schema.json",
+  "title": "ai-dev-flow Workflow Contract adf/v0.7.0",
+  "description": "CanonicalContractInput before safe-default injection. This schema is not a Markdown sidecar, does not accept the Normalized View-only Not Recorded token, and does not validate provenance, body evidence, Git history, TASK_BOARD, or user identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "task_type",
+    "task_class",
+    "lifecycle",
+    "review_status",
+    "ua_level",
+    "ua_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "adf/v0.7.0"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$"
+    },
+    "task_type": {
+      "enum": [
+        "document",
+        "plan",
+        "code",
+        "review",
+        "repair",
+        "test"
+      ]
+    },
+    "task_class": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    "lifecycle": {
+      "enum": [
+        "Draft",
+        "Ready",
+        "In Progress",
+        "Blocked",
+        "Review",
+        "Needs Fix",
+        "Accepted",
+        "Closed",
+        "Deferred",
+        "Cancelled"
+      ]
+    },
+    "review_status": {
+      "enum": [
+        "Pending",
+        "In Review",
+        "Passed",
+        "Needs Fix",
+        "Do Not Merge"
+      ]
+    },
+    "ua_level": {
+      "enum": [
+        "UA0",
+        "UA1",
+        "UA2",
+        "UA3",
+        "UA4",
+        "UA5",
+        "UA6",
+        "UA7",
+        "TBD"
+      ]
+    },
+    "ua_status": {
+      "enum": [
+        "Not Required",
+        "Pending",
+        "Passed",
+        "Failed",
+        "Deferred",
+        "TBD"
+      ]
+    },
+    "ua_evidence": {
+      "$ref": "#/$defs/referenceList"
+    },
+    "acceptance_authority": {
+      "enum": [
+        "None",
+        "User Confirmed",
+        "Designated Acceptor Confirmed"
+      ]
+    },
+    "close_authority": {
+      "enum": [
+        "None",
+        "User Authorized",
+        "Rule Authorized",
+        "Denied"
+      ]
+    },
+    "commit_status": {
+      "enum": [
+        "Not Applicable",
+        "Uncommitted",
+        "Committed"
+      ]
+    },
+    "merge_status": {
+      "enum": [
+        "Not Applicable",
+        "Unmerged",
+        "Merged",
+        "Deferred"
+      ]
+    },
+    "merge_authority": {
+      "enum": [
+        "None",
+        "User Authorized",
+        "Denied"
+      ]
+    },
+    "overlays": {
+      "oneOf": [
+        {
+          "const": "none"
+        },
+        {
+          "type": "string",
+          "pattern": "^(isolation|batch|wave|real_env_signal)(;(isolation|batch|wave|real_env_signal))*$"
+        }
+      ]
+    },
+    "extensions_optional": {
+      "$ref": "#/$defs/extensionList"
+    },
+    "extensions_required": {
+      "$ref": "#/$defs/extensionList"
+    }
+  },
+  "$defs": {
+    "referenceList": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^`\\r\\n; ]([^`\\r\\n;]*[^`\\r\\n; ])?(;[^`\\r\\n; ]([^`\\r\\n;]*[^`\\r\\n; ])?)*$"
+    },
+    "extensionList": {
+      "oneOf": [
+        {
+          "const": "none"
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+@[1-9][0-9]*(;[a-z0-9-]+\\.[a-z0-9-]+@[1-9][0-9]*)*$"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ua_status": {
+            "enum": [
+              "Passed",
+              "Failed",
+              "Deferred"
+            ]
+          }
+        },
+        "required": [
+          "ua_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "ua_evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_status": {
+            "const": "Not Required"
+          }
+        },
+        "required": [
+          "ua_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "ua_level": {
+            "const": "UA0"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_level": {
+            "const": "UA0"
+          }
+        },
+        "required": [
+          "ua_level"
+        ]
+      },
+      "then": {
+        "properties": {
+          "ua_status": {
+            "enum": [
+              "Not Required",
+              "Pending",
+              "TBD"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_status": {
+            "enum": [
+              "Pending",
+              "TBD"
+            ]
+          }
+        },
+        "required": [
+          "ua_status"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "ua_evidence"
+          ]
+        },
+        "properties": {
+          "acceptance_authority": {
+            "const": "None"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_status": {
+            "const": "Not Required"
+          }
+        },
+        "required": [
+          "ua_status"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "ua_evidence"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {
+            "properties": {
+              "ua_status": {
+                "const": "Not Required"
+              }
+            },
+            "required": [
+              "ua_status"
+            ]
+          },
+          {
+            "properties": {
+              "lifecycle": {
+                "not": {
+                  "enum": [
+                    "Accepted",
+                    "Closed"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "lifecycle"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "acceptance_authority": {
+            "const": "None"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {
+            "properties": {
+              "ua_status": {
+                "enum": [
+                  "Failed",
+                  "Deferred"
+                ]
+              }
+            },
+            "required": [
+              "ua_status"
+            ]
+          },
+          {
+            "properties": {
+              "ua_level": {
+                "not": {
+                  "const": "UA7"
+                }
+              }
+            },
+            "required": [
+              "ua_level"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "acceptance_authority": {
+            "const": "None"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_status": {
+            "const": "Passed"
+          }
+        },
+        "required": [
+          "ua_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "acceptance_authority"
+        ],
+        "properties": {
+          "acceptance_authority": {
+            "enum": [
+              "User Confirmed",
+              "Designated Acceptor Confirmed"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ua_level": {
+            "const": "UA7"
+          },
+          "ua_status": {
+            "enum": [
+              "Passed",
+              "Failed",
+              "Deferred"
+            ]
+          }
+        },
+        "required": [
+          "ua_level",
+          "ua_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "acceptance_authority"
+        ],
+        "properties": {
+          "acceptance_authority": {
+            "const": "User Confirmed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {
+            "enum": [
+              "Accepted",
+              "Closed"
+            ]
+          }
+        },
+        "required": [
+          "lifecycle"
+        ]
+      },
+      "then": {
+        "required": [
+          "acceptance_authority"
+        ],
+        "properties": {
+          "review_status": {
+            "const": "Passed"
+          },
+          "ua_level": {
+            "enum": [
+              "UA0",
+              "UA1",
+              "UA2",
+              "UA3",
+              "UA4",
+              "UA5",
+              "UA6",
+              "UA7"
+            ]
+          },
+          "ua_status": {
+            "enum": [
+              "Not Required",
+              "Passed"
+            ]
+          },
+          "acceptance_authority": {
+            "enum": [
+              "User Confirmed",
+              "Designated Acceptor Confirmed"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {
+            "not": {
+              "const": "Closed"
+            }
+          }
+        },
+        "required": [
+          "lifecycle",
+          "close_authority"
+        ]
+      },
+      "then": {
+        "properties": {
+          "close_authority": {
+            "enum": [
+              "None",
+              "Denied"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {
+            "const": "Closed"
+          }
+        },
+        "required": [
+          "lifecycle"
+        ]
+      },
+      "then": {
+        "required": [
+          "close_authority"
+        ],
+        "properties": {
+          "close_authority": {
+            "enum": [
+              "User Authorized",
+              "Rule Authorized"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_status": {
+            "enum": [
+              "Needs Fix",
+              "Do Not Merge"
+            ]
+          }
+        },
+        "required": [
+          "review_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "lifecycle": {
+            "not": {
+              "enum": [
+                "Accepted",
+                "Closed"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "merge_status": {
+            "const": "Merged"
+          }
+        },
+        "required": [
+          "merge_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "merge_authority"
+        ],
+        "properties": {
+          "merge_authority": {
+            "const": "User Authorized"
+          }
+        }
+      }
+    }
+  ]
+}
