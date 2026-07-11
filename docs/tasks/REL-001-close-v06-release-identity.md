@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `REL-001` |
 | 任务类型 | 文档 / 发布治理 |
-| 当前模式 | 等待审查（下一模式为 `review_task`） |
-| 下一允许模式 | 审查任务（`review_task`） |
+| 当前模式 | 有限修复完成，等待独立复审（下一模式为 `review_task`） |
+| 下一允许模式 | 审查任务（`review_task`），复核本次 P1 修复 |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
@@ -20,10 +20,10 @@
 
 ## 当前事实
 
-- 仓库 `skills/ai-dev-flow/VERSION` 当前为 `0.5.2`。
-- README 和 `skills/ai-dev-flow/CHANGELOG.md` 已包含 `0.6.0 Unreleased` 能力说明。
+- 仓库 `skills/ai-dev-flow/VERSION` 当前为 `0.6.0`。
+- README、Skill README、CHANGELOG 和 `CONTEXT.md` 已统一为 `0.6.0 / Release ready（尚未发布）`。
 - v0.7 RFC 要求先收口 v0.6 身份，再开始 Workflow Contract 实现。
-- 用户本轮只授权建档，没有授权改版本、tag、merge、push 或发布。
+- 用户已授权执行 `REL-001` 及针对独立 Review P1 的有限修复；仍未授权 tag、merge、push、GitHub Release 或本机 Skill 同步。
 
 ## 目标
 
@@ -58,6 +58,7 @@
 - `README.md`
 - `README.en.md`
 - `skills/ai-dev-flow/README.md`
+- `CONTEXT.md`（经独立 Review P1 明确纳入有限修复）
 - 本任务文件和 `docs/TASK_BOARD.md` 的状态/证据字段
 
 ## 禁止修改范围
@@ -122,12 +123,23 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 ## 代码审查
 
-- 审查状态：未审查（按发布治理/文档审查执行）
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：原审查需要修改；P1 已有限修复，等待独立复审
+- 审查人或审查 agent：Codex Reviewer（独立审查）
+- 审查严重等级：P1
+- P0 / P1 必须修改项：
+  1. `CONTEXT.md:49` 仍将 `VERSION=0.5.2`、`0.6.0 Unreleased` 和“发布身份尚未收口”列为当前事实，与本任务落实的 `0.6.0 / Release ready（尚未发布）` 直接冲突。该文件是项目当前事实真相源且属于任务必读文件，必须在允许范围明确扩展后同步，或由任务记录给出不修改它仍能形成单一身份的有效依据。
+  2. “提交 / 合并”记录的 commit hash `b8c2a0195df16d512a3241b9382bcd9db9874277` 不是仓库对象；实际执行提交为 `b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc`。同时前置门禁声称已写入 HEAD，但任务没有记录具体审查前 HEAD。必须修正可追溯 Git 证据，并明确 release/tag 候选提交如何包含执行证据与后续审查记录。
+- 审查结论：原结论为需要修改；两项 P1 已处理，复审通过前仍不允许进入 UA7 决策或合并建议
+- 是否允许进入验收建议：否
+
+## P1 有限修复记录
+
+- 修复模式：修复任务（`repair_task`）。
+- 修复起点 HEAD：`d7abee028782653543b15e2207f62775e6515ef5`；开始修复时工作区仅包含独立 Reviewer 写回的本任务文件与 TASK_BOARD 状态记录。
+- Finding 1：已把 `CONTEXT.md` 明确加入允许修改范围，并将当前事实更新为 `0.6.0 / Release ready（尚未发布）`，同时保留 tag、push、GitHub Release、merge 和本机 Skill 同步的独立授权门禁。
+- Finding 2：已把不可解析 hash 修正为实际执行提交 `b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc`；补记审查前 HEAD `d7abee028782653543b15e2207f62775e6515ef5`。
+- 最终 release/tag 候选规则：不得固定为执行提交或修复提交。候选必须是包含执行提交、执行证据、P1 修复及独立复审结论的最终获准提交，并满足 `git merge-base --is-ancestor b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc <候选提交>` 成功；实际候选 hash 只能在复审记录提交后填写，并仍需 UA7 授权。
+- 修复范围：仅 `CONTEXT.md`、本任务文件和 `docs/TASK_BOARD.md`；未修改版本内容、Skill 行为、Prompt、模板、脚本或 v0.7 实现。
 
 ## 执行与验证记录
 
@@ -146,17 +158,17 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 - 审查方式：post-commit diff
 - 审查命令：`git diff --check 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff --name-status 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`
-- 修改文件清单：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、本任务文件、`docs/TASK_BOARD.md`
+- 修改文件清单：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、`CONTEXT.md`、本任务文件、`docs/TASK_BOARD.md`
 - 范围越界文件：执行自查未发现；以独立 Review 结论为准
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：等待独立复审（原 P1 已有限修复）
+- 审查结论：原 P1 已处理；是否通过由下一轮独立 Reviewer 判断
 
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA7
 - 用户需要做什么：确认最终版本身份与 tag 策略；实际发布需另行明确授权
 - agent 已提供的证据：版本检索、`git diff --check`、Skill quick validation、允许范围检查和空 tag 列表
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；P1 修复并复审前不得进入 UA7
 
 ## 用户验收反馈 / 实机测试反馈
 
@@ -174,7 +186,10 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 ## 提交 / 合并
 
 - Commit 状态：已提交执行结果
-- Commit hash：`b8c2a0195df16d512a3241b9382bcd9db9874277`
+- 执行内容 commit：`b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc`
+- 执行证据 commit / 审查前 HEAD：`d7abee028782653543b15e2207f62775e6515ef5`
+- P1 修复 commit：待本轮提交后由 Git 记录
+- 最终 release/tag 候选 commit：待独立复审结论提交后填写；必须满足本任务“P1 有限修复记录”中的 ancestor 与授权条件
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 

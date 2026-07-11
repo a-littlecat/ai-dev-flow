@@ -46,7 +46,7 @@
 
 ## 当前已知张力
 
-- `VERSION` 仍为 `0.5.2`，而 `CHANGELOG.md` 和 README 已包含 `0.6.0 Unreleased` 能力，发布身份尚未收口。
+- 仓库内部版本身份已收口为 `0.6.0`，当前为 Release ready（尚未发布）；计划 tag 为 `v0.6.0`，但实际 tag、push、GitHub Release、merge 和本机 Skill 同步仍需分别取得授权。
 - `TASK_TEMPLATE.md` 同时保存“代码审查 / Diff 审查”以及两组合并状态，容易形成重复真相。
 - `TASK_BOARD_TEMPLATE.md` 一方面声明只保留索引和状态，另一方面提供约 30 列完整视图，人工维护成本较高。
 - 当前没有确定性的 Contract validator 和回归 fixture；规则一致性主要依赖 agent 阅读长文档。
