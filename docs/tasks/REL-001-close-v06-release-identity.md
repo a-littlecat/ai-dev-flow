@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `REL-001` |
 | 任务类型 | 文档 / 发布治理 |
-| 当前模式 | 有限修复完成，等待独立复审（下一模式为 `review_task`） |
-| 下一允许模式 | 审查任务（`review_task`），复核本次 P1 修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | UA7 用户决策已完成，等待后续收口授权 |
+| 下一允许模式 | 收口任务（`close_task`），需用户另行确认关闭或提交/合并动作 |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | B：改动范围小，但发布语义敏感 |
@@ -93,8 +93,8 @@
 - [x] v0.7 内容明确标记为 Draft / 未实现，没有混入 v0.6 已发布能力。
 - [x] tag 命名、创建条件和授权要求已记录，但没有实际创建 tag。
 - [x] 未改动 Skill 行为、Prompt、模板或脚本。
-- [ ] 独立 Review 无 P0/P1。
-- [ ] 用户完成 UA7 决策后，任务才可进入 `Accepted`。
+- [x] 独立 Review 无 P0/P1。
+- [x] 用户完成 UA7 决策后，任务才可进入 `Accepted`。
 
 ## 验证方式
 
@@ -123,14 +123,15 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 ## 代码审查
 
-- 审查状态：原审查需要修改；P1 已有限修复，等待独立复审
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex Reviewer（独立审查）
-- 审查严重等级：P1
+- 审查严重等级：无（原两项 P1 均已修复）
 - P0 / P1 必须修改项：
   1. `CONTEXT.md:49` 仍将 `VERSION=0.5.2`、`0.6.0 Unreleased` 和“发布身份尚未收口”列为当前事实，与本任务落实的 `0.6.0 / Release ready（尚未发布）` 直接冲突。该文件是项目当前事实真相源且属于任务必读文件，必须在允许范围明确扩展后同步，或由任务记录给出不修改它仍能形成单一身份的有效依据。
   2. “提交 / 合并”记录的 commit hash `b8c2a0195df16d512a3241b9382bcd9db9874277` 不是仓库对象；实际执行提交为 `b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc`。同时前置门禁声称已写入 HEAD，但任务没有记录具体审查前 HEAD。必须修正可追溯 Git 证据，并明确 release/tag 候选提交如何包含执行证据与后续审查记录。
-- 审查结论：原结论为需要修改；两项 P1 已处理，复审通过前仍不允许进入 UA7 决策或合并建议
-- 是否允许进入验收建议：否
+- 复审结果：两项原 P1 均已关闭；未发现新增 P0/P1/P2/P3。
+- 审查结论：通过；允许进入 UA7 用户决策，但不代表已验收、已合并或已发布
+- 是否允许进入验收建议：是（UA7）
 
 ## P1 有限修复记录
 
@@ -160,22 +161,22 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 - 审查命令：`git diff --check 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff --name-status 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`
 - 修改文件清单：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、`CONTEXT.md`、本任务文件、`docs/TASK_BOARD.md`
 - 范围越界文件：执行自查未发现；以独立 Review 结论为准
-- 审查状态：等待独立复审（原 P1 已有限修复）
-- 审查结论：原 P1 已处理；是否通过由下一轮独立 Reviewer 判断
+- 审查状态：复审通过
+- 审查结论：通过；`d7abee028782653543b15e2207f62775e6515ef5..169db4f09da79a4ac3b4518802b7b1fa6c0603be` 的有限修复仅涉及获准的三份文档，完整任务 diff 无禁止路径改动
 
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA7
-- 用户需要做什么：确认最终版本身份与 tag 策略；实际发布需另行明确授权
+- 用户需要做什么：已确认最终版本身份与 tag 策略；实际创建 tag 或发布仍需另行明确授权
 - agent 已提供的证据：版本检索、`git diff --check`、Skill quick validation、允许范围检查和空 tag 列表
-- 是否允许关闭任务：否；P1 修复并复审前不得进入 UA7
+- 是否允许关闭任务：否；已达到 `Accepted`，但 `Closed`、commit、merge、tag、push 和发布均需分别授权
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：UA7 已确认通过
 - 当前反馈关联的 UA 等级：UA7
-- 反馈分类：不适用
-- 下一步建议：等待任务执行、Review 和用户决策
+- 反馈分类：接受版本身份与 tag 策略
+- 下一步建议：形成包含复审与验收记录的可引用 Git baseline；实际 commit、merge、tag、push 或发布按用户后续授权执行
 
 ## 合并状态
 
