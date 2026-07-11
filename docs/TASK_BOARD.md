@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-11
-> - 当前模式：UA7 用户决策已完成，等待后续收口授权
-> - 当前阶段：`REL-001` 已 `Accepted`，但尚未提交验收记录、合并、创建 tag 或发布；后续任务仍未开始
+> - 当前模式：`CONTRACT-001` 执行准备完成，等待用户明确指定执行
+> - 当前阶段：`REL-001` 已形成 Accepted baseline；`CONTRACT-001` 已转为 `Ready`，尚未开始实现
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -61,7 +61,7 @@ REL-001
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Draft | 高 | 高 | REL-001 Accepted | 未审查 | UA2 | Single / 独立分支或 Worktree | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Ready | 高 | 高 | REL-001 Accepted baseline `752b11f` | 未审查 | UA2 | Single / 独立分支或 Worktree | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
@@ -70,7 +70,7 @@ REL-001
 
 ## 下一允许动作
 
-`REL-001` 已完成 Review 与 UA7 验收。下一步应先形成包含复审和验收记录的可引用 Git baseline；在该 baseline 存在且祖先关系验证通过前，`CONTRACT-001` 保持 `Draft`。本次确认不授权实际 commit、merge、tag、push、GitHub Release、本机 Skill 同步或任何 v0.7 实现。
+`REL-001` Accepted baseline 为 `752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`，祖先关系验证已通过。下一步只有在用户明确指定 `执行 CONTRACT-001` 后，才建立对应执行分支或 Worktree 并进入 `execute_task`；本次准备不授权实际实现、merge、tag、push、GitHub Release 或本机 Skill 同步。
 
 ## 整体停止条件
 

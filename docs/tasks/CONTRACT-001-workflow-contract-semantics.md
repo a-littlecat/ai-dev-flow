@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 创建任务（`create_task`） |
-| 下一允许模式 | 前置门禁满足后进入 `execute_task` |
-| 任务状态 | 草稿（`Draft`） |
+| 当前模式 | 执行准备完成，等待用户明确指定执行 |
+| 下一允许模式 | 执行任务（`execute_task`） |
+| 任务状态 | 可执行（`Ready`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定语义接口并影响后续全部实现 |
@@ -69,11 +69,11 @@ v0.7 RFC 已确定一个 Markdown-first、agent-agnostic、只读优先的 Workf
 
 ## Readiness Gate
 
-- [ ] `REL-001` 已 `Accepted`，版本身份形成可引用 Git baseline。
-- [ ] `git merge-base --is-ancestor <REL-001 Accepted commit> <当前 Base>` 成功，证明当前执行基线包含前置结果。
-- [ ] RFC 三项默认决策仍有效；若需改变，先回到 `plan_task` 并取得用户确认。
+- [x] `REL-001` 已 `Accepted`，版本身份形成可引用 Git baseline：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`。
+- [x] `git merge-base --is-ancestor 752b11f1a8bd6fd2b8e0b7e13309457f9a072f33 752b11f1a8bd6fd2b8e0b7e13309457f9a072f33` 成功，证明准备基线包含前置结果。
+- [x] RFC 三项默认决策仍有效；若需改变，先回到 `plan_task` 并取得用户确认。
 - [ ] 当前工作区干净，执行位置、Base commit、HEAD 和 Diff 范围已记录。
-- [ ] 规范产物与 v0.6 发布改动可形成独立 diff。
+- [x] v0.6 发布改动已形成独立 Accepted commit，后续规范产物可以从该 baseline 形成独立 diff。
 
 ## 执行步骤
 
@@ -171,10 +171,11 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## Git 与交接
 
-- 当前分支：`main`（建档时）
+- 当前分支：准备阶段位于 `codex/rel-001-close-v06-release-identity`；执行时切换到计划分支或独立 Worktree
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：待执行时填写
+- 准备 Base / 前置 Accepted commit：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`
+- 执行 Base commit：进入 `execute_task` 时填写，必须是上述准备 Base 或其 descendant
 - 计划分支：`codex/contract-001-semantics`
-- Diff 范围：待执行时填写
+- Diff 范围：进入 `execute_task` 时填写为 `<执行 Base>...HEAD`
 - 下一任务：`CONTRACT-002`，仅在本任务 `Accepted` 后转为 `Ready`
 - 不要重复尝试：在规范未冻结前先写 Reader 或 Compact Template

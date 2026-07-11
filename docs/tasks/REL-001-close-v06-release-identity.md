@@ -190,7 +190,7 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 - 执行内容 commit：`b8c2a01d4dc89b767a5ee3e8a0195e742876d7dc`
 - 执行证据 commit / 审查前 HEAD：`d7abee028782653543b15e2207f62775e6515ef5`
 - P1 修复 commit：`dc363745eb2e378eb54696d50286c8278d7e8e1e`
-- 最终 release/tag 候选 commit：待独立复审结论提交后填写；必须满足本任务“P1 有限修复记录”中的 ancestor 与授权条件
+- 最终 release/tag 候选 commit：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`；已包含执行、修复、独立复审和 UA7 验收记录。实际创建 tag 仍需独立授权
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
