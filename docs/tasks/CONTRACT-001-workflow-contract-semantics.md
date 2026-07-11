@@ -215,7 +215,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - Review 记录 commit：`a628fc7b1114c82279a7c4f4d047d425bc7025b5`
 - 第 1 轮修复 commit：`8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`
 - 修复证据 commit / 复审 HEAD：`14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`
-- 复审记录 commit：待本次状态写回后由后续验收记录引用
+- 复审记录 commit：`ba85738d9bf7b47110ac84ed21c16601ebf10ef2`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 

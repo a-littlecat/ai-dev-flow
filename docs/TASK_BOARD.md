@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-11
 > - 当前模式：`CONTRACT-001` 独立复审通过，等待 UA2 用户确认
-> - 当前阶段：复审 HEAD `14fd7f3`，无 P0-P3；尚未 Accepted，不允许启动 `CONTRACT-002`
+> - 当前阶段：复审 HEAD `14fd7f3`、复审记录 `ba85738`，无 P0-P3；尚未 Accepted，不允许启动 `CONTRACT-002`
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
