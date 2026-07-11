@@ -1,0 +1,182 @@
+# CONTRACT-004：实现只读 workflow_lint
+
+## 任务元数据
+
+| 字段 | 当前值 |
+|---|---|
+| 任务编号 | `CONTRACT-004` |
+| 任务类型 | 代码 / CLI / 单元测试 |
+| 当前模式 | 创建任务（`create_task`） |
+| 下一允许模式 | 前置门禁满足后进入 `execute_task` |
+| 任务状态 | 草稿（`Draft`） |
+| 优先级 | 高 |
+| 风险等级 | 高 |
+| 任务分级 | C：新增稳定 public facade、validator 和 CLI |
+| 执行位置 | 独立分支或 Worktree；顺序执行 |
+| 独立代码审查 | 必须 |
+| 用户动作等级 | UA4：用户本地运行 CLI 并核对可观察输出 |
+| 前置任务 | `CONTRACT-003` 达到 `Accepted` |
+| Batch / Wave | 禁止；Single Task |
+
+## 背景
+
+Reader 只负责确定性读取。v0.7 还需要一个只读 facade 和 CLI，把字段、lifecycle、跨轴不变量、可证明的 Git 历史与 diagnostics 统一为 Human/JSON 报告。本任务必须守住与 `CONTRACT-006` 的边界：此阶段不读取 TASK_BOARD，也不激活 board drift diagnostics。
+
+## 目标
+
+- 实现唯一 public 语义入口 `WorkflowContract.inspect(target) -> WorkflowReport`。
+- 对单个 TASK 或项目目录中的 TASK 执行确定性 core validation。
+- 输出稳定的 Human 与 JSON 报告，diagnostics 集合、排序和来源完全等价。
+- 实现退出码 `0 / 1 / 2` 和“lint 不等于 Review/UA/merge/release”的强制免责声明。
+- Git 可用时只读验证可证明的 lifecycle 历史；不可用时安全降级为 warning。
+
+## 本任务明确不做 TASK_BOARD
+
+- `inspect(project)` 只扫描 TASK 文件，不读取 `docs/TASK_BOARD.md`。
+- `WorkflowReport.projections` 保持空集合或明确的 `not_evaluated` 状态。
+- 不激活 `V_BOARD_DRIFT`、`W_BOARD_MISSING` 或 orphan-row diagnostics。
+- TASK_BOARD 对照、expected row 和 drift 归 `CONTRACT-006`。
+
+## 非目标
+
+- 不实现 TASK_BOARD Adapter、Overlay Reader、Harness Profile 或 GPT‑5.6 Adapter。
+- 不实现 Writer、migration、`--fix`、`--write`、自动状态流转或文件重排。
+- 不调用网络、外部平台或模型。
+- 不修改 fixture oracle、Contract 语义、模板、Prompt 或 Skill 路由。
+
+## 允许修改范围
+
+- 新增 `skills/ai-dev-flow/scripts/workflow_contract.py`
+- 新增 `skills/ai-dev-flow/scripts/workflow_lint.py`
+- 必要时对 `skills/ai-dev-flow/scripts/_workflow_contract.py` 做接口保持型扩展
+- 新增 `skills/ai-dev-flow/tests/test_workflow_contract_validation.py`
+- 新增 `skills/ai-dev-flow/tests/test_workflow_lint.py`
+- 更新 `skills/ai-dev-flow/scripts/README.md` 的只读 CLI 使用说明
+- 本任务文件和 `docs/TASK_BOARD.md` 的状态/证据字段
+
+## 禁止修改范围
+
+- `skills/ai-dev-flow/tests/fixtures/` 的 expected oracle
+- `skills/ai-dev-flow/references/WORKFLOW_CONTRACT.md` 的语义
+- TASK/TASK_BOARD 模板、SKILL、PROMPTS、VERSION、CHANGELOG
+- TASK_BOARD 读取或 diagnostics
+- 写文件、改 Git、网络、模型、外部同步和第三方依赖
+
+## Readiness Gate
+
+- [ ] `CONTRACT-003` 已 `Accepted`，Reader API、Normalized View 和 provenance 稳定。
+- [ ] `git merge-base --is-ancestor <CONTRACT-003 Accepted commit> <当前 Base>` 成功。
+- [ ] Reader fixtures 全部 GREEN，输入只读证据已记录。
+- [ ] core diagnostics 与阶段边界在规范中冻结。
+- [ ] Base commit、HEAD、执行位置和 Diff 范围已记录。
+
+## 执行步骤
+
+1. 先为 core validation、facade、Human/JSON 和退出码建立 RED tests。
+2. 实现跨轴不变量和阶段适用 diagnostic，不重复 Reader 解析逻辑。
+3. 实现单 TASK 与目录扫描；目录模式只定位 TASK。
+4. 实现 Human/JSON Adapter，共享同一不可变 WorkflowReport。
+5. 实现 CLI 参数和退出码，不提供任何写入选项。
+6. 验证 Git 可用/不可用、UTF-8 Windows 路径和重复运行稳定性。
+7. 证明所有输入 hash/mtime 不变，独立 Review 后进入 UA4。
+
+## 完成标准
+
+- [ ] public 语义入口只有 `inspect(target)`；CLI 只是 Adapter。
+- [ ] 支持单 TASK 和项目目录扫描。
+- [ ] core field、lifecycle、Review、UA、authority、delivery 和 feedback gate diagnostics 与规范一致。
+- [ ] Human/JSON diagnostics 具有相同 code、severity、排序、source 和 provenance。
+- [ ] 退出码：无 error/violation 为 0；workflow violation 为 1；parse/invocation error 为 2。
+- [ ] warning 默认不阻塞，但报告不夸大为 Review/验收完成。
+- [ ] Git 不可用时只产生 `W_TRANSITION_UNVERIFIABLE`，当前状态组合仍可校验。
+- [ ] 此阶段不读取 TASK_BOARD，不产生 board diagnostics。
+- [ ] 所有输入内容、SHA-256 和 mtime 在运行前后不变。
+- [ ] 没有 `--fix / --write`、写模式文件访问、Git mutation、网络或模型调用。
+- [ ] 仅使用 Python 标准库。
+- [ ] 独立代码 Review 无 P0/P1。
+
+## 验证方式
+
+```powershell
+python -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_workflow_contract*.py" -v
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py skills/ai-dev-flow/tests/fixtures/valid/task-a-document.md --format human
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py skills/ai-dev-flow/tests/fixtures/valid/task-a-document.md --format json
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py skills/ai-dev-flow/tests/fixtures/projects/valid-project --format human
+git diff --check
+git diff --name-only
+```
+
+验证矩阵必须包含：
+
+- 单 TASK / 规范的 project-root 目录扫描；不得把任意 fixture 分类目录扩展成 public target。
+- valid / violation / parse error。
+- Human/JSON 同 diagnostic、同排序、同 source/provenance。
+- 退出码 0/1/2。
+- Git 可用与不可用。
+- UTF-8、中文路径和 Windows 路径。
+- 输入文件 hash/mtime 不变。
+- 即使项目存在 TASK_BOARD，也证明 004 不读取它、不产生 board diagnostic。
+
+## 停止条件
+
+- Reader API 或 fixture oracle 仍需改变。
+- Human/JSON 需要两套独立判断逻辑。
+- 必须读取 TASK_BOARD 才能让 core lint 通过。
+- 必须新增第三方依赖、写文件、联网或调用模型。
+- lint pass/fail 需要模型判断或不可重复的启发式。
+- 范围扩展到 Compact Template、Prompt 路由、Overlay 或 board drift。
+
+## 代码审查
+
+- 审查状态：未审查
+- 审查人或审查 agent：待填写
+- 审查严重等级：待填写
+- P0 / P1 必须修改项：待审查
+- 审查结论：待填写
+- 是否允许进入验收建议：待确认
+
+## Diff 审查
+
+- 审查方式：post-commit diff
+- 审查命令：待执行时填写
+- 修改文件清单：待填写
+- 范围越界文件：待审查
+- 审查状态：未审查
+- 审查结论：待填写
+
+## 用户动作等级 / 验收建议
+
+- 用户动作等级：UA4
+- 用户需要做什么：本地运行 CLI，核对 valid/violation/parse 输出与只读行为
+- agent 已提供的证据：待执行后填写
+- 是否允许关闭任务：否 / 待用户确认
+
+## 用户验收反馈 / 实机测试反馈
+
+- 验收反馈状态：无反馈
+- 当前反馈关联的 UA 等级：UA4
+- 反馈分类：待确认
+- 下一步建议：等待任务执行、Review 和本地运行
+
+## 合并状态
+
+- 合并状态：未合并
+- 合并目标：待执行时填写
+- 合并说明：实际 merge 必须另获用户确认
+
+## 提交 / 合并
+
+- Commit 状态：未提交
+- Commit hash：待填写
+- Merge 状态：未合并
+- 回滚方式：回退本任务独立 commit；执行时细化
+
+## Git 与交接
+
+- 当前分支：`main`（建档时）
+- 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
+- 执行 Base commit：待执行时填写
+- 计划分支：`codex/contract-004-workflow-lint`
+- Diff 范围：待执行时填写
+- 下一任务：`CONTRACT-005`，仅在本任务 `Accepted` 后转为 `Ready`
+- 不要重复尝试：在 004 中提前实现 TASK_BOARD drift
