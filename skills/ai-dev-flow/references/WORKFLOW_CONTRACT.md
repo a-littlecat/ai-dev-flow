@@ -1,7 +1,7 @@
 # Workflow Contract 语义规范
 
 > - Contract schema：`adf/v0.7.0`
-> - 规范状态：候选规范，等待独立 Review 与 UA2 冻结
+> - 规范状态：独立 Review 已通过，等待 UA2 冻结
 > - 适用范围：`CONTRACT-001`–`CONTRACT-006`
 > - 设计来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 

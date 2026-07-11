@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-11
-> - 当前模式：`CONTRACT-001` 第 1 轮修复完成，等待独立复审（`review_task`）
-> - 当前阶段：实现 `021175a`、Review 记录 `a628fc7`、修复 `8427eef`；正在独立复审
+> - 当前模式：`CONTRACT-001` 独立复审通过，等待 UA2 用户确认
+> - 当前阶段：复审 HEAD `14fd7f3`，无 P0-P3；尚未 Accepted，不允许启动 `CONTRACT-002`
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -60,7 +60,7 @@ REL-001
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Review | 高 | 高 | REL-001 Accepted baseline `752b11f` | 需要修改 / 待复审 | UA2 未开始 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Review | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 待确认 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
@@ -69,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`CONTRACT-001` 第 1 轮修复 commit 为 `8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`，正在对 `a628fc7..8427eef` 和完整任务 diff 做独立复审；复审通过前不进入 UA2 或 `CONTRACT-002`。
+`CONTRACT-001` 已在 `14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72` 完成独立复审，无 P0/P1/P2/P3，允许进入 UA2。用户确认规范与 RFC 一致后才能更新为 Accepted，并准备 `CONTRACT-002`；当前不允许 merge、push 或启动后继任务。
 
 ## 整体停止条件
 

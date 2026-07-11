@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 第 1 轮修复任务（`repair_task`）已完成，等待独立复审 |
-| 下一允许模式 | 审查任务（`review_task`） |
+| 当前模式 | 第 1 轮独立复审已通过，等待 UA2 用户确认 |
+| 下一允许模式 | 用户完成 UA2 后更新为已验收（`Accepted`）；未确认前保持 Review |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
@@ -139,7 +139,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 当前任务：`CONTRACT-001`
 - 当前轮次：1
 - 最大轮次：2
-- 本轮角色：修复者（Repairer），4 项 Review 输入已处理
+- 本轮角色：修复者（Repairer）已完成；独立 Reviewer 已复审
 - Repair 输入：Reader opt-in 与 RFC 对齐；board Pending 别名；Git commit 事实写回；extension optional/required 互斥。
 - 允许修改：`WORKFLOW_CONTRACT.md`、必要的 Schema、当前 TASK 与 TASK_BOARD。
 - 禁止扩大：Reader、CLI、fixture、模板、SKILL、PROMPTS 与 `CONTRACT-002+`。
@@ -152,7 +152,9 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 修改文件：`WORKFLOW_CONTRACT.md`、本任务文件、`docs/TASK_BOARD.md`；未修改 Schema、Reader、CLI、fixture、模板、SKILL 或 PROMPTS。
 - 验证结果：repair assertions 5/5、JSON/Schema 解析、18 条流转、Skill validation、`git diff --check` 均通过。
 - 未处理意见：无。
-- 是否需要再审查：是，必须独立复审。
+- 独立复审 HEAD：`14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`。
+- 复审结论：无 P0/P1/P2/P3，原 4 项 finding 全部关闭，允许进入 UA2。
+- 是否需要再审查：否；除非 UA2 反馈要求改变规范或出现新 diff。
 - 是否触发人工接管：否。
 
 ## 停止条件
@@ -165,30 +167,31 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## 代码审查
 
-- 审查状态：需要修改
-- 审查人或审查 agent：Codex 独立 Reviewer
-- 审查严重等级：最高 P1（3 个 P1、1 个 P2）
-- P0 / P1 必须修改项：
+- 审查状态：复审通过
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮复审）
+- 审查严重等级：无（原 3 个 P1、1 个 P2 均已关闭）
+- 原 P0 / P1 必须修改项：
   1. Reader 选择应以显式 `schema_version` opt-in，不能仅凭同名标题升级为严格 v0.7。
   2. Legacy board Review 必须确定性接受当前 `待独立审查` / canonical Pending 表达。
   3. 写回实现 commit `021175a374381c48294e23ea2d24f6a987a78176`，消除 TASK、看板与 Git 事实冲突。
-- P2 建议修改项：`extensions_optional` 与 `extensions_required` 必须互斥，并有唯一 diagnostic。
-- 审查结论：需要修改；不允许进入 UA2，不建议合并
-- 是否允许进入验收建议：否
+- 原 P2 建议修改项：`extensions_optional` 与 `extensions_required` 必须互斥，并有唯一 diagnostic。
+- 复审结果：上述 4 项全部关闭；未发现新增 P0/P1/P2/P3。
+- 审查结论：通过；允许进入 UA2，但不代表已验收、已合并或已发布
+- 是否允许进入验收建议：是（UA2）
 
 ## Diff 审查
 
 - 审查方式：post-commit diff
-- 审查命令：`git diff --stat b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；`git diff b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；任务只读验证命令
+- 审查命令：原审查 `b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；修复复审 `a628fc7b1114c82279a7c4f4d047d425bc7025b5..14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`；完整复核 `b198abce89e18dc417b935fa219be8ed6a56711a..14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`
 - 修改文件清单：`docs/TASK_BOARD.md`、本任务文件、`skills/ai-dev-flow/references/WORKFLOW_CONTRACT.md`、`skills/ai-dev-flow/schemas/workflow-contract.schema.json`
 - 范围越界文件：无
-- 审查状态：需要修改
-- 审查结论：完整 diff 范围清晰且无越界，但存在上述契约/状态 P1，修复后必须独立复审
+- 审查状态：已通过
+- 审查结论：完整任务仅包含 4 个允许文件；修复范围仅包含规范、TASK、TASK_BOARD；无越界且无 P0-P3
 
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA2
-- 用户需要做什么：独立 Review 通过后，阅读规范摘要、字段表和不变量差异，确认与已批准 RFC 一致
+- 用户需要做什么：阅读规范摘要、字段表、Legacy/diagnostic 边界，确认与已批准 RFC 一致
 - agent 已提供的证据：JSON/Schema 检查、18 条状态流转对照、Skill validation、范围检查和后续独立 Review 记录
 - 是否允许关闭任务：否 / 待用户确认
 
@@ -197,7 +200,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 验收反馈状态：无反馈
 - 当前反馈关联的 UA 等级：UA2
 - 反馈分类：不适用
-- 下一步建议：等待第 1 轮修复的独立复审；复审无 P0/P1 后再进入 UA2
+- 下一步建议：等待用户完成 UA2 阅读确认；未确认前保持 Review
 
 ## 合并状态
 
@@ -211,6 +214,8 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 实现 commit：`021175a374381c48294e23ea2d24f6a987a78176`
 - Review 记录 commit：`a628fc7b1114c82279a7c4f4d047d425bc7025b5`
 - 第 1 轮修复 commit：`8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`
+- 修复证据 commit / 复审 HEAD：`14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`
+- 复审记录 commit：待本次状态写回后由后续验收记录引用
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
