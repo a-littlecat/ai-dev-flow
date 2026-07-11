@@ -145,7 +145,7 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 ## Diff 审查
 
 - 审查方式：post-commit diff
-- 审查命令：待执行时填写
+- 审查命令：`git diff --check 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff --name-status 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`；`git diff 5c505d202880a538c57c7c9d0ff35df30cf3af8f..HEAD`
 - 修改文件清单：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、本任务文件、`docs/TASK_BOARD.md`
 - 范围越界文件：执行自查未发现；以独立 Review 结论为准
 - 审查状态：未审查
@@ -173,8 +173,8 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 ## 提交 / 合并
 
-- Commit 状态：待提交执行结果
-- Commit hash：待填写
+- Commit 状态：已提交执行结果
+- Commit hash：`b8c2a0195df16d512a3241b9382bcd9db9874277`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
