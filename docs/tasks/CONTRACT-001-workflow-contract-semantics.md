@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 独立审查（`review_task`）已完成，进入有限修复准备 |
-| 下一允许模式 | 修复任务（`repair_task`），仅处理本轮 findings |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮修复任务（`repair_task`）已完成，等待独立复审 |
+| 下一允许模式 | 审查任务（`review_task`） |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定语义接口并影响后续全部实现 |
@@ -139,11 +139,20 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 当前任务：`CONTRACT-001`
 - 当前轮次：1
 - 最大轮次：2
-- 本轮角色：修复者（Repairer），尚未开始修改
+- 本轮角色：修复者（Repairer），4 项 Review 输入已处理
 - Repair 输入：Reader opt-in 与 RFC 对齐；board Pending 别名；Git commit 事实写回；extension optional/required 互斥。
 - 允许修改：`WORKFLOW_CONTRACT.md`、必要的 Schema、当前 TASK 与 TASK_BOARD。
 - 禁止扩大：Reader、CLI、fixture、模板、SKILL、PROMPTS 与 `CONTRACT-002+`。
 - 验证方式：复跑 JSON/Schema 矩阵、18 流转、Skill validation、范围检查和独立复审。
+- 本轮处理：
+  1. P1 Reader opt-in：改为仅精确 `schema_version` declaration 启用严格 v0.7；无 declaration 保持 Legacy。
+  2. P1 board Review：新增 `待独立审查 -> Pending`，并允许 canonical review token 直读。
+  3. P1 Git 事实：写回实现 commit `021175a...` 与 Review 记录 commit `a628fc7...`。
+  4. P2 extension：optional/required 集合必须互斥，重叠唯一输出 `E_PARSE`。
+- 修改文件：`WORKFLOW_CONTRACT.md`、本任务文件、`docs/TASK_BOARD.md`；未修改 Schema、Reader、CLI、fixture、模板、SKILL 或 PROMPTS。
+- 验证结果：repair assertions 5/5、JSON/Schema 解析、18 条流转、Skill validation、`git diff --check` 均通过。
+- 未处理意见：无。
+- 是否需要再审查：是，必须独立复审。
 - 是否触发人工接管：否。
 
 ## 停止条件
@@ -188,7 +197,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 验收反馈状态：无反馈
 - 当前反馈关联的 UA 等级：UA2
 - 反馈分类：不适用
-- 下一步建议：完成第 1 轮 bounded repair 并重新进入独立 Review
+- 下一步建议：等待第 1 轮修复的独立复审；复审无 P0/P1 后再进入 UA2
 
 ## 合并状态
 
@@ -198,9 +207,10 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## 提交 / 合并
 
-- Commit 状态：实现结果已提交；Review 记录待提交
+- Commit 状态：实现结果与 Review 记录已提交；第 1 轮修复待提交
 - 实现 commit：`021175a374381c48294e23ea2d24f6a987a78176`
-- Review 记录 commit：待本次写回后填写
+- Review 记录 commit：`a628fc7b1114c82279a7c4f4d047d425bc7025b5`
+- 第 1 轮修复 commit：待本轮提交后填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
@@ -213,6 +223,6 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 执行开始 HEAD：`b198abce89e18dc417b935fa219be8ed6a56711a`
 - 开始时工作区：干净，无来源不明改动；未发现不应提交文件
 - 计划分支：`codex/contract-001-semantics`
-- Diff 范围：实现审查为 `b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；修复后复审扩展到新 HEAD
+- Diff 范围：原实现审查为 `b198abce89e18dc417b935fa219be8ed6a56711a..021175a374381c48294e23ea2d24f6a987a78176`；第 1 轮复审使用 `a628fc7b1114c82279a7c4f4d047d425bc7025b5..修复提交`
 - 下一任务：`CONTRACT-002`，仅在本任务 `Accepted` 后转为 `Ready`
 - 不要重复尝试：在规范未冻结前先写 Reader 或 Compact Template

@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-11
-> - 当前模式：`CONTRACT-001` 独立审查已完成，准备第 1 轮有限修复（`repair_task`）
-> - 当前阶段：实现 commit `021175a`；Review 为需要修改，尚未进入 UA2
+> - 当前模式：`CONTRACT-001` 第 1 轮修复完成，等待独立复审（`review_task`）
+> - 当前阶段：实现 `021175a`、Review 记录 `a628fc7`；4 项 finding 已修复并通过自动验证
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -60,7 +60,7 @@ REL-001
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Needs Fix | 高 | 高 | REL-001 Accepted baseline `752b11f` | 需要修改 / 最高 P1 | UA2 未开始 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Review | 高 | 高 | REL-001 Accepted baseline `752b11f` | 需要修改 / 待复审 | UA2 未开始 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
@@ -69,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`CONTRACT-001` 的实现 commit `021175a` 已完成独立 Review，结论为需要修改（3 个 P1、1 个 P2）。下一步只修 Reader opt-in、board Pending 别名、Git 事实记录和 extension 互斥；修复后重新独立 Review，未通过前不进入 UA2 或 `CONTRACT-002`。
+`CONTRACT-001` 第 1 轮 bounded repair 已处理 3 个 P1、1 个 P2并通过自动验证。下一步提交修复并对 `a628fc7..修复提交` 做独立复审；复审通过前不进入 UA2 或 `CONTRACT-002`。
 
 ## 整体停止条件
 
