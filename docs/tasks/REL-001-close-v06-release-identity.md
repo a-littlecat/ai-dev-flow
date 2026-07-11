@@ -6,13 +6,13 @@
 |---|---|
 | 任务编号 | `REL-001` |
 | 任务类型 | 文档 / 发布治理 |
-| 当前模式 | 创建任务（`create_task`） |
-| 下一允许模式 | 执行任务（`execute_task`），需用户明确指定 |
-| 任务状态 | 可执行（`Ready`） |
+| 当前模式 | 等待审查（下一模式为 `review_task`） |
+| 下一允许模式 | 审查任务（`review_task`） |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | B：改动范围小，但发布语义敏感 |
-| 执行位置 | 计划使用独立分支；执行时确认 |
+| 执行位置 | 独立分支 `codex/rel-001-close-v06-release-identity` |
 | 独立审查 | 必须 |
 | 用户动作等级 | UA7：最终版本身份、tag 与发布策略必须由用户决定 |
 | Intake | 无；来源为已批准的 v0.7 RFC |
@@ -71,10 +71,10 @@
 
 ## 前置门禁
 
-- [ ] 用户明确发出 `执行 REL-001` 或等价指令。
-- [ ] 本轮 RFC、CONTEXT、TASK_BOARD 与 TASK 文件已形成清晰 Git baseline。
-- [ ] `git status --short` 没有来源不明或不属于本任务的改动。
-- [ ] 执行分支、Base commit、HEAD 和 Diff 范围已写入本任务。
+- [x] 用户明确发出 `执行 REL-001` 或等价指令。
+- [x] 本轮 RFC、CONTEXT、TASK_BOARD 与 TASK 文件已形成清晰 Git baseline。
+- [x] `git status --short` 没有来源不明或不属于本任务的改动。
+- [x] 执行分支、Base commit、HEAD 和 Diff 范围已写入本任务。
 
 ## 执行步骤
 
@@ -87,11 +87,11 @@
 
 ## 完成标准
 
-- [ ] `VERSION`、README、Skill README 和 CHANGELOG 对当前发布身份表述一致。
-- [ ] `0.6.0` 是否已发布、仅 release-ready 或仍为 Unreleased 只有一个明确结论。
-- [ ] v0.7 内容明确标记为 Draft / 未实现，没有混入 v0.6 已发布能力。
-- [ ] tag 命名、创建条件和授权要求已记录，但没有实际创建 tag。
-- [ ] 未改动 Skill 行为、Prompt、模板或脚本。
+- [x] `VERSION`、README、Skill README 和 CHANGELOG 对当前发布身份表述一致。
+- [x] `0.6.0` 是否已发布、仅 release-ready 或仍为 Unreleased 只有一个明确结论。
+- [x] v0.7 内容明确标记为 Draft / 未实现，没有混入 v0.6 已发布能力。
+- [x] tag 命名、创建条件和授权要求已记录，但没有实际创建 tag。
+- [x] 未改动 Skill 行为、Prompt、模板或脚本。
 - [ ] 独立 Review 无 P0/P1。
 - [ ] 用户完成 UA7 决策后，任务才可进入 `Accepted`。
 
@@ -129,12 +129,25 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 - 审查结论：待填写
 - 是否允许进入验收建议：待确认
 
+## 执行与验证记录
+
+- 版本身份结论：仓库内部版本为 `0.6.0`，状态为 Release ready（尚未发布）。
+- tag 策略：计划使用 `v0.6.0`；独立 Review 无 P0/P1、版本一致性验证通过且用户明确完成 UA7 授权后才允许创建。
+- 实际发布动作：未创建 tag，未 push，未创建 GitHub Release，未 merge，未同步本机 Skill。
+- 修改文件：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、本任务文件、`docs/TASK_BOARD.md`。
+- `git diff --check`：通过，无输出。
+- 版本检索：通过；对外文档当前版本均为 `0.6.0`，没有剩余 `Unreleased` 身份声明。
+- Skill 验证：`quick_validate.py skills/ai-dev-flow` 通过，输出 `Skill is valid!`。
+- 范围检查：未修改 `SKILL.md`、`references/`、`scripts/` 或任何 v0.7 实现文件。
+- tag 只读检查：仓库当前无 tag。
+- 未验证项：独立 Review 与 UA7 用户决策尚未完成。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
-- 范围越界文件：待审查
+- 修改文件清单：`README.md`、`README.en.md`、`skills/ai-dev-flow/README.md`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/VERSION`、本任务文件、`docs/TASK_BOARD.md`
+- 范围越界文件：执行自查未发现；以独立 Review 结论为准
 - 审查状态：未审查
 - 审查结论：待填写
 
@@ -142,7 +155,7 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 - 用户动作等级：UA7
 - 用户需要做什么：确认最终版本身份与 tag 策略；实际发布需另行明确授权
-- agent 已提供的证据：待执行后填写
+- agent 已提供的证据：版本检索、`git diff --check`、Skill quick validation、允许范围检查和空 tag 列表
 - 是否允许关闭任务：否 / 待用户确认
 
 ## 用户验收反馈 / 实机测试反馈
@@ -160,17 +173,17 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 ## 提交 / 合并
 
-- Commit 状态：未提交
+- Commit 状态：待提交执行结果
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
-- 当前分支：`main`（建档时）
+- 当前分支：`codex/rel-001-close-v06-release-identity`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：待执行时填写，必须包含本任务文件
-- 计划分支：`codex/rel-001-v06-release-identity`
-- Diff 范围：待执行时填写
+- 执行 Base commit：`5c505d202880a538c57c7c9d0ff35df30cf3af8f`
+- 计划分支：`codex/rel-001-close-v06-release-identity`（已建立）
+- Diff 范围：`5c505d202880a538c57c7c9d0ff35df30cf3af8f...HEAD`（提交前使用同一 Base 到工作区）
 - 下一任务：`CONTRACT-001`，仅在本任务 `Accepted` 且形成可引用 baseline 后转为 `Ready`
 - 不要重复尝试：未经新授权直接 tag、push、release 或同步本机 Skill

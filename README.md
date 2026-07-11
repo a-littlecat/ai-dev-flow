@@ -310,7 +310,7 @@ Parallel Wave 用来安全地并行处理多个互不冲突任务。
 - 多个代码执行会话不得默认共享同一工作区。
 - Review Hub 可以集中审查 Wave，但必须逐任务输出结论。
 
-## v0.6.0 Unreleased：设计级能力
+## v0.6.0：设计级能力
 
 v0.6.0 增加一组 Markdown-first 的设计级工作流指南：
 
@@ -376,10 +376,12 @@ skills/ai-dev-flow/README.md
 ## 当前版本
 
 ```text
-0.5.2
+0.6.0
 ```
 
-`0.6.0` 当前作为 Unreleased 文档升级记录在 `skills/ai-dev-flow/CHANGELOG.md` 中。
+仓库内部版本身份已收口为 `0.6.0`，当前状态为 **Release ready（尚未发布）**。仓库尚未创建 `v0.6.0` tag 或 GitHub Release，因此不能把该版本表述为已经对外发布。
+
+计划 tag 名称为 `v0.6.0`。只有在独立 Review 无 P0/P1、版本一致性验证通过并取得 UA7 用户明确授权后，才允许从获准的发布提交创建 tag；tag、push、GitHub Release、merge 和本机 Skill 同步均需分别授权。
 
 变更记录见：
 

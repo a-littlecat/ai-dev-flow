@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-11
-> - 当前模式：创建任务（`create_task`）
-> - 当前阶段：v0.7 实施任务已排期，尚未开始执行
+> - 当前模式：等待独立审查（下一模式为 `review_task`）
+> - 当前阶段：`REL-001` 已完成执行与自动验证，等待独立 Review；后续任务仍未开始
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -60,7 +60,7 @@ REL-001
 
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| REL-001 | 收口 v0.6 发布身份 | B | Ready | 高 | 高 | 无 | 未审查 | UA7 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
+| REL-001 | 收口 v0.6 发布身份 | B | Review | 高 | 高 | 无 | 未审查 | UA7 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
 | CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Draft | 高 | 高 | REL-001 Accepted | 未审查 | UA2 | Single / 独立分支或 Worktree | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |

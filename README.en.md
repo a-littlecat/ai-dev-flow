@@ -36,7 +36,7 @@ Without a workflow, it is easy to lose track of:
 - User action levels: `UA0` through `UA7`.
 - Batch flow for small A/B tasks.
 - Parallel Wave flow for safe multi-agent scheduling.
-- v0.6.0 Unreleased design-level guides for Intake, Loop Engineering, Review-Repair Loop, Roles, Project Constitution, Memory, optional GitHub Issues backend, and harness compatibility.
+- v0.6.0 design-level guides for Intake, Loop Engineering, Review-Repair Loop, Roles, Project Constitution, Memory, optional GitHub Issues backend, and harness compatibility.
 - Safety rules for merge, push, release, deletion, secrets, and local config.
 - Prompt templates that work even in agents without native Skill support.
 
@@ -255,7 +255,7 @@ Rules:
 - Multiple code execution sessions must not share the same workspace by default.
 - Review Hub may review a Wave, but must output per-task conclusions.
 
-## v0.6.0 Unreleased: Design-Level Guides
+## v0.6.0: Design-Level Guides
 
 v0.6.0 adds Markdown-first design-level workflow guides for:
 
@@ -314,10 +314,12 @@ skills/ai-dev-flow/README.md
 Current Skill version:
 
 ```text
-0.5.2
+0.6.0
 ```
 
-`0.6.0` is currently tracked as an Unreleased documentation upgrade in `skills/ai-dev-flow/CHANGELOG.md`.
+The repository-internal version identity is now `0.6.0`, with a status of **release ready (not published)**. No `v0.6.0` tag or GitHub Release exists yet, so this version must not be described as publicly released.
+
+The planned tag is `v0.6.0`. It may be created from the approved release commit only after an independent review reports no P0/P1 findings, version-consistency checks pass, and the user explicitly grants UA7 authorization. Tagging, pushing, creating a GitHub Release, merging, and synchronizing local Skill copies each require separate authorization.
 
 See:
 

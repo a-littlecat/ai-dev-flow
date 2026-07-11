@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.6.0 Unreleased
+## 0.6.0 - Release ready (not published)
+
+> 仓库内版本身份已收口为 `0.6.0`。当前提交尚未创建 Git tag 或 GitHub Release，因此这里的 “Release ready” 不表示已经对外发布。
 
 - Add Intake guide for requirement capture before task creation.
 - Add Loop Engineering guide for triage, goal, review-repair, and status loops.
@@ -20,6 +22,12 @@
 - Add Architecture Review guide for read-only architecture friction reports.
 - Add Real Environment Signal guide for RED/GREEN/SIGNAL handling of user acceptance failures.
 - Integrate feedback-loop guides with Acceptance, Validation, Task Template, Prompts, Glossary, and AGENTS compatibility rules.
+
+### Release gate
+
+- 计划 tag 名称为 `v0.6.0`。
+- 只有在独立 Review 无 P0/P1、版本一致性验证通过并取得 UA7 用户明确授权后，才允许从获准的发布提交创建 tag。
+- 创建 tag、push tag、创建 GitHub Release、merge 和同步本机 Skill 副本都是独立操作，不由版本号更新自动授权。
 
 ## 0.5.2
 
