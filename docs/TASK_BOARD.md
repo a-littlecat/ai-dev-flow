@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：`CONTRACT-001` 已完成 UA2 并进入 Accepted，准备 `CONTRACT-002`
-> - 当前阶段：`CONTRACT-001` 无 P0-P3，用户已确认方案；待形成 Accepted commit 并验证祖先关系后启动 `CONTRACT-002`
+> - 当前模式：`CONTRACT-002` 实现与验证完成，等待独立 Review
+> - 当前阶段：Golden fixture 候选已建立；未通过 Review 和 UA3 前不启动 `CONTRACT-003`
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -61,7 +61,7 @@ REL-001
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
 | CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Draft | 高 | 中 | CONTRACT-001 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Review | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 待独立审查 | UA3 待证据确认 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Draft | 中 | 高 | CONTRACT-004 Accepted | 未审查 | UA6 | Single / 必须 Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
@@ -69,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`CONTRACT-001` 已在 `14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72` 完成独立复审，无 P0/P1/P2/P3；用户于 2026-07-12 完成 UA2 阅读确认，任务进入 Accepted。形成 Accepted commit 并验证其为当前 Base 祖先后，允许准备 `CONTRACT-002`；当前仍不允许 merge 或 push。
+`CONTRACT-002` 的 fixture 候选与自动验证已完成，下一步是基于 `28e74f8..HEAD` 做独立 Review。Review 与 UA3 完成前不得启动 `CONTRACT-003`；当前仍不允许 merge 或 push。
 
 ## 整体停止条件
 

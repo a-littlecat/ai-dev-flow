@@ -1,0 +1,18 @@
+{
+  "scenarios": [
+    {
+      "id": "FIX-ILLEGAL-TRANSITION",
+      "before": "Draft",
+      "after": "Accepted",
+      "history_available": true,
+      "expected_diagnostics": ["V_ILLEGAL_TRANSITION"]
+    },
+    {
+      "id": "FIX-TRANSITION-UNVERIFIABLE",
+      "before": null,
+      "after": "Review",
+      "history_available": false,
+      "expected_diagnostics": ["W_TRANSITION_UNVERIFIABLE"]
+    }
+  ]
+}
