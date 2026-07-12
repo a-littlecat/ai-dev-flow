@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：`CONTRACT-004` 第 1 轮修复完成，等待独立复审
-> - 当前阶段：24/24 GREEN；复审与 UA4 前不启动 Writer
+> - 当前模式：执行 `REL-002`，收口 v0.7 Skill 发布身份
+> - 当前阶段：仓库内版本身份修改与自动验证；独立 Review 通过前不重新同步本机副本
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -49,11 +49,13 @@ REL-001
   -> CONTRACT-004
   -> CONTRACT-005
   -> CONTRACT-006
+  -> REL-002
 ```
 
 - 整条链严格串行，不建立 Batch 或 Parallel Wave。
 - `CONTRACT-006` 显式依赖 `CONTRACT-004` 和 `CONTRACT-005`；图中因 `005 -> 004` 已隐含前一依赖而简化显示。
 - `CONTRACT-007` 及以后不属于本轮任务集。
+- `REL-002` 是 CONTRACT-001～006 之后的新建发布治理任务；建档不等于授权执行、tag、push、GitHub Release 或 merge。
 
 ## 当前任务
 
@@ -66,10 +68,11 @@ REL-001
 | CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1（1 项 P2） | UA4 已通过 | Single / 独立分支 `codex/contract-004-workflow-lint` | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004 `7f0f7e5`、005 `61d0911` Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-006` | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
+| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | In Progress | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | Pending | UA3 Pending | Single / 分支 `codex/rel-002-v07-release-identity` | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 
 ## 下一允许动作
 
-`CONTRACT-003` 已完成两轮有限修复、最终独立复审和 UA3，任务进入 Accepted。形成 Accepted commit 并验证为后继 Base 祖先后允许启动 `CONTRACT-004`；当前仍不允许 merge 或 push。
+`REL-002` 正在独立分支执行。下一允许动作是完成仓库内版本身份验证并进入独立 Review；Review 通过前不得同步本机副本。当前不允许 tag、push、GitHub Release 或 merge。
 
 ## 整体停止条件
 
