@@ -1,4 +1,4 @@
-# RED GREEN SIGNAL 顺序门禁收紧（Compact 回填）
+# CMP-4A6C417：RED GREEN SIGNAL 顺序门禁收紧
 
 > 基于真实 Git 变更 `4a6c417` 回填；不表示历史上存在此 TASK。
 
@@ -12,19 +12,23 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
 - `ua_status`: `Pending`
+- `commit_status`: `Committed`
 
-## 目标
+## 目标与边界
 
-固定 RED、GREEN、SIGNAL 的顺序门禁。
+- 目标：固定 RED、GREEN、SIGNAL 的顺序门禁。
+- 非目标：不执行真实环境测试。
+- 允许修改：PROMPTS、REAL_ENV_SIGNAL_GUIDE、TASK_TEMPLATE。
+- 禁止修改：Skill 脚本与版本文件。
 
-## 范围
+## 完成标准与验证
 
-PROMPTS、REAL_ENV_SIGNAL_GUIDE、TASK_TEMPLATE。
+- 完成标准：三处规则的信号顺序一致。
+- 验证命令或检查：检查 `4a6c417^..4a6c417` diff 与信号关键词。
 
-## 完成标准
+## Outcome
 
-三处规则顺序一致。
-
-## 验证
-
-检查 diff 与信号关键词。
+- Base / Diff：base=4a6c417^;diff=4a6c417^..4a6c417
+- 修改文件：PROMPTS、REAL_ENV_SIGNAL_GUIDE、TASK_TEMPLATE。
+- 验证证据：`git show --stat 4a6c417`
+- Review findings：none

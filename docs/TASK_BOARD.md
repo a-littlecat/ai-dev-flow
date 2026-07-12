@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：修复 `CONTRACT-002` 第 1 轮 Review findings
-> - 当前阶段：独立 Review 发现 4 项 P1，正在执行 bounded repair；不启动 `CONTRACT-003`
+> - 当前模式：`CONTRACT-002` 第 1 轮修复完成，等待独立复审
+> - 当前阶段：4 项 P1 已按规范修复并复验；复审与 UA3 前不启动 `CONTRACT-003`
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -61,7 +61,7 @@ REL-001
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
 | CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Needs Fix | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 第 1 轮：4 项 P1 | UA3 未进入 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Review | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 第 1 轮修复完成，待复审 | UA3 未进入 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Draft | 中 | 高 | CONTRACT-004 Accepted | 未审查 | UA6 | Single / 必须 Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
@@ -69,7 +69,7 @@ REL-001
 
 ## 下一允许动作
 
-`CONTRACT-002` 第 1 轮独立 Review 发现 4 项 P1，当前仅允许修复 board 表头、feedback/signal 精确 grammar、Legacy authority 门禁和 comparison ledger。复审与 UA3 完成前不得启动 `CONTRACT-003`；当前仍不允许 merge 或 push。
+`CONTRACT-002` 第 1 轮 4 项 P1 已完成有限修复与自动复验，下一步只允许独立复审。复审与 UA3 完成前不得启动 `CONTRACT-003`；当前仍不允许 merge 或 push。
 
 ## 整体停止条件
 

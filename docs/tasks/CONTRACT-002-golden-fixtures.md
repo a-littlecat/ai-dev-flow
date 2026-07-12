@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复（`repair_task`） |
-| 下一允许模式 | 完成第 1 轮修复与验证后重新进入独立审查 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复已完成，等待独立复审（`review_task`） |
+| 下一允许模式 | 独立复审通过后进入 UA3；若仍有 P0/P1 则按轮次上限处理 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：建立多目录机器 oracle，并成为后续 Reader 的测试基线 |
@@ -168,7 +168,7 @@ foreach ($c in $m.comparisons) {
 - `manifest.json`：固定唯一 ID、真实相对输入路径、expected normalized 片段、精确 diagnostic 集合和阶段标签。
 - `coverage.md`：覆盖全部首批 `E_* / V_* / W_*`，并把 `V_OVERLAY_WEAKENS_CORE` 明确标为 `future_contract_007`。
 - Legacy oracle：Review 与 merge 冲突均预期 `E_LEGACY_CONFLICT`，冲突轴 normalized 值为 `null`。
-- Comparison：`81a8837` 为 12→8、重复 3→0；`12b3dc0` 为 13→8、重复 3→0；`4a6c417` 为 14→8、重复 4→0。
+- Comparison：逐事实 ledger 可机械复算；`81a8837` 为 22→18、重复 3→0；`12b3dc0` 为 23→18、重复 3→0；`4a6c417` 为 24→18、重复 3→0。
 - 标准库验证：通过；24 个 fixture/comparison ID 唯一，所有 input 存在，所有 expected diagnostic 均在规范中，三个 Compact 样本恰好只有 8 个核心字段。
 - PowerShell JSON 解析：所有 JSON 文件通过；三个来源 commit 仍可由 `git cat-file -e` 解析。
 - `git diff --check`：通过；仅有现有 Windows LF/CRLF 策略 warning。
@@ -195,6 +195,19 @@ foreach ($c in $m.comparisons) {
   4. comparison 只声明总数，缺逐事实 ledger，且 Compact 不满足 Review checkpoint 正文语义。
 - 审查结论：Needs Fix；不允许进入 UA3
 - 是否允许进入验收建议：否；修复后重新独立 Review
+
+## 审查-修复循环（review_repair_loop）记录
+
+- 当前轮次：1 / 2。
+- 修复输入：第 1 轮独立 Review 的 4 项 P1。
+- 修复范围：fixture、manifest、coverage、本任务文件与 TASK_BOARD；未修改规范、Schema、Reader、CLI、Skill、Prompt 或模板。
+- P1-1：board drift 改为规范规定的 9 列 Canonical 中文表头，保留 lifecycle drift 与 orphan row 两个目标信号。
+- P1-2：feedback/signal 改为精确字段、精确枚举、精确 repair intent 和 real_env_signal 标题，并补齐 C 级 In Progress 正文门禁。
+- P1-3：Legacy authority 改为语义完整的 Review checkpoint，补齐 Review、UA evidence、Base/Diff、修改文件、验证证据与 commit 状态，只保留 legacy/authority warnings。
+- P1-4：三个 comparison 均改成语义完整的 Review TASK；metrics 新增逐事实 ledger、位置映射、事实值和 duplicate ledger，可机械复算 22/23/24→18 与 3→0。
+- 修复验证：24 个 ID 唯一、33 个文件路径存在、diagnostic 均属于规范、ledger 汇总与 manifest/metrics 一致、三个 Compact 前 8 字段精确为 core 且无 N/A、三个来源 commit 仍存在、全部 JSON 可解析、`git diff --check` 通过。
+- 未处理意见：无。
+- 下一步：提交修复候选并进行独立复审。
 
 ## Diff 审查
 
@@ -227,7 +240,7 @@ foreach ($c in $m.comparisons) {
 
 ## 提交 / 合并
 
-- Commit 状态：实现候选待提交，提交后写回 hash
+- Commit 状态：实现 commit `c8626a1`、Review 记录 commit `4da8643`；第 1 轮修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化

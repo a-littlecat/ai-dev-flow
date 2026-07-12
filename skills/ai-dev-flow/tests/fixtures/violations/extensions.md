@@ -6,7 +6,7 @@
 - `task_id`: `FIX-EXT`
 - `task_type`: `test`
 - `task_class`: `B`
-- `lifecycle`: `Ready`
+- `lifecycle`: `Draft`
 - `review_status`: `Pending`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`

@@ -1,4 +1,4 @@
-# README 验收反馈闸门更新（Compact 回填）
+# CMP-81A8837：README 验收反馈闸门更新
 
 > 基于真实 Git 变更 `81a8837` 回填；不表示历史上存在此 TASK。
 
@@ -12,19 +12,23 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA1`
 - `ua_status`: `Pending`
+- `commit_status`: `Committed`
 
-## 目标
+## 目标与边界
 
-补充 README 中的验收反馈闸门说明。
+- 目标：补充 README 中的验收反馈闸门说明。
+- 非目标：不修改工作流实现。
+- 允许修改：`README.md`
+- 禁止修改：Skill 脚本与模板。
 
-## 范围
+## 完成标准与验证
 
-仅 README 文档。
+- 完成标准：README 说明反馈分类与停止边界。
+- 验证命令或检查：检查 `81a8837^..81a8837` diff 与术语。
 
-## 完成标准
+## Outcome
 
-说明反馈分类与停止边界。
-
-## 验证
-
-检查 diff 与术语。
+- Base / Diff：base=81a8837^;diff=81a8837^..81a8837
+- 修改文件：`README.md`
+- 验证证据：`git show --stat 81a8837`
+- Review findings：none

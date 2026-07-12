@@ -1,1 +1,35 @@
-{"source_commit":"81a8837","lifecycle_checkpoint":"Review","legacy_required_inputs":12,"compact_required_inputs":8,"legacy_duplicate_state_occurrences":3,"compact_duplicate_state_occurrences":0,"legacy_evidence_sections":3,"compact_evidence_sections":1}
+{
+  "source_commit": "81a8837",
+  "lifecycle_checkpoint": "Review",
+  "legacy_required_inputs": 22,
+  "compact_required_inputs": 18,
+  "legacy_duplicate_state_occurrences": 3,
+  "compact_duplicate_state_occurrences": 0,
+  "legacy_evidence_sections": 5,
+  "compact_evidence_sections": 3,
+  "ledger": [
+    {"fact_id":"task_id","legacy":"任务元数据/任务编号","compact":"Workflow Contract/task_id","legacy_required":true,"compact_required":true},
+    {"fact_id":"task_type","legacy":"任务元数据/任务类型","compact":"Workflow Contract/task_type","legacy_required":true,"compact_required":true},
+    {"fact_id":"task_class","legacy":"任务元数据/任务分级","compact":"Workflow Contract/task_class","legacy_required":true,"compact_required":true},
+    {"fact_id":"lifecycle","legacy":"任务元数据/任务状态","compact":"Workflow Contract/lifecycle","legacy_required":true,"compact_required":true},
+    {"fact_id":"review_status","legacy":"代码审查/审查状态","compact":"Workflow Contract/review_status","legacy_required":true,"compact_required":true},
+    {"fact_id":"ua_level","legacy":"任务元数据/用户动作等级","compact":"Workflow Contract/ua_level","legacy_required":true,"compact_required":true},
+    {"fact_id":"ua_status","legacy":"用户动作等级/待确认","compact":"Workflow Contract/ua_status","legacy_required":true,"compact_required":true},
+    {"fact_id":"commit_status","legacy":"提交合并/Commit 状态","compact":"Workflow Contract/commit_status","legacy_required":true,"compact_required":true},
+    {"fact_id":"goal","legacy":"目标","compact":"目标与边界/目标","legacy_required":true,"compact_required":true},
+    {"fact_id":"non_goal","legacy":"非目标","compact":"目标与边界/非目标","legacy_required":true,"compact_required":true},
+    {"fact_id":"allowed","legacy":"允许修改范围","compact":"目标与边界/允许修改","legacy_required":true,"compact_required":true},
+    {"fact_id":"forbidden","legacy":"禁止修改范围","compact":"目标与边界/禁止修改","legacy_required":true,"compact_required":true},
+    {"fact_id":"criterion","legacy":"完成标准","compact":"完成标准与验证/完成标准","legacy_required":true,"compact_required":true},
+    {"fact_id":"validation","legacy":"验证方式","compact":"完成标准与验证/验证命令或检查","legacy_required":true,"compact_required":true},
+    {"fact_id":"base_diff","legacy":"Git 与交接","compact":"Outcome/Base Diff","legacy_required":true,"compact_required":true},
+    {"fact_id":"modified_files","legacy":"Diff 审查/修改文件清单","compact":"Outcome/修改文件","legacy_required":true,"compact_required":true},
+    {"fact_id":"evidence","legacy":"执行与验证记录","compact":"Outcome/验证证据","legacy_required":true,"compact_required":true},
+    {"fact_id":"findings","legacy":"代码审查/审查结论","compact":"Outcome/Review findings","legacy_required":true,"compact_required":true},
+    {"fact_id":"current_mode","legacy":"任务元数据/当前模式","compact":null,"legacy_required":true,"compact_required":false},
+    {"fact_id":"next_mode","legacy":"任务元数据/下一允许模式","compact":null,"legacy_required":true,"compact_required":false},
+    {"fact_id":"priority","legacy":"任务元数据/优先级","compact":null,"legacy_required":true,"compact_required":false},
+    {"fact_id":"risk","legacy":"任务元数据/风险等级","compact":null,"legacy_required":true,"compact_required":false}
+  ],
+  "duplicate_state_ledger": ["review_status@Diff审查","ua_level@用户动作等级","lifecycle@当前模式"]
+}

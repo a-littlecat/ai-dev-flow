@@ -13,23 +13,21 @@
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
-## 目标
+## 目标与边界
 
-验证合法 Compact Core。
+- 目标：验证合法 Compact Core。
+- 非目标：none
+- 允许修改：fixture 文件。
+- 禁止修改：合同规范。
 
-## 范围
+## 完成标准与验证
 
-只包含 fixture。
+- 完成标准：Contract 与 Review checkpoint 语义完整。
+- 验证命令或检查：对照 manifest 精确集合。
 
-## 完成标准
+## Outcome
 
-- [x] Contract 可解析。
-
-## 验证
-
-- 命令：标准库 fixture 检查。
-- 结果：待 Reader 实现验证。
-
-## 证据
-
-- `manifest.json#FIX-VALID-A`
+- Base / Diff：base=fixture-base;diff=fixture-base..fixture-head
+- 修改文件：`valid/task-a-document.md`
+- 验证证据：`manifest.json#FIX-VALID-A`
+- Review findings：none
