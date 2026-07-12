@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：复审 `REL-002` 第 1 轮有限修复
-> - 当前阶段：2 项 P1 / 1 项 P2 已修复；复审通过前不重新同步本机副本
+> - 当前模式：执行 `REL-002` Review 后本机 Skill 同步
+> - 当前阶段：bounded re-review 已通过且无 P0-P3；正在同步并生成逐文件哈希证据
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -70,11 +70,11 @@ REL-001
 | CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1（1 项 P2） | UA4 已通过 | Single / 独立分支 `codex/contract-004-workflow-lint` | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004 `7f0f7e5`、005 `61d0911` Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-006` | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
-| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Review | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | In Review（第 1 轮 findings 已修复） | UA3 Pending | Single / 分支 `codex/rel-002-v07-release-identity` | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
+| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Review | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | Passed / 无 P0-P3 | UA3 Pending | Single / 分支 `codex/rel-002-v07-release-identity` | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 
 ## 下一允许动作
 
-`REL-002` 第 1 轮 2 项 P1 和 1 项 P2 已有限修复，等待 bounded re-review。复审无 P0/P1 后，才允许重新同步本机副本并执行逐文件哈希验证；当前不允许 tag、push、GitHub Release 或 merge。
+`REL-002` bounded re-review 已通过且无 P0-P3。下一允许动作是同步三个已确认的本机 Skill 副本并执行逐文件哈希验证；证据完整后进入 UA3。当前不允许 tag、push、GitHub Release 或 merge。
 
 ## 整体停止条件
 
