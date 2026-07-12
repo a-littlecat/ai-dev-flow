@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 第 2 轮有限修复已完成，等待最终独立复审（`review_task`） |
-| 下一允许模式 | 复审通过后进入 UA3；若仍有 P0/P1 则停止并人工接管 |
+| 当前模式 | 第 2 轮最终独立复审已通过，等待 UA3 证据确认 |
+| 下一允许模式 | 用户完成 UA3 后更新为已验收（`Accepted`）；未确认前保持 Review |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
@@ -133,7 +133,7 @@ skills/ai-dev-flow/tests/fixtures/
 - [x] 三个样本的 `compact_duplicate_state_occurrences` 均为 0，且严格小于对应的 `legacy_duplicate_state_occurrences`。
 - [x] fixture 不含私有路径、账号、密钥或项目外业务信息。
 - [x] 存在 `projects/valid-project/docs/tasks/` 形状的目录 fixture，用于验证 public project-root target，不把任意 fixture 目录当项目根。
-- [ ] 独立 Review 无 P0/P1。
+- [x] 独立 Review 无 P0/P1。
 
 ## 验证方式
 
@@ -185,16 +185,16 @@ foreach ($c in $m.comparisons) {
 
 ## 代码审查
 
-- 审查状态：需要修改
-- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
-- 审查严重等级：P1（4 项）
+- 审查状态：最终复审通过
+- 审查人或审查 agent：Codex 独立 Reviewer（2 轮 repair 后最终复审）
+- 审查严重等级：无 P0/P1；保留 1 类 P2 文档定位精度项
 - P0 / P1 必须修改项：
   1. board drift fixture 表头不属于 canonical 或 legacy 精确别名，实际会先触发 `E_BOARD_PARSE`。
   2. feedback/signal fixture 未使用精确字段、值、标题，且缺少 In Progress C 级正文门禁。
   3. Legacy authority fixture 处于 Accepted 但未补齐 Review、UA、Outcome 门禁，exact diagnostics 漏报。
   4. comparison 只声明总数，缺逐事实 ledger，且 Compact 不满足 Review checkpoint 正文语义。
-- 审查结论：Needs Fix；不允许进入 UA3
-- 是否允许进入验收建议：否；修复后重新独立 Review
+- 审查结论：通过；原 P1 全部关闭
+- 是否允许进入验收建议：是（UA3）
 
 ## 审查-修复循环（review_repair_loop）记录
 
@@ -227,20 +227,28 @@ foreach ($c in $m.comparisons) {
 - duplicate ledger 删除错误的 `lifecycle@current_mode`，只保留 Review 状态与 UA level 的真实重复，三个样本均为 2→0。
 - 本轮为 repair 上限 2 / 2；提交并验证后必须最终独立复审。
 
+### 第 2 轮最终复审结果
+
+- 结论：通过；无 P0/P1，允许进入 UA3。
+- 原阻断项：全部关闭。
+- P2 非阻塞项：三个 metrics 的 `ua_status` location 说明仍写旧路径“用户动作等级/待确认”，实际来源为“用户验收反馈 / 实机测试反馈/验收反馈状态：无反馈”；不影响事实一致、计数或 exact diagnostics，留作后续文档清理。
+- P3：无。
+- 完整审查范围：`28e74f8..2fd069e`；最终修复范围：`e8313b2..2fd069e`。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：第 1 轮未通过
-- 审查结论：范围无越界、JSON 与路径检查通过，但 oracle 精确性和 comparison 可审计性存在 4 项 P1
+- 审查状态：最终复审通过
+- 审查结论：完整任务范围无越界，无 P0/P1；允许进入 UA3
 
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA3
 - 用户需要做什么：查看 coverage、真实样本对比和 fixture 验证证据
-- agent 已提供的证据：待执行后填写
+- agent 已提供的证据：24 个唯一 ID、33 个 fixture 文件、全部 diagnostic coverage、JSON/路径/ledger/历史流转检查、三个真实 commit 来源、两轮独立 Review
 - 是否允许关闭任务：否 / 待用户确认
 
 ## 用户验收反馈 / 实机测试反馈
@@ -248,7 +256,7 @@ foreach ($c in $m.comparisons) {
 - 验收反馈状态：无反馈
 - 当前反馈关联的 UA 等级：UA3
 - 反馈分类：不适用
-- 下一步建议：等待任务执行、Review 和证据确认
+- 下一步建议：等待用户查看验证摘要并完成 UA3；未确认前保持 Review，不启动 `CONTRACT-003`
 
 ## 合并状态
 
@@ -258,7 +266,7 @@ foreach ($c in $m.comparisons) {
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `c8626a1`、首审记录 `4da8643`、第 1 轮修复 `23fcb7d`、复审记录 `e8313b2`；第 2 轮修复候选待提交
+- Commit 状态：实现 `c8626a1`、首审记录 `4da8643`、第 1 轮修复 `23fcb7d`、复审记录 `e8313b2`、第 2 轮修复 / 最终复审 HEAD `2fd069e`
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
