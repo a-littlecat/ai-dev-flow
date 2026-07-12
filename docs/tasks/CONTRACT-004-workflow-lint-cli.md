@@ -141,7 +141,7 @@ git diff --name-only
 
 - 审查状态：需要修改
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
-- 审查严重等级：P1（5 项）
+- 审查严重等级：P1（第 1 轮 5 项；修复复审仍有 2 项）
 - P0 / P1 必须修改项：
   1. 补齐 Base/Diff、C/D 隔离回滚、UA Outcome/evidence、Needs Fix finding、Merged evidence、real_env_signal 等 core 门禁。
   2. Git 历史不能固定比较 `HEAD^`；dirty/untracked/rename/浅克隆等必须 warning，并复用 Reader 语义读取 blob。
@@ -150,6 +150,10 @@ git diff --name-only
   5. Human diagnostic 必须输出与 JSON 等价的 provenance。
 - 审查结论：Needs Fix；不允许进入 UA4
 - 是否允许进入验收建议：否
+- 第 1 轮修复复审：Git history、只读/调用错误、Human/JSON provenance 三项已关闭；core validator 与 production fixture 特判仍未关闭。
+- 剩余 P1：
+  1. `Base / Diff` 未严格拒绝空 base，重复单值冲突未诊断；UA 反向约束仍不完整。
+  2. public facade 仍向上查找 `manifest.json` 并改变 filename、commit、Git 门禁，生产语义受 fixture 目录影响。
 
 ## Diff 审查
 
@@ -157,8 +161,8 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：第 1 轮未通过
-- 审查结论：20 tests 与 smoke 通过，但 public 语义和完整 validator 存在 P1
+- 审查状态：第 1 轮修复复审未通过
+- 审查结论：24 tests、三条 CLI 与 invocation error 均通过，但 production fixture 特判和 validator 反例仍存在 P1
 
 ## 审查-修复循环（review_repair_loop）记录
 
@@ -174,7 +178,9 @@ git diff --name-only
   5. Human 输出逐条打印与 JSON 相同的 diagnostic provenance。
 - 测试扩展：24/24 GREEN，新增完整 core guard、真实临时 Git 合法/dirty/非法流转、invocation error format、public/CLI diagnostic+provenance 等价。
 - fixture Base→工作区 diff 为空；未实现 board、Writer 或 Overlay Reader。
-- 下一步：提交修复候选并独立复审。
+- 第 1 轮修复提交：`e488853a49428462ba843f198dfa81c98b1fd14a`。
+- 第 1 轮独立复审结果：Needs Fix；进入第 2 / 2 轮有限修复。
+- 第 2 轮修复边界：删除 production fixture 特判；补齐单值 grammar/重复冲突与 UA 反向门禁；不改 fixture 事实和 CONTRACT-005/006 范围。
 
 ## 用户动作等级 / 验收建议
 
@@ -198,7 +204,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `ecebe05`、首审记录 `e747558`；第 1 轮修复候选待提交
+- Commit 状态：实现 `ecebe05`、首审记录 `e747558`、第 1 轮修复 `e488853`；第 1 轮修复复审记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
