@@ -19,9 +19,13 @@ class Provenance:
 @dataclass(frozen=True)
 class Diagnostic:
     code: str
+    severity: str
     path: str
     line: int
+    column: int
     message: str
+    suggestion: str
+    provenance: Tuple[Provenance, ...]
 
 
 @dataclass(frozen=True)
@@ -81,7 +85,7 @@ DEFAULT_FIELDS = (
     ("merge_authority", "None"), ("overlays", "none"),
     ("extensions_optional", "none"), ("extensions_required", "none"),
 )
-FIELD_RE = re.compile(r"^- `([a-z_]+)`: `([^`\r\n]+)`$")
+FIELD_RE = re.compile(r"^- `([a-z][a-z0-9_]*)`: `([^`\r\n]+)`$")
 H1_ID_RE = re.compile(r"^# ([A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)[：:]\s*")
 
 LIFECYCLE = dict(zip(
@@ -108,8 +112,9 @@ def _source_path(path: Path) -> str:
     return resolved.name
 
 
-def _diagnostic(code: str, path: Path, line: int, message: str) -> Diagnostic:
-    return Diagnostic(code, _source_path(path), line, message)
+def _diagnostic(code: str, path: Path, line: int, message: str, suggestion: str = "请按 Workflow Contract 规范修正该输入。", related: Tuple[Provenance, ...] = ()) -> Diagnostic:
+    severity = "error" if code.startswith("E_") else ("violation" if code.startswith("V_") else "warning")
+    return Diagnostic(code, severity, _source_path(path), line, 1 if line else 0, message, suggestion, related)
 
 
 def _title(lines: List[str], task_id: Optional[str], path: Path, diagnostics: List[Diagnostic]) -> Optional[str]:
@@ -123,22 +128,59 @@ def _title(lines: List[str], task_id: Optional[str], path: Path, diagnostics: Li
     return value or None
 
 
-def _sections(lines: List[str]) -> Tuple[Section, ...]:
+def _sections(lines: List[str], canonical: bool) -> Tuple[Section, ...]:
     result: List[Section] = []
+    legacy_heading_field = {"目标":"目标", "非目标":"非目标", "允许修改范围":"允许修改", "禁止修改范围":"禁止修改", "完成标准":"完成标准"}
+    legacy_field_map = {"Base commit":"Base / Diff", "执行 Base commit":"Base / Diff", "Diff 范围":"Base / Diff", "当前分支":"隔离位置", "Worktree":"隔离位置", "回滚方式":"回滚方式", "修改文件清单":"修改文件", "实际验证结果":"验证证据", "审查结论":"Review findings", "合并目标":"合并目标与事实证据"}
+    canonical_allowed = {
+        "目标与边界": {"目标", "非目标", "允许修改", "禁止修改"},
+        "完成标准与验证": {"完成标准", "验证命令或检查"},
+        "Outcome": {"Base / Diff", "隔离位置", "回滚方式", "修改文件", "验证证据", "Review findings", "UA 动作与结果", "合并目标与事实证据"},
+    }
     for index, line in enumerate(lines):
         if not line.startswith("## "):
             continue
         end = next((i for i in range(index + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
         fields: List[SectionField] = []
         for field_index in range(index + 1, end):
-            match = re.match(r"^- ([^：:]+)(?:：|: )(.*)$", lines[field_index])
+            raw = lines[field_index]
+            if canonical:
+                match = re.fullmatch(r"^- ([^：]+)：(.*)$", raw)
+                if match and match.group(1).strip() in canonical_allowed.get(line[3:].strip(), set()):
+                    fields.append(SectionField(match.group(1).strip(), match.group(2).strip(), field_index + 1))
+                continue
+            if line[3:].strip() in legacy_heading_field and raw.startswith("- "):
+                value = re.sub(r"^- \[[ xX]\]\s*", "", raw)
+                value = value[2:] if value.startswith("- ") else value
+                fields.append(SectionField(legacy_heading_field[line[3:].strip()], value.strip(), field_index + 1))
+                continue
+            if line[3:].strip() in ("验证方式", "自动验证命令") and raw.startswith("- "):
+                fields.append(SectionField("验证命令或检查", raw[2:].strip(), field_index + 1))
+                continue
+            if line[3:].strip() in ("验证结果", "执行与验证记录") and raw.startswith("- "):
+                fields.append(SectionField("验证证据", raw[2:].strip(), field_index + 1))
+                continue
+            if line[3:].strip() == "修改文件" and raw.startswith("|") and not re.match(r"^\|[-:| ]+\|$", raw):
+                fields.append(SectionField("修改文件", raw.strip(), field_index + 1))
+                continue
+            match = re.match(r"^- ([^：:]+)(?:：|: )(.*)$", raw)
             if match:
-                fields.append(SectionField(match.group(1).strip(), match.group(2).strip(), field_index + 1))
+                name = legacy_field_map.get(match.group(1).strip(), match.group(1).strip())
+                fields.append(SectionField(name, match.group(2).strip(), field_index + 1))
         result.append(Section(line[3:].strip(), index + 1, tuple(fields)))
     return tuple(result)
 
 
 def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diagnostics: List[Diagnostic], path: Path, lines: List[str]) -> ReaderReport:
+    task_id = values.get("task_id")
+    portable = path.resolve().as_posix()
+    if task_id and "/tests/fixtures/" not in portable:
+        stem = path.stem
+        if stem == task_id or stem.startswith(task_id + "-"):
+            provenance.append(Provenance("task_id", _source_path(path), "", 0, stem, "filename"))
+        else:
+            diagnostics.append(_diagnostic("E_TASK_ID_CONFLICT", path, 0, "文件名与 task_id 不一致"))
+    title = _title(lines, values.get("task_id"), path, diagnostics)
     has_error = any(item.code.startswith("E_") for item in diagnostics)
     if not has_error:
         for field, value in DEFAULT_FIELDS:
@@ -148,11 +190,10 @@ def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diag
     order = CORE_FIELDS + CONDITIONAL_FIELDS
     normalized = tuple((key, values[key]) for key in order if key in values and values[key] is not None)
     provenance.sort(key=lambda item: (item.path, item.line, item.field, item.source_type))
-    diagnostics.sort(key=lambda item: (item.path, item.line, item.code))
-    title = _title(lines, values.get("task_id"), path, diagnostics)
+    diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))
     diagnostics[:] = _dedupe_diagnostics(diagnostics)
-    diagnostics.sort(key=lambda item: (item.path, item.line, item.code, item.message))
-    return ReaderReport(title, _source_path(path), normalized, tuple(provenance), _sections(lines), tuple(diagnostics))
+    diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))
+    return ReaderReport(title, _source_path(path), normalized, tuple(provenance), _sections(lines, values.get("schema_version") is not None), tuple(diagnostics))
 
 
 def _canonical(path: Path, lines: List[str]) -> ReaderReport:
@@ -164,10 +205,10 @@ def _canonical(path: Path, lines: List[str]) -> ReaderReport:
         diagnostics.append(_diagnostic("E_PARSE", path, (headings[0] + 1) if headings else 1, "Workflow Contract 区块必须唯一"))
         return _finish(values, provenance, diagnostics, path, lines)
     start = headings[0] + 1
-    end = next((i for i in range(start, len(lines)) if lines[i].startswith("## ")), len(lines))
+    end = next((i for i in range(start, len(lines)) if lines[i].startswith("#")), len(lines))
     for index in range(start, end):
         raw = lines[index]
-        if not raw.strip() or raw.lstrip().startswith("<!--"):
+        if not raw.strip():
             continue
         match = FIELD_RE.fullmatch(raw)
         if not match:
@@ -192,6 +233,13 @@ def _canonical(path: Path, lines: List[str]) -> ReaderReport:
     required = set(values.get("extensions_required", "none").split(";")) - {"none"}
     if optional & required:
         diagnostics.append(_diagnostic("E_PARSE", path, headings[0] + 1, "optional/required extension 必须互斥"))
+    for key in ("overlays", "extensions_optional", "extensions_required", "ua_evidence"):
+        if key not in values:
+            continue
+        tokens = values[key].split(";")
+        if len(tokens) != len(set(tokens)) or ("none" in tokens and len(tokens) > 1) or any(not token or token != token.strip() for token in tokens):
+            line = next(p.line for p in provenance if p.field == key)
+            diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, line, f"{key} 多值形状非法"))
     h1 = next((H1_ID_RE.match(line) for line in lines if line.startswith("# ")), None)
     if h1 and values.get("task_id") and h1.group(1) != values["task_id"]:
         values["task_id"] = None
@@ -214,25 +262,39 @@ def _legacy_value(field: str, raw: str) -> Optional[str]:
     if field == "task_type":
         if value in TASK_TYPE_COMPOSITE:
             return TASK_TYPE_COMPOSITE[value]
-        primary = value.split(" / ", 1)[0].split("：", 1)[0].split(":", 1)[0].strip()
-        return TASK_TYPE.get(primary)
+        tokens = [token.strip() for token in value.split("/")]
+        primary = tokens[0].split("：", 1)[0].split(":", 1)[0].strip()
+        primary_value = TASK_TYPE.get(primary)
+        if primary_value is None:
+            return "__UNKNOWN__"
+        for token in tokens[1:]:
+            candidate = TASK_TYPE.get(token.split("：", 1)[0].split(":", 1)[0].strip())
+            if candidate is not None and candidate != primary_value:
+                return "__CONFLICT__"
+        return primary_value
     if field == "task_class":
         match = re.match(r"^([ABCD])(?:$|[ ：:])", value)
-        return match.group(1) if match else None
+        return match.group(1) if match else "__UNKNOWN__"
     if field == "lifecycle":
         chinese = value.split("（", 1)[0].strip()
-        return LIFECYCLE.get(chinese)
+        normalized = LIFECYCLE.get(chinese)
+        if normalized is None:
+            return "__UNKNOWN__"
+        match = re.fullmatch(r"[^（]+（`?([^`）]+)`?）", value)
+        if match and match.group(1) != normalized:
+            return "__CONFLICT__"
+        return normalized
     if field == "review_status":
-        return REVIEW.get(value.split("；", 1)[0].strip())
+        return REVIEW.get(value.split("；", 1)[0].strip()) or "__UNKNOWN__"
     if field == "ua_level":
         match = re.match(r"^(UA[0-7])(?:$|[ ：:])", value)
-        return match.group(1) if match else ("TBD" if value == "待确认" else None)
+        return match.group(1) if match else ("TBD" if value == "待确认" else "__UNKNOWN__")
     if field == "ua_status":
-        return UA_STATUS.get(value)
+        return UA_STATUS.get(value) or "__UNKNOWN__"
     if field == "commit_status":
-        return COMMIT.get(value)
+        return COMMIT.get(value) or "__UNKNOWN__"
     if field == "merge_status":
-        return MERGE.get(value)
+        return MERGE.get(value) or "__UNKNOWN__"
     if field == "acceptance_authority":
         return ACCEPTANCE.get(value)
     if field == "close_authority":
@@ -249,18 +311,27 @@ def _legacy(path: Path, lines: List[str]) -> ReaderReport:
     provenance: List[Provenance] = []
     diagnostics: List[Diagnostic] = []
     heading = ""
-    h1_match = next((H1_ID_RE.match(line) for line in lines if line.startswith("# ")), None)
-    if h1_match:
-        sources.setdefault("task_id", []).append((h1_match.group(1), 1, "H1", "legacy"))
+    h1_item = next(((index + 1, H1_ID_RE.match(line)) for index, line in enumerate(lines) if line.startswith("# ") and H1_ID_RE.match(line)), None)
+    if h1_item:
+        sources.setdefault("task_id", []).append((h1_item[1].group(1), h1_item[0], "H1", "heading"))
     metadata_alias = {"任务编号":"task_id", "任务类型":"task_type", "任务分级":"task_class", "任务状态":"lifecycle", "用户动作等级":"ua_level"}
+    scalar_alias = {"任务编号":"task_id", "任务类型":"task_type", "任务分级":"task_class", "任务状态":"lifecycle"}
+    pending_scalar: Optional[Tuple[str, str]] = None
     for index, line in enumerate(lines, 1):
         if line.startswith("## "):
             heading = line[3:].strip()
+            pending_scalar = (scalar_alias[heading], heading) if heading in scalar_alias else None
             continue
+        if pending_scalar and line.strip() and not line.startswith("|"):
+            scalar = line.strip()
+            if scalar.startswith("- "):
+                scalar = scalar[2:].strip()
+            sources.setdefault(pending_scalar[0], []).append((scalar, index, pending_scalar[1], "legacy"))
+            pending_scalar = None
         if heading == "任务元数据" and line.startswith("|"):
             cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
             if len(cells) >= 2 and cells[0] in metadata_alias:
-                sources.setdefault(metadata_alias[cells[0]], []).append((cells[1], index, heading, "legacy_table"))
+                sources.setdefault(metadata_alias[cells[0]], []).append((cells[1], index, heading, "legacy"))
         field = None
         if heading in ("代码审查", "Diff 审查") and line.startswith("- 审查状态："):
             if _trim_value(line.split("：", 1)[1]) != "不适用":
@@ -273,6 +344,8 @@ def _legacy(path: Path, lines: List[str]) -> ReaderReport:
             field = "merge_status"
         elif heading == "用户动作等级 / 验收建议" and line.startswith("- 验收确认："):
             field = "acceptance_authority"
+        elif heading == "用户动作等级 / 验收建议" and line.startswith("- 用户动作等级："):
+            field = "ua_level"
         elif heading == "用户动作等级 / 验收建议" and line.startswith("- 是否允许关闭任务："):
             field = "close_authority"
         elif heading in ("合并状态", "提交 / 合并") and line.startswith("- 合并授权："):
@@ -280,24 +353,38 @@ def _legacy(path: Path, lines: List[str]) -> ReaderReport:
         elif heading == "用户动作等级 / 验收建议" and line.startswith("- agent 已提供的证据："):
             raw_evidence = line.split("：", 1)[1].strip()
             if raw_evidence not in ("待执行后填写", "无"):
-                sources.setdefault("ua_evidence", []).append(("#用户动作等级--验收建议", index, heading, "legacy_field"))
+                sources.setdefault("ua_evidence", []).append((raw_evidence, index, heading, "legacy"))
         elif heading == "用户验收反馈 / 实机测试反馈" and (line.startswith("- 实际结果：") or line.startswith("- 日志 / 截图 / 视频：")):
             raw_evidence = line.split("：", 1)[1].strip()
             if raw_evidence not in ("待执行后填写", "无"):
-                sources.setdefault("ua_evidence", []).append(("#用户验收反馈--实机测试反馈", index, heading, "legacy_field"))
+                sources.setdefault("ua_evidence", []).append((raw_evidence, index, heading, "legacy"))
         if field:
             raw_field_value = line.split("：", 1)[1]
-            sources.setdefault(field, []).append((raw_field_value, index, heading, "legacy_field"))
+            sources.setdefault(field, []).append((raw_field_value, index, heading, "legacy"))
             if field == "merge_status" and _trim_value(raw_field_value) == "用户已确认待合并":
-                sources.setdefault("merge_authority", []).append((raw_field_value, index, heading, "legacy_field"))
-            if field == "ua_status" and _trim_value(raw_field_value) in ACCEPTANCE:
-                sources.setdefault("acceptance_authority", []).append((raw_field_value, index, heading, "legacy_field"))
+                sources.setdefault("merge_authority", []).append((raw_field_value, index, heading, "legacy"))
+            status_value = _trim_value(raw_field_value)
+            if field == "ua_status" and status_value in ("UA7 已确认通过", "UA7 已确认失败", "UA7 已确认延期"):
+                sources.setdefault("acceptance_authority", []).append((raw_field_value, index, heading, "legacy"))
     values: Dict[str, Optional[str]] = {}
     conflict = False
     for field, items in sources.items():
         mapped: List[str] = []
         for raw, line, source_heading, source_type in items:
-            value = _legacy_value(field, raw)
+            if field == "ua_evidence":
+                value = "#用户动作等级--验收建议" if source_heading == "用户动作等级 / 验收建议" else "#用户验收反馈--实机测试反馈"
+            else:
+                value = _legacy_value(field, raw)
+            if value == "__CONFLICT__":
+                conflict = True
+                item_provenance = Provenance(field, _source_path(path), source_heading, line, _trim_value(raw), source_type)
+                provenance.append(item_provenance)
+                diagnostics.append(_diagnostic("E_LEGACY_CONFLICT", path, line, f"Legacy {field} 内部值冲突", related=(item_provenance,)))
+                continue
+            if value == "__UNKNOWN__":
+                diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, line, f"Legacy {field} 值不在显式别名表"))
+                provenance.append(Provenance(field, _source_path(path), source_heading, line, _trim_value(raw), source_type))
+                continue
             if value is not None:
                 mapped.append(value)
                 provenance.append(Provenance(field, _source_path(path), source_heading, line, _trim_value(raw), source_type))
@@ -308,7 +395,8 @@ def _legacy(path: Path, lines: List[str]) -> ReaderReport:
         if len(distinct) > 1:
             values[field] = None
             conflict = True
-            diagnostics.append(_diagnostic("E_LEGACY_CONFLICT", path, items[0][1], f"Legacy {field} 来源冲突"))
+            related = tuple(item for item in provenance if item.field == field)
+            diagnostics.append(_diagnostic("E_LEGACY_CONFLICT", path, items[0][1], f"Legacy {field} 来源冲突", related=related))
         elif distinct:
             values[field] = distinct[0]
     if not conflict and values:
@@ -321,7 +409,7 @@ def _dedupe_diagnostics(items: Iterable[Diagnostic]) -> List[Diagnostic]:
     result: List[Diagnostic] = []
     seen = set()
     for item in items:
-        key = item.code
+        key = (item.code, item.path, item.line, item.column, item.message)
         if key not in seen:
             seen.add(key)
             result.append(item)
@@ -336,5 +424,21 @@ def inspect_task(path: Path) -> ReaderReport:
     except (UnicodeDecodeError, OSError) as exc:
         return ReaderReport(None, _source_path(target), (), (), (), (_diagnostic("E_PARSE", target, 1, f"UTF-8 读取失败：{exc.__class__.__name__}"),))
     lines = text.splitlines()
-    canonical = any(FIELD_RE.fullmatch(line) and FIELD_RE.fullmatch(line).group(1) == "schema_version" for line in lines)
-    return _canonical(target, lines) if canonical else _legacy(target, lines)
+    declarations = [index for index, line in enumerate(lines) if FIELD_RE.fullmatch(line) and FIELD_RE.fullmatch(line).group(1) == "schema_version"]
+    if not declarations:
+        return _legacy(target, lines)
+    report = _canonical(target, lines)
+    headings = [index for index, line in enumerate(lines) if line == "## Workflow Contract"]
+    block_contains = False
+    if len(headings) == 1:
+        end = next((i for i in range(headings[0] + 1, len(lines)) if lines[i].startswith("#")), len(lines))
+        block_contains = len(declarations) == 1 and headings[0] < declarations[0] < end
+    if len(declarations) != 1 or not block_contains:
+        extra = _diagnostic("E_PARSE", target, declarations[0] + 1, "schema declaration 必须唯一且位于唯一 Contract block 内")
+        diagnostics = _dedupe_diagnostics(report.diagnostics + (extra,))
+        diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))
+        provenance = tuple(item for item in report.provenance if item.source_type != "default")
+        explicit = {item.field for item in provenance}
+        normalized = tuple((key, value) for key, value in report.normalized if key in explicit)
+        return ReaderReport(report.title, report.source_path, normalized, provenance, report.sections, tuple(diagnostics))
+    return report

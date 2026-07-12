@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复（`repair_task`） |
-| 下一允许模式 | 完成第 1 轮修复与验证后重新独立审查 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复与 GREEN 已完成，等待独立复审 |
+| 下一允许模式 | 复审通过后进入 UA3；仍有 P0/P1 时进入第 2 轮或人工接管 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -162,6 +162,18 @@ git diff --name-only
 - 修复范围：仅 `_workflow_contract.py`、Reader tests、当前 TASK 与 TASK_BOARD。
 - 禁止扩大：fixture、规范、Schema、Validator、CLI、Git history、board、Overlay、Writer。
 - 修复目标：关闭第 1 轮 Review 的全部 P1，并新增逐规则回归测试。
+- 第 1 轮修复结果：
+  1. 补齐 Legacy scalar 来源、完整 composite alias/token 冲突、lifecycle 双语一致性和 UA/authority/evidence 精确来源。
+  2. Canonical block 不再忽略 comment/free text；schema declaration 全文件扫描并验证唯一性与 block 归属。
+  3. Diagnostic 增加 severity、suggestion、column、related provenance，按完整 identity 去重和五元排序。
+  4. `待确认` 不再推导 acceptance authority；只允许规范的明确确认短语。
+  5. 增加真实相对 source path 与真实 TASK filename provenance/conflict；fixture 容器文件名不冒充 TASK 文件名。
+  6. canonical sections 只接受精确全角字段；Legacy sections 映射目标/范围/完成标准/验证/Outcome 证据。
+  7. provenance source_type 收口为规范枚举，H1 使用真实行号，ua_evidence 保留原文并单独生成 normalized anchor。
+  8. 测试扩展为 12 tests，覆盖上述全部回归点和 alias matrix。
+- 第 1 轮修复验证：12/12 GREEN；py_compile 通过；fixture diff 为空；`git diff --check` 通过。
+- 未处理意见：无。
+- 下一步：提交修复候选并独立复审。
 
 ## 用户动作等级 / 验收建议
 
@@ -185,8 +197,8 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：未提交
-- Commit hash：待填写
+- Commit 状态：实现 commit `0e1d746`、首审记录 commit `6922cd9`；第 1 轮修复候选待提交
+- Commit hash：待提交后填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 

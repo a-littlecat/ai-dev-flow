@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：修复 `CONTRACT-003` 第 1 轮 Review findings
-> - 当前阶段：Reader 有多项 P1，进入 bounded repair；不启动 `CONTRACT-004`
+> - 当前模式：`CONTRACT-003` 第 1 轮修复完成，等待独立复审
+> - 当前阶段：12/12 Reader tests GREEN、fixture 未改；复审和 UA3 前不启动 `CONTRACT-004`
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -62,7 +62,7 @@ REL-001
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
 | CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Accepted | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1（1 类 P2 不阻塞） | UA3 已通过 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
-| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Needs Fix | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 第 1 轮：多项 P1 | UA3 未进入 | Single / 独立分支 `codex/contract-003-readonly-readers` | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
+| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Review | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 第 1 轮修复完成，待复审 | UA3 未进入 | Single / 独立分支 `codex/contract-003-readonly-readers` | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Draft | 中 | 高 | CONTRACT-004 Accepted | 未审查 | UA6 | Single / 必须 Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Draft | 中 | 高 | CONTRACT-004、005 Accepted | 未审查 | UA6 | Single / 独立分支或 Worktree | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |

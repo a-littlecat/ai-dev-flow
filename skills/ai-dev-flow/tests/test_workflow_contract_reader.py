@@ -140,6 +140,73 @@ class WorkflowContractReaderTests(unittest.TestCase):
         for forbidden in ("write_text(", "write_bytes(", "subprocess", "socket", "requests", "urlopen"):
             self.assertNotIn(forbidden, source)
 
+    def test_canonical_comment_schema_placement_and_diagnostic_payload(self):
+        base = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        cases = {
+            "comment": base.replace("- `task_id`:", "<!-- forbidden -->\nfree text\n- `task_id`:", 1),
+            "outside": base + "\n- `schema_version`: `adf/v0.7.0`\n",
+        }
+        with tempfile.TemporaryDirectory() as td:
+            for name, text in cases.items():
+                path = pathlib.Path(td) / f"FIX-VALID-A-{name}.md"
+                path.write_text(text, encoding="utf-8")
+                report = self.reader.inspect_task(path)
+                errors = [d for d in report.diagnostics if d.code == "E_PARSE"]
+                self.assertGreaterEqual(len(errors), 1)
+                for diagnostic in errors:
+                    self.assertEqual(diagnostic.severity, "error")
+                    self.assertGreaterEqual(diagnostic.column, 1)
+                    self.assertTrue(diagnostic.suggestion)
+            comment_report = self.reader.inspect_task(pathlib.Path(td) / "FIX-VALID-A-comment.md")
+            self.assertEqual(len([d for d in comment_report.diagnostics if d.code == "E_PARSE"]), 2)
+
+    def test_legacy_scalar_conflicts_and_pending_does_not_grant_authority(self):
+        text = """# LEGACY-SCALAR：scalar\n\n## 任务编号\nLEGACY-SCALAR\n## 任务类型\n文档 / 代码\n## 任务分级\nA\n## 任务状态\n待审查（`Ready`）\n## 用户验收反馈 / 实机测试反馈\n- 验收反馈状态：待确认\n"""
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td) / "LEGACY-SCALAR.md"
+            path.write_text(text, encoding="utf-8")
+            report = self.reader.inspect_task(path)
+            self.assertIn("E_LEGACY_CONFLICT", [d.code for d in report.diagnostics])
+            self.assertIsNone(report.get("task_type"))
+            self.assertIsNone(report.get("lifecycle"))
+            self.assertIsNone(report.get("acceptance_authority"))
+
+    def test_filename_conflict_sections_and_provenance_contract(self):
+        base = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        base = base.replace("- 目标：验证合法 Compact Core。", "- 目标: ignored ASCII field\n- 目标：验证合法 Compact Core。")
+        with tempfile.TemporaryDirectory() as td:
+            task_dir = pathlib.Path(td) / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            path = task_dir / "OTHER.md"
+            path.write_text(base, encoding="utf-8")
+            report = self.reader.inspect_task(path)
+            self.assertIn("E_TASK_ID_CONFLICT", [d.code for d in report.diagnostics])
+            self.assertEqual(report.source_path, "docs/tasks/OTHER.md")
+            section = next(s for s in report.sections if s.heading == "目标与边界")
+            self.assertNotIn("ignored ASCII field", [f.value for f in section.fields])
+        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md")
+        self.assertTrue(all(p.source_type in {"canonical", "legacy", "default", "filename", "heading"} for p in authority.provenance))
+        evidence = [p for p in authority.provenance if p.field == "ua_evidence"]
+        self.assertTrue(any("fixture 静态核对结果" in p.raw_value for p in evidence))
+        self.assertTrue(all(p.line >= 1 for p in evidence))
+
+    def test_explicit_legacy_alias_matrix_and_conflict_provenance(self):
+        lifecycle = ["草稿", "可执行", "执行中", "阻塞", "待审查", "需修复", "已验收", "已关闭", "延期", "已取消"]
+        expected = ["Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled"]
+        for raw, value in zip(lifecycle, expected):
+            self.assertEqual(self.reader._legacy_value("lifecycle", f"{raw}（`{value}`）"), value)
+        self.assertEqual(self.reader._legacy_value("lifecycle", "待审查（`Ready`）"), "__CONFLICT__")
+        for raw, value in self.reader.TASK_TYPE_COMPOSITE.items():
+            self.assertEqual(self.reader._legacy_value("task_type", raw), value)
+        for raw, value in self.reader.REVIEW.items():
+            self.assertEqual(self.reader._legacy_value("review_status", raw), value)
+        for raw, value in self.reader.UA_STATUS.items():
+            self.assertEqual(self.reader._legacy_value("ua_status", raw), value)
+        conflict = self.reader.inspect_task(FIXTURES / "legacy" / "review-conflict.md")
+        diagnostic = next(d for d in conflict.diagnostics if d.code == "E_LEGACY_CONFLICT")
+        self.assertGreaterEqual(len(diagnostic.provenance), 2)
+        self.assertTrue(all(p.source_type == "legacy" for p in diagnostic.provenance))
+
 
 if __name__ == "__main__":
     unittest.main()
