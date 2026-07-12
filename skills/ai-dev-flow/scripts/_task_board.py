@@ -105,7 +105,8 @@ def _path_value(raw, board_path, project_root, header):
         base = project_root
     normalized = value.replace("\\", "/")
     path = pathlib.PurePosixPath(normalized)
-    if path.is_absolute() or pathlib.PureWindowsPath(value).is_absolute() or ".." in path.parts:
+    windows_path = pathlib.PureWindowsPath(value)
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", value) or path.is_absolute() or windows_path.is_absolute() or windows_path.drive or ".." in path.parts:
         return None
     try:
         absolute = (base / pathlib.Path(normalized)).resolve()

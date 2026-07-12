@@ -78,6 +78,12 @@ class TaskBoardProjectionTests(unittest.TestCase):
         with temporary:
             report = self.api.WorkflowContract.inspect(root)
         self.assertIn("E_TASK_ID_CONFLICT", [d.code for d in report.diagnostics])
+        reversed_quality = canonical.replace("| BOARD-001 | 看板漂移样例 | B | Ready |", "| BOARD-001 | 看板漂移样例 | B | Review |") + "| BOARD-001 | duplicate | B | Ready | Pending | UA3 | Pending / None | commit=Not Recorded;merge=Not Recorded;merge_authority=None | docs/tasks/BOARD-001.md |\n"
+        temporary, root = self.project_with_board(reversed_quality)
+        with temporary:
+            report = self.api.WorkflowContract.inspect(root)
+        self.assertIn("E_TASK_ID_CONFLICT", [d.code for d in report.diagnostics])
+        self.assertNotIn("V_BOARD_DRIFT", [d.code for d in report.diagnostics])
 
         legacy = """# Board\n\n| 任务编号 | 任务名称 | 任务等级 | 任务状态 | Review 状态 | UA 等级 | 验收状态 | 路径 | 展示备注 |\n|---|---|---|---|---|---|---|---|---|\n| BOARD-001 | 看板漂移样例 | B | Ready | Pending | UA3 | 待确认 | docs/tasks/BOARD-001.md | ignored |\n"""
         temporary, root = self.project_with_board(legacy)
@@ -132,6 +138,8 @@ class TaskBoardProjectionTests(unittest.TestCase):
             self.assertEqual(parsed("[X](tasks/X.md)").rows[0].get("task_path"), "docs/tasks/X.md")
             self.assertTrue(parsed("../outside.md").error_message)
             self.assertTrue(parsed("C:\\outside.md").error_message)
+            self.assertTrue(parsed("C:outside.md").error_message)
+            self.assertTrue(parsed("[X](https://example.com/X.md)").error_message)
             report = self.api.WorkflowContract.inspect(root)
             self.assertEqual([d.code for d in report.diagnostics], ["E_PARSE"])
 

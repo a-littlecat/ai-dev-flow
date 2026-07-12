@@ -274,9 +274,11 @@ def _board_diagnostics(project_root, projections, known_task_ids=()):
         return [_board_diagnostic("E_BOARD_PARSE", board_path, parsed.error_line, parsed.error_message)]
     diagnostics = []
     by_id = {}
+    duplicate_ids = set()
     for row in parsed.rows:
         task_id = row.get("task_id")
         if task_id in by_id:
+            duplicate_ids.add(task_id)
             cell = next(item for item in row.cells if item.field == "task_id")
             diagnostics.append(_board_diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"TASK_BOARD task_id 重复：{task_id}", related=(_board_cell_provenance(cell, board_path),)))
         else:
@@ -294,6 +296,8 @@ def _board_diagnostics(project_root, projections, known_task_ids=()):
             conflicted_rows.add(row.line)
             conflicted_expected.add(expected_for_path.get("task_id"))
     for task_id, expected in expected_by_id.items():
+        if task_id in duplicate_ids:
+            continue
         actual = by_id.get(task_id)
         if actual is None:
             if task_id not in conflicted_expected:
@@ -310,7 +314,7 @@ def _board_diagnostics(project_root, projections, known_task_ids=()):
                 message = f"field={field};expected={expected_value};actual={actual_value};task_id={task_id}"
                 diagnostics.append(_board_diagnostic("V_BOARD_DRIFT", board_path, actual.line, message, related=related))
     for task_id, row in by_id.items():
-        if task_id not in expected_by_id and task_id not in known_task_ids and row.line not in conflicted_rows:
+        if task_id not in duplicate_ids and task_id not in expected_by_id and task_id not in known_task_ids and row.line not in conflicted_rows:
             cell = next(item for item in row.cells if item.field == "task_id")
             diagnostics.append(_board_diagnostic("W_BOARD_ORPHAN", board_path, row.line, f"expected=TASK missing;actual={dict(row.values)}", related=tuple(_board_cell_provenance(item, board_path) for item in row.cells)))
     if not parsed.canonical:
