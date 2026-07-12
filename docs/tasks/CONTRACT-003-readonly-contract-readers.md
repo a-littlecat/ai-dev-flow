@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | Reader 实现与 GREEN 已完成，等待独立审查（`review_task`） |
-| 下一允许模式 | Review 通过后进入 UA3；有 P0/P1 时进入有限修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复（`repair_task`） |
+| 下一允许模式 | 完成第 1 轮修复与验证后重新独立审查 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -132,12 +132,20 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：未审查
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
+- 审查严重等级：P1
+- P0 / P1 必须修改项：
+  1. Legacy scalar 来源、完整别名、token 冲突和 lifecycle 双语一致性未实现完整。
+  2. Canonical block 错误忽略 HTML comment；schema declaration 全文件唯一性/归属不完整。
+  3. Diagnostic 缺 severity/suggestion/column/provenance，且按 code 全局去重会吞掉独立根因。
+  4. acceptance authority 推断过宽，`待确认` 不得产生确认权限。
+  5. filename/H1/Contract/Legacy task_id provenance 与冲突检查不完整。
+  6. canonical/legacy sections 未按正文精确 grammar 和 10.4 映射。
+  7. provenance source_type、真实行号、raw value 不符合规范；ua_evidence raw 被 anchor 覆盖。
+  8. 当前测试未覆盖上述完成标准。
+- 审查结论：Needs Fix；不允许进入 UA3
+- 是否允许进入验收建议：否
 
 ## Diff 审查
 
@@ -145,8 +153,15 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：第 1 轮未通过
+- 审查结论：自动测试与只读证明通过，但完整语义契约存在 P1
+
+## 审查-修复循环（review_repair_loop）记录
+
+- 当前轮次：1 / 2。
+- 修复范围：仅 `_workflow_contract.py`、Reader tests、当前 TASK 与 TASK_BOARD。
+- 禁止扩大：fixture、规范、Schema、Validator、CLI、Git history、board、Overlay、Writer。
+- 修复目标：关闭第 1 轮 Review 的全部 P1，并新增逐规则回归测试。
 
 ## 用户动作等级 / 验收建议
 
