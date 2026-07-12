@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-004` |
 | 任务类型 | 代码 / CLI / 单元测试 |
-| 当前模式 | facade/CLI 实现与 GREEN 已完成，等待独立审查 |
-| 下一允许模式 | Review 通过后进入 UA4；有 P0/P1 时进入有限修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复 |
+| 下一允许模式 | 修复并 GREEN 后重新独立审查 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定 public facade、validator 和 CLI |
@@ -139,12 +139,17 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：未审查
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
+- 审查严重等级：P1（5 项）
+- P0 / P1 必须修改项：
+  1. 补齐 Base/Diff、C/D 隔离回滚、UA Outcome/evidence、Needs Fix finding、Merged evidence、real_env_signal 等 core 门禁。
+  2. Git 历史不能固定比较 `HEAD^`；dirty/untracked/rename/浅克隆等必须 warning，并复用 Reader 语义读取 blob。
+  3. public `inspect(target)` 不得暴露 fixture/git 测试参数；CLI 不得按路径特判并改变语义。
+  4. CLI 必须禁止 bytecode 写入；invocation error 仍需按 format 输出免责声明。
+  5. Human diagnostic 必须输出与 JSON 等价的 provenance。
+- 审查结论：Needs Fix；不允许进入 UA4
+- 是否允许进入验收建议：否
 
 ## Diff 审查
 
@@ -152,8 +157,15 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：第 1 轮未通过
+- 审查结论：20 tests 与 smoke 通过，但 public 语义和完整 validator 存在 P1
+
+## 审查-修复循环（review_repair_loop）记录
+
+- 当前轮次：1 / 2。
+- 修复范围：`workflow_contract.py`、`workflow_lint.py`、Reader 接口保持型扩展、004 tests、scripts README、当前 TASK/TASK_BOARD。
+- 禁止扩大：fixture、规范、Schema、TASK_BOARD Adapter、Writer、Overlay Reader。
+- 修复后要求：public facade/CLI 同语义、完整 core 门禁、正确 Git 降级、Human/JSON provenance 等价、独立复审。
 
 ## 用户动作等级 / 验收建议
 
