@@ -67,4 +67,5 @@
 - 验证证据：同步后完整单元测试 41/41 通过；单任务 lint 为 0 error / 0 violation / 0 warning；`git diff --check` 通过；仓库工作区干净
 - UA 动作与结果：UA3 Passed；用户于 2026-07-12 查看版本、Review、测试、lint 和逐文件哈希证据后明确回复“确认”
 - UA 动作与结果：用户于 2026-07-12 明确授权将当前任务分支合并到 `main` 并 push；该授权不包含 tag、GitHub Release 或 Closed
+- UA 动作与结果：用户于 2026-07-12 后续明确要求按建议完成剩余操作，授权创建并 push annotated tag `v0.7.0`、创建正式 GitHub Release，并在取得发布收据后将本任务标记为 Closed
 - 合并目标与事实证据：`codex/rel-002-v07-release-identity` 已通过 merge commit `18b8f6799148180bed3616cb7ebac037f438e43e` 合并到本地 `main`

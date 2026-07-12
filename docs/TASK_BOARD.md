@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：合并并 push 已 Accepted 的 `REL-002`
-> - 当前阶段：已通过 merge commit `18b8f67` 合并到本地 `main`；验证后 push，仍未授权 tag、GitHub Release 或 Closed
+> - 当前模式：正式发布并关闭 `REL-002`
+> - 当前阶段：用户已新增 UA7 授权；准备创建并 push `v0.7.0` tag、GitHub Release，取得收据后 Closed
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -74,7 +74,7 @@ REL-001
 
 ## 下一允许动作
 
-`REL-002` 已通过 `18b8f67` 合并到本地 `main`。下一允许动作是完成合并后验证并 push `main`；创建 `v0.7.0` tag、GitHub Release 或 Closed 仍需新的明确授权。
+`REL-002` 已合并并 push 到 `main`。用户已新增明确授权：创建并 push annotated tag `v0.7.0`、创建正式 GitHub Release，并在取得发布收据后将任务标记为 Closed；不得覆盖同名远程对象。
 
 ## 整体停止条件
 
