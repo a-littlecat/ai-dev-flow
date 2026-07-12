@@ -33,6 +33,7 @@ class SectionField:
     name: str
     value: str
     line: int
+    kind: str
 
 
 @dataclass(frozen=True)
@@ -112,8 +113,16 @@ def _source_path(path: Path) -> str:
     return resolved.name
 
 
-def _diagnostic(code: str, path: Path, line: int, message: str, suggestion: str = "请按 Workflow Contract 规范修正该输入。", related: Tuple[Provenance, ...] = ()) -> Diagnostic:
+def _diagnostic(code: str, path: Path, line: int, message: str, suggestion: str = "", related: Tuple[Provenance, ...] = ()) -> Diagnostic:
     severity = "error" if code.startswith("E_") else ("violation" if code.startswith("V_") else "warning")
+    if not suggestion:
+        suggestion = {
+            "E_PARSE": "请使用精确 Markdown grammar，并删除重复或未知结构。",
+            "E_UNKNOWN_VALUE": "请改为规范枚举或显式 Legacy 别名中的值。",
+            "E_TASK_ID_CONFLICT": "请统一文件名、H1 与 Contract/TASK task_id。",
+            "E_LEGACY_CONFLICT": "请统一该 Legacy 语义轴的所有来源值。",
+            "W_LEGACY_INFERRED": "无需迁移；请确认显式 Legacy 映射符合预期。",
+        }.get(code, "请按 Workflow Contract 规范修正该输入。")
     return Diagnostic(code, severity, _source_path(path), line, 1 if line else 0, message, suggestion, related)
 
 
@@ -142,39 +151,63 @@ def _sections(lines: List[str], canonical: bool) -> Tuple[Section, ...]:
             continue
         end = next((i for i in range(index + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
         fields: List[SectionField] = []
+        in_fence = False
+        fence_start = 0
+        fence_lines: List[str] = []
+        table_seen = False
         for field_index in range(index + 1, end):
             raw = lines[field_index]
+            if not canonical and line[3:].strip() in ("验证方式", "自动验证命令"):
+                if raw.startswith("```"):
+                    if in_fence:
+                        value = "\n".join(fence_lines).strip()
+                        if value:
+                            fields.append(SectionField("验证命令或检查", value, fence_start, "code_fence"))
+                        in_fence = False
+                        fence_lines = []
+                    else:
+                        in_fence = True
+                        fence_start = field_index + 1
+                    continue
+                if in_fence:
+                    fence_lines.append(raw)
+                    continue
             if canonical:
                 match = re.fullmatch(r"^- ([^：]+)：(.*)$", raw)
                 if match and match.group(1).strip() in canonical_allowed.get(line[3:].strip(), set()):
-                    fields.append(SectionField(match.group(1).strip(), match.group(2).strip(), field_index + 1))
+                    fields.append(SectionField(match.group(1).strip(), match.group(2).strip(), field_index + 1, "field"))
                 continue
             if line[3:].strip() in legacy_heading_field and raw.startswith("- "):
+                checkbox = bool(re.match(r"^- \[[ xX]\]", raw))
                 value = re.sub(r"^- \[[ xX]\]\s*", "", raw)
                 value = value[2:] if value.startswith("- ") else value
-                fields.append(SectionField(legacy_heading_field[line[3:].strip()], value.strip(), field_index + 1))
+                fields.append(SectionField(legacy_heading_field[line[3:].strip()], value.strip(), field_index + 1, "checkbox" if checkbox else "list"))
                 continue
             if line[3:].strip() in ("验证方式", "自动验证命令") and raw.startswith("- "):
-                fields.append(SectionField("验证命令或检查", raw[2:].strip(), field_index + 1))
+                fields.append(SectionField("验证命令或检查", raw[2:].strip(), field_index + 1, "list"))
                 continue
             if line[3:].strip() in ("验证结果", "执行与验证记录") and raw.startswith("- "):
-                fields.append(SectionField("验证证据", raw[2:].strip(), field_index + 1))
+                fields.append(SectionField("验证证据", raw[2:].strip(), field_index + 1, "list"))
                 continue
-            if line[3:].strip() == "修改文件" and raw.startswith("|") and not re.match(r"^\|[-:| ]+\|$", raw):
-                fields.append(SectionField("修改文件", raw.strip(), field_index + 1))
+            if line[3:].strip() == "修改文件" and raw.startswith("|"):
+                if not table_seen:
+                    table_seen = True
+                    continue
+                if re.match(r"^\|[-:| ]+\|$", raw):
+                    continue
+                fields.append(SectionField("修改文件", raw.strip(), field_index + 1, "table_row"))
                 continue
             match = re.match(r"^- ([^：:]+)(?:：|: )(.*)$", raw)
             if match:
                 name = legacy_field_map.get(match.group(1).strip(), match.group(1).strip())
-                fields.append(SectionField(name, match.group(2).strip(), field_index + 1))
+                fields.append(SectionField(name, match.group(2).strip(), field_index + 1, "field"))
         result.append(Section(line[3:].strip(), index + 1, tuple(fields)))
     return tuple(result)
 
 
-def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diagnostics: List[Diagnostic], path: Path, lines: List[str]) -> ReaderReport:
+def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diagnostics: List[Diagnostic], path: Path, lines: List[str], validate_filename: bool) -> ReaderReport:
     task_id = values.get("task_id")
-    portable = path.resolve().as_posix()
-    if task_id and "/tests/fixtures/" not in portable:
+    if task_id and validate_filename:
         stem = path.stem
         if stem == task_id or stem.startswith(task_id + "-"):
             provenance.append(Provenance("task_id", _source_path(path), "", 0, stem, "filename"))
@@ -196,14 +229,14 @@ def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diag
     return ReaderReport(title, _source_path(path), normalized, tuple(provenance), _sections(lines, values.get("schema_version") is not None), tuple(diagnostics))
 
 
-def _canonical(path: Path, lines: List[str]) -> ReaderReport:
+def _canonical(path: Path, lines: List[str], validate_filename: bool) -> ReaderReport:
     values: Dict[str, Optional[str]] = {}
     provenance: List[Provenance] = []
     diagnostics: List[Diagnostic] = []
     headings = [i for i, line in enumerate(lines) if line == "## Workflow Contract"]
     if len(headings) != 1:
         diagnostics.append(_diagnostic("E_PARSE", path, (headings[0] + 1) if headings else 1, "Workflow Contract 区块必须唯一"))
-        return _finish(values, provenance, diagnostics, path, lines)
+        return _finish(values, provenance, diagnostics, path, lines, validate_filename)
     start = headings[0] + 1
     end = next((i for i in range(start, len(lines)) if lines[i].startswith("#")), len(lines))
     for index in range(start, end):
@@ -225,7 +258,8 @@ def _canonical(path: Path, lines: List[str]) -> ReaderReport:
             diagnostics.append(_diagnostic("E_PARSE", path, headings[0] + 1, f"缺少核心字段 {key}"))
     for key, allowed in ENUMS.items():
         if key in values and values[key] not in allowed:
-            diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, next(p.line for p in provenance if p.field == key), f"{key} 值不在枚举中"))
+            related = tuple(p for p in provenance if p.field == key)
+            diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, related[0].line, f"{key} 值不在枚举中", related=related))
     task_id = values.get("task_id")
     if task_id and not re.fullmatch(r"[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*", task_id):
         diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, next(p.line for p in provenance if p.field == "task_id"), "task_id 形状非法"))
@@ -245,7 +279,7 @@ def _canonical(path: Path, lines: List[str]) -> ReaderReport:
         values["task_id"] = None
         diagnostics.append(_diagnostic("E_TASK_ID_CONFLICT", path, 1, "H1 与 Contract task_id 冲突"))
     diagnostics = _dedupe_diagnostics(diagnostics)
-    return _finish(values, provenance, diagnostics, path, lines)
+    return _finish(values, provenance, diagnostics, path, lines, validate_filename)
 
 
 def _trim_value(raw: str) -> str:
@@ -253,6 +287,17 @@ def _trim_value(raw: str) -> str:
     if value.startswith("`") and value.endswith("`") and len(value) >= 2:
         value = value[1:-1]
     return value.strip()
+
+
+def _mapped_alias(value: str, mapping: Dict[str, str]) -> str:
+    if value in mapping:
+        return mapping[value]
+    for separator in ("（", ":", "：", "；"):
+        if separator in value:
+            prefix, suffix = value.split(separator, 1)
+            if prefix.strip() in mapping and suffix.strip():
+                return mapping[prefix.strip()]
+    return "__UNKNOWN__"
 
 
 def _legacy_value(field: str, raw: str) -> Optional[str]:
@@ -280,33 +325,36 @@ def _legacy_value(field: str, raw: str) -> Optional[str]:
         normalized = LIFECYCLE.get(chinese)
         if normalized is None:
             return "__UNKNOWN__"
-        match = re.fullmatch(r"[^（]+（`?([^`）]+)`?）", value)
-        if match and match.group(1) != normalized:
-            return "__CONFLICT__"
+        if "（" in value:
+            match = re.fullmatch(r"[^（]+（`?([^`）]+)`?）", value)
+            if not match:
+                return "__UNKNOWN__"
+            if match.group(1) != normalized:
+                return "__CONFLICT__"
         return normalized
     if field == "review_status":
-        return REVIEW.get(value.split("；", 1)[0].strip()) or "__UNKNOWN__"
+        return _mapped_alias(value, REVIEW)
     if field == "ua_level":
         match = re.match(r"^(UA[0-7])(?:$|[ ：:])", value)
         return match.group(1) if match else ("TBD" if value == "待确认" else "__UNKNOWN__")
     if field == "ua_status":
-        return UA_STATUS.get(value) or "__UNKNOWN__"
+        return _mapped_alias(value, UA_STATUS)
     if field == "commit_status":
-        return COMMIT.get(value) or "__UNKNOWN__"
+        return _mapped_alias(value, COMMIT)
     if field == "merge_status":
-        return MERGE.get(value) or "__UNKNOWN__"
+        return _mapped_alias(value, MERGE)
     if field == "acceptance_authority":
-        return ACCEPTANCE.get(value)
+        return _mapped_alias(value, ACCEPTANCE)
     if field == "close_authority":
-        return CLOSE.get(value)
+        return _mapped_alias(value, CLOSE)
     if field == "merge_authority":
-        return MERGE_AUTHORITY.get(value)
+        return _mapped_alias(value, MERGE_AUTHORITY)
     if field == "ua_evidence":
         return value
     return None
 
 
-def _legacy(path: Path, lines: List[str]) -> ReaderReport:
+def _legacy(path: Path, lines: List[str], validate_filename: bool) -> ReaderReport:
     sources: Dict[str, List[Tuple[str, int, str, str]]] = {}
     provenance: List[Provenance] = []
     diagnostics: List[Diagnostic] = []
@@ -402,7 +450,7 @@ def _legacy(path: Path, lines: List[str]) -> ReaderReport:
     if not conflict and values:
         first_line = min((p.line for p in provenance), default=1)
         diagnostics.append(_diagnostic("W_LEGACY_INFERRED", path, first_line, "值来自显式 Legacy 映射"))
-    return _finish(values, provenance, _dedupe_diagnostics(diagnostics), path, lines)
+    return _finish(values, provenance, _dedupe_diagnostics(diagnostics), path, lines, validate_filename)
 
 
 def _dedupe_diagnostics(items: Iterable[Diagnostic]) -> List[Diagnostic]:
@@ -416,7 +464,7 @@ def _dedupe_diagnostics(items: Iterable[Diagnostic]) -> List[Diagnostic]:
     return result
 
 
-def inspect_task(path: Path) -> ReaderReport:
+def inspect_task(path: Path, *, validate_filename: bool = True) -> ReaderReport:
     """Read one TASK without writing it or consulting external state."""
     target = Path(path)
     try:
@@ -426,8 +474,8 @@ def inspect_task(path: Path) -> ReaderReport:
     lines = text.splitlines()
     declarations = [index for index, line in enumerate(lines) if FIELD_RE.fullmatch(line) and FIELD_RE.fullmatch(line).group(1) == "schema_version"]
     if not declarations:
-        return _legacy(target, lines)
-    report = _canonical(target, lines)
+        return _legacy(target, lines, validate_filename)
+    report = _canonical(target, lines, validate_filename)
     headings = [index for index, line in enumerate(lines) if line == "## Workflow Contract"]
     block_contains = False
     if len(headings) == 1:

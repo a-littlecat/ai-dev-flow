@@ -36,7 +36,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
         for fixture_id in ids:
             with self.subTest(fixture_id=fixture_id):
                 oracle, path = self.reader_fixture(fixture_id)
-                report = self.reader.inspect_task(path)
+                report = self.reader.inspect_task(path, validate_filename=False)
                 self.assertEqual([d.code for d in report.diagnostics], oracle["expected_diagnostics"])
                 for key, value in (oracle["expected_normalized"] or {}).items():
                     self.assertEqual(report.get(key), value)
@@ -58,7 +58,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
 
     def test_reader_level_projection_metadata_and_sections(self):
         _, path = self.reader_fixture("FIX-VALID-A")
-        report = self.reader.inspect_task(path)
+        report = self.reader.inspect_task(path, validate_filename=False)
         self.assertEqual(report.title, "合法文档任务")
         self.assertEqual(report.source_path, "task-a-document.md")
         self.assertNotRegex(report.source_path, r"^[A-Za-z]:")
@@ -71,8 +71,8 @@ class WorkflowContractReaderTests(unittest.TestCase):
     def test_order_bom_repeat_and_read_only(self):
         _, source = self.reader_fixture("FIX-VALID-A")
         before = (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns)
-        first = self.reader.inspect_task(source)
-        second = self.reader.inspect_task(source)
+        first = self.reader.inspect_task(source, validate_filename=False)
+        second = self.reader.inspect_task(source, validate_filename=False)
         self.assertEqual(first, second)
         self.assertEqual(before, (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns))
         text = source.read_text(encoding="utf-8")
@@ -103,7 +103,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
             self.assertEqual([d.code for d in self.reader.inspect_task(bad).diagnostics], ["E_PARSE"])
 
     def test_legacy_single_and_consistent_duplicate(self):
-        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md")
+        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md", validate_filename=False)
         self.assertEqual(authority.get("task_id"), "FIX-LEGACY-AUTHORITY")
         self.assertEqual(authority.get("lifecycle"), "Review")
         self.assertEqual(authority.get("acceptance_authority"), "User Confirmed")
@@ -125,7 +125,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
         before = {path: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns) for path in files}
         for item in self.manifest["fixtures"]:
             if item["phase"] == "reader_003":
-                report = self.reader.inspect_task(FIXTURES / item["input"])
+                report = self.reader.inspect_task(FIXTURES / item["input"], validate_filename=False)
                 keys = [(d.path, d.line, d.code) for d in report.diagnostics]
                 self.assertEqual(keys, sorted(keys))
         after = {path: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns) for path in files}
@@ -184,7 +184,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
             self.assertEqual(report.source_path, "docs/tasks/OTHER.md")
             section = next(s for s in report.sections if s.heading == "目标与边界")
             self.assertNotIn("ignored ASCII field", [f.value for f in section.fields])
-        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md")
+        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md", validate_filename=False)
         self.assertTrue(all(p.source_type in {"canonical", "legacy", "default", "filename", "heading"} for p in authority.provenance))
         evidence = [p for p in authority.provenance if p.field == "ua_evidence"]
         self.assertTrue(any("fixture 静态核对结果" in p.raw_value for p in evidence))
@@ -202,10 +202,37 @@ class WorkflowContractReaderTests(unittest.TestCase):
             self.assertEqual(self.reader._legacy_value("review_status", raw), value)
         for raw, value in self.reader.UA_STATUS.items():
             self.assertEqual(self.reader._legacy_value("ua_status", raw), value)
-        conflict = self.reader.inspect_task(FIXTURES / "legacy" / "review-conflict.md")
+        conflict = self.reader.inspect_task(FIXTURES / "legacy" / "review-conflict.md", validate_filename=False)
         diagnostic = next(d for d in conflict.diagnostics if d.code == "E_LEGACY_CONFLICT")
         self.assertGreaterEqual(len(diagnostic.provenance), 2)
         self.assertTrue(all(p.source_type == "legacy" for p in diagnostic.provenance))
+
+    def test_legacy_suffix_rules_and_structured_sections(self):
+        self.assertEqual(self.reader._legacy_value("review_status", "通过：复审无问题"), "Passed")
+        self.assertEqual(self.reader._legacy_value("ua_status", "通过（用户证据已记录"), "Passed")
+        self.assertEqual(self.reader._legacy_value("commit_status", "已提交；commit=abc"), "Committed")
+        self.assertEqual(self.reader._legacy_value("merge_authority", "待确认：尚未授权"), "None")
+        self.assertEqual(self.reader._legacy_value("close_authority", "未知授权"), "__UNKNOWN__")
+        self.assertEqual(self.reader._legacy_value("lifecycle", "待审查（Review）垃圾"), "__UNKNOWN__")
+        text = """# LEGACY-SECTION：sections\n\n## 任务元数据\n| 字段 | 当前值 |\n|---|---|\n| 任务编号 | LEGACY-SECTION |\n| 任务类型 | 文档 |\n| 任务分级 | A |\n| 任务状态 | 待审查（Review） |\n| 用户动作等级 | UA2 |\n\n## 验证方式\n```powershell\necho ok\n```\n\n## 修改文件\n| 文件 | 说明 |\n|---|---|\n| README.md | 更新 |\n\n## 完成标准\n- [ ] 待执行时填写\n"""
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td) / "LEGACY-SECTION.md"
+            path.write_text(text, encoding="utf-8")
+            report = self.reader.inspect_task(path)
+            verification = next(s for s in report.sections if s.heading == "验证方式")
+            self.assertEqual([(f.kind, f.value) for f in verification.fields], [("code_fence", "echo ok")])
+            modified = next(s for s in report.sections if s.heading == "修改文件")
+            self.assertEqual(len(modified.fields), 1)
+            self.assertEqual(modified.fields[0].kind, "table_row")
+            criterion = next(s for s in report.sections if s.heading == "完成标准")
+            self.assertEqual(criterion.fields[0].kind, "checkbox")
+
+    def test_filename_validation_is_explicit_context_not_path_guessing(self):
+        _, fixture = self.reader_fixture("FIX-VALID-A")
+        strict = self.reader.inspect_task(fixture)
+        relaxed = self.reader.inspect_task(fixture, validate_filename=False)
+        self.assertIn("E_TASK_ID_CONFLICT", [d.code for d in strict.diagnostics])
+        self.assertNotIn("E_TASK_ID_CONFLICT", [d.code for d in relaxed.diagnostics])
 
 
 if __name__ == "__main__":

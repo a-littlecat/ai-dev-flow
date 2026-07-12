@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 轮有限修复 |
-| 下一允许模式 | 第 2 轮修复后最终复审；仍有 P0/P1 则停止并人工接管 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 2 轮有限修复与 GREEN 已完成，等待最终独立复审 |
+| 下一允许模式 | 最终复审通过后进入 UA3；仍有 P0/P1 则停止并人工接管 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -182,6 +182,16 @@ git diff --name-only
 - P2：部分 diagnostic 的 related provenance 与 suggestion 仍偏弱。
 - 结论：Needs Fix，不允许 UA3；进入第 2 轮（上限）修复。
 
+### 第 2 轮修复结果
+
+- Legacy enum 统一支持规范允许的 `（` / `:` / `：` / `；` 说明后缀；lifecycle 单独要求完整闭合双语且值一致，authority 未知值产生 `E_UNKNOWN_VALUE`。
+- `SectionField` 增加 `kind`，Legacy index 可区分 field/list/checkbox/code_fence/table_row；fenced verification command 被保留，表头/分隔行不冒充修改文件，placeholder 原文保留供 Validator 判定。
+- 删除生产代码对 `/tests/fixtures/` 的路径猜测；`inspect_task(..., validate_filename=False)` 作为显式 fixture-container context，默认真实 TASK 仍严格校验文件名。
+- Diagnostic 按 code 提供可执行 suggestion；已解析枚举和 Legacy conflict 关联 provenance。
+- 测试扩展到 14 tests，覆盖 suffix 正反例、fence/table/placeholder、显式 filename context。
+- 第 2 轮验证：14/14 GREEN；fixture diff 空；标准库 import/只读 surface 检查继续通过。
+- 当前轮次达到 2 / 2；提交后必须最终独立复审，仍有 P0/P1 则停止。
+
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA3
@@ -204,7 +214,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 commit `0e1d746`、首审记录 commit `6922cd9`；第 1 轮修复候选待提交
+- Commit 状态：实现 `0e1d746`、首审记录 `6922cd9`、第 1 轮修复 `013cae2`、复审记录 `806b08c`；第 2 轮修复候选待提交
 - Commit hash：待提交后填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
