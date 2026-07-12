@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 第 1 轮有限修复已完成，等待独立复审（`review_task`） |
-| 下一允许模式 | 独立复审通过后进入 UA3；若仍有 P0/P1 则按轮次上限处理 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 轮有限修复（`repair_task`） |
+| 下一允许模式 | 第 2 轮修复后必须独立复审；若仍有 P0/P1 则停止并人工接管 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：建立多目录机器 oracle，并成为后续 Reader 的测试基线 |
@@ -208,6 +208,14 @@ foreach ($c in $m.comparisons) {
 - 修复验证：24 个 ID 唯一、33 个文件路径存在、diagnostic 均属于规范、ledger 汇总与 manifest/metrics 一致、三个 Compact 前 8 字段精确为 core 且无 N/A、三个来源 commit 仍存在、全部 JSON 可解析、`git diff --check` 通过。
 - 未处理意见：无。
 - 下一步：提交修复候选并进行独立复审。
+
+### 第 1 轮复审结果
+
+- 已关闭：feedback/signal 精确 grammar；Legacy authority 的主要 Review/UA/Outcome 门禁。
+- 未关闭 P1：4 个 tracked fixture 的 `Ready -> Draft` 会形成可证明非法历史；comparison ledger 对 required input 与 duplicate 的语义证据不足。
+- P2：canonical authority fixture 应包含 `W_AUTHORITY_UNVERIFIABLE`。
+- P3：Legacy authority 文案仍误写 Accepted。
+- 结论：不允许进入 UA3；进入第 2 轮（最后一轮）有限修复。
 
 ## Diff 审查
 
