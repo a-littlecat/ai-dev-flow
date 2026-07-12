@@ -64,7 +64,7 @@ REL-001
 | CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Accepted | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1（1 类 P2 不阻塞） | UA3 已通过 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Accepted | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1（1 项 P2） | UA3 已通过 | Single / 独立分支 `codex/contract-003-readonly-readers` | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1（1 项 P2） | UA4 已通过 | Single / 独立分支 `codex/contract-004-workflow-lint` | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
-| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Review | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 第 2 / 2 轮修复完成，待最终复审 | UA6 未进入 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
+| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Review | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 待用户回归验收 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Draft | 中 | 高 | CONTRACT-004、005 Accepted | 未审查 | UA6 | Single / 独立分支或 Worktree | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
 
 ## 下一允许动作

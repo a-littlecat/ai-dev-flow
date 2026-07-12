@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 第 2 / 2 轮有限修复完成，等待最终独立复审（`review_task`） |
-| 下一允许模式 | 最终复审通过后进入 UA6；仍有 P0/P1 时停止并人工接管 |
+| 当前模式 | 最终独立复审通过，等待 UA6 回归验收 |
+| 下一允许模式 | 用户完成 UA6 后进入已验收（`Accepted`） |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
@@ -115,7 +115,8 @@
 - [x] 三个真实 A/B 样本通过 004 lint，填写量稳定少于 legacy。
 - [x] 没有自动迁移、状态 Writer、`--fix`、外部同步或模型依赖。
 - [x] Full/Legacy 模板仍完整可用。
-- [ ] 独立 Review 无 P0/P1，用户完成核心流程回归验收。
+- [x] 独立 Review 无 P0/P1。
+- [ ] 用户完成核心流程回归验收。
 
 ## 验证方式
 
@@ -153,15 +154,15 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：需要修改
+- 审查状态：最终复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
-- 审查严重等级：P1（2 项，同一根因）
+- 审查严重等级：最终无 P0-P3
 - P0 / P1 必须修改项：
   1. inventory 漏掉 `skills/ai-dev-flow/README.md` 的 create 入口，以及 `VALIDATION_GUIDE.md` / `ACCEPTANCE_GUIDE.md` 的 execute/acceptance/close 写回格式；它们仍可能绕过 Compact 路由。
   2. 专项测试只检查预选文件关键词，没有用可执行路由/结构场景覆盖 create、execute、review、diff-review、repair、acceptance、close，因此无法发现真实 callsite 遗漏。
 - P2：metrics 测试读取静态 JSON，未从 comparison Markdown 重新计算，存在未来漂移盲区。
-- 审查结论：Needs Fix；不允许进入 UA6
-- 是否允许进入验收建议：否
+- 审查结论：第 2 / 2 轮最终 Pass；前两轮 findings 全部关闭
+- 是否允许进入验收建议：是，进入 UA6
 
 ## 执行与验证记录
 
@@ -182,8 +183,8 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：第 1 轮未通过
-- 审查结论：30/30 tests 与 comparison lint 通过，但 callsite inventory 和行为验证存在 P1
+- 审查状态：最终通过
+- 审查结论：32/32 tests、三组 comparison lint 与全仓范围检查通过；无 P0-P3
 
 ## 审查-修复循环（review_repair_loop）记录
 
@@ -198,6 +199,7 @@ git diff --name-only
 - 第 1 轮修复复审：上一轮两个 P1主体和 metrics P2 已关闭；仍有 1 项 P1——README 与 Compact 模板把 unknown 错误写成先选择 Full，违反 `STOP_PENDING_CONFIRMATION`。
 - 第 2 / 2 轮修复边界：只统一 unknown 为“停止、待确认、不选择模板”，并增加跨入口一致性反例；不扩大其他范围。
 - 第 2 / 2 轮修复结果：README 与 Compact 模板均区分“已确定不满足→Full”和“条件未知→停止且不选模板”；新增真实 create 入口一致性测试。
+- 第 2 / 2 轮最终独立复审：Pass，无 P0-P3，允许进入 UA6；前两轮 findings 全部保持关闭。
 
 ## 用户动作等级 / 验收建议
 
@@ -221,7 +223,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `f99dbb2`、首轮 Review 记录 `48d1c01`、第 1 轮修复 `d4802ff`、复审记录 `bd0ee89`；最终修复候选待提交
+- Commit 状态：实现 `f99dbb2`、首轮 Review `48d1c01`、第 1 轮修复 `d4802ff`、复审记录 `bd0ee89`、最终修复 `5911d51`；最终 Review 记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
