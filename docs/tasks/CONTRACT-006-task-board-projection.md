@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 最终独立复审通过，等待 UA6 回归验收 |
-| 下一允许模式 | 用户完成 UA6 后进入已验收（`Accepted`） |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | UA6 已通过，保持已验收（`Accepted`） |
+| 下一允许模式 | 保持 Accepted；Closed、merge、push 仍需另获用户授权 |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -100,7 +100,7 @@ TASK
 - [x] TASK_BOARD_TEMPLATE 日常视图轻量，完整视图明确为 legacy/diagnostic。
 - [x] 仅使用 Python 标准库。
 - [x] 独立代码 Review 无 P0/P1。
-- [ ] 用户完成 UA6 回归验收。
+- [x] 用户完成 UA6 回归验收。
 
 ## 验证方式
 
@@ -190,14 +190,14 @@ git diff --name-only
 - 用户动作等级：UA6
 - 用户需要做什么：回归验证 TASK 权威、board drift、legacy/Compact 与不写入行为
 - agent 已提供的证据：待执行后填写
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；本次授权为 Accepted 与完成任务链，不包含 Closed 或 merge
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：UA6 已通过
 - 当前反馈关联的 UA 等级：UA6
-- 反馈分类：待确认
-- 下一步建议：等待任务执行、Review 和回归验收
+- 反馈分类：原任务已完成，无失败反馈
+- 下一步建议：保持 Accepted；执行 CONTRACT-002~006 完成审计
 
 ## 合并状态
 
@@ -207,8 +207,8 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`、第 1 轮修复 `a4ee06a`、复审记录 `4a437dc`、最终修复 `03c1244`；最终 Review 记录待提交
-- Commit hash：待填写
+- Commit 状态：实现、两轮有限修复和最终 Review 均已提交；Accepted 状态记录待提交
+- Commit hash：最终 Review 记录 `d05928aaabba0093ba8eb5bd213fb8e3c1423488`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
@@ -218,6 +218,6 @@ git diff --name-only
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
 - 执行 Base commit：`61d0911dfa3ff890b1a75493e2c5210c2ed9d7d1`
 - 计划分支：`codex/contract-006-board-projection`
-- Diff 范围：`61d0911..HEAD`（待审查）
+- Diff 范围：`61d0911..d05928a`（实现与最终 Review）；Accepted 状态由本次提交记录
 - 后续任务：`CONTRACT-007` 不在本轮范围，需另行创建和确认
 - 不要重复尝试：把 projection 实现成 TASK_BOARD Writer 或自动修复器
