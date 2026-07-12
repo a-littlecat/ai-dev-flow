@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 实现与验证已完成，等待独立审查（`review_task`） |
-| 下一允许模式 | 独立 Review 通过后进入 UA3；若有 P0/P1 则进入 `repair_task` |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复（`repair_task`） |
+| 下一允许模式 | 完成第 1 轮修复与验证后重新进入独立审查 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：建立多目录机器 oracle，并成为后续 Reader 的测试基线 |
@@ -185,12 +185,16 @@ foreach ($c in $m.comparisons) {
 
 ## 代码审查
 
-- 审查状态：未审查（按 fixture/oracle 审查执行）
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
+- 审查严重等级：P1（4 项）
+- P0 / P1 必须修改项：
+  1. board drift fixture 表头不属于 canonical 或 legacy 精确别名，实际会先触发 `E_BOARD_PARSE`。
+  2. feedback/signal fixture 未使用精确字段、值、标题，且缺少 In Progress C 级正文门禁。
+  3. Legacy authority fixture 处于 Accepted 但未补齐 Review、UA、Outcome 门禁，exact diagnostics 漏报。
+  4. comparison 只声明总数，缺逐事实 ledger，且 Compact 不满足 Review checkpoint 正文语义。
+- 审查结论：Needs Fix；不允许进入 UA3
+- 是否允许进入验收建议：否；修复后重新独立 Review
 
 ## Diff 审查
 
@@ -198,8 +202,8 @@ foreach ($c in $m.comparisons) {
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：第 1 轮未通过
+- 审查结论：范围无越界、JSON 与路径检查通过，但 oracle 精确性和 comparison 可审计性存在 4 项 P1
 
 ## 用户动作等级 / 验收建议
 
