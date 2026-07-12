@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 执行与验证已完成，等待独立审查（`review_task`） |
-| 下一允许模式 | 审查通过后进入 UA6；存在 P0/P1 时进入有限修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 首轮独立审查发现 P1，进入有限修复（`repair_task`） |
+| 下一允许模式 | 第 1 轮修复后重新独立复审 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -135,12 +135,17 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：未审查
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
+- 审查严重等级：P1（5 项）
+- P0 / P1 必须修改项：
+  1. Legacy direct/split acceptance/delivery 合并时丢弃未覆盖轴，产生 false negative。
+  2. board id 与 TASK path 冲突会级联伪造 missing/orphan。
+  3. board diagnostic/actual provenance 路径应为项目根相对 `docs/TASK_BOARD.md`。
+  4. plain task_path 应从 project root 解析，只有 Markdown link 相对 board；需拒绝绝对/越界。
+  5. public project target 必须仍要求 `docs/tasks/`，不能接受 board-only 目录。
+- 审查结论：Needs Fix；不允许进入 UA6
+- 是否允许进入验收建议：否
 
 ## 执行与验证记录
 
@@ -159,8 +164,13 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：首轮未通过
+- 审查结论：39/39 tests 通过，但 reviewer 针对性反例发现 5 项 P1
+
+## 审查-修复循环（review_repair_loop）记录
+
+- 当前轮次：1 / 2。
+- 第 1 轮修复范围：仅处理上述 5 项 parser/compare/public-target finding，并加入对应反例；不扩展 Writer、Overlay、Contract 语义或自动修复。
 
 ## 用户动作等级 / 验收建议
 
@@ -184,7 +194,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现候选待提交
+- Commit 状态：实现 `2478452`；首轮 Review 记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
