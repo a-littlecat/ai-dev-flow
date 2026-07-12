@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 第 2 / 2 轮有限修复完成，等待最终独立复审（`review_task`） |
-| 下一允许模式 | 最终复审通过后进入 UA6；仍有 P0/P1 时停止并人工接管 |
+| 当前模式 | 最终独立复审通过，等待 UA6 回归验收 |
+| 下一允许模式 | 用户完成 UA6 后进入已验收（`Accepted`） |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
@@ -99,7 +99,8 @@ TASK
 - [x] `CONTRACT-007` 前 Overlay 只产生 `W_PROJECT_OVERLAY_UNEVALUATED` 或规范约定 warning。
 - [x] TASK_BOARD_TEMPLATE 日常视图轻量，完整视图明确为 legacy/diagnostic。
 - [x] 仅使用 Python 标准库。
-- [ ] 独立代码 Review 无 P0/P1，用户完成 UA6 回归验收。
+- [x] 独立代码 Review 无 P0/P1。
+- [ ] 用户完成 UA6 回归验收。
 
 ## 验证方式
 
@@ -135,17 +136,17 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：需要修改
+- 审查状态：最终复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
-- 审查严重等级：P1（5 项）
+- 审查严重等级：最终无 P0-P3
 - P0 / P1 必须修改项：
   1. Legacy direct/split acceptance/delivery 合并时丢弃未覆盖轴，产生 false negative。
   2. board id 与 TASK path 冲突会级联伪造 missing/orphan。
   3. board diagnostic/actual provenance 路径应为项目根相对 `docs/TASK_BOARD.md`。
   4. plain task_path 应从 project root 解析，只有 Markdown link 相对 board；需拒绝绝对/越界。
   5. public project target 必须仍要求 `docs/tasks/`，不能接受 board-only 目录。
-- 审查结论：Needs Fix；不允许进入 UA6
-- 是否允许进入验收建议：否
+- 审查结论：第 2 / 2 轮最终 Pass；前两轮 findings 全部关闭
+- 是否允许进入验收建议：是，进入 UA6
 
 ## 执行与验证记录
 
@@ -164,8 +165,8 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：首轮未通过
-- 审查结论：39/39 tests 通过，但 reviewer 针对性反例发现 5 项 P1
+- 审查状态：最终通过
+- 审查结论：41/41 tests 与针对性反例通过；无 P0-P3
 
 ## 审查-修复循环（review_repair_loop）记录
 
@@ -182,6 +183,7 @@ git diff --name-only
 - 第 1 轮修复复审：原 5 项 P1 全部关闭；剩余 1 项 P1——URL 与 Windows drive-relative path 未拒绝；另有重复 ID 后继续 compare 的 P2。
 - 第 2 / 2 轮修复边界：拒绝 URI/drive-relative path；重复 board ID 不再参与 drift compare；只增加对应反例。
 - 第 2 / 2 轮修复结果：拒绝 URI scheme 与任意 Windows drive path；重复 task_id 只报 `E_TASK_ID_CONFLICT`，不再按任一行继续 drift compare。
+- 第 2 / 2 轮最终独立复审：Pass，无 P0-P3，允许进入 UA6；前两轮 findings 全部保持关闭。
 
 ## 用户动作等级 / 验收建议
 
@@ -205,7 +207,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`、第 1 轮修复 `a4ee06a`、复审记录 `4a437dc`；最终修复候选待提交
+- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`、第 1 轮修复 `a4ee06a`、复审记录 `4a437dc`、最终修复 `03c1244`；最终 Review 记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
