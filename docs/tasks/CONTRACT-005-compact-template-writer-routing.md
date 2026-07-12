@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 执行与验证已完成，等待独立审查（`review_task`） |
-| 下一允许模式 | 审查通过后进入 UA6；存在 P0/P1 时进入有限修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 独立审查发现 P1，等待范围确认后进入有限修复（`repair_task`） |
+| 下一允许模式 | 用户批准补齐遗漏 writer callsite 后进入第 1 轮修复；否则重新拆任务 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -150,12 +150,15 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：未审查
-- 审查人或审查 agent：待填写
-- 审查严重等级：待填写
-- P0 / P1 必须修改项：待审查
-- 审查结论：待填写
-- 是否允许进入验收建议：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
+- 审查严重等级：P1（2 项，同一根因）
+- P0 / P1 必须修改项：
+  1. inventory 漏掉 `skills/ai-dev-flow/README.md` 的 create 入口，以及 `VALIDATION_GUIDE.md` / `ACCEPTANCE_GUIDE.md` 的 execute/acceptance/close 写回格式；它们仍可能绕过 Compact 路由。
+  2. 专项测试只检查预选文件关键词，没有用可执行路由/结构场景覆盖 create、execute、review、diff-review、repair、acceptance、close，因此无法发现真实 callsite 遗漏。
+- P2：metrics 测试读取静态 JSON，未从 comparison Markdown 重新计算，存在未来漂移盲区。
+- 审查结论：Needs Fix；不允许进入 UA6
+- 是否允许进入验收建议：否
 
 ## 执行与验证记录
 
@@ -176,8 +179,14 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：第 1 轮未通过
+- 审查结论：30/30 tests 与 comparison lint 通过，但 callsite inventory 和行为验证存在 P1
+
+## 审查-修复循环（review_repair_loop）记录
+
+- 当前轮次：0 / 2；尚未开始修复。
+- 阻塞点：P1 的最小修复需要修改 `skills/ai-dev-flow/README.md`、`references/VALIDATION_GUIDE.md`、`references/ACCEPTANCE_GUIDE.md`，三者未列入当前允许修改范围。
+- 待用户确认：是否将上述三个真实 writer 入口加入允许范围，并相应扩展行为测试；不改变 Contract 语义、Reader、lint、fixture 或自动 Writer 边界。
 
 ## 用户动作等级 / 验收建议
 
@@ -201,7 +210,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现候选待提交
+- Commit 状态：实现提交 `f99dbb2`；首轮 Review 记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
