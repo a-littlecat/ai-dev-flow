@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：`REL-002` 已完成 UA3 证据验收
-> - 当前阶段：v0.7 版本身份与三个本机 Skill 副本已收口；任务保持 Accepted，未授权 Closed 或任何发布动作
+> - 当前模式：合并并 push 已 Accepted 的 `REL-002`
+> - 当前阶段：用户已授权 merge/push；正在生成合并与远程收据，仍未授权 tag、GitHub Release 或 Closed
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -74,7 +74,7 @@ REL-001
 
 ## 下一允许动作
 
-`REL-002` 已完成 UA3 证据验收并进入 Accepted。后续如需 Closed、merge、创建 `v0.7.0` tag、push 或 GitHub Release，必须分别取得新的明确授权；当前不执行这些动作。
+`REL-002` 已完成 UA3 并进入 Accepted；用户已明确授权本轮 merge 到 `main` 并 push。创建 `v0.7.0` tag、GitHub Release 或 Closed 仍需新的明确授权。
 
 ## 整体停止条件
 

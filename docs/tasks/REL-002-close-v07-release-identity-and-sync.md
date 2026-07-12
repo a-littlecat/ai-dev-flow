@@ -14,6 +14,7 @@
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
+- `merge_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -65,3 +66,4 @@
 - 验证证据：三个本机副本均通过 Skill validator；Gemini `plugin.json=0.7.0` 且重复嵌套副本不存在
 - 验证证据：同步后完整单元测试 41/41 通过；单任务 lint 为 0 error / 0 violation / 0 warning；`git diff --check` 通过；仓库工作区干净
 - UA 动作与结果：UA3 Passed；用户于 2026-07-12 查看版本、Review、测试、lint 和逐文件哈希证据后明确回复“确认”
+- UA 动作与结果：用户于 2026-07-12 明确授权将当前任务分支合并到 `main` 并 push；该授权不包含 tag、GitHub Release 或 Closed
