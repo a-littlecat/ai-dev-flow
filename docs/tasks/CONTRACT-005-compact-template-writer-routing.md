@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 创建任务（`create_task`） |
-| 下一允许模式 | 前置门禁满足且用户明确启动后进入 `execute_task` |
-| 任务状态 | 草稿（`Draft`） |
+| 当前模式 | 执行与验证已完成，等待独立审查（`review_task`） |
+| 下一允许模式 | 审查通过后进入 UA6；存在 P0/P1 时进入有限修复 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -84,11 +84,11 @@
 
 ## Readiness Gate
 
-- [ ] `CONTRACT-004` 已 `Accepted`，真实 A/B 样本可被 lint。
-- [ ] `git merge-base --is-ancestor <CONTRACT-004 Accepted commit> <当前 Base>` 成功。
-- [ ] 三个 comparison 已证明 Compact 输入少于 legacy，重复状态为 0。
-- [ ] 用户明确批准启动 D 级核心工作流改动。
-- [ ] 独立 Worktree、Base commit、HEAD、Diff 范围和回滚方式已记录。
+- [x] `CONTRACT-004` 已 `Accepted`，Accepted commit `7f0f7e5`；真实 A/B 样本可被 lint。
+- [x] `git merge-base --is-ancestor 7f0f7e5 7f0f7e5` 成功。
+- [x] 三个 comparison 均为 required inputs 19→18，duplicate state 2→0。
+- [x] 用户以“继续”明确批准启动剩余串行任务和本 D 级核心工作流改动。
+- [x] 独立 Worktree `D:\open-source\ai-dev-flow-contract-005`；Base/HEAD `7f0f7e5`；回滚方式为回退本任务独立 commit。
 
 ## 执行步骤
 
@@ -102,16 +102,16 @@
 
 ## 完成标准
 
-- [ ] Compact 模板只面向 A/B + `overlays=none`。
-- [ ] C/D、Batch、Wave、real_env 和未知条件全部保持 Full/Legacy。
-- [ ] existing legacy TASK 原样可继续维护，不要求加入 v0.7 block。
-- [ ] writer-callsite inventory 覆盖所有创建或更新 TASK 的入口。
-- [ ] create/execute/review/diff-review/repair/acceptance/close 对 Compact 不重建旧状态字段。
-- [ ] Compact 只有一个 Review 状态和一套 delivery 状态。
-- [ ] Compact 模板没有一排 N/A/Not Applicable 噪声。
-- [ ] 三个真实 A/B 样本通过 004 lint，填写量稳定少于 legacy。
-- [ ] 没有自动迁移、状态 Writer、`--fix`、外部同步或模型依赖。
-- [ ] Full/Legacy 模板仍完整可用。
+- [x] Compact 模板只面向 A/B + `overlays=none`。
+- [x] C/D、Batch、Wave、real_env 和未知条件全部保持 Full/Legacy。
+- [x] existing legacy TASK 原样可继续维护，不要求加入 v0.7 block。
+- [x] writer-callsite inventory 覆盖所有创建或更新 TASK 的入口。
+- [x] create/execute/review/diff-review/repair/acceptance/close 对 Compact 不重建旧状态字段。
+- [x] Compact 只有一个 Review 状态和一套 delivery 状态。
+- [x] Compact 模板没有一排 N/A/Not Applicable 噪声。
+- [x] 三个真实 A/B 样本通过 004 lint，填写量稳定少于 legacy。
+- [x] 没有自动迁移、状态 Writer、`--fix`、外部同步或模型依赖。
+- [x] Full/Legacy 模板仍完整可用。
 - [ ] 独立 Review 无 P0/P1，用户完成核心流程回归验收。
 
 ## 验证方式
@@ -157,6 +157,19 @@ git diff --name-only
 - 审查结论：待填写
 - 是否允许进入验收建议：待确认
 
+## 执行与验证记录
+
+- Writer callsite inventory：
+  - 创建入口：`SKILL.md` 默认执行建议；`PROMPTS.md` 的拆任务/create_task；`WORKFLOW.md` 创建 TASK；Full/Compact 两份模板。
+  - 更新入口：execute、自查、review、pre/post diff-review、repair、acceptance、close；集中规则已写入 `SKILL.md`、`PROMPTS.md`、`WORKFLOW.md`。
+  - 审查兼容入口：`CODE_REVIEW_CHECKLIST.md`、`AGENTS_COMPAT.md`。
+  - 全量搜索关键词：`代码审查|Diff 审查|合并状态|提交 / 合并|TASK_TEMPLATE|create_task|execute_task|review_task|repair_task|close_task|acceptance`。
+- RED：新增 `test_compact_writer_routing.py` 后 4 tests 中 1 error、7 个 subtest failure；缺少 Compact 模板和所有入口路由。
+- GREEN：完整 `test_*.py` 30/30 通过；Compact 路由专项 4/4 通过。
+- 三个 comparison：`CMP-12B3DC0-compact.md`、`CMP-4A6C417-compact.md`、`CMP-81A8837-compact.md` 均 lint exit 0；仅因历史 blob 不足输出非阻塞 `W_TRANSITION_UNVERIFIABLE`。
+- 填写量：三组均 required inputs 19→18，duplicate state occurrences 2→0。
+- 范围：未修改 fixture、Reader、workflow_lint、Contract 语义、TASK_BOARD projection、VERSION/CHANGELOG；未实现自动 Writer 或迁移。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
@@ -188,18 +201,18 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：未提交
+- Commit 状态：实现候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
-- 当前分支：`main`（建档时）
+- 当前分支：`codex/contract-005-compact-routing`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：待执行时填写
+- 执行 Base commit：`7f0f7e5a54d0727098457811359dc6dbee5e7cf4`
 - 计划分支：`codex/contract-005-compact-routing`
-- Worktree：执行时在主项目外创建并记录
-- Diff 范围：待执行时填写
+- Worktree：`D:\open-source\ai-dev-flow-contract-005`
+- Diff 范围：`7f0f7e5..HEAD`（待审查）
 - 下一任务：`CONTRACT-006`，仅在本任务与 `CONTRACT-004` 均 `Accepted` 后转为 `Ready`
 - 不要重复尝试：只改一处 Prompt 就宣称 Compact 路由完成

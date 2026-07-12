@@ -1,8 +1,10 @@
 # 任务模板
 
+> 本文件是 Full/Legacy 模板：用于 C/D、Batch、Wave、`real_env_signal`、验收失败反馈，以及 existing legacy TASK 的原格式维护。只有新建 A/B、`overlays=none`、非 Batch/Wave/real_env 时才使用 `TASK_TEMPLATE_COMPACT.md`；条件未知时停止并写“待确认”。不得自动迁移 existing legacy TASK。
+
 ## 模板使用说明
 
-A/B 小任务可以只填写必需字段，不要求机械填写完整模板的所有字段。未确认字段写“待确认”，不要编造。
+被路由到 Full/Legacy 的 A/B 小任务可以只填写必需字段，不要求机械填写完整模板的所有字段。未确认字段写“待确认”，不要编造。
 
 A/B 小任务建议必填字段：
 

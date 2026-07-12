@@ -81,6 +81,8 @@ description: A reusable Git-first AI development workflow for solo developers. U
 - `close_task`：按用户动作等级完成验收或决策后关闭任务。
 - `status_report`：汇总当前项目状态。
 
+格式路由（v0.7）：`create_task` 新建 A/B 且 `overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 时使用 `references/TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 和 existing legacy TASK 使用 Full/Legacy `references/TASK_TEMPLATE.md`。条件未知时停止并写“待确认”。`execute_task`、`review_task`、diff-review、`repair_task`、acceptance、`close_task` 必须保持任务现有格式；不得在 Compact TASK 中重建“代码审查”“Diff 审查”“合并状态”“提交 / 合并”等 legacy 双写段落。Compact 后续触发复杂路径时停止并待确认，不自动迁移。
+
 模式边界：
 
 - `create_task` 模式只拆任务，不直接执行代码。
@@ -205,7 +207,7 @@ v0.6.0 新增设计级能力：
 - 未通过代码审查时，不得建议合并。
 - 审查线程只做审查和判断，不直接改代码。
 - Review-Repair Loop 默认最多 2 轮 repair，超过次数或仍有 P0/P1 时必须人工接管。
-- `review_task` 必须把审查结论写回当前任务文件的“代码审查”和“Diff 审查”段落，或项目约定的审查记录；只在聊天中输出审查意见不算完成审查。
+- `review_task` 必须按现有格式写回：Compact 更新 Workflow Contract / Outcome，Full/Legacy 更新“代码审查”和“Diff 审查”，也可使用项目约定的审查记录；只在聊天中输出审查意见不算完成审查。
 - 审查线程可以更新审查记录和 `docs/TASK_BOARD.md` 的 Review 状态，但不得修改业务代码。
 - 不要盲目执行 `git add .`；提交前必须检查暂存内容。
 - 不要自动执行危险 Git 操作，包括未确认的 merge、push、release、reset、rebase、删除分支或清理文件。
@@ -245,7 +247,8 @@ v0.6.0 新增设计级能力：
 - 批量小任务：[`references/BATCH_TASK_GUIDE.md`](references/BATCH_TASK_GUIDE.md)
 - 并行波次：[`references/PARALLEL_WAVE_GUIDE.md`](references/PARALLEL_WAVE_GUIDE.md)
 - 项目适配模板：[`references/PROJECT_OVERLAY_TEMPLATE.md`](references/PROJECT_OVERLAY_TEMPLATE.md)
-- 单个任务模板：[`references/TASK_TEMPLATE.md`](references/TASK_TEMPLATE.md)
+- Compact A/B 任务模板：[`references/TASK_TEMPLATE_COMPACT.md`](references/TASK_TEMPLATE_COMPACT.md)
+- Full/Legacy 任务模板：[`references/TASK_TEMPLATE.md`](references/TASK_TEMPLATE.md)
 - 任务看板模板：[`references/TASK_BOARD_TEMPLATE.md`](references/TASK_BOARD_TEMPLATE.md)
 - 代码审查清单：[`references/CODE_REVIEW_CHECKLIST.md`](references/CODE_REVIEW_CHECKLIST.md)
 - 决策记录模板：[`references/DECISIONS_TEMPLATE.md`](references/DECISIONS_TEMPLATE.md)
@@ -256,7 +259,7 @@ v0.6.0 新增设计级能力：
 
 ## 默认执行建议
 
-如果用户只是要求“建立项目工作流”，按 `init_project` 模式读取 `WORKFLOW.md`、`STATUS_MACHINE.md`、`VALIDATION_GUIDE.md`、`ACCEPTANCE_GUIDE.md`、`TASK_TEMPLATE.md`、`TASK_BOARD_TEMPLATE.md` 和 `AGENTS_COMPAT.md`，然后在项目中创建最小文档结构。初始化时应建议将 `AGENTS_COMPAT.md` 中适合本项目的关键规则合并到项目 `AGENTS.md`，但不得覆盖已有项目规则。如需完整安装到项目，还必须读取 `GIT_PRECHECK.md`、`GIT_WORKFLOW.md` 和 `DIFF_REVIEW.md`。
+如果用户只是要求“建立项目工作流”，按 `init_project` 模式读取 `WORKFLOW.md`、`STATUS_MACHINE.md`、`VALIDATION_GUIDE.md`、`ACCEPTANCE_GUIDE.md`、`TASK_TEMPLATE_COMPACT.md`、`TASK_TEMPLATE.md`、`TASK_BOARD_TEMPLATE.md` 和 `AGENTS_COMPAT.md`，然后在项目中创建最小文档结构。初始化时应建议将 `AGENTS_COMPAT.md` 中适合本项目的关键规则合并到项目 `AGENTS.md`，但不得覆盖已有项目规则。如需完整安装到项目，还必须读取 `GIT_PRECHECK.md`、`GIT_WORKFLOW.md` 和 `DIFF_REVIEW.md`。
 
 如果用户要求“先收集需求”或需求边界不清，按 Intake 流程读取 `INTAKE_GUIDE.md`，输出 `INTAKE-xxx.md` 草案或同结构内容；不得直接拆任务或改代码。
 
@@ -282,4 +285,4 @@ v0.6.0 新增设计级能力：
 
 如果用户要求“并行处理任务”或“开一组 Wave”，先读取 `PARALLEL_WAVE_GUIDE.md`、`TASK_BOARD.md` 和候选 TASK 文件，完成文件锁、模块锁、依赖、UA 等级、工作区隔离和用户确认检查后，才允许启动并行执行会话。代码任务默认使用独立分支或 Worktree，多个代码执行会话不得默认共享同一工作区。
 
-如果用户要求“审查任务”，按 `review_task` 模式只读取当前 TASK 文件、`DIFF_REVIEW.md`、`CODE_REVIEW_CHECKLIST.md`、验证记录，以及 base commit 到 HEAD 或当前工作区 diff。必须将审查结论写回当前任务文件的“代码审查”和“Diff 审查”段落，必要时更新 `docs/TASK_BOARD.md` 的 Review 状态；只在聊天中输出不算完成审查，不得直接改业务代码。
+如果用户要求“审查任务”，按 `review_task` 模式只读取当前 TASK 文件、`DIFF_REVIEW.md`、`CODE_REVIEW_CHECKLIST.md`、验证记录，以及 base commit 到 HEAD 或当前工作区 diff。必须按当前格式写回审查结论：Compact 更新 Workflow Contract / Outcome，Full/Legacy 更新“代码审查”和“Diff 审查”；必要时更新 `docs/TASK_BOARD.md` 的 Review 状态。只在聊天中输出不算完成审查，不得直接改业务代码。

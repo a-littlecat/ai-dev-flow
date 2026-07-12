@@ -1,5 +1,7 @@
 # 可合并到项目 AGENTS.md 的通用规则
 
+格式路由（v0.7）：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 和 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。create/execute/review/diff-review/repair/acceptance/close 保持任务现有格式；不得在 Compact TASK 中重建 legacy 的“代码审查”“Diff 审查”“合并状态”“提交 / 合并”，也不得自动迁移。
+
 以下内容可按需合并到项目根目录 `AGENTS.md`。合并前请保留项目已有规则，并删除与项目不适用或重复的部分。
 
 ## 默认语言和文档
@@ -110,7 +112,7 @@
 - 修复线程只处理审查指出的问题。
 - Review-Repair Loop 默认最多 2 轮 repair；两轮后仍有 P0/P1 时必须停止并交给用户。
 - 审查结论必须明确为：通过、需要修改或不建议合并。
-- 审查结论必须写回当前任务文件的“代码审查”和“Diff 审查”段落，或项目约定的审查记录。
+- 审查结论必须按现有格式写回：Compact 的 Workflow Contract / Outcome，或 Full/Legacy 的“代码审查”和“Diff 审查”段落；也可使用项目约定的审查记录。
 - 只在聊天中输出审查意见不算完成审查。
 - 审查线程可以更新审查记录和 `docs/TASK_BOARD.md` 的 Review 状态，但不得修改业务代码。
 - 未通过审查时，不得建议合并。

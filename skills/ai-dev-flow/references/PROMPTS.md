@@ -1,5 +1,9 @@
 # 可复制提示词
 
+## TASK 格式路由（v0.7）
+
+所有创建和写回入口先判断格式：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 与 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。`create_task`、`execute_task`、`review_task`、diff-review、`repair_task`、acceptance、`close_task` 都保持任务现有格式。不得在 Compact TASK 中重建 legacy 的“代码审查”“Diff 审查”“合并状态”“提交 / 合并”段落；复杂路径停止并待确认，不自动迁移。
+
 这些提示词适用于支持或不支持 Skill 的 AI coding agent。使用时请把路径、任务编号和项目名称替换成实际内容。
 
 ## 1. 初始化项目工作流
@@ -36,7 +40,7 @@
 2. 每个任务都要有任务编号、任务类型、目标、非目标、完成标准、建议执行位置和验证方式。
 3. 不要把大范围重构塞进单个任务。
 4. 输出可直接写入 docs/TASK_BOARD.md 的任务表。
-5. 如需要创建任务文件，请使用 TASK_TEMPLATE.md 的结构。
+5. 如需要创建任务文件，先按“TASK 格式路由（v0.7）”选择 TASK_TEMPLATE_COMPACT.md 或 Full/Legacy TASK_TEMPLATE.md。
 ```
 
 ## 3. 执行单个任务
@@ -87,7 +91,7 @@ docs/tasks/<TASK-ID>.md
    - 建议修改项
    - 风险
    - 推荐验证步骤
-6. 将审查结论写回任务文件的“代码审查”和“Diff 审查”段落，必要时更新 docs/TASK_BOARD.md 的 Review 状态。
+6. 按任务现有格式写回审查结果：Compact 更新 Workflow Contract 和 Outcome；Full/Legacy 更新“代码审查”和“Diff 审查”。必要时更新 docs/TASK_BOARD.md 的 Review 状态。
 7. 只在聊天中输出审查意见不算完成审查。
 8. 未通过审查时，不要建议合并。
 ```
@@ -242,7 +246,7 @@ docs/tasks/<TASK-ID>.md
 2. 只审查当前任务 diff。
 3. 标出范围越界文件和不应提交文件。
 4. 给出是否允许 commit、是否允许进入验收建议和建议用户动作等级。
-5. 将 diff 审查结论写入任务文件的“Diff 审查”段落；只在聊天中输出不算完成审查。
+5. 按任务现有格式写入 diff-review：Compact 更新 Outcome 的 Review findings；Full/Legacy 更新“Diff 审查”；只在聊天中输出不算完成审查。
 ```
 
 ## 17. post-commit diff 审查
@@ -257,7 +261,7 @@ Base commit：<base_commit>
 2. 查看 diff stat、name-only、完整 diff、diff --check 和 git log。
 3. 只审查当前任务改动，不把历史问题算作本任务问题。
 4. 给出是否允许进入验收建议、建议用户动作等级和是否允许合并。
-5. 将 diff 审查结论写入任务文件的“Diff 审查”段落；只在聊天中输出不算完成审查。
+5. 按任务现有格式写入 diff-review：Compact 更新 Outcome 的 Review findings；Full/Legacy 更新“Diff 审查”；只在聊天中输出不算完成审查。
 ```
 
 ## 18. 根据 diff 审查意见修复
@@ -375,7 +379,7 @@ init_project / create_task / plan_task / execute_task / review_task / repair_tas
 3. 只审查当前任务范围。
 4. 不把历史问题全部压到当前任务。
 5. 输出是否允许进入验收建议和建议用户动作等级。
-6. 将结论写入任务文件的“代码审查”和“Diff 审查”段落，或项目约定的审查记录。
+6. 按任务现有格式写回：Compact 更新 Workflow Contract 和 Outcome；Full/Legacy 更新“代码审查”和“Diff 审查”；也可使用项目约定的审查记录。
 7. 必要时更新 docs/TASK_BOARD.md 的 Review 状态。
 8. 只在聊天中输出审查意见不算完成审查。
 ```

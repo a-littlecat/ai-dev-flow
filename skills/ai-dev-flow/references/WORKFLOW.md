@@ -17,6 +17,8 @@ agent 开始工作前必须判断当前模式，并保持模式单一。
 | 关闭任务 | `close_task` | 按用户动作等级完成验收或决策后关闭任务 | 不补做开发 |
 | 状态汇总 | `status_report` | 汇总项目状态 | 不改变任务状态，除非用户确认 |
 
+格式路由（v0.7）：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 与 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。create/execute/review/diff-review/repair/acceptance/close 都保持任务现有格式，不得在 Compact TASK 中重建 legacy 双 Review 或双 delivery 段落，也不得自动迁移。
+
 ### `init_project`
 
 读取项目规则和现有文档，创建或建议创建 `PROJECT_INDEX`、`TASK_BOARD`、`tasks/`、`plans/`、验证指南和审查清单。
@@ -416,7 +418,7 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 
 ### 4. 创建 TASK 文件
 
-使用 `TASK_TEMPLATE.md` 创建任务文件，至少写清：
+先按格式路由选择模板：满足 Compact 条件时使用 `TASK_TEMPLATE_COMPACT.md`，其他情况使用 Full/Legacy `TASK_TEMPLATE.md`。任务文件至少写清：
 
 - 背景。
 - 目标。
@@ -520,7 +522,7 @@ agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Ver
 
 ### 8. 独立审查
 
-审查 agent 根据 `DIFF_REVIEW.md` 和 `CODE_REVIEW_CHECKLIST.md` 审查。审查结论必须明确：
+审查 agent 根据 `DIFF_REVIEW.md` 和 `CODE_REVIEW_CHECKLIST.md` 审查。Compact 写回 Workflow Contract / Outcome，Full/Legacy 写回原“代码审查”/“Diff 审查”段落；审查结论必须明确：
 
 - 通过。
 - 需要修改。
