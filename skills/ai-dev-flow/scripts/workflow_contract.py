@@ -1,7 +1,6 @@
 """Public read-only facade for Workflow Contract inspection."""
 
 from dataclasses import dataclass
-import json
 import pathlib
 import re
 import subprocess
@@ -63,8 +62,32 @@ def _has_ua_outcome(contract):
     return any(field.value.strip() not in PLACEHOLDERS for section in contract.sections if section.heading in {"用户动作等级 / 验收建议", "用户验收反馈 / 实机测试反馈"} for field in section.fields)
 
 
-def _validate(contract, *, require_commit=True):
+def _single_value_conflicts(contract):
+    diagnostics = []
+    for name in ("Base / Diff", "隔离位置", "回滚方式"):
+        fields = [field for section in contract.sections if section.heading == "Outcome" for field in section.fields if field.name == name]
+        values = {field.value.strip() for field in fields}
+        if len(values) > 1:
+            diagnostics.append(_diag(contract, "E_PARSE", name, f"单值字段 {name} 重复且内容冲突"))
+    return diagnostics
+
+
+def _ua_evidence_is_locatable(contract, evidence, source_file):
+    references = [item.strip() for item in evidence.split(";") if item.strip()]
+    if not references:
+        return False
+    try:
+        text = pathlib.Path(source_file).read_text(encoding="utf-8") if source_file else ""
+    except (OSError, UnicodeError):
+        text = ""
+    headings = {match.group(1).strip().lower().replace("`", "").replace(" ", "-").replace("/", "") for match in re.finditer(r"^#{1,6}\s+(.+?)\s*$", text, flags=re.MULTILINE)}
+    explicit = set(re.findall(r'<a\s+(?:id|name)=["\']([^"\']+)["\']\s*>\s*</a>', text, flags=re.IGNORECASE))
+    return all(not reference.startswith("#") or reference[1:] in headings | explicit for reference in references)
+
+
+def _validate(contract, *, require_commit=True, source_file=None):
     diagnostics = list(contract.diagnostics)
+    diagnostics.extend(_single_value_conflicts(contract))
     if any(item.severity == "error" for item in diagnostics):
         return diagnostics
     values = dict(contract.normalized)
@@ -93,7 +116,7 @@ def _validate(contract, *, require_commit=True):
     base_fields = _section_values(contract, {"Base / Diff"})
     base_value = base_fields[0].value if base_fields else ""
     if task_type in {"code", "test", "repair"} and lifecycle == "In Progress":
-        if not base_value.startswith("base=") or ";" in base_value:
+        if not re.fullmatch(r"base=[^\s`;]+(?:;diff=[^\s`;]+)?", base_value):
             state_bad = True
         if task_class in {"C", "D"} and (not _has_section_value(contract, "隔离位置") or not _has_section_value(contract, "回滚方式")):
             state_bad = True
@@ -122,13 +145,23 @@ def _validate(contract, *, require_commit=True):
         ua_bad = True
     if ua_level == "UA7" and ua_status in {"Passed", "Failed", "Deferred"} and authority != "User Confirmed":
         ua_bad = True
-    if ua_status in {"Passed", "Failed", "Deferred"} and not values.get("ua_evidence"):
+    if ua_status in {"Passed", "Failed", "Deferred"}:
+        evidence = values.get("ua_evidence", "")
+        if not evidence or not _ua_evidence_is_locatable(contract, evidence, source_file):
+            ua_bad = True
+    if ua_status == "Passed" and authority not in {"User Confirmed", "Designated Acceptor Confirmed"}:
+        ua_bad = True
+    if ua_level != "UA7" and ua_status in {"Failed", "Deferred"} and authority != "None":
         ua_bad = True
     if ua_status in {"Passed", "Failed", "Deferred"} and not _has_ua_outcome(contract):
         ua_bad = True
     if ua_level == "UA0" and ua_status not in {"Not Required", "Pending", "TBD"}:
         ua_bad = True
-    if ua_status in {"Pending", "TBD", "Not Required"} and values.get("ua_evidence"):
+    if ua_status == "Not Required" and ua_level != "UA0":
+        ua_bad = True
+    if ua_status in {"Pending", "TBD"} and (values.get("ua_evidence") or authority != "None"):
+        ua_bad = True
+    if ua_status == "Not Required" and (values.get("ua_evidence") or (lifecycle not in {"Accepted", "Closed"} and authority != "None")):
         ua_bad = True
     if ua_bad:
         diagnostics.append(_diag(contract, "V_UA_GUARD", "ua_status", "UA 结果、证据或确认主体不满足门禁"))
@@ -215,34 +248,15 @@ def _git_transition_diagnostic(contract, source_file):
     return None
 
 
-def _declared_fixture_input(path):
-    resolved = path.resolve()
-    for parent in resolved.parents:
-        manifest = parent / "manifest.json"
-        if not manifest.is_file():
-            continue
-        try:
-            data = json.loads(manifest.read_text(encoding="utf-8"))
-            relative = resolved.relative_to(parent).as_posix()
-        except (OSError, ValueError, json.JSONDecodeError):
-            return False
-        declared = {item.get("input") for item in data.get("fixtures", [])}
-        declared |= {item.get(key) for item in data.get("comparisons", []) for key in ("legacy_input", "compact_input", "metrics_input")}
-        return relative in declared
-    return False
-
-
 class WorkflowContract:
     @staticmethod
     def inspect(target):
         path = pathlib.Path(target)
         if path.is_file() and path.suffix.lower() == ".md":
             paths = (path,)
-            fixture_container = _declared_fixture_input(path)
-            validate_filename = not fixture_container
+            validate_filename = True
         elif path.is_dir() and (path / "docs" / "tasks").is_dir():
             paths = tuple(sorted((path / "docs" / "tasks").glob("*.md"), key=lambda item: item.as_posix()))
-            fixture_container = _declared_fixture_input(path)
             validate_filename = True
         else:
             diagnostic = reader._diagnostic("E_PARSE", path, 0, "target 必须是单个 Markdown TASK 或含 docs/tasks 的项目根")
@@ -251,8 +265,8 @@ class WorkflowContract:
         diagnostics = []
         seen_ids = {}
         for contract, source_file in zip(contracts, paths):
-            diagnostics.extend(_validate(contract, require_commit=not fixture_container))
-            transition = None if fixture_container else _git_transition_diagnostic(contract, source_file)
+            diagnostics.extend(_validate(contract, require_commit=True, source_file=source_file))
+            transition = _git_transition_diagnostic(contract, source_file)
             if transition is not None:
                 diagnostics.append(transition)
             task_id = contract.get("task_id")

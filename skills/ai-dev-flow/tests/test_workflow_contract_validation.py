@@ -2,6 +2,7 @@ import importlib.util
 import json
 import pathlib
 import hashlib
+import shutil
 import sys
 import tempfile
 import unittest
@@ -32,13 +33,25 @@ class WorkflowContractValidationTests(unittest.TestCase):
             if item["phase"] != "validator_004" or not pathlib.Path(item["input"]).suffix == ".md":
                 continue
             with self.subTest(item=item["id"]):
-                report = self.api.WorkflowContract.inspect(FIXTURES / item["input"])
+                source = FIXTURES / item["input"]
+                contract = self.api.reader.inspect_task(source, validate_filename=False)
+                diagnostics = self.api._validate(contract, require_commit=False, source_file=source)
+                report = type("Oracle", (), {"diagnostics": diagnostics})()
                 self.assertCountEqual([d.code for d in report.diagnostics], item["expected_diagnostics"])
 
     def test_valid_single_and_project(self):
-        single = self.api.WorkflowContract.inspect(FIXTURES / "valid" / "task-a-document.md")
+        source = FIXTURES / "projects" / "valid-project" / "docs" / "tasks" / "PROJECT-001.md"
+        with tempfile.TemporaryDirectory() as td:
+            target = pathlib.Path(td) / "PROJECT-001-copy.md"
+            shutil.copyfile(source, target)
+            single = self.api.WorkflowContract.inspect(target)
         self.assertEqual(single.summary.exit_code, 0)
-        project = self.api.WorkflowContract.inspect(FIXTURES / "projects" / "valid-project")
+        with tempfile.TemporaryDirectory() as td:
+            project_root = pathlib.Path(td)
+            task_dir = project_root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            shutil.copyfile(source, task_dir / "PROJECT-001.md")
+            project = self.api.WorkflowContract.inspect(project_root)
         self.assertEqual(len(project.contracts), 1)
         self.assertEqual(project.projections, "not_evaluated")
         self.assertFalse(any("BOARD" in d.code for d in project.diagnostics))
@@ -89,6 +102,30 @@ class WorkflowContractValidationTests(unittest.TestCase):
         self.assertIn("V_STATE_GUARD", self.codes_for_text(merged))
         overlay = self.canonical(lifecycle="In Progress", extra="- `overlays`: `real_env_signal`\n").replace("base=base123;diff=base123..head456", "base=base123")
         self.assertIn("V_STATE_GUARD", self.codes_for_text(overlay))
+
+    def test_strict_single_value_grammar_and_ua_reverse_guards(self):
+        empty_base = self.canonical(lifecycle="In Progress").replace("base=base123;diff=base123..head456", "base=")
+        self.assertIn("V_STATE_GUARD", self.codes_for_text(empty_base))
+        conflicting = self.canonical().replace("- Base / Diff：base=base123;diff=base123..head456", "- Base / Diff：base=base123;diff=base123..head456\n- Base / Diff：base=other;diff=other..head")
+        self.assertIn("E_PARSE", self.codes_for_text(conflicting))
+        pending_authority = self.canonical(extra="- `acceptance_authority`: `User Confirmed`\n")
+        self.assertIn("V_UA_GUARD", self.codes_for_text(pending_authority))
+        failed_authority = self.canonical(extra="- `acceptance_authority`: `Designated Acceptor Confirmed`\n").replace("- `ua_status`: `Pending`", "- `ua_status`: `Failed`\n- `ua_evidence`: `evidence-id`").replace("- Review findings：none", "- Review findings：none\n- UA 动作与结果：failed")
+        self.assertIn("V_UA_GUARD", self.codes_for_text(failed_authority))
+        non_ua0 = self.canonical().replace("- `ua_status`: `Pending`", "- `ua_status`: `Not Required`")
+        self.assertIn("V_UA_GUARD", self.codes_for_text(non_ua0))
+
+    def test_public_semantics_do_not_change_near_manifest(self):
+        source = FIXTURES / "valid" / "task-a-document.md"
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            target = root / "task-a-document.md"
+            shutil.copyfile(source, target)
+            before = self.api.WorkflowContract.inspect(target)
+            (root / "manifest.json").write_text(json.dumps({"fixtures": [{"input": target.name}]}), encoding="utf-8")
+            after = self.api.WorkflowContract.inspect(target)
+        self.assertEqual([(d.code, d.severity) for d in before.diagnostics], [(d.code, d.severity) for d in after.diagnostics])
+        self.assertIn("E_TASK_ID_CONFLICT", [d.code for d in after.diagnostics])
 
     def test_real_git_history_legal_dirty_and_illegal(self):
         with tempfile.TemporaryDirectory() as td:

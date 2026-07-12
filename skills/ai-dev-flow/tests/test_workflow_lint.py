@@ -1,7 +1,10 @@
 import json
 import pathlib
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 
 
@@ -12,6 +15,14 @@ FIXTURES = ROOT / "skills" / "ai-dev-flow" / "tests" / "fixtures"
 
 class WorkflowLintTests(unittest.TestCase):
     def run_cli(self, target, fmt):
+        target = pathlib.Path(target)
+        if target.is_file() and FIXTURES in target.parents:
+            with tempfile.TemporaryDirectory() as td:
+                text = target.read_text(encoding="utf-8")
+                task_id = re.match(r"^# ([A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*)[：:]", text).group(1)
+                public_target = pathlib.Path(td) / f"{task_id}-fixture.md"
+                shutil.copyfile(target, public_target)
+                return subprocess.run([sys.executable, "-B", "-X", "utf8", str(SCRIPT), str(public_target), "--format", fmt], text=True, encoding="utf-8", capture_output=True)
         return subprocess.run([sys.executable, "-B", "-X", "utf8", str(SCRIPT), str(target), "--format", fmt], text=True, encoding="utf-8", capture_output=True)
 
     def test_human_json_equivalence_and_disclaimer(self):
@@ -21,7 +32,7 @@ class WorkflowLintTests(unittest.TestCase):
         self.assertEqual(human.returncode, 1)
         self.assertEqual(machine.returncode, 1)
         payload = json.loads(machine.stdout)
-        self.assertEqual([d["code"] for d in payload["diagnostics"]], ["V_DELIVERY_ORDER", "V_DELIVERY_AUTHORITY"])
+        self.assertEqual([d["code"] for d in payload["diagnostics"] if d["severity"] == "violation"], ["V_DELIVERY_ORDER", "V_DELIVERY_AUTHORITY"])
         self.assertIn("不代表 Review", human.stdout)
         self.assertIn(payload["disclaimer"], human.stdout)
 
@@ -46,7 +57,10 @@ class WorkflowLintTests(unittest.TestCase):
         payload = json.loads(machine.stdout)
         sys.path.insert(0, str(SCRIPT.parent))
         from workflow_contract import WorkflowContract
-        report = WorkflowContract.inspect(target)
+        with tempfile.TemporaryDirectory() as td:
+            public_target = pathlib.Path(td) / "FIX-DELIVERY-fixture.md"
+            shutil.copyfile(target, public_target)
+            report = WorkflowContract.inspect(public_target)
         self.assertEqual([d["code"] for d in payload["diagnostics"]], [d.code for d in report.diagnostics])
         human = self.run_cli(target, "human")
         for diagnostic in payload["diagnostics"]:
