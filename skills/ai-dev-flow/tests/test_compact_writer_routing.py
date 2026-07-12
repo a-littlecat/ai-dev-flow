@@ -70,6 +70,13 @@ class CompactWriterRoutingTests(unittest.TestCase):
                 self.assertTrue(full_target)
                 self.assertFalse(any(heading in compact_target for heading in legacy_headings))
 
+    def test_unknown_never_selects_a_template_at_real_create_entries(self):
+        for path in (SKILL_ROOT / "README.md", REFERENCES / "TASK_TEMPLATE_COMPACT.md"):
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(path=path.name):
+                self.assertIn("条件未知时停止", text)
+                self.assertIn("不得选择任何模板", text)
+
     def test_no_unrouted_prescriptive_writer_entrypoints(self):
         patterns = ("TASK_TEMPLATE.md", "## 验收建议", "写回任务文件", "写入任务文件")
         routed = {

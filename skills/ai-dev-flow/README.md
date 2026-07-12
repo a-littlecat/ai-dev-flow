@@ -483,7 +483,7 @@ Parallel Wave 用来解决“单个单个执行太慢”的问题，但它比 Ba
    - `TASK-002`：实现导出设置。
    - `TASK-003`：补充验证和文档。
 5. 主控 agent 在 `docs/TASK_BOARD.md` 登记任务。
-6. 主控 agent 先判断格式：新建 A/B、`overlays=none`、非 Batch/Wave/`real_env_signal` 使用 `references/TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal`、existing legacy 或条件未知使用 Full/Legacy `references/TASK_TEMPLATE.md`，未知条件同时记录“待确认”。
+6. 主控 agent 先判断格式：新建 A/B、`overlays=none`、非 Batch/Wave/`real_env_signal` 使用 `references/TASK_TEMPLATE_COMPACT.md`；已确定为 C/D、Batch、Wave、`real_env_signal` 或 existing legacy 时使用 Full/Legacy `references/TASK_TEMPLATE.md`；条件未知时停止、记录“待确认”，不得选择任何模板。
 7. 主控 agent 执行 Git precheck，记录 base commit，并判断 `TASK-002` 的 A/B/C/D 等级。
 8. 执行 agent 按任务等级选择主项目、独立分支或 Worktree。
 9. 执行 agent 修改代码后更新任务文件，记录修改文件、diff 范围、验证命令、验证结果和遗留问题。

@@ -1,6 +1,6 @@
 # <TASK-ID>：<任务标题>
 
-> Compact v0.7 仅用于新建的 A/B 任务，且必须同时满足 `overlays=none`、非 Batch、非 Wave、非 `real_env_signal`。不满足或无法确定时停止并使用 Full/Legacy `TASK_TEMPLATE.md`；已存在的 legacy TASK 保持原格式。
+> Compact v0.7 仅用于新建的 A/B 任务，且必须同时满足 `overlays=none`、非 Batch、非 Wave、非 `real_env_signal`。已确定不满足时使用 Full/Legacy `TASK_TEMPLATE.md`；条件未知时停止、记录“待确认”，不得选择任何模板。已存在的 legacy TASK 保持原格式。
 
 ## Workflow Contract
 

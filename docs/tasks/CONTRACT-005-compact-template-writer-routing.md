@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 / 2 轮有限修复（`repair_task`） |
+| 当前模式 | 第 2 / 2 轮有限修复完成，等待最终独立复审（`review_task`） |
 | 下一允许模式 | 最终复审通过后进入 UA6；仍有 P0/P1 时停止并人工接管 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -197,6 +197,7 @@ git diff --name-only
 - 修复后验证：专项 5/5、全量 31/31 GREEN；fixture diff 为空，`git diff --check` 通过。
 - 第 1 轮修复复审：上一轮两个 P1主体和 metrics P2 已关闭；仍有 1 项 P1——README 与 Compact 模板把 unknown 错误写成先选择 Full，违反 `STOP_PENDING_CONFIRMATION`。
 - 第 2 / 2 轮修复边界：只统一 unknown 为“停止、待确认、不选择模板”，并增加跨入口一致性反例；不扩大其他范围。
+- 第 2 / 2 轮修复结果：README 与 Compact 模板均区分“已确定不满足→Full”和“条件未知→停止且不选模板”；新增真实 create 入口一致性测试。
 
 ## 用户动作等级 / 验收建议
 
@@ -220,7 +221,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `f99dbb2`、首轮 Review 记录 `48d1c01`、第 1 轮修复 `d4802ff`；复审记录待提交
+- Commit 状态：实现 `f99dbb2`、首轮 Review 记录 `48d1c01`、第 1 轮修复 `d4802ff`、复审记录 `bd0ee89`；最终修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
