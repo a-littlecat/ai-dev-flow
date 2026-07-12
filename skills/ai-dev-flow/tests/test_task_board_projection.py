@@ -93,6 +93,48 @@ class TaskBoardProjectionTests(unittest.TestCase):
             report = self.api.WorkflowContract.inspect(root)
         self.assertTrue(any(d.code == "V_BOARD_DRIFT" and "field=acceptance" in d.message for d in report.diagnostics))
 
+        authority = legacy.replace("Failed / None", "Pending / User Confirmed")
+        temporary, root = self.project_with_board(authority)
+        with temporary:
+            report = self.api.WorkflowContract.inspect(root)
+        self.assertTrue(any(d.code == "V_BOARD_DRIFT" and "field=acceptance" in d.message for d in report.diagnostics))
+
+        delivery = """# Board\n\n| 任务 | 名称 | 等级 | 状态 | Delivery | Commit 状态 | 任务文件 |\n|---|---|---|---|---|---|---|\n| BOARD-001 | 看板漂移样例 | B | Ready | commit=Not Recorded;merge=Merged;merge_authority=User Authorized | Not Recorded | docs/tasks/BOARD-001.md |\n"""
+        temporary, root = self.project_with_board(delivery)
+        with temporary:
+            report = self.api.WorkflowContract.inspect(root)
+        self.assertTrue(any(d.code == "V_BOARD_DRIFT" and "field=delivery" in d.message for d in report.diagnostics))
+
+    def test_id_path_conflict_has_no_missing_or_orphan_cascade(self):
+        board = """# Board\n\n| 任务 | 名称 | 等级 | 状态 | Review | UA | 验收 | 交付 | 任务文件 |\n|---|---|---|---|---|---|---|---|---|\n| WRONG-001 | 看板漂移样例 | B | Ready | Pending | UA3 | Pending / None | commit=Not Recorded;merge=Not Recorded;merge_authority=None | docs/tasks/BOARD-001.md |\n"""
+        temporary, root = self.project_with_board(board)
+        with temporary:
+            report = self.api.WorkflowContract.inspect(root)
+        codes = [d.code for d in report.diagnostics if "BOARD" in d.code or d.code == "E_TASK_ID_CONFLICT"]
+        self.assertEqual(codes.count("E_TASK_ID_CONFLICT"), 1)
+        self.assertNotIn("W_BOARD_MISSING", codes)
+        self.assertNotIn("W_BOARD_ORPHAN", codes)
+        diagnostic = next(d for d in report.diagnostics if d.code == "E_TASK_ID_CONFLICT")
+        self.assertEqual(diagnostic.path, "docs/TASK_BOARD.md")
+        self.assertTrue(all(item.path == "docs/TASK_BOARD.md" or item.path.endswith("BOARD-001.md") for item in diagnostic.provenance))
+
+    def test_task_path_bases_and_public_target_boundary(self):
+        adapter = self.api.task_board
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            docs = root / "docs"
+            docs.mkdir()
+            board = docs / "TASK_BOARD.md"
+            def parsed(value):
+                board.write_text(f"# Board\n\n| 任务 | 名称 | 等级 | 状态 | 任务文件 |\n|---|---|---|---|---|\n| X-1 | X | A | Draft | {value} |\n", encoding="utf-8")
+                return adapter.parse_board(board, root)
+            self.assertEqual(parsed("skills/X.md").rows[0].get("task_path"), "skills/X.md")
+            self.assertEqual(parsed("[X](tasks/X.md)").rows[0].get("task_path"), "docs/tasks/X.md")
+            self.assertTrue(parsed("../outside.md").error_message)
+            self.assertTrue(parsed("C:\\outside.md").error_message)
+            report = self.api.WorkflowContract.inspect(root)
+            self.assertEqual([d.code for d in report.diagnostics], ["E_PARSE"])
+
     def test_human_json_board_diagnostics_are_equivalent(self):
         target = FIXTURES / "board-drift"
         human = subprocess.run([sys.executable, "-B", "-X", "utf8", str(CLI), str(target), "--format", "human"], text=True, encoding="utf-8", capture_output=True)

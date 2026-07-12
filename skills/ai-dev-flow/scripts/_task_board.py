@@ -100,11 +100,15 @@ def _path_value(raw, board_path, project_root, header):
     link = re.fullmatch(r"\[[^\]]+\]\(([^)]+)\)", value)
     if link:
         value = link.group(1).strip()
-    path = pathlib.PurePosixPath(value.replace("\\", "/"))
-    if str(path).startswith("docs/"):
-        return str(path)
+        base = board_path.parent
+    else:
+        base = project_root
+    normalized = value.replace("\\", "/")
+    path = pathlib.PurePosixPath(normalized)
+    if path.is_absolute() or pathlib.PureWindowsPath(value).is_absolute() or ".." in path.parts:
+        return None
     try:
-        absolute = (board_path.parent / pathlib.Path(value)).resolve()
+        absolute = (base / pathlib.Path(normalized)).resolve()
         return absolute.relative_to(project_root.resolve()).as_posix()
     except (OSError, ValueError):
         return None
@@ -184,22 +188,29 @@ def parse_board(board_path, project_root):
         if not canonical:
             pair_map = dict(pairs)
             if "acceptance" in pair_map or "ua_status_part" in parts:
-                status = parts.get("ua_status_part", pair_map.get("acceptance", "not_projected"))
-                authority = parts.get("acceptance_authority_part", "not_projected")
-                combined = f"{status} / {authority}"
                 direct = pair_map.get("acceptance")
-                if direct and "ua_status_part" in parts and direct.split(" / ")[0] != status:
+                direct_items = direct.split(" / ", 1) if direct else []
+                direct_status = direct_items[0] if direct_items else "not_projected"
+                direct_authority = direct_items[1] if len(direct_items) == 2 else "not_projected"
+                split_status = parts.get("ua_status_part")
+                split_authority = parts.get("acceptance_authority_part")
+                conflict = (split_status is not None and direct_status != "not_projected" and split_status != direct_status) or (split_authority is not None and direct_authority != "not_projected" and split_authority != direct_authority)
+                status = split_status or direct_status
+                authority = split_authority or direct_authority
+                combined = f"{status} / {authority}"
+                if conflict:
                     combined = f"CONFLICT:{direct}|{combined}"
                 pairs = [(key, value) for key, value in pairs if key != "acceptance"] + [("acceptance", combined)]
                 cells.append(BoardCell("acceptance", combined, line, combined, "legacy"))
             if any(key in parts for key in ("commit_status_part", "merge_status_part", "merge_authority_part")):
-                delivery = f"commit={parts.get('commit_status_part', 'not_projected')};merge={parts.get('merge_status_part', 'not_projected')};merge_authority={parts.get('merge_authority_part', 'not_projected')}"
                 direct = pair_map.get("delivery")
-                if direct:
-                    direct_parts = dict(item.split("=", 1) for item in direct.split(";") if "=" in item)
-                    split_parts = dict(item.split("=", 1) for item in delivery.split(";"))
-                    if any(value != "not_projected" and direct_parts.get(key) != value for key, value in split_parts.items()):
-                        delivery = f"CONFLICT:{direct}|{delivery}"
+                direct_parts = dict(item.split("=", 1) for item in direct.split(";") if "=" in item) if direct else {}
+                split_parts = {"commit":parts.get("commit_status_part"), "merge":parts.get("merge_status_part"), "merge_authority":parts.get("merge_authority_part")}
+                conflict = any(value is not None and key in direct_parts and direct_parts[key] != value for key, value in split_parts.items())
+                merged = {key: split_parts[key] or direct_parts.get(key, "not_projected") for key in ("commit", "merge", "merge_authority")}
+                delivery = ";".join(f"{key}={merged[key]}" for key in ("commit", "merge", "merge_authority"))
+                if conflict:
+                    delivery = f"CONFLICT:{direct}|{delivery}"
                 pairs = [(key, value) for key, value in pairs if key != "delivery"] + [("delivery", delivery)]
                 cells.append(BoardCell("delivery", delivery, line, delivery, "legacy"))
         projected = tuple(field for field, _ in pairs)

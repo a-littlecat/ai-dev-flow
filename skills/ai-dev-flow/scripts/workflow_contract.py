@@ -243,7 +243,12 @@ def _projection_provenance(projection, field):
 
 
 def _board_cell_provenance(cell, board_path):
-    return reader.Provenance(cell.field, reader._source_path(board_path), "TASK_BOARD", cell.line, cell.raw_value, cell.source_type)
+    return reader.Provenance(cell.field, "docs/TASK_BOARD.md", "TASK_BOARD", cell.line, cell.raw_value, cell.source_type)
+
+
+def _board_diagnostic(code, board_path, line, message, related=()):
+    item = reader._diagnostic(code, board_path, line, message, related=related)
+    return reader.Diagnostic(item.code, item.severity, "docs/TASK_BOARD.md", item.line, item.column, item.message, item.suggestion, item.provenance)
 
 
 def _board_values_match(field, expected, actual):
@@ -263,31 +268,36 @@ def _board_values_match(field, expected, actual):
 def _board_diagnostics(project_root, projections, known_task_ids=()):
     board_path = project_root / "docs" / "TASK_BOARD.md"
     if not board_path.exists():
-        return [reader._diagnostic("W_BOARD_MISSING", project_root, 0, f"expected={dict(item.values)};actual=TASK_BOARD missing", related=item.provenance) for item in projections]
+        return [_board_diagnostic("W_BOARD_MISSING", board_path, 0, f"expected={dict(item.values)};actual=TASK_BOARD missing", related=item.provenance) for item in projections]
     parsed = task_board.parse_board(board_path, project_root)
     if parsed.error_message:
-        return [reader._diagnostic("E_BOARD_PARSE", board_path, parsed.error_line, parsed.error_message)]
+        return [_board_diagnostic("E_BOARD_PARSE", board_path, parsed.error_line, parsed.error_message)]
     diagnostics = []
     by_id = {}
     for row in parsed.rows:
         task_id = row.get("task_id")
         if task_id in by_id:
             cell = next(item for item in row.cells if item.field == "task_id")
-            diagnostics.append(reader._diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"TASK_BOARD task_id 重复：{task_id}", related=(_board_cell_provenance(cell, board_path),)))
+            diagnostics.append(_board_diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"TASK_BOARD task_id 重复：{task_id}", related=(_board_cell_provenance(cell, board_path),)))
         else:
             by_id[task_id] = row
     expected_by_id = {item.get("task_id"): item for item in projections}
     expected_by_path = {item.get("task_path"): item for item in projections}
+    conflicted_rows = set()
+    conflicted_expected = set()
     for row in parsed.rows:
         expected_for_path = expected_by_path.get(row.get("task_path"))
         if expected_for_path is not None and row.get("task_id") != expected_for_path.get("task_id"):
             cell = next(item for item in row.cells if item.field == "task_id")
             related = _projection_provenance(expected_for_path, "task_id") + (_board_cell_provenance(cell, board_path),)
-            diagnostics.append(reader._diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"board_task_id={row.get('task_id')};task_id={expected_for_path.get('task_id')};path={row.get('task_path')}", related=related))
+            diagnostics.append(_board_diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"board_task_id={row.get('task_id')};task_id={expected_for_path.get('task_id')};path={row.get('task_path')}", related=related))
+            conflicted_rows.add(row.line)
+            conflicted_expected.add(expected_for_path.get("task_id"))
     for task_id, expected in expected_by_id.items():
         actual = by_id.get(task_id)
         if actual is None:
-            diagnostics.append(reader._diagnostic("W_BOARD_MISSING", board_path, 0, f"expected={dict(expected.values)};actual=row missing", related=expected.provenance))
+            if task_id not in conflicted_expected:
+                diagnostics.append(_board_diagnostic("W_BOARD_MISSING", board_path, 0, f"expected={dict(expected.values)};actual=row missing", related=expected.provenance))
             continue
         actual_values = dict(actual.values)
         cells = {item.field: item for item in actual.cells}
@@ -298,13 +308,13 @@ def _board_diagnostics(project_root, projections, known_task_ids=()):
             if not _board_values_match(field, expected_value, actual_value):
                 related = _projection_provenance(expected, field) + (_board_cell_provenance(cells[field], board_path),)
                 message = f"field={field};expected={expected_value};actual={actual_value};task_id={task_id}"
-                diagnostics.append(reader._diagnostic("V_BOARD_DRIFT", board_path, actual.line, message, related=related))
+                diagnostics.append(_board_diagnostic("V_BOARD_DRIFT", board_path, actual.line, message, related=related))
     for task_id, row in by_id.items():
-        if task_id not in expected_by_id and task_id not in known_task_ids:
+        if task_id not in expected_by_id and task_id not in known_task_ids and row.line not in conflicted_rows:
             cell = next(item for item in row.cells if item.field == "task_id")
-            diagnostics.append(reader._diagnostic("W_BOARD_ORPHAN", board_path, row.line, f"expected=TASK missing;actual={dict(row.values)}", related=tuple(_board_cell_provenance(item, board_path) for item in row.cells)))
+            diagnostics.append(_board_diagnostic("W_BOARD_ORPHAN", board_path, row.line, f"expected=TASK missing;actual={dict(row.values)}", related=tuple(_board_cell_provenance(item, board_path) for item in row.cells)))
     if not parsed.canonical:
-        diagnostics.append(reader._diagnostic("W_LEGACY_INFERRED", board_path, 1, "TASK_BOARD 使用 Legacy partial projection"))
+        diagnostics.append(_board_diagnostic("W_LEGACY_INFERRED", board_path, 1, "TASK_BOARD 使用 Legacy partial projection"))
     return diagnostics
 
 
@@ -360,7 +370,7 @@ class WorkflowContract:
             paths = (path,)
             validate_filename = True
             project_target = False
-        elif path.is_dir() and ((path / "docs" / "tasks").is_dir() or (path / "docs" / "TASK_BOARD.md").is_file()):
+        elif path.is_dir() and (path / "docs" / "tasks").is_dir():
             task_dir = path / "docs" / "tasks"
             paths = tuple(sorted(task_dir.glob("*.md"), key=lambda item: item.as_posix())) if task_dir.is_dir() else ()
             validate_filename = True

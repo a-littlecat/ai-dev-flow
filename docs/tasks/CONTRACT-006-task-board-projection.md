@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 首轮独立审查发现 P1，进入有限修复（`repair_task`） |
-| 下一允许模式 | 第 1 轮修复后重新独立复审 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复完成，等待独立复审（`review_task`） |
+| 下一允许模式 | 复审通过后进入 UA6；仍有 P0/P1 时进入第 2 轮有限修复 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -171,6 +171,14 @@ git diff --name-only
 
 - 当前轮次：1 / 2。
 - 第 1 轮修复范围：仅处理上述 5 项 parser/compare/public-target finding，并加入对应反例；不扩展 Writer、Overlay、Contract 语义或自动修复。
+- 第 1 轮修复结果：
+  1. direct/split acceptance/delivery 按轴合并，保留 direct 未覆盖轴并检测重叠冲突。
+  2. board id/path 冲突配对后抑制级联 missing/orphan。
+  3. board diagnostic 与 actual provenance 固定为项目根相对 `docs/TASK_BOARD.md`。
+  4. plain path 从 project root 解析，Markdown link 从 board 目录解析；绝对/越界路径拒绝。
+  5. public project target 恢复必须含 `docs/tasks/`；bad-board fixture 增加合法 Draft TASK 以保持 oracle 入口有效。
+- 针对性反例：authority 未覆盖轴、delivery 未覆盖轴、ID/path conflict 无级联、plain/link base、绝对/越界 path、board-only target。
+- 修复后验证：board 专项 9/9、全量 41/41 GREEN，`git diff --check` 通过。
 
 ## 用户动作等级 / 验收建议
 
@@ -194,7 +202,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `2478452`；首轮 Review 记录待提交
+- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`；第 1 轮修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
