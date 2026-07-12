@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | 第 2 轮最终独立复审已通过，等待 UA3 证据确认 |
-| 下一允许模式 | 用户完成 UA3 后更新为 Accepted；未确认前保持 Review |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 用户已完成 UA3 证据确认，任务已验收 |
+| 下一允许模式 | 保持 Accepted；允许后继任务验证祖先关系后进入 Ready |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -205,14 +205,14 @@ git diff --name-only
 - 用户动作等级：UA3
 - 用户需要做什么：查看测试、只读证明和独立审查证据
 - agent 已提供的证据：14/14 Reader tests、RED 4 tests/8 failures、fixture hash/mtime 与 Base→HEAD diff、只读 surface、两轮独立 Review
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：通过；用户在唯一待办提示后明确回复“继续”
 - 当前反馈关联的 UA 等级：UA3
 - 反馈分类：不适用
-- 下一步建议：等待用户完成 UA3；未确认前保持 Review，不启动 `CONTRACT-004`
+- 下一步建议：形成 Accepted commit 并验证祖先关系后启动 `CONTRACT-004`
 
 ## 合并状态
 
