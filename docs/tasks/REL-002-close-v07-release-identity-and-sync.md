@@ -59,3 +59,7 @@
 - 验证证据：41/41 单元测试通过；Skill validator 通过；提交后单任务 lint 为 0 error / 0 violation / 0 warning；UTF-8、链接、JSON、敏感信息和 diff hygiene 检查通过
 - Review findings：none
 - 验证证据：bounded re-review `63b4f7e..511d02e` 通过，P0-P3 均为无，允许同步三个已确认的本机 Skill 副本
+- 验证证据：Codex、OpenCode、Gemini/Antigravity 均为 `VERSION=0.7.0`、85/85 文件，逐文件 SHA256 比较 `Missing=0 / Extra=0 / Changed=0`
+- 验证证据：三个本机副本均通过 Skill validator；Gemini `plugin.json=0.7.0` 且重复嵌套副本不存在
+- 验证证据：同步后完整单元测试 41/41 通过；单任务 lint 为 0 error / 0 violation / 0 warning；`git diff --check` 通过；仓库工作区干净
+- UA 动作与结果：UA3 Pending；用户只需查看版本、Review、测试、lint 和逐文件哈希证据，不需要本地运行

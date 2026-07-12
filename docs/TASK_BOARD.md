@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：执行 `REL-002` Review 后本机 Skill 同步
-> - 当前阶段：bounded re-review 已通过且无 P0-P3；正在同步并生成逐文件哈希证据
+> - 当前模式：`REL-002` 等待 UA3 证据验收
+> - 当前阶段：版本收口、独立 Review、本机同步和最终验证均已完成；等待用户查看证据
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -74,7 +74,7 @@ REL-001
 
 ## 下一允许动作
 
-`REL-002` bounded re-review 已通过且无 P0-P3。下一允许动作是同步三个已确认的本机 Skill 副本并执行逐文件哈希验证；证据完整后进入 UA3。当前不允许 tag、push、GitHub Release 或 merge。
+`REL-002` 已完成仓库内 `0.7.0` 版本收口、bounded re-review 和三个本机 Skill 副本同步，最终验证证据完整。下一允许动作是用户完成 UA3 证据验收；确认后可将任务流转为 Accepted。当前不允许 tag、push、GitHub Release、merge 或 Closed。
 
 ## 整体停止条件
 
