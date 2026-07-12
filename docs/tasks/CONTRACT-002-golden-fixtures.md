@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 轮有限修复（`repair_task`） |
-| 下一允许模式 | 第 2 轮修复后必须独立复审；若仍有 P0/P1 则停止并人工接管 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 2 轮有限修复已完成，等待最终独立复审（`review_task`） |
+| 下一允许模式 | 复审通过后进入 UA3；若仍有 P0/P1 则停止并人工接管 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：建立多目录机器 oracle，并成为后续 Reader 的测试基线 |
@@ -168,7 +168,7 @@ foreach ($c in $m.comparisons) {
 - `manifest.json`：固定唯一 ID、真实相对输入路径、expected normalized 片段、精确 diagnostic 集合和阶段标签。
 - `coverage.md`：覆盖全部首批 `E_* / V_* / W_*`，并把 `V_OVERLAY_WEAKENS_CORE` 明确标为 `future_contract_007`。
 - Legacy oracle：Review 与 merge 冲突均预期 `E_LEGACY_CONFLICT`，冲突轴 normalized 值为 `null`。
-- Comparison：逐事实 ledger 可机械复算；`81a8837` 为 22→18、重复 3→0；`12b3dc0` 为 23→18、重复 3→0；`4a6c417` 为 24→18、重复 3→0。
+- Comparison：逐事实 ledger 可机械复算；三个样本均为 19→18、重复 2→0。唯一 Legacy-only required input 是现有 A/B 模板建议必填、但规范明确不持久化进 Contract 的 `current_mode`；来源绑定 `TASK_TEMPLATE.md:7-13`。
 - 标准库验证：通过；24 个 fixture/comparison ID 唯一，所有 input 存在，所有 expected diagnostic 均在规范中，三个 Compact 样本恰好只有 8 个核心字段。
 - PowerShell JSON 解析：所有 JSON 文件通过；三个来源 commit 仍可由 `git cat-file -e` 解析。
 - `git diff --check`：通过；仅有现有 Windows LF/CRLF 策略 warning。
@@ -217,6 +217,16 @@ foreach ($c in $m.comparisons) {
 - P3：Legacy authority 文案仍误写 Accepted。
 - 结论：不允许进入 UA3；进入第 2 轮（最后一轮）有限修复。
 
+### 第 2 轮修复记录
+
+- 4 个 lifecycle fixture 恢复 `Ready` 并补齐合法最小正文；当前父快照为 Draft，因此本轮 `Draft -> Ready` 合法，避免把正文缺失或非法逆向流转写入 oracle。
+- canonical UA7/close authority 反例补入 `W_AUTHORITY_UNVERIFIABLE`；Legacy 文案改为 Review fixture。
+- 三个 Legacy comparison 增加精确 `验收反馈状态=无反馈`，与 Compact `ua_status=Pending` 对齐。
+- comparison 文件改为以 `CMP-*` task_id 开头的合法文件名，并同步 manifest。
+- ledger 删除 priority/risk/next mode 等非必需输入；仅保留 `TASK_TEMPLATE.md:7-13` 明确建议 A/B 必填、但 Contract 明确不持久化的 `current_mode`，三个样本均为 19→18。
+- duplicate ledger 删除错误的 `lifecycle@current_mode`，只保留 Review 状态与 UA level 的真实重复，三个样本均为 2→0。
+- 本轮为 repair 上限 2 / 2；提交并验证后必须最终独立复审。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
@@ -248,7 +258,7 @@ foreach ($c in $m.comparisons) {
 
 ## 提交 / 合并
 
-- Commit 状态：实现 commit `c8626a1`、Review 记录 commit `4da8643`；第 1 轮修复候选待提交
+- Commit 状态：实现 `c8626a1`、首审记录 `4da8643`、第 1 轮修复 `23fcb7d`、复审记录 `e8313b2`；第 2 轮修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化

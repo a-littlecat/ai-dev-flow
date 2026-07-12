@@ -42,7 +42,7 @@
 
 ## 执行与验证记录
 
-- Legacy Accepted fixture 已构造并完成静态核对。
+- Legacy Review fixture 已构造并完成静态核对。
 
 ## 代码审查
 

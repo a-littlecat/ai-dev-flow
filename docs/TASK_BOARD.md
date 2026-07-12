@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-12
-> - 当前模式：`CONTRACT-002` 第 2 轮有限修复
-> - 当前阶段：第 1 轮复审仍有 P1；本轮达到 repair 上限，复审不过则停止并人工接管
+> - 当前模式：`CONTRACT-002` 第 2 轮修复完成，等待最终独立复审
+> - 当前阶段：本轮已达到 repair 上限 2 / 2；复审不过则停止并人工接管
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -61,7 +61,7 @@ REL-001
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
 | CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Needs Fix | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 第 1 轮复审仍有 P1；第 2 轮修复中 | UA3 未进入 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Review | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 第 2 轮修复完成，待最终复审 | UA3 未进入 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
 | CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Draft | 高 | 高 | CONTRACT-002 Accepted | 未审查 | UA3 | Single / 独立分支或 Worktree | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
 | CONTRACT-004 | 实现只读 workflow_lint | C | Draft | 高 | 高 | CONTRACT-003 Accepted | 未审查 | UA4 | Single / 独立分支或 Worktree | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Draft | 中 | 高 | CONTRACT-004 Accepted | 未审查 | UA6 | Single / 必须 Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |

@@ -1,9 +1,9 @@
 {
   "source_commit": "81a8837",
   "lifecycle_checkpoint": "Review",
-  "legacy_required_inputs": 22,
+  "legacy_required_inputs": 19,
   "compact_required_inputs": 18,
-  "legacy_duplicate_state_occurrences": 3,
+  "legacy_duplicate_state_occurrences": 2,
   "compact_duplicate_state_occurrences": 0,
   "legacy_evidence_sections": 5,
   "compact_evidence_sections": 3,
@@ -26,10 +26,7 @@
     {"fact_id":"modified_files","legacy":"Diff 审查/修改文件清单","compact":"Outcome/修改文件","legacy_required":true,"compact_required":true},
     {"fact_id":"evidence","legacy":"执行与验证记录","compact":"Outcome/验证证据","legacy_required":true,"compact_required":true},
     {"fact_id":"findings","legacy":"代码审查/审查结论","compact":"Outcome/Review findings","legacy_required":true,"compact_required":true},
-    {"fact_id":"current_mode","legacy":"任务元数据/当前模式","compact":null,"legacy_required":true,"compact_required":false},
-    {"fact_id":"next_mode","legacy":"任务元数据/下一允许模式","compact":null,"legacy_required":true,"compact_required":false},
-    {"fact_id":"priority","legacy":"任务元数据/优先级","compact":null,"legacy_required":true,"compact_required":false},
-    {"fact_id":"risk","legacy":"任务元数据/风险等级","compact":null,"legacy_required":true,"compact_required":false}
+    {"fact_id":"current_mode","legacy":"任务元数据/当前模式","compact":null,"legacy_required":true,"compact_required":false,"requirement_source":"TASK_TEMPLATE.md:7-13 A/B 建议必填；mode 不持久化到 Contract"}
   ],
-  "duplicate_state_ledger": ["review_status@Diff审查","ua_level@用户动作等级","lifecycle@当前模式"]
+  "duplicate_state_ledger": ["review_status@Diff审查","ua_level@用户动作等级"]
 }
