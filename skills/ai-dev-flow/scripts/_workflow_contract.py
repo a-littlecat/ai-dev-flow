@@ -492,3 +492,27 @@ def inspect_task(path: Path, *, validate_filename: bool = True) -> ReaderReport:
         normalized = tuple((key, value) for key, value in report.normalized if key in explicit)
         return ReaderReport(report.title, report.source_path, normalized, provenance, report.sections, tuple(diagnostics))
     return report
+
+
+def inspect_text(text: str, source_path: Path, *, validate_filename: bool = True) -> ReaderReport:
+    """Read already-decoded UTF-8 text, used by read-only Git history validation."""
+    target = Path(source_path)
+    lines = text.splitlines()
+    declarations = [index for index, line in enumerate(lines) if FIELD_RE.fullmatch(line) and FIELD_RE.fullmatch(line).group(1) == "schema_version"]
+    if not declarations:
+        return _legacy(target, lines, validate_filename)
+    report = _canonical(target, lines, validate_filename)
+    headings = [index for index, line in enumerate(lines) if line == "## Workflow Contract"]
+    block_contains = False
+    if len(headings) == 1:
+        end = next((i for i in range(headings[0] + 1, len(lines)) if lines[i].startswith("#")), len(lines))
+        block_contains = len(declarations) == 1 and headings[0] < declarations[0] < end
+    if len(declarations) != 1 or not block_contains:
+        extra = _diagnostic("E_PARSE", target, declarations[0] + 1, "schema declaration 必须唯一且位于唯一 Contract block 内")
+        diagnostics = _dedupe_diagnostics(report.diagnostics + (extra,))
+        diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))
+        provenance = tuple(item for item in report.provenance if item.source_type != "default")
+        explicit = {item.field for item in provenance}
+        normalized = tuple((key, value) for key, value in report.normalized if key in explicit)
+        return ReaderReport(report.title, report.source_path, normalized, provenance, report.sections, tuple(diagnostics))
+    return report

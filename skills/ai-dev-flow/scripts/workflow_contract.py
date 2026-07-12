@@ -1,6 +1,7 @@
 """Public read-only facade for Workflow Contract inspection."""
 
 from dataclasses import dataclass
+import json
 import pathlib
 import re
 import subprocess
@@ -52,6 +53,16 @@ def _section_values(contract, names):
     return [field for section in contract.sections for field in section.fields if field.name in names and field.value.strip() not in PLACEHOLDERS]
 
 
+def _has_section_value(contract, name):
+    return bool(_section_values(contract, {name}))
+
+
+def _has_ua_outcome(contract):
+    if _has_section_value(contract, "UA 动作与结果"):
+        return True
+    return any(field.value.strip() not in PLACEHOLDERS for section in contract.sections if section.heading in {"用户动作等级 / 验收建议", "用户验收反馈 / 实机测试反馈"} for field in section.fields)
+
+
 def _validate(contract, *, require_commit=True):
     diagnostics = list(contract.diagnostics)
     if any(item.severity == "error" for item in diagnostics):
@@ -65,6 +76,8 @@ def _validate(contract, *, require_commit=True):
     close = values.get("close_authority")
     merge = values.get("merge_status")
     merge_authority = values.get("merge_authority")
+    task_type = values.get("task_type")
+    task_class = values.get("task_class")
 
     state_bad = False
     if lifecycle in READY_STATES:
@@ -77,6 +90,28 @@ def _validate(contract, *, require_commit=True):
         present = {item.name for item in _section_values(contract, required)}
         if present != required or (require_commit and values.get("commit_status") == "Not Recorded"):
             state_bad = True
+    base_fields = _section_values(contract, {"Base / Diff"})
+    base_value = base_fields[0].value if base_fields else ""
+    if task_type in {"code", "test", "repair"} and lifecycle == "In Progress":
+        if not base_value.startswith("base=") or ";" in base_value:
+            state_bad = True
+        if task_class in {"C", "D"} and (not _has_section_value(contract, "隔离位置") or not _has_section_value(contract, "回滚方式")):
+            state_bad = True
+    if task_type in {"code", "test", "repair"} and lifecycle in REVIEW_STATES:
+        if not re.fullmatch(r"base=[^\s`;]+;diff=(?!pending|TBD)[^\s`;]+", base_value):
+            state_bad = True
+        if task_class in {"C", "D"} and (not _has_section_value(contract, "隔离位置") or not _has_section_value(contract, "回滚方式")):
+            state_bad = True
+    if lifecycle == "Needs Fix":
+        findings = [item.value for item in _section_values(contract, {"Review findings"})]
+        if not findings or all(value == "none" for value in findings):
+            state_bad = True
+    if merge == "Merged" and not _has_section_value(contract, "合并目标与事实证据"):
+        state_bad = True
+    if "real_env_signal" in values.get("overlays", "").split(";"):
+        signal_section = next((section for section in contract.sections if section.heading == "实机测试信号复现（real_env_signal）"), None)
+        if signal_section is None or not signal_section.fields:
+            state_bad = True
     if state_bad:
         diagnostics.append(_diag(contract, "V_STATE_GUARD", "lifecycle", "当前 lifecycle 缺少必需正文、Outcome 或 Git 状态"))
 
@@ -88,6 +123,12 @@ def _validate(contract, *, require_commit=True):
     if ua_level == "UA7" and ua_status in {"Passed", "Failed", "Deferred"} and authority != "User Confirmed":
         ua_bad = True
     if ua_status in {"Passed", "Failed", "Deferred"} and not values.get("ua_evidence"):
+        ua_bad = True
+    if ua_status in {"Passed", "Failed", "Deferred"} and not _has_ua_outcome(contract):
+        ua_bad = True
+    if ua_level == "UA0" and ua_status not in {"Not Required", "Pending", "TBD"}:
+        ua_bad = True
+    if ua_status in {"Pending", "TBD", "Not Required"} and values.get("ua_evidence"):
         ua_bad = True
     if ua_bad:
         diagnostics.append(_diag(contract, "V_UA_GUARD", "ua_status", "UA 结果、证据或确认主体不满足门禁"))
@@ -138,28 +179,32 @@ def _transition_code(before, after, verifiable=True):
     return "V_ILLEGAL_TRANSITION"
 
 
-def _lifecycle_from_text(text):
-    match = re.search(r"^- `lifecycle`: `([^`]+)`$", text, re.MULTILINE)
-    if match:
-        return match.group(1)
-    match = re.search(r"\|\s*任务状态\s*\|\s*([^|]+)\|", text)
-    if match:
-        return reader._legacy_value("lifecycle", match.group(1).strip())
-    return None
-
-
-def _git_transition_diagnostic(contract, source_file, enabled):
-    if enabled is None:
-        return None
-    if enabled is False:
-        return _diag(contract, "W_TRANSITION_UNVERIFIABLE", "lifecycle", "Git 历史不可用，无法证明 lifecycle 流转")
+def _git_transition_diagnostic(contract, source_file):
     try:
         root_result = subprocess.run(["git", "-C", str(source_file.parent), "rev-parse", "--show-toplevel"], text=True, encoding="utf-8", capture_output=True, check=True)
         root = pathlib.Path(root_result.stdout.strip())
         relative = source_file.resolve().relative_to(root.resolve()).as_posix()
-        previous = subprocess.run(["git", "-C", str(root), "show", f"HEAD^:{relative}"], text=True, encoding="utf-8", capture_output=True, check=True).stdout
-        before = _lifecycle_from_text(previous)
+        status = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout
+        if status.strip():
+            raise ValueError("dirty or untracked")
+        subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True)
+        commit = subprocess.run(["git", "-C", str(root), "log", "-n", "1", "--format=%H", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout.strip()
+        if not commit:
+            raise ValueError("no path history")
+        names = subprocess.run(["git", "-C", str(root), "show", "--format=", "--name-status", commit, "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout
+        if any(line.startswith(("R", "C")) for line in names.splitlines()):
+            raise ValueError("rename history")
+        current = subprocess.run(["git", "-C", str(root), "show", f"{commit}:{relative}"], text=True, encoding="utf-8", capture_output=True, check=True).stdout
+        previous = subprocess.run(["git", "-C", str(root), "show", f"{commit}^:{relative}"], text=True, encoding="utf-8", capture_output=True, check=True).stdout
+        before_report = reader.inspect_text(previous, source_file, validate_filename=False)
+        after_report = reader.inspect_text(current, source_file, validate_filename=False)
+        if any(item.severity == "error" for item in before_report.diagnostics + after_report.diagnostics):
+            raise ValueError("history parse conflict")
+        before = before_report.get("lifecycle")
+        historical_after = after_report.get("lifecycle")
         after = contract.get("lifecycle")
+        if historical_after != after:
+            raise ValueError("working tree differs from HEAD blob")
         code = _transition_code(before, after, True)
     except (OSError, ValueError, subprocess.SubprocessError):
         code = "W_TRANSITION_UNVERIFIABLE"
@@ -170,15 +215,34 @@ def _git_transition_diagnostic(contract, source_file, enabled):
     return None
 
 
+def _declared_fixture_input(path):
+    resolved = path.resolve()
+    for parent in resolved.parents:
+        manifest = parent / "manifest.json"
+        if not manifest.is_file():
+            continue
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            relative = resolved.relative_to(parent).as_posix()
+        except (OSError, ValueError, json.JSONDecodeError):
+            return False
+        declared = {item.get("input") for item in data.get("fixtures", [])}
+        declared |= {item.get(key) for item in data.get("comparisons", []) for key in ("legacy_input", "compact_input", "metrics_input")}
+        return relative in declared
+    return False
+
+
 class WorkflowContract:
     @staticmethod
-    def inspect(target, *, fixture_container=False, git_enabled=True):
+    def inspect(target):
         path = pathlib.Path(target)
         if path.is_file() and path.suffix.lower() == ".md":
             paths = (path,)
+            fixture_container = _declared_fixture_input(path)
             validate_filename = not fixture_container
         elif path.is_dir() and (path / "docs" / "tasks").is_dir():
             paths = tuple(sorted((path / "docs" / "tasks").glob("*.md"), key=lambda item: item.as_posix()))
+            fixture_container = _declared_fixture_input(path)
             validate_filename = True
         else:
             diagnostic = reader._diagnostic("E_PARSE", path, 0, "target 必须是单个 Markdown TASK 或含 docs/tasks 的项目根")
@@ -188,7 +252,7 @@ class WorkflowContract:
         seen_ids = {}
         for contract, source_file in zip(contracts, paths):
             diagnostics.extend(_validate(contract, require_commit=not fixture_container))
-            transition = _git_transition_diagnostic(contract, source_file, git_enabled)
+            transition = None if fixture_container else _git_transition_diagnostic(contract, source_file)
             if transition is not None:
                 diagnostics.append(transition)
             task_id = contract.get("task_id")

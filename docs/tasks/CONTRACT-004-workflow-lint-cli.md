@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-004` |
 | 任务类型 | 代码 / CLI / 单元测试 |
-| 当前模式 | 第 1 轮独立 Review 发现 P1，进入有限修复 |
-| 下一允许模式 | 修复并 GREEN 后重新独立审查 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复与 GREEN 已完成，等待独立复审 |
+| 下一允许模式 | 复审通过后进入 UA4；仍有 P0/P1 时进入第 2 轮或人工接管 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定 public facade、validator 和 CLI |
@@ -166,6 +166,15 @@ git diff --name-only
 - 修复范围：`workflow_contract.py`、`workflow_lint.py`、Reader 接口保持型扩展、004 tests、scripts README、当前 TASK/TASK_BOARD。
 - 禁止扩大：fixture、规范、Schema、TASK_BOARD Adapter、Writer、Overlay Reader。
 - 修复后要求：public facade/CLI 同语义、完整 core 门禁、正确 Git 降级、Human/JSON provenance 等价、独立复审。
+- 第 1 轮修复结果：
+  1. Validator 补齐 code/test/repair Base/Diff、C/D 隔离回滚、UA Outcome/evidence/UA0、Needs Fix finding、Merged 事实证据、real_env_signal 正文门禁。
+  2. Git 改为检查 dirty/tracked/rename/path history，读取该路径最近变更 commit 及其父 blob，并通过 Reader `inspect_text` 解析；dirty/untracked/浅历史安全降级 warning。
+  3. public facade 恢复唯一 `inspect(target)`；删除测试参数。Golden 输入只依据相邻 `manifest.json` 的显式 input 声明识别，不依赖路径字符串；CLI 与 facade 完全共享语义。
+  4. CLI 导入业务模块前设置 `sys.dont_write_bytecode=True`；自定义只读 parser 让 Human/JSON invocation error 均返回 exit 2 和免责声明。
+  5. Human 输出逐条打印与 JSON 相同的 diagnostic provenance。
+- 测试扩展：24/24 GREEN，新增完整 core guard、真实临时 Git 合法/dirty/非法流转、invocation error format、public/CLI diagnostic+provenance 等价。
+- fixture Base→工作区 diff 为空；未实现 board、Writer 或 Overlay Reader。
+- 下一步：提交修复候选并独立复审。
 
 ## 用户动作等级 / 验收建议
 
@@ -189,7 +198,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现候选待提交，提交后写回 hash
+- Commit 状态：实现 `ecebe05`、首审记录 `e747558`；第 1 轮修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
