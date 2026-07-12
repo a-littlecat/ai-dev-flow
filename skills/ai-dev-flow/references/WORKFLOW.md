@@ -19,6 +19,26 @@ agent 开始工作前必须判断当前模式，并保持模式单一。
 
 格式路由（v0.7）：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 与 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。create/execute/review/diff-review/repair/acceptance/close 都保持任务现有格式，不得在 Compact TASK 中重建 legacy 双 Review 或双 delivery 段落，也不得自动迁移。
 
+| 可执行路由场景 | Writer 结果 |
+|---|---|
+| `new_ab_none` | `TASK_TEMPLATE_COMPACT.md` |
+| `class_cd` | `TASK_TEMPLATE.md` |
+| `batch` | `TASK_TEMPLATE.md` |
+| `wave` | `TASK_TEMPLATE.md` |
+| `real_env_signal` | `TASK_TEMPLATE.md` |
+| `existing_legacy` | `TASK_TEMPLATE.md` |
+| `unknown` | `STOP_PENDING_CONFIRMATION` |
+
+| 写回动作 | Compact 目标 | Full/Legacy 目标 |
+|---|---|---|
+| `create` | `Workflow Contract;目标与边界;完成标准与验证` | `现有 Full/Legacy 段落` |
+| `execute` | `Workflow Contract;Outcome` | `现有 Full/Legacy 段落` |
+| `review` | `Workflow Contract.review_status;Outcome.Review findings` | `代码审查;Diff 审查` |
+| `diff-review` | `Outcome.Review findings` | `Diff 审查` |
+| `repair` | `Workflow Contract.lifecycle;Outcome` | `审查-修复记录;验证结果` |
+| `acceptance` | `Workflow Contract.ua_*;Outcome.UA 动作与结果` | `用户动作等级 / 验收建议;用户验收反馈` |
+| `close` | `Workflow Contract.lifecycle;Workflow Contract.close_authority;Outcome` | `任务状态;验收记录;关闭授权` |
+
 ### `init_project`
 
 读取项目规则和现有文档，创建或建议创建 `PROJECT_INDEX`、`TASK_BOARD`、`tasks/`、`plans/`、验证指南和审查清单。

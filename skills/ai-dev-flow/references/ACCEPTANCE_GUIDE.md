@@ -220,11 +220,18 @@
 
 验收失败反馈必须记录到 TASK 文件的“用户验收反馈 / 实机测试反馈”区块；只在聊天中处理不算完成。
 
-## 输出格式
+## 输出与写回格式
+
+先判断现有 TASK 格式：
+
+- 新建 A/B、`overlays=none`、非 Batch/Wave/`real_env_signal` 可使用 `TASK_TEMPLATE_COMPACT.md`；Compact 不新增独立“验收建议”“用户验收反馈”“合并状态”或“提交 / 合并”段落，只更新 `Workflow Contract` 的 UA/authority 字段及 `Outcome`。
+- Full/Legacy：沿用下列输出段落；existing legacy 不自动迁移。
+- C/D、Batch、Wave、`real_env_signal`、验收失败反馈使用 Full/Legacy `TASK_TEMPLATE.md`；格式未知时停止并写“待确认”。不得把 Compact 继续扩展成复杂 Writer。
 
 每个任务完成后必须输出：
 
 ```markdown
+<!-- 以下是 Full/Legacy 写回格式；Compact 使用上面的字段路由。 -->
 ## 验收建议
 
 用户动作等级：UA0（无需用户验收）/ UA1（用户看摘要确认）/ UA2（用户读文档或方案）/ UA3（用户看验证证据）/ UA4（用户本地运行）/ UA5（真实环境或实机业务测试）/ UA6（核心流程或回归验收）/ UA7（用户决策或高风险确认）/ 待确认

@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 独立审查发现 P1，等待范围确认后进入有限修复（`repair_task`） |
-| 下一允许模式 | 用户批准补齐遗漏 writer callsite 后进入第 1 轮修复；否则重新拆任务 |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复完成，等待独立复审（`review_task`） |
+| 下一允许模式 | 复审通过后进入 UA6；仍有 P0/P1 时进入第 2 轮有限修复 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -70,6 +70,9 @@
 - `skills/ai-dev-flow/references/WORKFLOW.md`：仅同步格式路由边界
 - `skills/ai-dev-flow/references/CODE_REVIEW_CHECKLIST.md`：仅增加 Compact/legacy 条件写回路由
 - `skills/ai-dev-flow/references/AGENTS_COMPAT.md`：仅增加 Compact/legacy 条件写回路由
+- `skills/ai-dev-flow/README.md`：仅修正安装清单和 create 示例路由（用户已批准扩围）
+- `skills/ai-dev-flow/references/VALIDATION_GUIDE.md`：仅增加验证/验收记录的条件写回路由（用户已批准扩围）
+- `skills/ai-dev-flow/references/ACCEPTANCE_GUIDE.md`：仅增加 acceptance/close 的条件写回路由（用户已批准扩围）
 - Compact/legacy 路由测试与 comparison fixture
 - 本任务文件和 `docs/TASK_BOARD.md` 的状态/证据字段
 
@@ -184,9 +187,14 @@ git diff --name-only
 
 ## 审查-修复循环（review_repair_loop）记录
 
-- 当前轮次：0 / 2；尚未开始修复。
-- 阻塞点：P1 的最小修复需要修改 `skills/ai-dev-flow/README.md`、`references/VALIDATION_GUIDE.md`、`references/ACCEPTANCE_GUIDE.md`，三者未列入当前允许修改范围。
-- 待用户确认：是否将上述三个真实 writer 入口加入允许范围，并相应扩展行为测试；不改变 Contract 语义、Reader、lint、fixture 或自动 Writer 边界。
+- 当前轮次：1 / 2；用户已批准将三个遗漏入口加入允许范围。
+- 第 1 轮修复范围：`skills/ai-dev-flow/README.md`、`references/VALIDATION_GUIDE.md`、`references/ACCEPTANCE_GUIDE.md` 和专项测试；不改变 Contract 语义、Reader、lint、fixture 或自动 Writer 边界。
+- 第 1 轮修复结果：
+  1. README 的轻量安装清单和 create 示例同时暴露 Compact/Full 路由。
+  2. VALIDATION/ACCEPTANCE 明确 Compact 只写 Contract/Outcome，Full/Legacy 才使用旧式验收段落。
+  3. WORKFLOW 增加可机械读取的 7 场景选择矩阵和 7 动作写回矩阵。
+  4. 专项测试从预选关键词升级为：解析并精确断言路由/写回矩阵、全仓 writer-callsite 集合封闭检查、metrics ledger 机械复算。
+- 修复后验证：专项 5/5、全量 31/31 GREEN；fixture diff 为空，`git diff --check` 通过。
 
 ## 用户动作等级 / 验收建议
 
@@ -210,7 +218,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现提交 `f99dbb2`；首轮 Review 记录待提交
+- Commit 状态：实现 `f99dbb2`、首轮 Review 记录 `48d1c01`；第 1 轮修复候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
