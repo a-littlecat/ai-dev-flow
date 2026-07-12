@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 第 1 轮有限修复完成，等待独立复审（`review_task`） |
-| 下一允许模式 | 复审通过后进入 UA6；仍有 P0/P1 时进入第 2 轮有限修复 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 / 2 轮有限修复（`repair_task`） |
+| 下一允许模式 | 最终复审通过后进入 UA6；仍有 P0/P1 时停止并人工接管 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -179,6 +179,8 @@ git diff --name-only
   5. public project target 恢复必须含 `docs/tasks/`；bad-board fixture 增加合法 Draft TASK 以保持 oracle 入口有效。
 - 针对性反例：authority 未覆盖轴、delivery 未覆盖轴、ID/path conflict 无级联、plain/link base、绝对/越界 path、board-only target。
 - 修复后验证：board 专项 9/9、全量 41/41 GREEN，`git diff --check` 通过。
+- 第 1 轮修复复审：原 5 项 P1 全部关闭；剩余 1 项 P1——URL 与 Windows drive-relative path 未拒绝；另有重复 ID 后继续 compare 的 P2。
+- 第 2 / 2 轮修复边界：拒绝 URI/drive-relative path；重复 board ID 不再参与 drift compare；只增加对应反例。
 
 ## 用户动作等级 / 验收建议
 
@@ -202,7 +204,7 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`；第 1 轮修复候选待提交
+- Commit 状态：实现 `2478452`、首轮 Review `2bd93b3`、第 1 轮修复 `a4ee06a`；复审记录待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
