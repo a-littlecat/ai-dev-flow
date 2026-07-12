@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-004` |
 | 任务类型 | 代码 / CLI / 单元测试 |
-| 当前模式 | 第 1 轮有限修复与 GREEN 已完成，等待独立复审 |
-| 下一允许模式 | 复审通过后进入 UA4；仍有 P0/P1 时进入第 2 轮或人工接管 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 已完成 UA4，保持已验收（`Accepted`） |
+| 下一允许模式 | 允许后继任务验证祖先关系后进入 Ready；merge 仍需另获用户授权 |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定 public facade、validator 和 CLI |
@@ -139,7 +139,7 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：需要修改
+- 审查状态：最终复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
 - 审查严重等级：P1（第 1 轮 5 项；修复复审仍有 2 项）
 - P0 / P1 必须修改项：
@@ -148,8 +148,8 @@ git diff --name-only
   3. public `inspect(target)` 不得暴露 fixture/git 测试参数；CLI 不得按路径特判并改变语义。
   4. CLI 必须禁止 bytecode 写入；invocation error 仍需按 format 输出免责声明。
   5. Human diagnostic 必须输出与 JSON 等价的 provenance。
-- 审查结论：Needs Fix；不允许进入 UA4
-- 是否允许进入验收建议：否
+- 审查结论：第 2 / 2 轮最终 Pass；无 P0/P1，允许进入 UA4
+- 是否允许进入验收建议：是
 - 第 1 轮修复复审：Git history、只读/调用错误、Human/JSON provenance 三项已关闭；core validator 与 production fixture 特判仍未关闭。
 - 剩余 P1：
   1. `Base / Diff` 未严格拒绝空 base，重复单值冲突未诊断；UA 反向约束仍不完整。
@@ -161,8 +161,8 @@ git diff --name-only
 - 审查命令：待执行时填写
 - 修改文件清单：待填写
 - 范围越界文件：待审查
-- 审查状态：第 1 轮修复复审未通过
-- 审查结论：24 tests、三条 CLI 与 invocation error 均通过，但 production fixture 特判和 validator 反例仍存在 P1
+- 审查状态：最终通过
+- 审查结论：26/26 tests、三条 CLI 与 invocation error 均通过；无 P0/P1，保留 1 项非阻塞 P2
 
 ## 审查-修复循环（review_repair_loop）记录
 
@@ -197,14 +197,14 @@ git diff --name-only
 - 用户动作等级：UA4
 - 用户需要做什么：本地运行 CLI，核对 valid/violation/parse 输出与只读行为
 - agent 已提供的证据：26/26 自动测试、Human/JSON/项目目录 smoke、两轮独立复审；请用户运行“验证方式”中的三条 CLI 并确认输出符合预期
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：UA4 已通过
 - 当前反馈关联的 UA 等级：UA4
-- 反馈分类：待确认
-- 下一步建议：等待任务执行、Review 和本地运行
+- 反馈分类：原任务已完成，无失败反馈
+- 下一步建议：保持 Accepted；形成 Accepted commit 后启动 CONTRACT-005
 
 ## 合并状态
 
@@ -214,8 +214,8 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `ecebe05`、首审记录 `e747558`、第 1 轮修复 `e488853`、复审记录 `b1a4a09`、第 2 轮修复 `2a6b3ed`；最终复审记录待提交
-- Commit hash：待填写
+- Commit 状态：实现、两轮有限修复、最终复审记录均已提交；Accepted 状态记录待提交
+- Commit hash：最终 Review 记录 `8fc6a44fec7bb5f22da4483428b701c24b5868eb`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
@@ -225,6 +225,6 @@ git diff --name-only
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
 - 执行 Base commit：`95ec566`
 - 计划分支：`codex/contract-004-workflow-lint`
-- Diff 范围：`95ec566..HEAD`（执行中）
+- Diff 范围：`95ec566..8fc6a44`（实现与最终 Review）；Accepted 状态由本次提交记录
 - 下一任务：`CONTRACT-005`，仅在本任务 `Accepted` 后转为 `Ready`
 - 不要重复尝试：在 004 中提前实现 TASK_BOARD drift
