@@ -145,6 +145,8 @@ def _sections(lines: List[str], canonical: bool) -> Tuple[Section, ...]:
         "目标与边界": {"目标", "非目标", "允许修改", "禁止修改"},
         "完成标准与验证": {"完成标准", "验证命令或检查"},
         "Outcome": {"Base / Diff", "隔离位置", "回滚方式", "修改文件", "验证证据", "Review findings", "UA 动作与结果", "合并目标与事实证据"},
+        "用户验收反馈 / 实机测试反馈": {"反馈分类", "是否属于当前 TASK 范围", "复现步骤", "期望结果", "实际结果", "日志 / 截图 / 视频", "验收失败反馈闸门结论", "下一步建议"},
+        "实机测试信号复现（real_env_signal）": {"RED 失败信号", "GREEN 通过信号", "SIGNAL 证据来源"},
     }
     for index, line in enumerate(lines):
         if not line.startswith("## "):

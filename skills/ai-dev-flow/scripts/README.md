@@ -4,7 +4,22 @@ v0.6.0 不提供自动脚本。
 
 本目录仅作为未来扩展预留。默认不要执行任何脚本，也不要假设本 Skill 依赖脚本能力。v0.6.0 只增加文档、模板、提示词和路线图。
 
-## v0.7.0 只读脚本路线图
+## v0.7.0 只读 Workflow Contract lint
+
+当前提供只读 CLI：
+
+```powershell
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-123.md --format human
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format json
+```
+
+- target 只能是单个 Markdown TASK，或包含 `docs/tasks/` 的项目根。
+- `--format` 只接受 `human` / `json`。
+- 退出码：`0` 无 error/violation，`1` 有 workflow violation，`2` 有 parse/invocation error。
+- warning 不阻塞，但 lint 通过不代表 Review、用户验收、merge、release 或关闭完成。
+- CLI 不读取 TASK_BOARD，不提供 `--fix` / `--write`，不会修改 TASK、Git 或外部系统。
+
+## 后续只读脚本路线图
 
 未来可以考虑添加只读检查脚本：
 
