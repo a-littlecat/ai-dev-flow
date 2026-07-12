@@ -6,8 +6,8 @@
 - `task_id`: `REL-002`
 - `task_type`: `document`
 - `task_class`: `B`
-- `lifecycle`: `Review`
-- `review_status`: `In Review`
+- `lifecycle`: `Needs Fix`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -54,7 +54,7 @@
 
 ## Outcome
 
-- Base / Diff：base=63b4f7e99640e1d09a4fb6efcd2f9496cf732582;diff=63b4f7e99640e1d09a4fb6efcd2f9496cf732582..512533bbf40599488e7c3a57194d5cb0e1029272
+- Base / Diff：base=63b4f7e99640e1d09a4fb6efcd2f9496cf732582;diff=63b4f7e99640e1d09a4fb6efcd2f9496cf732582..codex/rel-002-v07-release-identity
 - 修改文件：`README.md`、`README.en.md`、`skills/ai-dev-flow/VERSION`、`skills/ai-dev-flow/CHANGELOG.md`、`skills/ai-dev-flow/README.md`、`docs/TASK_BOARD.md`、本任务文件
-- 验证证据：41/41 单元测试通过；Skill validator 通过；单任务 lint 为 0 error / 0 violation / 1 个未提交历史 warning；UTF-8、链接、JSON、敏感信息和 diff hygiene 检查通过
-- Review findings：pending independent review
+- 验证证据：41/41 单元测试通过；Skill validator 通过；提交后单任务 lint 为 0 error / 0 violation / 0 warning；UTF-8、链接、JSON、敏感信息和 diff hygiene 检查通过
+- Review findings：P1 看板旧授权与 REL-002 本机同步边界冲突；P1 Outcome diff 遗漏 Review 状态提交；P2 lint 证据仍记录提交前 warning
