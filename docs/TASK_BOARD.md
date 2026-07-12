@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-12
 > - 当前模式：合并并 push 已 Accepted 的 `REL-002`
-> - 当前阶段：用户已授权 merge/push；正在生成合并与远程收据，仍未授权 tag、GitHub Release 或 Closed
+> - 当前阶段：已通过 merge commit `18b8f67` 合并到本地 `main`；验证后 push，仍未授权 tag、GitHub Release 或 Closed
 > - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
 
 ## 本轮授权边界
@@ -70,11 +70,11 @@ REL-001
 | CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1（1 项 P2） | UA4 已通过 | Single / 独立分支 `codex/contract-004-workflow-lint` | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
 | CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004 `7f0f7e5`、005 `61d0911` Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-006` | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
-| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Accepted | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | Passed / 无 P0-P3 | UA3 Passed / User Confirmed | Single / 分支 `codex/rel-002-v07-release-identity` | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
+| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Accepted | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | Passed / 无 P0-P3 | UA3 Passed / User Confirmed | Merged to `main` / `18b8f67` | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 
 ## 下一允许动作
 
-`REL-002` 已完成 UA3 并进入 Accepted；用户已明确授权本轮 merge 到 `main` 并 push。创建 `v0.7.0` tag、GitHub Release 或 Closed 仍需新的明确授权。
+`REL-002` 已通过 `18b8f67` 合并到本地 `main`。下一允许动作是完成合并后验证并 push `main`；创建 `v0.7.0` tag、GitHub Release 或 Closed 仍需新的明确授权。
 
 ## 整体停止条件
 
