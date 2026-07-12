@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | 最终独立复审通过，等待 UA6 回归验收 |
-| 下一允许模式 | 用户完成 UA6 后进入已验收（`Accepted`） |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | UA6 已通过，保持已验收（`Accepted`） |
+| 下一允许模式 | 允许 CONTRACT-006 验证祖先关系后进入 Ready；merge 仍需另获用户授权 |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -116,7 +116,7 @@
 - [x] 没有自动迁移、状态 Writer、`--fix`、外部同步或模型依赖。
 - [x] Full/Legacy 模板仍完整可用。
 - [x] 独立 Review 无 P0/P1。
-- [ ] 用户完成核心流程回归验收。
+- [x] 用户完成核心流程回归验收。
 
 ## 验证方式
 
@@ -206,14 +206,14 @@ git diff --name-only
 - 用户动作等级：UA6
 - 用户需要做什么：回归验证 A/B Compact 与 legacy C/D 两条核心流程均未退化
 - agent 已提供的证据：待执行后填写
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：UA6 已通过
 - 当前反馈关联的 UA 等级：UA6
-- 反馈分类：待确认
-- 下一步建议：等待任务执行、Review 和回归验收
+- 反馈分类：原任务已完成，无失败反馈
+- 下一步建议：保持 Accepted；形成 Accepted commit 后启动 CONTRACT-006
 
 ## 合并状态
 
@@ -223,8 +223,8 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `f99dbb2`、首轮 Review `48d1c01`、第 1 轮修复 `d4802ff`、复审记录 `bd0ee89`、最终修复 `5911d51`；最终 Review 记录待提交
-- Commit hash：待填写
+- Commit 状态：实现、两轮有限修复和最终 Review 均已提交；Accepted 状态记录待提交
+- Commit hash：最终 Review 记录 `818313ac5d918ee6816630d0f0b874540bb05ec8`
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
@@ -235,6 +235,6 @@ git diff --name-only
 - 执行 Base commit：`7f0f7e5a54d0727098457811359dc6dbee5e7cf4`
 - 计划分支：`codex/contract-005-compact-routing`
 - Worktree：`D:\open-source\ai-dev-flow-contract-005`
-- Diff 范围：`7f0f7e5..HEAD`（待审查）
+- Diff 范围：`7f0f7e5..818313a`（实现与最终 Review）；Accepted 状态由本次提交记录
 - 下一任务：`CONTRACT-006`，仅在本任务与 `CONTRACT-004` 均 `Accepted` 后转为 `Ready`
 - 不要重复尝试：只改一处 Prompt 就宣称 Compact 路由完成
