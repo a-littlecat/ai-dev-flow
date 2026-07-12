@@ -6,12 +6,13 @@
 - `task_id`: `REL-002`
 - `task_type`: `document`
 - `task_class`: `B`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/REL-002-close-v07-release-identity-and-sync.md#outcome`
 - `acceptance_authority`: `User Confirmed`
+- `close_authority`: `User Authorized`
 - `commit_status`: `Committed`
 - `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
@@ -69,3 +70,6 @@
 - UA 动作与结果：用户于 2026-07-12 明确授权将当前任务分支合并到 `main` 并 push；该授权不包含 tag、GitHub Release 或 Closed
 - UA 动作与结果：用户于 2026-07-12 后续明确要求按建议完成剩余操作，授权创建并 push annotated tag `v0.7.0`、创建正式 GitHub Release，并在取得发布收据后将本任务标记为 Closed
 - 合并目标与事实证据：`codex/rel-002-v07-release-identity` 已通过 merge commit `18b8f6799148180bed3616cb7ebac037f438e43e` 合并到本地 `main`
+- 验证证据：annotated tag `v0.7.0` 的本地与远程 peeled commit 均为 `d8f093b05f88ddcf9955b534ef8d775903022080`
+- 验证证据：GitHub Release `ai-dev-flow v0.7.0` 已于 2026-07-12 创建，状态为正式发布（非 draft、非 prerelease），URL 为 `https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.7.0`
+- UA 动作与结果：用户已明确授权剩余正式发布与关闭操作；tag、Release 和发布收据均已验证，本任务 Closed
