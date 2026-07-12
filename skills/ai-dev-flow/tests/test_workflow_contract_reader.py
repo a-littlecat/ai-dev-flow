@@ -1,0 +1,145 @@
+import hashlib
+import importlib.util
+import ast
+import json
+import pathlib
+import sys
+import tempfile
+import unittest
+
+
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+FIXTURES = ROOT / "skills" / "ai-dev-flow" / "tests" / "fixtures"
+MODULE_PATH = ROOT / "skills" / "ai-dev-flow" / "scripts" / "_workflow_contract.py"
+
+
+def load_module():
+    spec = importlib.util.spec_from_file_location("workflow_contract_reader", MODULE_PATH)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+class WorkflowContractReaderTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.reader = load_module()
+        cls.manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+
+    def reader_fixture(self, fixture_id):
+        item = next(x for x in self.manifest["fixtures"] if x["id"] == fixture_id)
+        return item, FIXTURES / item["input"]
+
+    def test_reader_level_golden_oracles(self):
+        ids = ["FIX-VALID-A", "FIX-E-PARSE", "FIX-E-UNKNOWN", "FIX-ID-H1", "FIX-LEGACY-CONFLICT", "FIX-LEGACY-MERGE-CONFLICT"]
+        for fixture_id in ids:
+            with self.subTest(fixture_id=fixture_id):
+                oracle, path = self.reader_fixture(fixture_id)
+                report = self.reader.inspect_task(path)
+                self.assertEqual([d.code for d in report.diagnostics], oracle["expected_diagnostics"])
+                for key, value in (oracle["expected_normalized"] or {}).items():
+                    self.assertEqual(report.get(key), value)
+
+    def test_valid_defaults_are_in_memory_and_immutable(self):
+        _, path = self.reader_fixture("FIX-VALID-A")
+        text = path.read_text(encoding="utf-8")
+        text = "\n".join(line for line in text.splitlines() if "`commit_status`" not in line and "`merge_status`" not in line)
+        with tempfile.TemporaryDirectory() as td:
+            target = pathlib.Path(td) / "FIX-VALID-A.md"
+            target.write_text(text, encoding="utf-8")
+            report = self.reader.inspect_task(target)
+            self.assertEqual(report.get("merge_status"), "Not Recorded")
+            self.assertEqual(report.get("acceptance_authority"), "None")
+            self.assertTrue(any(p.source_type == "default" and p.field == "merge_status" for p in report.provenance))
+            self.assertTrue(all(p.line == 0 for p in report.provenance if p.source_type == "default"))
+            with self.assertRaises((AttributeError, TypeError)):
+                report.normalized[0] = ("task_id", "changed")
+
+    def test_reader_level_projection_metadata_and_sections(self):
+        _, path = self.reader_fixture("FIX-VALID-A")
+        report = self.reader.inspect_task(path)
+        self.assertEqual(report.title, "合法文档任务")
+        self.assertEqual(report.source_path, "task-a-document.md")
+        self.assertNotRegex(report.source_path, r"^[A-Za-z]:")
+        section = next(item for item in report.sections if item.heading == "目标与边界")
+        self.assertEqual(section.fields[0].name, "目标")
+        self.assertGreaterEqual(section.fields[0].line, 1)
+        with self.assertRaises((AttributeError, TypeError)):
+            report.sections[0].fields += ()
+
+    def test_order_bom_repeat_and_read_only(self):
+        _, source = self.reader_fixture("FIX-VALID-A")
+        before = (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns)
+        first = self.reader.inspect_task(source)
+        second = self.reader.inspect_task(source)
+        self.assertEqual(first, second)
+        self.assertEqual(before, (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns))
+        text = source.read_text(encoding="utf-8")
+        contract, rest = text.split("\n\n## 目标与边界", 1)
+        lines = contract.splitlines()
+        prefix, fields = lines[:4], lines[4:]
+        with tempfile.TemporaryDirectory() as td:
+            reordered = pathlib.Path(td) / "FIX-VALID-A-reordered.md"
+            reordered.write_text("\ufeff" + "\n".join(prefix + list(reversed(fields))) + "\n\n## 目标与边界" + rest, encoding="utf-8")
+            report = self.reader.inspect_task(reordered)
+            self.assertEqual(dict(first.normalized), dict(report.normalized))
+
+    def test_unknown_key_case_schema_and_encoding(self):
+        base = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        cases = {
+            "unknown": base.replace("- `task_id`:", "- `mystery`:\n- `task_id`:", 1),
+            "case": base.replace("`task_id`", "`Task_ID`", 1),
+            "schema": base.replace("adf/v0.7.0", "adf/v0.7.1", 1),
+        }
+        with tempfile.TemporaryDirectory() as td:
+            for name, text in cases.items():
+                path = pathlib.Path(td) / f"FIX-{name}.md"
+                path.write_text(text, encoding="utf-8")
+                codes = [d.code for d in self.reader.inspect_task(path).diagnostics]
+                self.assertIn("E_PARSE" if name != "schema" else "E_UNKNOWN_VALUE", codes)
+            bad = pathlib.Path(td) / "bad.md"
+            bad.write_bytes(b"\xff\xfe\x00")
+            self.assertEqual([d.code for d in self.reader.inspect_task(bad).diagnostics], ["E_PARSE"])
+
+    def test_legacy_single_and_consistent_duplicate(self):
+        authority = self.reader.inspect_task(FIXTURES / "legacy" / "authority-inferred.md")
+        self.assertEqual(authority.get("task_id"), "FIX-LEGACY-AUTHORITY")
+        self.assertEqual(authority.get("lifecycle"), "Review")
+        self.assertEqual(authority.get("acceptance_authority"), "User Confirmed")
+        self.assertEqual(authority.get("merge_authority"), "User Authorized")
+        self.assertIn("#用户验收反馈--实机测试反馈", authority.get("ua_evidence"))
+        self.assertEqual([d.code for d in authority.diagnostics], ["W_LEGACY_INFERRED"])
+        text = """# LEGACY-OK：一致 Review\n\n## 任务元数据\n\n| 字段 | 当前值 |\n|---|---|\n| 任务编号 | `LEGACY-OK` |\n| 任务类型 | 文档 |\n| 任务分级 | A |\n| 任务状态 | 待审查（`Review`） |\n| 用户动作等级 | UA2 |\n\n## 代码审查\n\n- 审查状态：通过\n\n## Diff 审查\n\n- 审查状态：通过\n"""
+        with tempfile.TemporaryDirectory() as td:
+            path = pathlib.Path(td) / "LEGACY-OK.md"
+            path.write_text(text, encoding="utf-8")
+            report = self.reader.inspect_task(path)
+            self.assertEqual(report.get("review_status"), "Passed")
+            review_sources = [p for p in report.provenance if p.field == "review_status"]
+            self.assertEqual(len(review_sources), 2)
+            self.assertEqual([d.code for d in report.diagnostics], ["W_LEGACY_INFERRED"])
+
+    def test_all_reader_fixtures_are_unchanged_and_diagnostics_sorted(self):
+        files = sorted(path for path in FIXTURES.rglob("*") if path.is_file())
+        before = {path: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns) for path in files}
+        for item in self.manifest["fixtures"]:
+            if item["phase"] == "reader_003":
+                report = self.reader.inspect_task(FIXTURES / item["input"])
+                keys = [(d.path, d.line, d.code) for d in report.diagnostics]
+                self.assertEqual(keys, sorted(keys))
+        after = {path: (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns) for path in files}
+        self.assertEqual(before, after)
+
+    def test_production_imports_are_standard_library_and_no_write_surfaces(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        imports = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
+        imports |= {node.module.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module}
+        self.assertLessEqual(imports, {"dataclasses", "pathlib", "re", "typing"})
+        for forbidden in ("write_text(", "write_bytes(", "subprocess", "socket", "requests", "urlopen"):
+            self.assertNotIn(forbidden, source)
+
+
+if __name__ == "__main__":
+    unittest.main()
