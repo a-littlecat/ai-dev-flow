@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 第 1 轮独立复审已通过，等待 UA2 用户确认 |
-| 下一允许模式 | 用户完成 UA2 后更新为已验收（`Accepted`）；未确认前保持 Review |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 用户已完成 UA2 阅读确认，任务已验收 |
+| 下一允许模式 | 保持已验收（`Accepted`）；实际 merge 仍需另获用户授权 |
+| 任务状态 | 已验收（`Accepted`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定语义接口并影响后续全部实现 |
@@ -97,7 +97,7 @@ v0.7 RFC 已确定一个 Markdown-first、agent-agnostic、只读优先的 Workf
 - [x] 诊断码标出首批与 `CONTRACT-007` 后才启用的阶段边界。
 - [x] 规范包含 legacy 标题、字段和值的显式别名矩阵；禁止模糊匹配，并定义一致重复值与冲突值的 provenance/diagnostic 规则。
 - [x] 未改变现有 lifecycle 合法流转。
-- [ ] 独立 Review 无 P0/P1；用户按 UA2 确认规范与 RFC 一致。
+- [x] 独立 Review 无 P0/P1；用户按 UA2 确认规范与 RFC 一致。
 
 ## 验证方式
 
@@ -193,14 +193,14 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 用户动作等级：UA2
 - 用户需要做什么：阅读规范摘要、字段表、Legacy/diagnostic 边界，确认与已批准 RFC 一致
 - agent 已提供的证据：JSON/Schema 检查、18 条状态流转对照、Skill validation、范围检查和后续独立 Review 记录
-- 是否允许关闭任务：否 / 待用户确认
+- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：无反馈
+- 验收反馈状态：通过；用户于 2026-07-12 明确认可当前升级方案并要求继续
 - 当前反馈关联的 UA 等级：UA2
 - 反馈分类：不适用
-- 下一步建议：等待用户完成 UA2 阅读确认；未确认前保持 Review
+- 下一步建议：任务保持 Accepted；允许在其 Accepted commit 成为当前 Base 祖先后准备 `CONTRACT-002`
 
 ## 合并状态
 
