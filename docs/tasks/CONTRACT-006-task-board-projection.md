@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | 创建任务（`create_task`） |
-| 下一允许模式 | 前置门禁满足后进入 `execute_task` |
-| 任务状态 | 草稿（`Draft`） |
+| 当前模式 | 执行与验证已完成，等待独立审查（`review_task`） |
+| 下一允许模式 | 审查通过后进入 UA6；存在 P0/P1 时进入有限修复 |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -70,10 +70,10 @@ TASK
 
 ## Readiness Gate
 
-- [ ] `CONTRACT-004`、`CONTRACT-005` 均已 `Accepted`。
-- [ ] `git merge-base --is-ancestor <CONTRACT-004 Accepted commit> <当前 Base>` 和 `git merge-base --is-ancestor <CONTRACT-005 Accepted commit> <当前 Base>` 均成功。
-- [ ] TASK 权威、Compact/legacy 路由和投影字段已稳定。
-- [ ] Base commit、HEAD、执行位置和 Diff 范围已记录。
+- [x] `CONTRACT-004` Accepted `7f0f7e5`、`CONTRACT-005` Accepted `61d0911`。
+- [x] 两个 Accepted commit 均为当前 Base `61d0911` 的祖先。
+- [x] TASK 权威、Compact/legacy 路由和 9 个投影字段已在规范冻结。
+- [x] Base/HEAD `61d0911`；独立 Worktree `D:\open-source\ai-dev-flow-contract-006`；diff `61d0911..HEAD`。
 
 ## 执行步骤
 
@@ -88,17 +88,17 @@ TASK
 
 ## 完成标准
 
-- [ ] TASK 始终是细粒度事实源，board 只做 projection/compare。
-- [ ] expected row 只有约定的 9 个字段，不复制 Base、Diff、锁、命令或完整门禁。
-- [ ] 一致、字段 drift、missing row、orphan row、duplicate ID、legacy conflict 均有确定结果。
-- [ ] `V_BOARD_DRIFT` 包含字段级 expected、actual 和两侧 provenance。
-- [ ] Human/JSON board diagnostics 语义、排序和 source 一致。
-- [ ] TASK/TASK_BOARD 内容、SHA-256 和 mtime 在运行前后不变。
-- [ ] CLI 不存在 `--fix / --write`，不自动创建或删除行。
-- [ ] 不以 board 值覆盖 TASK，不做双向同步。
-- [ ] `CONTRACT-007` 前 Overlay 只产生 `W_PROJECT_OVERLAY_UNEVALUATED` 或规范约定 warning。
-- [ ] TASK_BOARD_TEMPLATE 日常视图轻量，完整视图明确为 legacy/diagnostic。
-- [ ] 仅使用 Python 标准库。
+- [x] TASK 始终是细粒度事实源，board 只做 projection/compare。
+- [x] expected row 只有约定的 9 个字段，不复制 Base、Diff、锁、命令或完整门禁。
+- [x] 一致、字段 drift、missing row、orphan row、duplicate ID、legacy conflict 均有确定结果。
+- [x] `V_BOARD_DRIFT` 包含字段级 expected、actual 和两侧 provenance。
+- [x] Human/JSON board diagnostics 语义、排序和 source 一致。
+- [x] TASK/TASK_BOARD 内容、SHA-256 和 mtime 在运行前后不变。
+- [x] CLI 不存在 `--fix / --write`，不自动创建或删除行。
+- [x] 不以 board 值覆盖 TASK，不做双向同步。
+- [x] `CONTRACT-007` 前 Overlay 只产生 `W_PROJECT_OVERLAY_UNEVALUATED` 或规范约定 warning。
+- [x] TASK_BOARD_TEMPLATE 日常视图轻量，完整视图明确为 legacy/diagnostic。
+- [x] 仅使用 Python 标准库。
 - [ ] 独立代码 Review 无 P0/P1，用户完成 UA6 回归验收。
 
 ## 验证方式
@@ -142,6 +142,17 @@ git diff --name-only
 - 审查结论：待填写
 - 是否允许进入验收建议：待确认
 
+## 执行与验证记录
+
+- RED：新增 board projection tests 后 3/3 失败，分别证明缺失 board diagnostics、无 9 字段 projection、单 TASK stage 标记错误。
+- 新增 `_task_board.py`：只读 canonical/legacy table 定位、9 字段行解析、路径归一化、split/combined legacy 轴与 conflict 表示。
+- 扩展 `WorkflowContract.inspect(project)`：生成 expected projection，比较 actual board，输出字段级 expected/actual/双侧 provenance；单 TASK 明确 `not_evaluated: single_task_target`。
+- CLI JSON 序列化 projection；Human/JSON 使用同一 diagnostics。
+- 覆盖矩阵：一致、单/多字段 drift、missing、orphan、duplicate ID、legacy partial、combined/split conflict、bad board、单 TASK 不读 board、hash/mtime 不变、无写入/API/网络。
+- GREEN：完整 `test_*.py` 39/39 通过；board 专项 7/7 通过；fixture Base→工作区 diff 为空。
+- 真实项目根 Human/JSON 均完成只读扫描；board-specific diagnostics 为 0，生成 2 个可安全投影的 expected rows。整体 exit 2 来自既有 legacy TASK 的 Reader 错误，不属于 006 board adapter，未在本任务越界修改历史任务。
+- 修改文件：`_task_board.py`、`workflow_contract.py`、`workflow_lint.py`、board/validation tests、`TASK_BOARD_TEMPLATE.md`、scripts README、当前 TASK/TASK_BOARD。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
@@ -173,17 +184,17 @@ git diff --name-only
 
 ## 提交 / 合并
 
-- Commit 状态：未提交
+- Commit 状态：实现候选待提交
 - Commit hash：待填写
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
-- 当前分支：`main`（建档时）
+- 当前分支：`codex/contract-006-board-projection`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：待执行时填写
+- 执行 Base commit：`61d0911dfa3ff890b1a75493e2c5210c2ed9d7d1`
 - 计划分支：`codex/contract-006-board-projection`
-- Diff 范围：待执行时填写
+- Diff 范围：`61d0911..HEAD`（待审查）
 - 后续任务：`CONTRACT-007` 不在本轮范围，需另行创建和确认
 - 不要重复尝试：把 projection 实现成 TASK_BOARD Writer 或自动修复器

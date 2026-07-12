@@ -15,13 +15,13 @@
 - `Deferred`：延期。
 - `Cancelled`：取消。
 
-## 轻量看板推荐字段
+## Canonical 日常投影视图（推荐）
 
-日常维护建议只保留：
+TASK 是事实源，看板只保存以下 9 个投影字段。`workflow_lint.py <project-root>` 只读比较 expected/actual，不会修改看板。
 
-| 任务编号 | 任务名称 | 等级 | 状态 | 批次 | Wave | 可批量 | 可并行 | 执行位置 | Review 状态 | UA 等级 | 是否需实机 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TASK-000 | 示例任务 | A / B / C / D | Draft / Ready / In Progress / Blocked / Review / Needs Fix / Accepted / Closed / Deferred / Cancelled | BATCH-000 / 无 | WAVE-000 / 无 | 是 / 否 / 待确认 | 是 / 否 / 待确认 | 主项目 / Worktree / 分支 | 未审查 | UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认 | 是 / 否 / 待确认 | 任务文件：`docs/tasks/TASK-000.md` |
+| 任务 | 名称 | 等级 | 状态 | Review | UA | 验收 | 交付 | 任务文件 |
+|---|---|---|---|---|---|---|---|---|
+| TASK-000 | 示例任务 | A | Draft | Pending | UA1 | Pending / None | commit=Not Recorded;merge=Not Recorded;merge_authority=None | docs/tasks/TASK-000.md |
 
 如果看板过宽，`批次`、`Wave`、`可批量`、`可并行`、`锁定模块`、`Intake`、`Loop 归属`、`Memory` 均为可选字段。详细批次信息写入 `docs/batches/BATCH-xxx.md` 或任务文件；详细并行信息写入 `docs/waves/WAVE-xxx.md` 或任务文件；Loop 轮次、停止原因和运行状态写入 `docs/loops/LOOP_STATE.md` 或任务文件，不写入看板状态字段。
 
@@ -49,7 +49,9 @@
 - Loop 归属
 - 是否需要更新 Memory / Constitution
 
-## 完整看板模板
+## Full/Legacy 兼容与诊断视图
+
+下表仅用于既有项目兼容或人工诊断参考，不是新的 canonical 写入格式。Adapter 只比较能够确定投影的字段，缺失 optional 轴不伪造 drift；不要从看板反向覆盖 TASK。
 
 | 任务编号 | 任务名称 | 模式 | 任务类型 | 等级 | 状态 | 优先级 | 风险等级 | Intake | Loop 归属 | 批次 | Wave | 可批量 | 可并行 | 锁定模块 | 执行位置 | 分支 | Base commit | 当前 HEAD | Diff 范围 | Worktree | 依赖 | 冲突 | Review 状态 | 验收状态 | 关闭状态 | Commit 状态 | Merge 状态 | Memory | 备注 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

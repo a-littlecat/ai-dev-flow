@@ -17,7 +17,9 @@ python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format json
 - `--format` 只接受 `human` / `json`。
 - 退出码：`0` 无 error/violation，`1` 有 workflow violation，`2` 有 parse/invocation error。
 - warning 不阻塞，但 lint 通过不代表 Review、用户验收、merge、release 或关闭完成。
-- CLI 不读取 TASK_BOARD，不提供 `--fix` / `--write`，不会修改 TASK、Git 或外部系统。
+- 单 TASK target 不读取 TASK_BOARD；project-root target 会只读投影/比较 `docs/TASK_BOARD.md`。
+- project 报告包含 9 字段 expected projection，并可输出 `V_BOARD_DRIFT`、`W_BOARD_MISSING`、`W_BOARD_ORPHAN`、`E_BOARD_PARSE` 等确定性诊断。
+- CLI 不提供 `--fix` / `--write`，不会修改 TASK、TASK_BOARD、Git 或外部系统；TASK 始终是事实源。
 
 ## 后续只读脚本路线图
 

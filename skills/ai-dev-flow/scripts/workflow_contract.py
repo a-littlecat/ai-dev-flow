@@ -5,13 +5,14 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Iterable, Tuple
+from typing import Tuple
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 import _workflow_contract as reader
+import _task_board as task_board
 
 
 DISCLAIMER = "lint 通过只代表 Contract 结构和当前可确定规则通过，不代表 Review、用户验收、merge、release 或任务关闭已经完成。"
@@ -33,9 +34,18 @@ class Summary:
 class WorkflowReport:
     contracts: Tuple[reader.ReaderReport, ...]
     diagnostics: Tuple[reader.Diagnostic, ...]
-    projections: str
+    projections: object
     summary: Summary
     disclaimer: str = DISCLAIMER
+
+
+@dataclass(frozen=True)
+class BoardProjection:
+    values: Tuple[Tuple[str, str], ...]
+    provenance: Tuple[reader.Provenance, ...]
+
+    def get(self, field, default=None):
+        return dict(self.values).get(field, default)
 
 
 def _field_line(contract, field):
@@ -204,6 +214,100 @@ def _summary(diagnostics):
     return Summary(errors, violations, warnings, 2 if errors else (1 if violations else 0))
 
 
+def _expected_board_projection(contract, source_file, project_root):
+    values = dict(contract.normalized)
+    task_id = values.get("task_id")
+    if not task_id or any(item.severity == "error" for item in contract.diagnostics):
+        return None
+    expected = (
+        ("task_id", task_id),
+        ("title", contract.title or ""),
+        ("task_class", values.get("task_class") or ""),
+        ("lifecycle", values.get("lifecycle") or ""),
+        ("review_status", values.get("review_status") or ""),
+        ("ua_level", values.get("ua_level") or ""),
+        ("acceptance", f"{values.get('ua_status')} / {values.get('acceptance_authority')}"),
+        ("delivery", f"commit={values.get('commit_status')};merge={values.get('merge_status')};merge_authority={values.get('merge_authority')}"),
+        ("task_path", source_file.resolve().relative_to(project_root.resolve()).as_posix()),
+    )
+    provenance = list(contract.provenance)
+    provenance.append(reader.Provenance("title", contract.source_path, "H1", 1, contract.title or "", "canonical"))
+    provenance.append(reader.Provenance("task_path", contract.source_path, "filesystem", 0, expected[-1][1], "canonical"))
+    return BoardProjection(expected, tuple(provenance))
+
+
+def _projection_provenance(projection, field):
+    aliases = {"acceptance": {"ua_status", "acceptance_authority"}, "delivery": {"commit_status", "merge_status", "merge_authority"}}
+    fields = aliases.get(field, {field})
+    return tuple(item for item in projection.provenance if item.field in fields)
+
+
+def _board_cell_provenance(cell, board_path):
+    return reader.Provenance(cell.field, reader._source_path(board_path), "TASK_BOARD", cell.line, cell.raw_value, cell.source_type)
+
+
+def _board_values_match(field, expected, actual):
+    if actual.startswith("CONFLICT:"):
+        return False
+    if "not_projected" not in actual:
+        return expected == actual
+    if field == "acceptance":
+        return all(right == "not_projected" or left == right for left, right in zip(expected.split(" / "), actual.split(" / ")))
+    if field == "delivery":
+        expected_parts = dict(item.split("=", 1) for item in expected.split(";"))
+        actual_parts = dict(item.split("=", 1) for item in actual.split(";"))
+        return all(value == "not_projected" or expected_parts.get(key) == value for key, value in actual_parts.items())
+    return expected == actual
+
+
+def _board_diagnostics(project_root, projections, known_task_ids=()):
+    board_path = project_root / "docs" / "TASK_BOARD.md"
+    if not board_path.exists():
+        return [reader._diagnostic("W_BOARD_MISSING", project_root, 0, f"expected={dict(item.values)};actual=TASK_BOARD missing", related=item.provenance) for item in projections]
+    parsed = task_board.parse_board(board_path, project_root)
+    if parsed.error_message:
+        return [reader._diagnostic("E_BOARD_PARSE", board_path, parsed.error_line, parsed.error_message)]
+    diagnostics = []
+    by_id = {}
+    for row in parsed.rows:
+        task_id = row.get("task_id")
+        if task_id in by_id:
+            cell = next(item for item in row.cells if item.field == "task_id")
+            diagnostics.append(reader._diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"TASK_BOARD task_id 重复：{task_id}", related=(_board_cell_provenance(cell, board_path),)))
+        else:
+            by_id[task_id] = row
+    expected_by_id = {item.get("task_id"): item for item in projections}
+    expected_by_path = {item.get("task_path"): item for item in projections}
+    for row in parsed.rows:
+        expected_for_path = expected_by_path.get(row.get("task_path"))
+        if expected_for_path is not None and row.get("task_id") != expected_for_path.get("task_id"):
+            cell = next(item for item in row.cells if item.field == "task_id")
+            related = _projection_provenance(expected_for_path, "task_id") + (_board_cell_provenance(cell, board_path),)
+            diagnostics.append(reader._diagnostic("E_TASK_ID_CONFLICT", board_path, row.line, f"board_task_id={row.get('task_id')};task_id={expected_for_path.get('task_id')};path={row.get('task_path')}", related=related))
+    for task_id, expected in expected_by_id.items():
+        actual = by_id.get(task_id)
+        if actual is None:
+            diagnostics.append(reader._diagnostic("W_BOARD_MISSING", board_path, 0, f"expected={dict(expected.values)};actual=row missing", related=expected.provenance))
+            continue
+        actual_values = dict(actual.values)
+        cells = {item.field: item for item in actual.cells}
+        for field, expected_value in expected.values:
+            if field not in actual.projected_fields:
+                continue
+            actual_value = actual_values.get(field)
+            if not _board_values_match(field, expected_value, actual_value):
+                related = _projection_provenance(expected, field) + (_board_cell_provenance(cells[field], board_path),)
+                message = f"field={field};expected={expected_value};actual={actual_value};task_id={task_id}"
+                diagnostics.append(reader._diagnostic("V_BOARD_DRIFT", board_path, actual.line, message, related=related))
+    for task_id, row in by_id.items():
+        if task_id not in expected_by_id and task_id not in known_task_ids:
+            cell = next(item for item in row.cells if item.field == "task_id")
+            diagnostics.append(reader._diagnostic("W_BOARD_ORPHAN", board_path, row.line, f"expected=TASK missing;actual={dict(row.values)}", related=tuple(_board_cell_provenance(item, board_path) for item in row.cells)))
+    if not parsed.canonical:
+        diagnostics.append(reader._diagnostic("W_LEGACY_INFERRED", board_path, 1, "TASK_BOARD 使用 Legacy partial projection"))
+    return diagnostics
+
+
 def _transition_code(before, after, verifiable=True):
     if not verifiable or not before or not after:
         return "W_TRANSITION_UNVERIFIABLE"
@@ -255,14 +359,18 @@ class WorkflowContract:
         if path.is_file() and path.suffix.lower() == ".md":
             paths = (path,)
             validate_filename = True
-        elif path.is_dir() and (path / "docs" / "tasks").is_dir():
-            paths = tuple(sorted((path / "docs" / "tasks").glob("*.md"), key=lambda item: item.as_posix()))
+            project_target = False
+        elif path.is_dir() and ((path / "docs" / "tasks").is_dir() or (path / "docs" / "TASK_BOARD.md").is_file()):
+            task_dir = path / "docs" / "tasks"
+            paths = tuple(sorted(task_dir.glob("*.md"), key=lambda item: item.as_posix())) if task_dir.is_dir() else ()
             validate_filename = True
+            project_target = True
         else:
             diagnostic = reader._diagnostic("E_PARSE", path, 0, "target 必须是单个 Markdown TASK 或含 docs/tasks 的项目根")
             return WorkflowReport((), (diagnostic,), "not_evaluated", _summary((diagnostic,)))
         contracts = tuple(reader.inspect_task(item, validate_filename=validate_filename) for item in paths)
         diagnostics = []
+        projections = []
         seen_ids = {}
         for contract, source_file in zip(contracts, paths):
             diagnostics.extend(_validate(contract, require_commit=True, source_file=source_file))
@@ -274,7 +382,14 @@ class WorkflowContract:
                 diagnostics.append(_diag(contract, "E_TASK_ID_CONFLICT", "task_id", "项目中 task_id 重复"))
             elif task_id:
                 seen_ids[task_id] = contract.source_path
+            if project_target:
+                projection = _expected_board_projection(contract, source_file, path)
+                if projection is not None:
+                    projections.append(projection)
+        if project_target:
+            diagnostics.extend(_board_diagnostics(path, projections, tuple(seen_ids)))
         if path.is_dir() and (path / "docs" / "PROJECT_OVERLAY.md").exists():
             diagnostics.append(reader._diagnostic("W_PROJECT_OVERLAY_UNEVALUATED", path / "docs" / "PROJECT_OVERLAY.md", 1, "发现 Project Overlay，但 CONTRACT-007 前不求值"))
         diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))
-        return WorkflowReport(tuple(sorted(contracts, key=lambda item: (item.get("task_id", ""), item.source_path))), tuple(diagnostics), "not_evaluated", _summary(diagnostics))
+        projection_state = tuple(sorted(projections, key=lambda item: item.get("task_id", ""))) if project_target else "not_evaluated: single_task_target"
+        return WorkflowReport(tuple(sorted(contracts, key=lambda item: (item.get("task_id", ""), item.source_path))), tuple(diagnostics), projection_state, _summary(diagnostics))

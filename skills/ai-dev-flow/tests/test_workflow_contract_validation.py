@@ -53,8 +53,8 @@ class WorkflowContractValidationTests(unittest.TestCase):
             shutil.copyfile(source, task_dir / "PROJECT-001.md")
             project = self.api.WorkflowContract.inspect(project_root)
         self.assertEqual(len(project.contracts), 1)
-        self.assertEqual(project.projections, "not_evaluated")
-        self.assertFalse(any("BOARD" in d.code for d in project.diagnostics))
+        self.assertEqual(len(project.projections), 1)
+        self.assertIn("W_BOARD_MISSING", [d.code for d in project.diagnostics])
 
     def test_git_transition_and_unavailable_warning(self):
         self.assertIsNone(self.api._transition_code("Draft", "Ready", True))
@@ -80,8 +80,8 @@ class WorkflowContractValidationTests(unittest.TestCase):
             self.assertEqual(report.summary.exit_code, 0)
         self.assertEqual(before, (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns))
         board_project = self.api.WorkflowContract.inspect(FIXTURES / "projects" / "board-drift")
-        self.assertEqual(board_project.projections, "not_evaluated")
-        self.assertFalse(any(d.code in {"V_BOARD_DRIFT", "W_BOARD_MISSING", "W_BOARD_ORPHAN", "E_BOARD_PARSE"} for d in board_project.diagnostics))
+        self.assertEqual(len(board_project.projections), 1)
+        self.assertTrue(any(d.code in {"V_BOARD_DRIFT", "W_BOARD_ORPHAN"} for d in board_project.diagnostics))
 
     def canonical(self, *, lifecycle="Review", task_type="code", task_class="C", extra="", outcome=True):
         outcome_text = "" if not outcome else """\n## Outcome\n\n- Base / Diff：base=base123;diff=base123..head456\n- 隔离位置：branch/test\n- 回滚方式：revert commit\n- 修改文件：file.py\n- 验证证据：tests pass\n- Review findings：none\n"""

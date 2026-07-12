@@ -26,10 +26,11 @@ def _diagnostic_dict(item):
 
 
 def _json_payload(report):
+    projections = [asdict(item) for item in report.projections] if isinstance(report.projections, tuple) else report.projections
     return {
         "summary": asdict(report.summary),
         "diagnostics": [_diagnostic_dict(item) for item in report.diagnostics],
-        "projections": report.projections,
+        "projections": projections,
         "disclaimer": report.disclaimer,
     }
 
@@ -67,6 +68,9 @@ def main(argv=None):
         print(json.dumps(_json_payload(report), ensure_ascii=False, sort_keys=True))
     else:
         print(f"Workflow Contract lint: errors={report.summary.errors}, violations={report.summary.violations}, warnings={report.summary.warnings}")
+        if isinstance(report.projections, tuple):
+            for projection in report.projections:
+                print("projection: " + json.dumps(asdict(projection), ensure_ascii=False, sort_keys=True))
         for item in report.diagnostics:
             print(f"[{item.severity}] {item.code} {item.path}:{item.line}:{item.column} {item.message}")
             print(f"  建议：{item.suggestion}")
