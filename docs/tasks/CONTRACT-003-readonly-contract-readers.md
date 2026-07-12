@@ -6,9 +6,9 @@
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | 第 1 轮有限修复与 GREEN 已完成，等待独立复审 |
-| 下一允许模式 | 复审通过后进入 UA3；仍有 P0/P1 时进入第 2 轮或人工接管 |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 第 1 轮复审仍有 P1，进入第 2 轮有限修复 |
+| 下一允许模式 | 第 2 轮修复后最终复审；仍有 P0/P1 则停止并人工接管 |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -174,6 +174,13 @@ git diff --name-only
 - 第 1 轮修复验证：12/12 GREEN；py_compile 通过；fixture diff 为空；`git diff --check` 通过。
 - 未处理意见：无。
 - 下一步：提交修复候选并独立复审。
+
+### 第 1 轮复审结果
+
+- 通过证据：12/12 tests GREEN、fixture diff 空、完整 diff check 通过。
+- 未关闭 P1：Legacy 枚举说明后缀/异常 lifecycle 双语；Legacy fenced command/table/placeholder section index；硬编码 `/tests/fixtures/` filename 例外。
+- P2：部分 diagnostic 的 related provenance 与 suggestion 仍偏弱。
+- 结论：Needs Fix，不允许 UA3；进入第 2 轮（上限）修复。
 
 ## 用户动作等级 / 验收建议
 
