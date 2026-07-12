@@ -255,6 +255,18 @@ Rules:
 - Multiple code execution sessions must not share the same workspace by default.
 - Review Hub may review a Wave, but must output per-task conclusions.
 
+## v0.7.0: Workflow Contract and Read-Only Checks
+
+v0.7.0 preserves the v0.6.0 workflow and adds deterministic Contract and read-only inspection capabilities:
+
+- A canonical `adf/v0.7.0` Workflow Contract for task lifecycle, Review, UA, and delivery semantics.
+- Dual-read support for legacy tasks and explicitly opted-in v0.7 tasks without automatic migration.
+- A read-only `workflow_lint` CLI with stable Human/JSON diagnostics and provenance.
+- Compact v0.7 routing for eligible new A/B tasks while complex paths remain Full/Legacy.
+- Read-only TASK_BOARD projection comparison with no `--fix` or reverse write-back.
+
+The Skill distribution version `0.7.0` and Contract interface version `adf/v0.7.0` evolve independently. A passing lint result covers only structure and currently decidable rules; it does not mean Review, user acceptance, merge, release, or task closure is complete.
+
 ## v0.6.0: Design-Level Guides
 
 v0.6.0 adds Markdown-first design-level workflow guides for:
@@ -268,7 +280,7 @@ v0.6.0 adds Markdown-first design-level workflow guides for:
 - Optional GitHub Issues backend mapping without automatic sync.
 - Harness compatibility for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
 
-These are documents, templates, prompts, and roadmap notes. They do not mean ai-dev-flow now has automatic scripts, automatic GitHub sync, automatic subagent scheduling, automatic multi-agent scheduling, automatic merge, or automatic release.
+These guides remain document- and prompt-driven. They do not imply automatic state writes, automatic GitHub sync, automatic subagent or multi-agent scheduling, automatic merge, or automatic release; the scripts added in v0.7.0 are read-only checks.
 
 ## Repository Structure
 
@@ -314,12 +326,12 @@ skills/ai-dev-flow/README.md
 Current Skill version:
 
 ```text
-0.6.0
+0.7.0
 ```
 
-The repository-internal version identity is now `0.6.0`, with a status of **release ready (not published)**. No `v0.6.0` tag or GitHub Release exists yet, so this version must not be described as publicly released.
+The repository-internal Skill distribution version is now `0.7.0`, with a status of **release ready (not published)**. The Workflow Contract interface version remains independently identified as `adf/v0.7.0`. No `v0.7.0` tag or GitHub Release exists yet, so this version must not be described as publicly released.
 
-The planned tag is `v0.6.0`. It may be created from the approved release commit only after an independent review reports no P0/P1 findings, version-consistency checks pass, and the user explicitly grants UA7 authorization. Tagging, pushing, creating a GitHub Release, merging, and synchronizing local Skill copies each require separate authorization.
+The planned tag is `v0.7.0`. It may be created from the approved release commit only after an independent review reports no P0/P1 findings, version-consistency checks pass, and the user explicitly grants new UA7 authorization. Tagging, pushing, creating a GitHub Release, and merging each require separate authorization. Synchronizing local Skill copies does not mean the version has been published.
 
 See:
 

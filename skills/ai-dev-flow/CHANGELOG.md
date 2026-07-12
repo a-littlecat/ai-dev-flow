@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0 - Release ready (not published)
+
+> Skill 分发包版本已收口为 `0.7.0`；Workflow Contract 接口版本独立为 `adf/v0.7.0`。当前提交尚未创建 Git tag 或 GitHub Release，因此 “Release ready” 不表示已经对外发布。
+
+- Add the canonical Workflow Contract grammar and JSON Schema for `adf/v0.7.0`.
+- Add golden fixtures and deterministic comparison baselines for legacy and Compact tasks.
+- Add read-only Legacy / v0.7 readers with normalized views and provenance.
+- Add the read-only `workflow_lint` CLI with stable Human and JSON diagnostics.
+- Add Compact v0.7 task routing for eligible new A/B tasks while preserving Full/Legacy routes for complex paths.
+- Add read-only TASK_BOARD projection and drift diagnostics with TASK remaining authoritative.
+- Keep Skill `VERSION` and Workflow Contract `schema_version` independently versioned.
+- Keep lint, Review, UA, merge, release, and task closure as separate states and authorities.
+
+### Release gate
+
+- 计划 tag 名称为 `v0.7.0`。
+- 只有在独立 Review 无 P0/P1、版本一致性验证通过并取得新的 UA7 用户明确授权后，才允许从获准的发布提交创建 tag。
+- 创建 tag、push tag、创建 GitHub Release 和 merge 都是独立操作，不由版本号更新或本机 Skill 同步自动授权。
+
 ## 0.6.0 - Release ready (not published)
 
 > 仓库内版本身份已收口为 `0.6.0`。当前提交尚未创建 Git tag 或 GitHub Release，因此这里的 “Release ready” 不表示已经对外发布。
