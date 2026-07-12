@@ -6,10 +6,12 @@
 - `task_id`: `REL-002`
 - `task_type`: `document`
 - `task_class`: `B`
-- `lifecycle`: `Review`
+- `lifecycle`: `Accepted`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
-- `ua_status`: `Pending`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/REL-002-close-v07-release-identity-and-sync.md#outcome`
+- `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
@@ -62,4 +64,4 @@
 - 验证证据：Codex、OpenCode、Gemini/Antigravity 均为 `VERSION=0.7.0`、85/85 文件，逐文件 SHA256 比较 `Missing=0 / Extra=0 / Changed=0`
 - 验证证据：三个本机副本均通过 Skill validator；Gemini `plugin.json=0.7.0` 且重复嵌套副本不存在
 - 验证证据：同步后完整单元测试 41/41 通过；单任务 lint 为 0 error / 0 violation / 0 warning；`git diff --check` 通过；仓库工作区干净
-- UA 动作与结果：UA3 Pending；用户只需查看版本、Review、测试、lint 和逐文件哈希证据，不需要本地运行
+- UA 动作与结果：UA3 Passed；用户于 2026-07-12 查看版本、Review、测试、lint 和逐文件哈希证据后明确回复“确认”
