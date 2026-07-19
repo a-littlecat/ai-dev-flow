@@ -6,12 +6,13 @@
 - `task_id`: `LEAN-003`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/LEAN-003.md#outcome`
 - `acceptance_authority`: `User Confirmed`
+- `close_authority`: `User Authorized`
 - `commit_status`: `Committed`
 - `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
@@ -31,7 +32,7 @@
 - Base commit：`1a00b62342268dc6e627fd1ff8a7c90bfc1c97d1`。
 - 用户授权：按 PLAN-001 串行执行 `LEAN-001`～`003`，并再次明确要求继续完成 v0.8。
 - 用户验收与交付授权：用户于 2026-07-19 明确回复“继续，我已确认。完成上述操作”，完成 LEAN-003 UA3；随后明确要求“合并推送发布，并且同步本机 skill”，授权将获准候选合并到 `main`、推送、创建并推送 `v0.8.0` tag、创建正式 GitHub Release，并同步已确认的本机 Skill 副本。
-- `Closed`、删除分支、改写历史或其他外部操作仍未授权。
+- 关闭与清理授权：用户于 2026-07-19 进一步明确要求“关闭并删除分支”，授权把 `LEAN-003` 标记为 `Closed`，并在确认完全合并后删除 `codex/lean-v08-slimming`；不授权删除其他分支、tag、Release 或改写历史。
 
 ## 实施决策
 
@@ -103,7 +104,7 @@ git diff --check
 - 精简量：默认运行时 285 行（SKILL 116 + CORE 169）；SKILL 288→116（-59.72%）、WORKFLOW 615→141（-77.07%）、PROMPTS 1182→67（-94.33%）、TASK_TEMPLATE 389→68（-82.52%）。
 - Review findings：`LEAN003-P1-001`、`LEAN003-P1-002` 均 Closed；最终 P0=0、P1=0、P2=0、P3=0，结论 Passed。
 - UA 动作与结果：UA3 Passed；用户于 2026-07-19 查看精简量、47 / 47 自动测试和独立 Review 证据后明确回复“继续，我已确认。完成上述操作”。
-- 发布决策：用户于 2026-07-19 明确授权合并、推送、正式发布 v0.8.0 并同步本机 Skill；merge、远端 main、tag 与 Release 收据已补录，本机最终哈希收据待补录。
+- 发布决策：用户于 2026-07-19 明确授权合并、推送、正式发布 v0.8.0 并同步本机 Skill；merge、远端 main、tag、Release 与本机最终哈希收据均已补录。
 - 合并目标与事实证据：`codex/lean-v08-slimming` 已通过 merge commit `6b672cd4e74a65c031f9a2515c1459841e1dcf26` 合并到 `main`。
 - 远端事实证据：`main` 已推送至 `origin`，发布候选与远端曾一致为 `e35f3eabe6ed1fd57cc68f62be3adba8a65ff59c`。
 - 发布事实证据：annotated tag `v0.8.0` 的本地与远端 peeled commit 均为 `e35f3eabe6ed1fd57cc68f62be3adba8a65ff59c`。
@@ -111,9 +112,10 @@ git diff --check
 - 本机同步事实：以已推送的 `main@490965b91555848e9581226bf742110de2d5e7fb` 中 `skills/ai-dev-flow` 为源，Codex、OpenCode、cc-switch 和 Trae 四个已存在目标均为 `VERSION=0.8.0`、89 / 89 文件，逐文件 SHA256 比较 `Missing=0 / Extra=0 / Changed=0`。
 - 本机验证事实：四个目标均通过 Skill validator；仓库源完整单元测试 47 / 47 通过。旧记录中的 Gemini 插件路径当前不存在，因此没有凭旧路径新建副本。
 - 本机测试边界：在脱离仓库的 Codex 安装目录额外运行完整开发测试时，44 项通过，3 项仓库文档测试因安装目录没有仓库根 `README.md` / `README.en.md` 报错；该结果不影响 Skill 结构、运行文件或逐文件同步一致性，也不被误写为本机完整测试通过。
+- 关闭授权与结果：用户于 2026-07-19 明确要求“关闭并删除分支”；本任务由 `Accepted` 合法流转为 `Closed`，目标分支已确认完全合并且远端不存在同名分支，等待关闭收据提交后执行本地安全删除。
 - 历史评估边界：V002/V003 live manifest 绑定实施前 Full workflow，正式入口变化后 full digest 红灯是预期 tripwire；不得修改旧 manifest 造假绿，本任务以 evaluation/prototype 零 diff 和正式 policy 与冻结 prototype 完全相等作为证据。
 
 ## 状态边界
 
-- 当前为 `Accepted / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0 / Local Sync Verified`；`Closed` 未授权。
+- 当前为 `Closed / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0 / Local Sync Verified`；目标分支清理已授权、等待实际删除收据。
 - `VERSION=0.8.0` 与 Accepted 不单独等于 tag、Published、Released、Merged 或 Closed；实际状态以 Git 和 GitHub 收据为准。
