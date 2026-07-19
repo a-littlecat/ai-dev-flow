@@ -112,10 +112,11 @@ git diff --check
 - 本机同步事实：以已推送的 `main@490965b91555848e9581226bf742110de2d5e7fb` 中 `skills/ai-dev-flow` 为源，Codex、OpenCode、cc-switch 和 Trae 四个已存在目标均为 `VERSION=0.8.0`、89 / 89 文件，逐文件 SHA256 比较 `Missing=0 / Extra=0 / Changed=0`。
 - 本机验证事实：四个目标均通过 Skill validator；仓库源完整单元测试 47 / 47 通过。旧记录中的 Gemini 插件路径当前不存在，因此没有凭旧路径新建副本。
 - 本机测试边界：在脱离仓库的 Codex 安装目录额外运行完整开发测试时，44 项通过，3 项仓库文档测试因安装目录没有仓库根 `README.md` / `README.en.md` 报错；该结果不影响 Skill 结构、运行文件或逐文件同步一致性，也不被误写为本机完整测试通过。
-- 关闭授权与结果：用户于 2026-07-19 明确要求“关闭并删除分支”；本任务由 `Accepted` 合法流转为 `Closed`，目标分支已确认完全合并且远端不存在同名分支，等待关闭收据提交后执行本地安全删除。
+- 关闭授权与结果：用户于 2026-07-19 明确要求“关闭并删除分支”；本任务由 `Accepted` 合法流转为 `Closed`，关闭提交 `3d363e757e0e49b989e2846c8d427f1dfb8e5158` 已推送到 `origin/main`。
+- 分支清理事实证据：已确认 `codex/lean-v08-slimming@c0da4bfd5ad1ff18df25e64bb1e873214a056707` 完全合并且远端不存在同名分支，随后使用非强制 `git branch -d` 安全删除；删除后本地匹配数为 0、远端匹配数为 0。
 - 历史评估边界：V002/V003 live manifest 绑定实施前 Full workflow，正式入口变化后 full digest 红灯是预期 tripwire；不得修改旧 manifest 造假绿，本任务以 evaluation/prototype 零 diff 和正式 policy 与冻结 prototype 完全相等作为证据。
 
 ## 状态边界
 
-- 当前为 `Closed / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0 / Local Sync Verified`；目标分支清理已授权、等待实际删除收据。
+- 当前为 `Closed / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0 / Local Sync Verified / Branch Cleanup Verified`。
 - `VERSION=0.8.0` 与 Accepted 不单独等于 tag、Published、Released、Merged 或 Closed；实际状态以 Git 和 GitHub 收据为准。
