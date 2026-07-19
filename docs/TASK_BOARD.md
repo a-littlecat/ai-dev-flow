@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-19
 > - 当前模式：`LEAN-002` 用户授权后的有限修复（`repair_task`）
-> - 当前阶段：`V08-LEAN-EVAL-003` 三次 main 与机械评分已完成且全门禁通过；正在做 LEAN-002 整体独立 Review
+> - 当前阶段：`LEAN-002` V003 全门禁与整体独立 Review 已 Passed；允许创建并串行执行 `LEAN-003`
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -67,8 +67,8 @@ REL-002 Closed / main@0422887
   -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
-              -> LEAN-002 Review / In Review：V003 all_gates_pass=true
-                  -> 整体 Review 无 P0/P1 后才创建 LEAN-003
+              -> LEAN-002 Review / Passed：V003 all_gates_pass=true
+                  -> LEAN-003：创建门禁已解除，尚未创建
                       -> LEAN-003：仍只在全部新门禁通过后创建
 ```
 
@@ -88,7 +88,7 @@ REL-002 Closed / main@0422887
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | In Review / 整体复审 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 
 ## PLAN-001 核心约束
 
@@ -102,7 +102,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-执行 `LEAN-002` 整体独立 Review：V003 三次 main 严格串行完成，重评分 `all_gates_pass=true`；scorer 基线 repair 已独立 Review Passed，初次失败 summary 原样保留。整体 Reviewer 必须实时核对三个 canonical task name，确认 V002 未改、有限结论无外推，并给出是否允许创建 `LEAN-003` 的明确门禁结论。
+创建并执行 `LEAN-003`：LEAN-002 整体独立 Review 已 Passed（P0-P3 均为 0），明确允许进入全面精简。必须保持 no-skill 代表任务的 `DoNotUseSkill` 结论、三档 policy、安全/权限门禁和结论边界；不授权 merge、push、release、本机 Skill 同步或 `Closed`。
 
 ## 停止条件
 

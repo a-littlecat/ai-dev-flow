@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `C`
 - `lifecycle`: `Review`
-- `review_status`: `In Review`
+- `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -64,7 +64,7 @@
 - [x] V003 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
 - [x] V003 Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
 - [x] V003 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
-- [ ] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
+- [x] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
 
 ### 自动验证命令
 
@@ -81,14 +81,14 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=735bcbd;diff=working-tree
+- Base / Diff：base=9c8ec36;diff=9c8ec36..d1d8679
 - 隔离位置：专用分支 `codex/lean-v08-slimming`；每次 benchmark 另用独立临时 Git 工作区。
 - 回滚方式：回退本任务独立 commit 并移除未接入入口的原型目录；不得使用破坏性 reset。
 - 修改文件：原型两文件、`evaluations/v0.8/v003/**`、本任务与任务板；现行 Skill、V002 冻结 manifest/replay/tests/results 和依赖未改。
 - 验证证据：实际原型 policy 驱动 stage A 8 / 8；三档各 4 / 4；V003 专项 13 / 13；scorer write/check 通过且 `all_gates_pass=true`；协议明确可获得的 provenance、平台未暴露项与结论边界。
 - V003 调用计数：三档 main=3；Full 隔离 Reviewer=1；前置/repair/scorer Reviewer 另按控制面实际调用记录，不混入代表任务 model-call 指标。
 - V002 历史结果：三档各 4 / 4 且机械门禁全通过，但整体独立 Review 的 2 项 P1 仍原样保留，不与 V003 合并。
-- Review findings：前置 `LEAN002-V003-P1-001` 与 scorer `LEAN002-V003-SCORER-P1-001` 均已独立复审 Closed；等待 LEAN-002 整体独立 Review。
+- Review findings：none；旧 `LEAN002-P1-001/P1-002`、前置 `LEAN002-V003-P1-001` 与 scorer `LEAN002-V003-SCORER-P1-001` 均已独立复审 Closed。
 - UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
 
 ## V002 独立整体复审（历史只读）
@@ -162,7 +162,17 @@ git diff --check
 - migration：历史 TASK=0、依赖=0、用户步骤=0、实施 TASK=2。
 - 保存校验：`score-phase-b --write` 与随后 `--check` 均 exit 0；初次失败 summary 继续原样保留。
 
+## V003 独立整体复审
+
+- Reviewer：同一隔离只读 Reviewer 上下文，未修改文件。
+- 结论：`Passed`；P0=0，P1=0，P2=0，P3=0，findings=none。
+- finding 状态：`LEAN002-P1-001` Closed；`LEAN002-P1-002` 在同父任务会话有限结论内 Closed；`LEAN002-V003-P1-001` Closed；`LEAN002-V003-SCORER-P1-001` Closed。
+- V002 边界：V002 manifest/replay/tests/results 自 `f240889` 至 reviewed HEAD 无 diff；旧 Blocked 与 V003 结论分开保留，ledger 未合并。
+- task tree 交叉核对：实时确认 Full main 及其隔离 Reviewer；较早 no-skill/lite 已不在 live tree 返回中，只由 parent 捕获的 unsigned hash 收据佐证，因此 exact backend/opaque ID/签名收据缺失和不跨会话外推的限制继续保留。
+- 验证：V002 8 / 8、V003 8 / 8、V003 scorer check、V002 8 / 8 tests、V003 13 / 13 tests、TASK lint 与 reviewed diff hygiene 均通过。
+- 后续门禁：允许创建 `LEAN-003`；不代表 LEAN-003 已执行、v0.8 可发布、UA3 Passed、Accepted、merge、release 或 Closed。
+
 ## 状态边界
 
-- 当前为 `Review / In Review`，V003 三次 main 与机械评分已完成；正在做 LEAN-002 整体独立 Review，不是 UA3 Passed、Accepted、Merged、Released 或 Closed。
-- `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。
+- 当前为 `Review / Passed / UA3 Pending`，V003 三次 main、机械评分与整体独立 Review 已完成；不是 Accepted、Merged、Released 或 Closed。
+- `LEAN-003` 创建门禁已解除但尚未创建；用户原始串行执行授权允许继续下一任务。
