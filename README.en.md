@@ -118,9 +118,9 @@ See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 0.8.0
 ```
 
-- Current release candidate: `0.8.0`.
+- Current release: `0.8.0`.
 - Workflow Contract: `adf/v0.7.0`, still compatible.
-- Release status: the repository `v0.8.0` tag and GitHub Release are the authoritative publication evidence.
+- Release status: `v0.8.0` was formally published on 2026-07-19; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0).
 - The historical v0.7.0 tag remains unchanged.
 
 See `skills/ai-dev-flow/CHANGELOG.md` for changes.

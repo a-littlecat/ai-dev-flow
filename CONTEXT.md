@@ -46,7 +46,7 @@
 
 ## 当前已知张力
 
-- Skill 包当前发布候选为 `0.8.0`，正式发布状态以仓库 tag 和 GitHub Release 证据为准；Workflow Contract 接口版本继续为 `adf/v0.7.0`。
+- Skill 包当前发布版本为 `0.8.0`，annotated tag 与正式 GitHub Release 已于 2026-07-19 创建；Workflow Contract 接口版本继续为 `adf/v0.7.0`。
 - v0.8 默认运行时已收敛为 `SKILL.md + references/CORE.md`；历史长手册仍保留为按需兼容资料，不能重新进入默认预加载路径。
 - 当前 Contract validator、回归 fixtures 和 TASK_BOARD drift 检查均为只读能力，不自动改写任务状态或授予外部操作权限。
 - 不同 harness 的安装副本可能与仓库源发生版本漂移，需要分发校验，但分发问题不应污染核心 Contract。

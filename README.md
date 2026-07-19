@@ -118,9 +118,9 @@ ai-dev-flow/
 0.8.0
 ```
 
-- 当前发布候选：`0.8.0`。
+- 当前发布版本：`0.8.0`。
 - Workflow Contract：`adf/v0.7.0`，继续兼容。
-- 发布状态：正式发布身份以仓库 `v0.8.0` tag 和 GitHub Release 证据为准。
+- 发布状态：`v0.8.0` 已于 2026-07-19 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0)。
 - v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
 
 变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。

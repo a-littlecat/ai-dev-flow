@@ -2,7 +2,7 @@
 
 ## 0.8.0 - 2026-07-19
 
-> Skill 发布候选身份已收口为 `0.8.0`；Workflow Contract schema 继续为 `adf/v0.7.0`。正式发布事实以 `v0.8.0` tag 和 GitHub Release 收据为准。
+> Skill `0.8.0` 已通过 annotated tag `v0.8.0` 与正式 GitHub Release 发布；Workflow Contract schema 继续为 `adf/v0.7.0`。
 
 - Replace the default full workflow with a two-file runtime core: `SKILL.md` and `references/CORE.md`.
 - Route eligible low-risk work to `DoNotUseSkill`, with no TASK, Reviewer, or repair loop.
@@ -14,11 +14,12 @@
 - Add a three-step v0.7 migration guide with no historical TASK rewrite and no new dependency.
 - Preserve the v0.7 read-only Contract Reader, lint, TASK_BOARD drift checks, fixtures, and `adf/v0.7.0` schema.
 
-### Release authorization
+### Release receipt
 
 - v0.8 独立 Review 已 Passed，P0-P3 均为 0；LEAN-003 UA3 已 Passed。
 - 用户已明确授权合并、推送、创建并推送 `v0.8.0` tag、创建正式 GitHub Release 和同步本机 Skill。
-- tag、Release 与同步状态仍以实际操作后的收据为准；本条授权记录不预先制造已发布事实。
+- annotated tag `v0.8.0` 的本地与远端 peeled commit 均为 `e35f3eabe6ed1fd57cc68f62be3adba8a65ff59c`。
+- GitHub Release `ai-dev-flow v0.8.0` 已正式发布，状态为非 draft、非 prerelease。
 
 ## 0.7.0 - Released
 
