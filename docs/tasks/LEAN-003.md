@@ -108,9 +108,12 @@ git diff --check
 - 远端事实证据：`main` 已推送至 `origin`，发布候选与远端曾一致为 `e35f3eabe6ed1fd57cc68f62be3adba8a65ff59c`。
 - 发布事实证据：annotated tag `v0.8.0` 的本地与远端 peeled commit 均为 `e35f3eabe6ed1fd57cc68f62be3adba8a65ff59c`。
 - 发布事实证据：GitHub Release `ai-dev-flow v0.8.0` 已于 2026-07-19 正式发布，`isDraft=false`、`isPrerelease=false`，URL 为 `https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0`。
+- 本机同步事实：以已推送的 `main@490965b91555848e9581226bf742110de2d5e7fb` 中 `skills/ai-dev-flow` 为源，Codex、OpenCode、cc-switch 和 Trae 四个已存在目标均为 `VERSION=0.8.0`、89 / 89 文件，逐文件 SHA256 比较 `Missing=0 / Extra=0 / Changed=0`。
+- 本机验证事实：四个目标均通过 Skill validator；仓库源完整单元测试 47 / 47 通过。旧记录中的 Gemini 插件路径当前不存在，因此没有凭旧路径新建副本。
+- 本机测试边界：在脱离仓库的 Codex 安装目录额外运行完整开发测试时，44 项通过，3 项仓库文档测试因安装目录没有仓库根 `README.md` / `README.en.md` 报错；该结果不影响 Skill 结构、运行文件或逐文件同步一致性，也不被误写为本机完整测试通过。
 - 历史评估边界：V002/V003 live manifest 绑定实施前 Full workflow，正式入口变化后 full digest 红灯是预期 tripwire；不得修改旧 manifest 造假绿，本任务以 evaluation/prototype 零 diff 和正式 policy 与冻结 prototype 完全相等作为证据。
 
 ## 状态边界
 
-- 当前为 `Accepted / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0`；本机最终同步收据待写回，`Closed` 未授权。
+- 当前为 `Accepted / Review Passed / UA3 Passed / Committed / Merged / Released v0.8.0 / Local Sync Verified`；`Closed` 未授权。
 - `VERSION=0.8.0` 与 Accepted 不单独等于 tag、Published、Released、Merged 或 Closed；实际状态以 Git 和 GitHub 收据为准。
