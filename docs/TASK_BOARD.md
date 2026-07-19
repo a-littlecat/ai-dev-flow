@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`LEAN-002` 默认关闭最小原型与阶段 B 串行对照
-> - 当前阶段：LEAN-001 Review Passed / UA3 Pending；正在准备 `no-skill -> lite -> full` 三次同模型隔离执行
+> - 当前模式：`LEAN-002` 整体独立复审（C 级 `review_task`）
+> - 当前阶段：阶段 B 机械评分全部通过，`lite_policy=DoNotUseSkill`；等待整体 Review 前不得创建 `LEAN-003`
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -65,7 +65,7 @@ REL-002 Closed / main@0422887
   -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
-              -> LEAN-002 In Progress：默认关闭原型 + 三次串行对照
+              -> LEAN-002 Review：阶段 B all_gates_pass=true，等待整体复审
                   -> LEAN-003：仅在阶段 B 全部门槛通过后创建
 ```
 
@@ -85,7 +85,7 @@ REL-002 Closed / main@0422887
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | In Progress | 高 | 高 | LEAN-001 Review Passed；Base `da66c04` | 未开始 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；Base `da66c04` | In Review / 阶段 B 全门槛机械通过 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 
 ## PLAN-001 核心约束
 
@@ -99,7 +99,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-执行 `LEAN-002`：只建设默认关闭、可整体回退的两文件原型，并按 `no-skill -> lite -> full` 固定顺序完成恰好三次当前执行模型主任务对照。不得并行、修改冻结协议、接入额外模型供应商或提前创建 `LEAN-003`。
+只读复审 `LEAN-002` 的 `da66c04..HEAD`、两文件默认关闭原型、三档调用证据与机械评分。整体 Review 无 P0/P1 前不得创建 `LEAN-003`；机械评分通过本身不等于整体 Review、UA3 或 Accepted。
 
 ## 停止条件
 
