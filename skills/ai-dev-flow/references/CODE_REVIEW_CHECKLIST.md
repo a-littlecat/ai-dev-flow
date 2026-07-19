@@ -2,7 +2,7 @@
 
 本清单用于审查代码任务。审查线程只做审查和判断，不直接改代码。结论应写回任务文件或项目约定的审查记录中。
 
-格式路由（v0.7）：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 可使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 和 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。审查和 diff-review 必须保持现有格式：Compact 只更新 Workflow Contract / Outcome，Full/Legacy 更新“代码审查”“Diff 审查”；不得在 Compact TASK 中重建“合并状态”“提交 / 合并”等 legacy 段落。
+v0.8 路由：Lite 为 `DoNotUseSkill`，不建 TASK 或调用 Reviewer；新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md`，Reviewer 是否需要由 `CORE.md` policy 决定。既有 v0.7 Compact / Full / Legacy TASK 继续原格式，审查只写回其现有 Contract / Outcome 或项目约定的 review record，不自动迁移。
 
 ## 审查严重等级
 
@@ -18,7 +18,7 @@
 - 发现历史问题时记录为后续任务。
 - 审查线程只审查，不直接修复。
 - 审查结论必须写入任务文件。
-- 审查结论必须按当前格式写回：Compact 的 Workflow Contract / Outcome，或 Full/Legacy 的“代码审查”和“Diff 审查”段落；也可使用项目约定的审查记录。
+- 审查结论必须按当前 TASK 的现有格式写回 Contract / Outcome、既有审查段落或项目约定的 review record；不得为格式统一而迁移历史 TASK。
 - 只在聊天中输出审查意见不算完成审查。
 - 审查线程可以更新审查记录和任务看板 Review 状态，但不得修改业务代码。
 - 审查必须明确是否允许进入验收建议和对应用户动作等级。

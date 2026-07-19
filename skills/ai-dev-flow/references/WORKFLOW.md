@@ -1,615 +1,141 @@
-# 通用 AI 辅助开发工作流
+# ai-dev-flow v0.8 按需工作流
 
-本文说明个人开发者如何使用 AI coding agent 管理长期软件项目。流程目标是：让需求、任务、Git 基线、代码修改、diff 审查、验收和合并状态都有项目文件可追踪，而不是只留在聊天记录里。
+> 本文件不是默认必读。先按 `SKILL.md + CORE.md` 路由；只有 Tracked / Controlled 需要更完整执行细节时才读取。
 
-## 0. 模式化流程
+## 导航
 
-agent 开始工作前必须判断当前模式，并保持模式单一。
+- [路由结果](#1-路由结果)
+- [模式边界](#2-模式边界)
+- [TASK 写入](#3-task-写入规则)
+- [执行与验证](#4-执行流程)
+- [Reviewer](#5-reviewer-闸门)
+- [Repair](#6-repair-与第-3-轮)
+- [Git 与交付](#7-git-与交付)
+- [UA 与状态](#8-ua-与状态)
+- [兼容能力](#9-兼容能力)
 
-| 模式中文名 | 英文标识 | 目标 | 不得做 |
-| --- | --- | --- | --- |
-| 初始化项目 | `init_project` | 初始化项目工作流和最小文档结构 | 不直接实现业务需求 |
-| 创建任务 | `create_task` | 把需求拆成任务并更新看板 | 不直接修改代码 |
-| 规划任务 | `plan_task` | 为大任务写 plan / RFC | 不跳过方案直接实现 |
-| 执行任务 | `execute_task` | 执行单个 Ready 任务 | 不扩大任务范围 |
-| 审查任务 | `review_task` | 独立审查任务 | 不直接修复 |
-| 修复任务 | `repair_task` | 按审查意见修复 | 不处理无关优化 |
-| 关闭任务 | `close_task` | 按用户动作等级完成验收或决策后关闭任务 | 不补做开发 |
-| 状态汇总 | `status_report` | 汇总项目状态 | 不改变任务状态，除非用户确认 |
+## 1. 路由结果
 
-格式路由（v0.7）：新建 A/B、`overlays=none`、非 Batch、非 Wave、非 `real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 与 existing legacy TASK 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。create/execute/review/diff-review/repair/acceptance/close 都保持任务现有格式，不得在 Compact TASK 中重建 legacy 双 Review 或双 delivery 段落，也不得自动迁移。
+`CORE.md` 的 `POLICY_JSON` 是唯一决策源，本文件不复制风险触发列表。
 
-| 可执行路由场景 | Writer 结果 |
-|---|---|
-| `new_ab_none` | `TASK_TEMPLATE_COMPACT.md` |
-| `class_cd` | `TASK_TEMPLATE.md` |
-| `batch` | `TASK_TEMPLATE.md` |
-| `wave` | `TASK_TEMPLATE.md` |
-| `real_env_signal` | `TASK_TEMPLATE.md` |
-| `existing_legacy` | `TASK_TEMPLATE.md` |
-| `unknown` | `STOP_PENDING_CONFIRMATION` |
+| 结果 | TASK | Reviewer | repair |
+|---|---|---|---|
+| `DoNotUseSkill` | 不创建 | 不调用 | 不进入 loop |
+| `Tracked` | 新建或沿用 | 风险命中才调用 | 基础 2 轮，满足 progress gate 才有第 3 轮 |
+| `Controlled` | 必须有 | enforcement point 前强制 | 同上，且禁止重试外部副作用 |
+| `Blocked` | 记录阻塞（如已有 TASK） | 不得自批 | 不猜测继续 |
 
-| 写回动作 | Compact 目标 | Full/Legacy 目标 |
-|---|---|---|
-| `create` | `Workflow Contract;目标与边界;完成标准与验证` | `现有 Full/Legacy 段落` |
-| `execute` | `Workflow Contract;Outcome` | `现有 Full/Legacy 段落` |
-| `review` | `Workflow Contract.review_status;Outcome.Review findings` | `代码审查;Diff 审查` |
-| `diff-review` | `Outcome.Review findings` | `Diff 审查` |
-| `repair` | `Workflow Contract.lifecycle;Outcome` | `审查-修复记录;验证结果` |
-| `acceptance` | `Workflow Contract.ua_*;Outcome.UA 动作与结果` | `用户动作等级 / 验收建议;用户验收反馈` |
-| `close` | `Workflow Contract.lifecycle;Workflow Contract.close_authority;Outcome` | `任务状态;验收记录;关闭授权` |
+Lite 退出后只用项目规则、Git/diff、直接相关文件和确定性验证，不再读取本文件。
 
-### `init_project`
+## 2. 模式边界
 
-读取项目规则和现有文档，创建或建议创建 `PROJECT_INDEX`、`TASK_BOARD`、`tasks/`、`plans/`、验证指南和审查清单。
+Tracked / Controlled 仍可使用以下动作名，但不要求每轮声明角色，也不建立通用 Loop 平台：
 
-### `create_task`
+- `init_project`：只建立最小项目规则和任务入口，不实现业务。
+- `create_task`：创建有边界、完成标准和验证方式的 TASK。
+- `plan_task`：大任务先写方案，不同时执行实现。
+- `execute_task`：只做当前 TASK 允许的修改。
+- `review_task`：只读审查，不修复。
+- `repair_task`：只修稳定 finding ID 指向的问题。
+- `close_task`：汇总状态；没有相应 authority 不关闭。
+- `status_report`：只读汇总事实，不改变状态。
 
-将需求拆成小任务。每个任务必须有目标、非目标、状态、完成标准、验证方式、风险等级和停止条件。
+一个步骤只能有一个主要模式。用户若只要求诊断或审查，不得顺手实现。
 
-### `plan_task`
+## 3. TASK 写入规则
 
-当任务过大、范围不清、涉及多个模块或风险较高时，先写 plan / RFC，再拆任务。
+- v0.8 新建 Tracked / Controlled TASK 使用 `TASK_TEMPLATE.md`。
+- v0.7 以前的 TASK 原格式继续有效，不批量迁移。
+- `TASK_TEMPLATE_COMPACT.md` 只保留给 v0.7 Writer/Reader 兼容，不是 v0.8 默认入口。
+- TASK 是范围、状态、验证和审查事实源；TASK_BOARD 只记录索引和投影。
+- 更新 TASK 后再同步看板；看板不得反向覆盖更细的 TASK 事实。
 
-### `execute_task`
+最少记录：
 
-只执行单个任务文件。执行中如果发现任务膨胀，必须停止并更新任务文件。
+1. Contract 字段和当前状态；
+2. 目标、非目标、允许/禁止范围；
+3. authority、base commit、完成标准和验证；
+4. 修改文件、diff、Review findings、UA 和剩余风险。
 
-### `review_task`
+## 4. 执行流程
 
-只审查，不修复。审查结论必须写入任务文件，且明确是否允许进入验收建议和对应用户动作等级。
+### 4.1 开始前
 
-`acceptance_feedback_triage` 是 `review_task` 下的只读业务诊断子模式，用于处理 UA4 / UA5 / UA6 / UA7 验收失败反馈。它只分类失败反馈、记录证据、判断是否属于当前 TASK 范围，并给出是否进入 `review_repair_loop`、创建新 TASK 或标记 `Blocked` 的建议；它不是新任务状态，也不是新 Loop。
+1. 读取用户请求、项目 `AGENTS.md`、TASK 和 source of truth。
+2. 运行 Git precheck，识别已有改动，不覆盖用户工作。
+3. 确认 authority、任务等级、风险、UA、执行位置和停止条件。
+4. 冻结允许修改范围、禁止范围、完成标准和验证命令。
+5. 若事实与 TASK 冲突，先更新或阻塞，不凭聊天猜状态。
 
-### `repair_task`
+### 4.2 修改中
 
-只修复审查指出的问题。超出审查范围的新问题应记录为后续任务。
+- 只做完成当前标准所需的最小改动。
+- 新依赖、架构变化、数据库/协议迁移、范围扩大或不可逆动作必须停下重新取得授权。
+- 发现来源不明的重叠改动时停止，不擅自回退。
+- 失败应保留可复现证据；不要为了“全绿”修改 oracle 或阈值。
 
-### `close_task`
+### 4.3 验证
 
-只能基于用户动作等级对应的验收结果或用户决策关闭任务。agent 不得擅自把未审查、未给出验收建议或未完成必要用户动作的任务标记为 Closed。
-UA0 任务默认也不自动 `Closed`；agent 只能建议关闭，除非用户明确确认或项目规则已授权。
+- 每项完成标准都要有自动命令、人工步骤或明确的不适用理由。
+- 优先运行最贴近风险的测试，再运行合理范围的回归。
+- 真实环境、真实账号、真实数据或外部宿主所需证据不能由普通单元测试替代。
+- 记录命令、退出码、关键结果、未覆盖项和 `git diff --check`。
+- 自动化通过不等于 Review、UA、merge、release 或 Closed。
 
-### `status_report`
+### 4.4 交接
 
-只汇总 `TASK_BOARD` 和任务文件中的事实，区分 Draft、Ready、In Progress、Blocked、Review、Needs Fix、Accepted、Closed、Deferred、Cancelled。
+更新 TASK 的 Outcome 和 TASK_BOARD 投影，列出修改文件、验证、finding、状态边界、风险和下一步。没有做过的动作明确写未做，不制造完成状态。
 
-## 0.1 执行组织方式：Single / Batch / Wave
+## 5. Reviewer 闸门
 
-### Single Task
+Reviewer 是否需要由 `CORE.md` policy 决定：
 
-一个执行会话只执行一个任务。
+- Tracked 未命中风险时跳过，记录 `Skipped by policy`。
+- `Skipped by policy` 只写入 Outcome，不得写成 `review_status=Passed`；v0.7 Contract 保持 `Pending`，需要进入 Accepted / Closed 时再完成真实只读 Review。
+- Tracked 命中风险时调用一个隔离、只读 Reviewer。
+- Controlled 在 acceptance recommendation、delivery、merge、release 前强制 Review。
+- 缺少独立 Reviewer authority/capability 时为 `Blocked`；不能由 Engineer 自批。
 
-适合：
+Reviewer 输入至少包括 TASK、base/diff、验证证据、项目规则和允许范围。输出至少包括：
 
-- C/D 任务。
-- 高风险任务。
-- 任务边界不清的任务。
-- 涉及核心模块、真实环境、实机测试、回归验收或用户决策的任务。
+- 结论：`Passed / Needs Fix / Blocked`；
+- finding：稳定 ID、P0～P3、证据、范围和验证方式；
+- 是否允许进入对应 UA 或 delivery；
+- 未验证项和结论边界。
 
-### Batch：批量小任务
+## 6. Repair 与第 3 轮
 
-一个执行会话顺序执行多个 A/B 小任务。
+基础 repair 预算为 2。每轮流程为：只读 Review → 冻结 finding → 有界 Repair → 验证 → 只读复审。
 
-特点：
-
-- 不是并行。
-- 是同一个执行会话顺序处理。
-- 用来减少小任务频繁开会话和频繁审查的负担。
-- 任务仍然独立记录。
-- 批量审查必须逐任务输出结论。
-
-### Parallel Wave：并行波次
-
-多个执行会话同时执行多个互不冲突的任务。
-
-特点：
-
-- 是真正并行。
-- 每个任务有自己的执行会话。
-- 每个任务必须声明预计修改文件、影响模块、base commit、diff 范围。
-- 并行前必须检查文件锁、模块锁和任务依赖。
-- Wave 审查必须逐任务输出结论。
-
-### 边界规则
-
-- `TASK` 是最小责任单位。
-- Batch 是小任务的执行 / 审查打包方式。
-- Wave 是多个执行会话的并行调度方式。
-- Batch / Wave 都不得吞掉 TASK 边界。
-- 不得只写“Batch 通过”或“Wave 通过”，必须逐任务给结论。
-
-## 0.2 Intake / Loop / Role / Memory 层
-
-### Intake
-
-Intake 是需求进入 `plan_task` 或 `create_task` 前的整理层。它不是 TASK，不进入任务状态机，也不直接执行代码。
-
-使用 Intake 时，应记录：
-
-- 用户原始需求。
-- 目标和非目标。
-- 成功标准。
-- 约束。
-- 模糊点。
-- 可逆性判断。
-- 建议下一步。
-
-详细规则见 `INTAKE_GUIDE.md`。
-
-### Loop
-
-Loop 是外层编排方式，用来串联已有模式。Loop 不是任务状态，不替代 TASK、Batch 或 Wave。
-
-支持的 Loop：
-
-- 分拣循环（`triage_loop`）：只读分拣任务、推荐下一步、推荐 Batch / Wave 候选。
-- 目标循环（`goal_loop`）：执行单个任务到验证、审查、修复和验收建议。
-- 审查-修复循环（`review_repair_loop`）：有限次数的审查-修复-复审循环。
-- 状态循环（`status_loop`）：只读状态汇总。
-
-Loop 必须有停止条件、最大循环次数、人工接管条件和记录位置。详细规则见 `LOOP_ENGINEERING_GUIDE.md` 和 `LOOP_STATE_TEMPLATE.md`。
-
-### Role
-
-agent 应声明当前角色：Orchestrator、Planner、Engineer、Reviewer、Verifier、Repairer 或 Archivist。Reviewer 不修复，Engineer 不自批，Repairer 只处理审查指出的问题。详细规则见 `ROLE_GUIDE.md`。
-
-### Project Constitution
-
-项目可维护 `docs/PROJECT_CONSTITUTION.md`，记录 MUST / SHOULD / MUST NOT 硬规则。Constitution 用来约束计划、执行和审查，不替代 `CODE_REVIEW_CHECKLIST.md` 或 `DECISIONS.md`。模板见 `PROJECT_CONSTITUTION_TEMPLATE.md`。
-
-### Memory
-
-项目可维护 `docs/memory/`，记录稳定、可复用的项目知识和踩坑经验。Memory 不保存聊天全文、密钥、本机路径或未确认猜测。详细规则见 `MEMORY_GUIDE.md`。
-
-### 反馈闭环层
-
-反馈闭环不是新任务状态，也不替代 TASK、Batch、Wave 或 Loop。它是任务执行、验收失败、Bug 诊断和修复时的工程纪律：先把用户反馈转成 RED 失败信号、GREEN 通过信号和 SIGNAL 证据来源，再决定诊断、修复、阻塞或拆新任务。
-
-推荐链路：
+第 2 轮后只有 `CORE.md` policy 的全部 progress 条件同时满足才允许第 3 轮。记录建议结构：
 
 ```text
-验收失败反馈
-→ Acceptance Feedback Gate
-→ 实机测试信号复现（real_env_signal）
-→ Bug 诊断（bug_diagnosis）
-→ 修复任务（repair_task）/ 审查-修复循环（review_repair_loop）
-→ 同一信号复测
+round: 2
+scope_hash: <value>
+finding_ids: [<stable-id>]
+p0_p1_before: <n>
+p0_p1_after: <n>
+validation_before: <score>
+validation_after: <score>
+round_3_target: <single target>
+decision: ExtendRound3 / Stop
 ```
 
-如果 agent 能亲自复现，可直接记录 RED / GREEN / SIGNAL 并进入 Bug 诊断。如果 agent 不能亲自复现，应先提供用户实机 HITL 步骤和回传证据模板；没有任何信号或证据时，任务应建议阻塞（Blocked）或等待补充，不得盲目修复。
+任一范围变化、严重度上升、验证不改善、根因不清、authority/capability 缺失、外部副作用或成本越界都返回 `Stop`。第 3 轮后必须停止；更换模型不重置预算。
 
-## 1. 角色分工
+## 7. Git 与交付
 
-### 用户
+- A/B 不机械建分支；C 建议独立分支；D 或高风险必须隔离。
+- commit 只包含当前 TASK 可归属 diff；先检查状态和 staged diff。
+- merge、push、tag、release、外部同步、删除分支/Worktree 都是独立动作，需要各自 authority。
+- delivery 前重新核对 diff、验证、Review、UA 和交付范围。
 
-- 决定项目目标、优先级和验收标准。
-- 确认是否创建任务、是否接受计划、是否合并。
-- 按用户动作等级完成摘要确认、文档阅读、证据验收、本地运行、实机业务测试、回归验收或用户决策。
-- 对危险操作做明确授权，例如 merge、push、release、删除分支或删除文件。
+## 8. UA 与状态
 
-### 主控 agent
+UA0～UA7 的细节按需读取 `ACCEPTANCE_GUIDE.md`。最低原则：用户只做无法由 agent 自证的观察、实机测试、回归或决策；不要求用户逐行审代码。
 
-- 读取项目规则和现有文档。
-- 帮用户拆任务、写任务文件、更新任务看板。
-- 控制任务边界，避免一次性大改。
-- 选择执行位置：主项目、Worktree 或独立分支。
-- 执行 Git precheck，确认 base commit 和任务等级。
-- 汇总执行、审查和验收状态。
-- 可作为 Orchestrator 运行 `triage_loop` 或 `status_loop`，但默认只读。
+生命周期、Review、UA、Accepted、commit、merge、release 和 Closed 分开记录。状态不清时写 `Pending`、`Blocked` 或“待确认”。
 
-### 执行 agent
+## 9. 兼容能力
 
-- 只按任务文件执行当前任务。
-- 修改前说明计划、涉及文件、风险和验证方式。
-- 修改前记录 base commit；修改后更新任务文件，记录实际修改、diff 范围和验证结果。
-- 不主动扩大任务范围。
-- 不自我批准，不替代 Reviewer。
-
-### 审查 agent
-
-- 只审查，不直接改代码。
-- 基于任务文件、base commit、明确 diff、验证结果和代码审查清单给结论。
-- 输出必须修改项、建议修改项、风险和推荐验证步骤。
-- 未通过审查时，不建议合并。
-- 不直接修复，不替代 Repairer。
-
-### 修复 agent
-
-- 只按审查意见修复。
-- 不做无关优化。
-- 每轮修复后必须回到审查。
-
-### 归档 agent
-
-- 更新 `TASK_BOARD`、`DECISIONS`、CHANGELOG、Memory 或 Loop State。
-- 不改业务代码。
-
-### 人工验收
-
-- 由用户或用户指定的人完成。
-- 人工验收不是人工代码审查。
-- 关注可观察行为、关键流程、输出结果、错误提示、回归影响和是否符合需求。
-- 代码质量和 diff 风险主要由 AI 审查、自动验证和 diff 审查辅助判断。
-- 验收结果和用户动作等级写入任务文件和任务看板。
-
-## 2. 项目文件分工
-
-### `AGENTS.md`
-
-写给 AI agent 的项目规则。通常包含：
-
-- 项目执行约定。
-- 禁止修改范围。
-- 验证命令。
-- 代码风格和文档要求。
-- Git 操作边界。
-
-### `docs/PROJECT_INDEX.md`
-
-项目索引。建议包含：
-
-- 项目目标。
-- 关键目录。
-- 主要入口文件。
-- 构建、测试、运行方式。
-- 常见任务入口。
-- 重要文档链接。
-
-### `docs/TASK_BOARD.md`
-
-任务总看板。记录所有任务的状态、优先级、依赖、审查、验收和合并状态。
-
-### `docs/DECISIONS.md`
-
-决策记录。用于记录影响项目方向、架构、依赖、接口或维护方式的重要决定。
-
-### `docs/tasks/`
-
-每个任务一个 Markdown 文件。任务文件是执行、审查和验收的细粒度真相源。
-
-每个代码任务应记录任务等级、当前分支、base commit、当前 HEAD、diff 范围、执行位置和审查方式。
-
-### `docs/intake/`
-
-可选目录。用于记录 `INTAKE-xxx.md`，保存需求进入任务前的上下文。
-
-### `docs/batches/`
-
-可选目录。用于记录 A/B 小任务 Batch。Batch 只是执行和审查打包方式，不替代 `docs/tasks/`。
-
-### `docs/waves/`
-
-可选目录。用于记录 Parallel Wave。Wave 只是并行调度方式，不替代 `docs/tasks/`。
-
-### `docs/loops/`
-
-可选目录。用于记录 `LOOP_STATE.md`。Loop State 只记录循环运行状态，不替代 `TASK_BOARD`。
-
-### `docs/plans/`
-
-大任务、复杂需求或不确定方案先写 plan 或 RFC，再拆成任务执行。
-
-### `docs/memory/`
-
-可选目录。用于沉淀稳定项目知识、架构约定、验证经验和审查经验。
-
-### `docs/PROJECT_CONSTITUTION.md`
-
-可选文件。用于记录项目 MUST / SHOULD / MUST NOT 硬规则。
-
-### `docs/CODE_REVIEW_CHECKLIST.md`
-
-项目代码审查清单。可以从本 Skill 的 `CODE_REVIEW_CHECKLIST.md` 复制后按项目调整。
-
-### Git 参考文件
-
-- `GIT_PRECHECK.md`：任务开始前的 Git baseline 和工作区检查。
-- `GIT_WORKFLOW.md`：A/B/C/D 任务分级、分支和 Worktree 使用规则。
-- `DIFF_REVIEW.md`：pre-commit 和 post-commit diff 审查规则。
-
-### 可选后端和兼容说明
-
-- `GITHUB_ISSUES_BACKEND.md`：GitHub Issues 可选后端设计和字段映射；v0.6.0 不自动同步。
-- `HARNESS_COMPAT.md`：Codex、Claude Code、Cursor、Gemini CLI、DeepSeek 和 generic agent 的兼容边界。
-- `BUG_DIAGNOSIS_GUIDE.md`：Bug 诊断（bug_diagnosis）流程，先建立证据、假设和复现信号。
-- `TDD_GUIDE.md`：测试先行（tdd_task）流程，记录 RED / GREEN 行为验证。
-- `REQUIREMENT_GRILLING_GUIDE.md`：需求拷问（requirement_grilling）规则，只问阻塞问题。
-- `PROJECT_CONTEXT_GUIDE.md`：项目语境（project_context）沉淀规则。
-- `HANDOFF_GUIDE.md`：会话交接（session_handoff）摘要模板。
-- `ARCHITECTURE_REVIEW_GUIDE.md`：架构巡检（architecture_review）只读报告模板。
-- `REAL_ENV_SIGNAL_GUIDE.md`：实机测试信号复现（real_env_signal）规则，处理用户 HITL 回传证据。
-
-## 3. 任务类型
-
-### 文档任务
-
-只修改文档、说明、模板或流程记录。通常属于 A 级任务，可以在主项目中执行，但仍要基于 `git diff` 自查。
-
-### 方案任务
-
-用于分析需求、设计方案、写 plan 或 RFC。方案任务不直接改业务代码。
-
-### 代码任务
-
-会修改源代码、配置、测试或构建逻辑。必须先记录 base commit，并按等级选择主项目、独立分支或 Worktree。
-
-### 审查任务
-
-只审查已完成的任务，不直接修改代码。审查必须基于明确 diff，结论写回任务文件或单独审查记录。
-
-### 修复任务
-
-根据审查意见或验收反馈修复问题。修复范围应绑定到原任务或明确创建新任务。
-
-### 测试任务
-
-专门补充验证、回归测试、手动 smoke test 或日志检查。测试任务也必须有可验证完成标准。
-
-## 4. 执行位置
-
-### 主项目
-
-适合：
-
-- 只读分析。
-- A 级文档小任务。
-- B 级小代码任务。
-- 更新任务看板或任务文件。
-- 用户明确要求在当前项目直接操作的低风险任务。
-
-不适合：
-
-- 大范围代码修改。
-- 高风险重构。
-- 多 agent 并行开发。
-- base commit 不清或工作区混乱的任务。
-
-### Worktree
-
-适合：
-
-- 代码任务。
-- 多个任务并行。
-- 需要隔离构建、测试或依赖状态。
-- 希望主项目保持干净的长期任务。
-
-使用原则：
-
-- 一个代码任务对应一个 Worktree 更清晰。
-- Worktree 的任务文件和验证记录应在合并前保持完整。
-- Worktree 不应放在主项目内部。
-- 创建 Worktree 前，主项目中的任务文件和规则应先提交。
-- 不要未经用户确认自动删除 Worktree。
-
-### 分支
-
-适合：
-
-- 项目不适合使用 Worktree。
-- C 级中等代码任务。
-- 用户或团队已有分支流程。
-
-使用原则：
-
-- 分支名称应和任务编号相关。
-- 建议使用 `feature/TASK-xxx-short-name` 或 `fix/TASK-xxx-short-name`。
-- 合并前必须完成审查和用户动作等级对应的验收或决策。
-- 不要未经用户确认自动 rebase、force push 或删除分支。
-
-### 什么时候使用哪一个
-
-- 只读分析：主项目。
-- A 级文档小任务：主项目。
-- B 级小代码任务：主项目，不强制分支。
-- C 级中等代码任务：建议独立分支。
-- D 级大任务或高风险任务：必须独立分支或 Worktree，优先 Worktree。
-- 审查任务：在能看到完整 diff 和任务文件的位置执行，不直接修改代码。
-
-## 5. 完整任务闭环
-
-### 1. 需求输入
-
-用户描述目标、约束和期望结果。agent 不清楚时先提问；能合理判断时先给简短计划。
-
-### 2. 拆任务
-
-主控 agent 将需求拆成可独立执行、可验证的小任务。每个任务应有明确完成标准。
-
-任务编号建议：
-
-- 使用稳定前缀，例如 `TASK-001`、`DOC-001`、`PLAN-001`、`REVIEW-001`。
-- 同一项目内编号不要复用。
-- 任务编号一旦写入看板，不要随意重命名。
-- 子任务可用同一前缀连续编号，不建议使用深层嵌套编号。
-
-### 3. Git precheck
-
-代码任务开始前必须检查：
-
-- 是否是 Git 仓库。
-- 当前分支和 HEAD。
-- 工作区是否干净。
-- 是否有远程仓库。
-- 是否有未提交改动。
-- 是否有不应提交文件。
-
-如果不是 Git 仓库，代码任务不得开始，应先建议建立 Git baseline。
-
-### 4. 创建 TASK 文件
-
-先按格式路由选择模板：满足 Compact 条件时使用 `TASK_TEMPLATE_COMPACT.md`，其他情况使用 Full/Legacy `TASK_TEMPLATE.md`。任务文件至少写清：
-
-- 背景。
-- 目标。
-- 非目标。
-- 任务等级。
-- 当前分支和 base commit。
-- 必读文件。
-- 禁止修改范围。
-- 执行位置。
-- 完成标准。
-- 验证方式。
-
-### 5. 更新 TASK_BOARD
-
-把任务写入 `docs/TASK_BOARD.md`，记录状态、等级、base commit、diff 范围、优先级、依赖、审查状态、验收状态、commit 状态和 merge 状态。
-
-### 6. 执行
-
-执行 agent 读取任务文件和项目规则，只在任务边界内修改。修改前先说明计划；修改后记录结果。
-
-任务等级决定执行位置：
-
-- A/B 级可在主项目直接执行。
-- C 级建议独立分支。
-- D 级必须独立分支或 Worktree。
-
-### 6.1 任务膨胀处理
-
-执行中如果发现以下情况，agent 必须停止，更新任务文件，并建议拆分新任务：
-
-- 修改文件数量明显增加。
-- 影响多个模块。
-- 需要新增依赖。
-- 需要改架构。
-- 发现新需求。
-- 原完成标准不够。
-
-停止时应记录：
-
-- 已完成内容。
-- 膨胀原因。
-- 当前风险。
-- 建议拆出的新任务。
-- 需要用户确认的问题。
-
-### 6.2 并发冲突规则
-
-- 多个 agent 不应同时修改同一核心文件。
-- 执行前检查 `TASK_BOARD` 是否已有相关任务。
-- 如果任务涉及相同模块，应串行。
-- 如果发现冲突，标记 `Blocked`。
-- 不得在冲突未解决时继续执行。
-
-### 6.3 上下文控制规则
-
-- 不要一开始扫描全仓库。
-- 先读 `AGENTS.md`、`PROJECT_INDEX.md`、`TASK_BOARD`、当前 `TASK`。
-- 再按任务需要读取文件。
-- 需要扩大读取范围时先说明原因。
-- 不要读取构建产物、依赖目录、日志目录。
-- 不要把大段代码或日志复制进任务记录。
-
-### 6.4 批量小任务 Batch
-
-- A/B 小任务可以批量执行和批量审查。
-- C/D 任务默认单独执行、单独审查。
-- 批量执行不是并行写代码；一个执行会话顺序完成多个 A/B 小任务。
-- 一个审核会话可以批量审查多个 A/B 小任务。
-- 批量审查必须逐任务输出结论、P0/P1/P2/P3、UA 等级和是否允许进入验收建议。
-- 批量中出现 P0/P1、C/D 风险、范围越界或 diff 无法按任务拆分时，必须拆分或拉出单独复审。
-- 每个任务仍要更新自己的任务文件、diff 范围、验证结果和用户动作等级。
-- 用户按每个任务的 UA 等级处理摘要确认、文档阅读、证据验收、运行、实机测试、回归或决策。
-- 详细规则见 `BATCH_TASK_GUIDE.md`。
-
-### 6.5 任务并行 Parallel Wave
-
-- Wave 是多个执行会话同时执行多个互不冲突任务。
-- Batch 和 Wave 不同；Batch 是顺序批处理，Wave 是并行调度。
-- 并行执行不是默认行为，必须用户确认。
-- ai-dev-flow 不禁止 harness 或模型自动使用 subagents；只读 subagents 默认允许，写代码 subagents 必须受控，多个写代码 subagents 并行默认需要用户确认和工作区隔离。
-- 并行前必须做文件锁 / 模块锁检查、依赖检查、任务等级检查和 UA 等级检查。
-- A/B 任务可并行，B 级小代码任务需要谨慎并行。
-- C 级任务默认不推荐和其他代码任务并行，但可与 A 级文档任务并行；如需与代码任务并行，必须使用独立 Worktree 且用户确认。
-- D 级任务默认串行，不得和其他代码任务并行。
-- UA5 / UA6 / UA7 任务默认不得进入代码并行。
-- Review Hub 可集中审查 Wave，但必须逐任务输出结论。
-- 并行任务仍必须独立记录 base commit、HEAD、diff 范围、验证结果和 UA 等级。
-- 详细规则见 `PARALLEL_WAVE_GUIDE.md`。
-
-### 7. 自查
-
-执行 agent 自查：
-
-- 是否满足完成标准。
-- 是否修改了无关文件。
-- 是否记录 base commit 和 diff 范围。
-- 是否执行 `git diff --check`。
-- 是否需要补测试或文档。
-- 是否运行了任务要求的验证命令。
-- 是否把结果写入任务文件。
-
-### 8. 独立审查
-
-审查 agent 根据 `DIFF_REVIEW.md` 和 `CODE_REVIEW_CHECKLIST.md` 审查。Compact 写回 Workflow Contract / Outcome，Full/Legacy 写回原“代码审查”/“Diff 审查”段落；审查结论必须明确：
-
-- 通过。
-- 需要修改。
-- 不建议合并。
-
-如果有问题，列出必须修改项和建议修改项。
-
-审查必须基于：
-
-- pre-commit diff，适合 A/B 级任务。
-- `<base_commit>..HEAD`，适合 C/D 级任务。
-
-### 9. 修复
-
-执行 agent 按审查意见修复。每次修复后更新任务文件，说明修复内容和验证结果。
-
-### 10. 用户动作等级 / 验收建议
-
-每个任务完成后必须给出用户动作等级，不能笼统写“需要人工验收”。
-
-- UA0 / UA1 小任务不需要用户实机测试。
-- UA0 表示无需用户验收，但默认不表示允许 agent 自动关闭任务。
-- UA2 需要用户阅读文档或方案。
-- UA3 需要用户看验证证据，不需要自己运行。
-- UA4 / UA5 / UA6 才需要用户实际运行、本地测试、实机业务测试或回归测试。
-- UA7 是用户决策，不是测试。
-
-用户主要验证可观察行为、关键流程、输出结果、错误提示、回归影响和是否符合需求。验收建议写入任务文件，并在看板中保留简短状态。
-
-当 UA4 / UA5 / UA6 / UA7 验收失败时，先走 Acceptance Feedback Gate。若 agent 无法亲自复现，先进入实机测试信号复现（real_env_signal），把用户反馈转成 RED / GREEN / SIGNAL；用户回传证据后，再进入 Bug 诊断（bug_diagnosis）或按明确清单进入修复任务（repair_task）/ 审查-修复循环（review_repair_loop）。
-
-### 11. 合并
-
-只有在以下条件同时满足时，才进入合并步骤：
-
-- 任务完成标准满足。
-- 代码审查通过，或用户明确接受剩余风险。
-- 按用户动作等级完成必要的摘要确认、文档阅读、证据验收、本地运行、实机业务测试、回归验收或用户决策。
-- 工作区状态清楚。
-- 用户明确确认可以合并。
-
-本 Skill 不要求 agent 自动合并。合并命令应由用户确认后再执行。
-
-小任务如果直接在主项目完成，Merge 状态应为“不适用”，不要强行要求合并。
-
-### 12. 更新状态
-
-合并后更新：
-
-- `docs/tasks/<TASK-ID>.md`
-- `docs/TASK_BOARD.md`
-- 必要时更新 `docs/DECISIONS.md`
-- 必要时更新 `docs/PROJECT_INDEX.md`
-
-## 6. 风险控制
-
-- 禁止无关重构。
-- 禁止跨任务修改无关模块。
-- 禁止未经确认合并。
-- 禁止未经确认发布。
-- 禁止未经确认删除分支、Worktree 或文件。
-- 禁止未审查就建议合并代码任务。
-- 禁止没有 Git baseline 就开始代码任务。
-- 禁止没有 base commit 就进行代码审查。
-- 禁止盲目执行 `git add .`。
-- 禁止把状态只留在聊天里。
-- 禁止提交密钥、Token、私有证书、个人隐私文件或本机敏感配置。
-- 大任务必须先写 plan 或 RFC。
-- 审查线程只审查，不直接改代码。
-- 如果旧文档和代码不一致，必须指出冲突，不要编造现状。
+旧 Batch、Wave、Loop、Memory、Constitution、角色、GitHub backend 和 harness 指南仍保留为手动兼容资料，但退出 v0.8 默认路径。若用户明确要求其中一项，应先重新路由并只读取对应指南；这不代表 v0.8 提供自动调度、数据库或外部同步。

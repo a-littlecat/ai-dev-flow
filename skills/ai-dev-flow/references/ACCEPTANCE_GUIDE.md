@@ -211,27 +211,27 @@
 
 修复限制：
 
-- 默认最多 2 轮 repair。
+- 基础 repair 预算为 2 轮；只有 `CORE.md` progress gate 全部通过时才允许第 3 轮，3 为绝对上限。
 - 每轮 repair 前必须说明本轮假设、证据、拟修改文件和验证方式。
 - 每轮 repair 后必须重新进入 `review_task`。
-- 两轮后仍未通过，必须停止并建议人工接管或重新拆任务，不得继续猜测修改。
+- 两轮后 progress gate 不通过时必须停止并建议补证据、人工接管或重新拆任务，不得继续猜测修改。
 - 如果无法在 agent 环境中复现，必须补充日志、诊断命令、mock、截图说明或用户实机复测步骤。
-- 两轮修复后仍未 GREEN，停止并人工接管或重新拆任务。
+- 第 3 轮后仍未 GREEN 必须停止；更换模型不重置预算。
 
 验收失败反馈必须记录到 TASK 文件的“用户验收反馈 / 实机测试反馈”区块；只在聊天中处理不算完成。
 
 ## 输出与写回格式
 
-先判断现有 TASK 格式：
+先判断当前路由与现有 TASK 格式：
 
-- 新建 A/B、`overlays=none`、非 Batch/Wave/`real_env_signal` 可使用 `TASK_TEMPLATE_COMPACT.md`；Compact 不新增独立“验收建议”“用户验收反馈”“合并状态”或“提交 / 合并”段落，只更新 `Workflow Contract` 的 UA/authority 字段及 `Outcome`。
-- Full/Legacy：沿用下列输出段落；existing legacy 不自动迁移。
-- C/D、Batch、Wave、`real_env_signal`、验收失败反馈使用 Full/Legacy `TASK_TEMPLATE.md`；格式未知时停止并写“待确认”。不得把 Compact 继续扩展成复杂 Writer。
+- Lite 为 `DoNotUseSkill`，不建 TASK，只在最终交接说明验证与用户动作。
+- 新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md`，把验收建议写入 Outcome。
+- 既有 v0.7 Compact / Full / Legacy TASK 沿用其现有字段或段落，不自动迁移；格式未知时停止并写“待确认”。
 
 每个任务完成后必须输出：
 
 ```markdown
-<!-- 以下是 Full/Legacy 写回格式；Compact 使用上面的字段路由。 -->
+<!-- 新建 Tracked/Controlled 或既有 Full/Legacy 可使用；既有 Compact 更新 Contract/Outcome。 -->
 ## 验收建议
 
 用户动作等级：UA0（无需用户验收）/ UA1（用户看摘要确认）/ UA2（用户读文档或方案）/ UA3（用户看验证证据）/ UA4（用户本地运行）/ UA5（真实环境或实机业务测试）/ UA6（核心流程或回归验收）/ UA7（用户决策或高风险确认）/ 待确认

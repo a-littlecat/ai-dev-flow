@@ -1,8 +1,28 @@
 # Changelog
 
-## 0.7.0 - Release ready (not published)
+## 0.8.0 - Implemented (not released)
 
-> Skill 分发包版本已收口为 `0.7.0`；Workflow Contract 接口版本独立为 `adf/v0.7.0`。当前提交尚未创建 Git tag 或 GitHub Release，因此 “Release ready” 不表示已经对外发布。
+> 仓库内实现身份已收口为 `0.8.0`；本记录不代表已创建 tag、push 或 GitHub Release。Workflow Contract schema 继续为 `adf/v0.7.0`。
+
+- Replace the default full workflow with a two-file runtime core: `SKILL.md` and `references/CORE.md`.
+- Route eligible low-risk work to `DoNotUseSkill`, with no TASK, Reviewer, or repair loop.
+- Keep Tracked TASK evidence while triggering a read-only Reviewer only for deterministic risk flags.
+- Require Controlled Review before acceptance recommendation, delivery, merge, and release.
+- Allow a third repair round only when the frozen progress gate passes; keep three as the absolute maximum.
+- Slim the active workflow, prompt library, TASK template, AGENTS compatibility rules, and package README.
+- Move Batch, Wave, Loop, Memory, Constitution, roles, provider, and harness material out of the default runtime path while retaining compatibility files.
+- Add a three-step v0.7 migration guide with no historical TASK rewrite and no new dependency.
+- Preserve the v0.7 read-only Contract Reader, lint, TASK_BOARD drift checks, fixtures, and `adf/v0.7.0` schema.
+
+### Release gate
+
+- v0.8 仍需独立 Review 与用户验收。
+- tag、push、GitHub Release、merge 和本机 Skill 同步均需单独授权。
+- `VERSION=0.8.0` 只表示实现身份，不等于已发布。
+
+## 0.7.0 - Released
+
+> 仓库保留 `v0.7.0` 历史 tag；Workflow Contract 接口版本独立为 `adf/v0.7.0`。
 
 - Add the canonical Workflow Contract grammar and JSON Schema for `adf/v0.7.0`.
 - Add golden fixtures and deterministic comparison baselines for legacy and Compact tasks.
@@ -12,12 +32,6 @@
 - Add read-only TASK_BOARD projection and drift diagnostics with TASK remaining authoritative.
 - Keep Skill `VERSION` and Workflow Contract `schema_version` independently versioned.
 - Keep lint, Review, UA, merge, release, and task closure as separate states and authorities.
-
-### Release gate
-
-- 计划 tag 名称为 `v0.7.0`。
-- 只有在独立 Review 无 P0/P1、版本一致性验证通过并取得新的 UA7 用户明确授权后，才允许从获准的发布提交创建 tag。
-- 创建 tag、push tag、创建 GitHub Release 和 merge 都是独立操作，不由版本号更新或本机 Skill 同步自动授权。
 
 ## 0.6.0 - Release ready (not published)
 

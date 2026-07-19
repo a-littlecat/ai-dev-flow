@@ -1,9 +1,11 @@
 # Workflow Contract 语义规范
 
 > - Contract schema：`adf/v0.7.0`
-> - 规范状态：独立 Review 已通过，等待 UA2 冻结
+> - 规范状态：v0.7 已冻结并继续兼容
 > - 适用范围：`CONTRACT-001`–`CONTRACT-006`
 > - 设计来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
+
+> v0.8 兼容说明：本规范继续约束历史和新建 Tracked / Controlled TASK；Lite 为 `DoNotUseSkill`，不创建 TASK。第 11 节的 Compact 路由是 v0.7 阶段性 Writer 历史规则，不是 v0.8 默认入口。
 
 本文是 Workflow Contract 字段、枚举、语法、不变量、兼容读取、诊断码和阶段边界的唯一规范入口。RFC 说明设计理由；`STATUS_MACHINE.md`、`ACCEPTANCE_GUIDE.md` 和 `GIT_WORKFLOW.md` 继续说明人工工作方式。若示例、模板或 Prompt 与本文冲突，Validator 不得猜测，应报告冲突并以本文为语义依据。
 

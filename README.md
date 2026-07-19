@@ -2,347 +2,97 @@
 
 [English](README.en.md)
 
-一个给个人开发者用的 AI 项目工作流。
+一个按风险启用的 AI 开发工作流。它用项目规则、Git/diff、确定性验证和必要的任务记录约束 agent，但不会让每个小改动都背上完整流程。
 
-它想解决的不是“AI 会不会写代码”，而是另一个更日常的问题：
+v0.8 的核心变化很直接：
 
-> 当 AI agent 连续帮你改一个真实项目时，你怎么知道它现在在做什么、改了哪里、有没有越界、是否真的完成，以及什么时候该由你确认？
+- 低风险小任务：不用 Skill，直接做并验证；
+- 需要跨会话留证：用 Tracked TASK；
+- 高风险、真实环境或交付动作：用 Controlled，并在关键动作前强制独立 Review。
 
-`ai-dev-flow` 把这些容易散在聊天里的东西，变成项目里的 Markdown 文件、Git diff、任务看板、审查记录和验收建议。
+## 为什么做 v0.8
 
-它不绑定 Codex、Claude Code、Gemini CLI、Cursor、DeepSeek 或任何特定工具。支持 Skill 的 agent 可以直接加载；不支持 Skill 的 agent 也可以把它当作普通 Markdown 工作流说明读取。
+旧版能管理复杂项目，但默认文档、提示词和流程入口太多。对前沿模型而言，这可能增加上下文、额外 Reviewer 调用和用户打断，却不一定提高结果质量。
 
-## 为什么需要它
-
-如果只是让 AI 写一个小脚本，流程当然不需要这么多。
-
-但真实项目会慢慢变成这样：
-
-- 你开了好几个 AI 会话，忘了谁在改哪个任务。
-- AI 顺手改了无关文件，但聊天里看不出来。
-- 任务说“完成了”，其实没有验证证据。
-- 审查意见只留在对话里，下一轮 agent 看不到。
-- 你不知道自己到底该看摘要、跑程序、做实机测试，还是直接决策。
-- 几个任务一起推进时，两个 agent 可能会改到同一块代码。
-
-`ai-dev-flow` 的作用，就是给 AI 一个稳定的工作习惯：先拆任务，再限定范围，基于 Git diff 做审查，验证后再告诉你需要做什么。
-
-## 你会得到什么
-
-一套不依赖特定工具的项目约定：
-
-- 用 `TASK_BOARD` 和每个任务一个 Markdown 文件记录状态。
-- 用 Git baseline 和 base commit 锁住任务起点。
-- 用 A/B/C/D 区分小文档、小代码、中等任务和高风险任务。
-- 小任务不强制分支，大任务再用分支或 Worktree 隔离。
-- 代码审查基于 diff，而不是泛泛读文件。
-- 审查问题用 `P0 / P1 / P2 / P3` 表达严重程度。
-- 任务完成后用 `UA0` 到 `UA7` 告诉你到底需要做什么。
-- 用户在 UA4 / UA5 / UA6 / UA7 验收失败时，先用 Acceptance Feedback Gate 做只读诊断和分类，再决定是否进入有限的 Review-Repair Loop。
-- 用户反馈 bug、慢、不符合预期或实机失败时，用 RED / GREEN / SIGNAL 把反馈转成可复测证据，再进入诊断或修复。
-- A/B 小任务可以 Batch 批量处理，互不冲突的任务可以 Parallel Wave 并行推进。
-- 支持 Intake、Loop、角色边界、Memory、Project Constitution 和 Harness 兼容说明。
-
-它的默认态度很保守：不自动合并、不自动发布、不自动删除、不提交密钥、不盲目 `git add .`。AI 可以跑快一点，但方向盘仍然在你手里。
-
-## 核心理念
-
-`TASK` 永远是最小责任单位。
-
-Batch、Wave 和 Loop 都只是组织方式：
-
-- `Single Task`：一个执行会话只处理一个任务。
-- `Batch`：一个执行会话顺序处理多个低风险 A/B 小任务。
-- `Parallel Wave`：多个执行会话同时处理多个互不冲突的任务。
-- `Loop`：外层编排已有模式，不替代任务状态。
-
-无论使用 Batch、Wave 还是 Loop，都不能吞掉任务边界。每个任务仍然要独立记录 diff、验证结果、审查结论和用户动作等级。
-
-## 角色不等于会话
-
-v0.6.0 的角色机制用于约束职责，不要求每个角色都单独开一个会话。
-
-默认最小会话模型是：
-
-- 总览会话：Orchestrator / Planner / Archivist。
-- 执行会话：Engineer / Verifier / Repairer。
-- 审核会话：Reviewer。
-
-同一会话可以在不同阶段切换多个角色，但每一轮都要声明当前角色和当前模式。Reviewer 不直接修复，Engineer / Repairer 不自我批准。
-
-ai-dev-flow 不禁止 harness 或模型自动使用 subagents / 子代理，包括 ultra mode-like 的内部加速能力。subagents 是可选能力，不是默认依赖；不支持 subagents 的 agent 仍可按 Markdown、Git 和 TASK 文件流程稳定运行。
-
-只读 subagents 默认适合审查、验证、状态分拣、文档检查、日志整理和测试结果整理。写代码 subagents 可以受控使用，但必须声明任务边界、修改范围和验证方式；多个写代码 subagents 并行默认需要用户确认、独立分支或 Worktree、文件锁 / 模块锁检查和逐任务 diff 审查。subagents 不得自动 merge、push、release 或 delete。
-
-## 适合谁
-
-适合你，如果你：
-
-- 在真实软件项目里使用 AI agent；
-- 希望任务状态不要只留在聊天记录里；
-- 希望 AI 的改动可以稳定 diff 审查；
-- 不想 AI 顺手做大范围无关重构；
-- 希望明确哪些任务需要用户验收，哪些只需要看证据；
-- 会同时使用多个 AI 会话，需要避免文件和模块冲突。
-
-它不绑定任何业务领域、语言、框架或特定 agent。
-
-## 不适合什么
-
-如果只是下面这些场景，这套流程可能太重：
-
-- 一次性小脚本；
-- 临时 demo；
-- 快速试验；
-- 只问问题，不修改项目文件；
-- 不需要 Git、任务记录和审查的小草稿。
-
-## 安装
-
-本仓库的 Skill 位于：
-
-```text
-skills/ai-dev-flow/
-```
-
-### Codex
-
-复制 Skill 到 Codex 的 skills 目录：
-
-```text
-~/.codex/skills/ai-dev-flow/
-```
-
-Windows 通常是：
-
-```text
-C:\Users\<you>\.codex\skills\ai-dev-flow\
-```
-
-然后对 Codex 说：
-
-```text
-请使用 ai-dev-flow，为当前项目初始化 AI 辅助开发工作流。
-```
-
-也可以直接使用中文唤醒词：
-
-```text
-用 AI开发流程，帮我拆任务。
-```
-
-### Claude Code、Gemini CLI、Cursor、DeepSeek 或其他 agent
-
-如果你的 agent 支持 Skill 或自定义指令包，把 `skills/ai-dev-flow/` 复制到对应目录即可。
-
-如果不支持 Skill，让 agent 把下面三个文件当成普通 Markdown 工作流说明读取：
+v0.8 把默认运行时缩成两个文件：
 
 ```text
 skills/ai-dev-flow/SKILL.md
-skills/ai-dev-flow/references/WORKFLOW.md
-skills/ai-dev-flow/references/PROMPTS.md
+skills/ai-dev-flow/references/CORE.md
 ```
 
-## 快速开始
+其他指南继续保留，但只在当前动作确实需要时读取。
 
-你不需要记住所有模式、角色和 Loop。日常使用时，先记住这四句话就够了：
+## 三档结果
+
+| 结果 | 什么时候用 | 默认行为 |
+|---|---|---|
+| `DoNotUseSkill` | 低风险、单会话、少量文件、验证完整 | 不建 TASK、不调用 Reviewer、不进 repair loop |
+| `Tracked` | 跨会话、范围较大或需要证据留存 | TASK；风险命中才调用只读 Reviewer |
+| `Controlled` | D 级、高风险、真实环境、交付或不可逆动作 | 完整 TASK；关键动作前强制独立 Review |
+| `Blocked` | 输入、权限、能力或证据不足 | 停止并说明最小阻塞信息 |
+
+准确规则只维护在 `references/CORE.md` 的 `POLICY_JSON` 中，避免多份文档各写一套。
+
+## 快速使用
+
+把 `skills/ai-dev-flow/` 安装到 agent 的 Skill 目录，然后说：
 
 ```text
-请使用 ai-dev-flow 初始化当前项目工作流。
+请使用 ai-dev-flow 执行这个任务；先判断 DoNotUseSkill、Tracked、Controlled 或 Blocked。
 ```
 
-```text
-请使用 ai-dev-flow，把下面需求拆成任务：
-<你的需求>
+支持 Skill 的 agent 默认只读 `SKILL.md + CORE.md`。不支持 Skill 的项目可把 `references/AGENTS_COMPAT.md` 的最小规则合并进现有 `AGENTS.md`。
+
+## 保留的核心能力
+
+- 用户要求和项目规则优先；
+- Git 状态、base commit、diff 归属和回滚边界；
+- Tracked / Controlled 的 TASK 事实源；
+- 覆盖完成标准的验证证据；
+- 权限、真实环境、敏感数据和外部副作用门禁；
+- 隔离、只读的 Reviewer；
+- Review、UA、Accepted、commit、merge、release、Closed 分开记录。
+
+## 精简掉的默认成本
+
+以下内容没有删除，但退出默认运行路径：
+
+- 长提示词库；
+- Batch、Parallel Wave 和通用 Loop 编排；
+- Memory、Project Constitution 和角色声明；
+- provider / harness 分支；
+- 普遍 Reviewer 和无条件 repair loop。
+
+v0.8 不建设自动调度器、数据库、遥测、计费、模型 Adapter，也不自动 merge、push、release、删除或外部同步。
+
+## TASK 与 v0.7 兼容
+
+- Lite 不创建 TASK。
+- 新建 Tracked / Controlled 使用 `references/TASK_TEMPLATE.md`。
+- 旧 TASK 不批量迁移，原格式继续可读。
+- `TASK_TEMPLATE_COMPACT.md` 只为 v0.7 Writer/Reader 兼容保留。
+- Skill 包版本是 `0.8.0`，Workflow Contract schema 继续是 `adf/v0.7.0`。
+
+迁移说明见 `skills/ai-dev-flow/references/V0.8_MIGRATION.md`，用户最多需要 3 步。
+
+## Reviewer 与第 3 轮 repair
+
+- Tracked 仅在确定性风险命中时调用一个隔离、只读 Reviewer。
+- Controlled 在验收建议、delivery、merge、release 前强制 Review。
+- repair 基础预算为 2 轮；只有范围冻结、finding 单调减少、验证改善等 progress 条件全部满足时才增加第 3 轮。
+- 3 是绝对上限；更换模型不重置预算；不可逆外部动作不得自动重试。
+
+## 只读检查
+
+v0.7 的标准库 Reader、`workflow_lint` 和 TASK_BOARD drift 检查继续保留：
+
+```powershell
+python skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-001.md --format human
+python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
 ```
 
-```text
-请使用 ai-dev-flow，执行 TASK-001。
-```
-
-```text
-请使用 ai-dev-flow，审查这个任务，并告诉我需要我做什么。
-```
-
-初始化后，推荐把精简规则写进项目 `AGENTS.md`。之后在同一个项目里，你可以直接说“拆这个需求”“执行下一个任务”“审查刚才的改动”，让 agent 按项目规则走。
-
-### 1. 初始化项目工作流
-
-```text
-请使用 ai-dev-flow 初始化当前项目工作流。
-先读取已有 README、AGENTS.md、docs/ 和关键配置。
-不要修改业务代码。
-```
-
-agent 会创建或建议创建类似结构：
-
-```text
-docs/
-├── PROJECT_INDEX.md
-├── TASK_BOARD.md
-├── DECISIONS.md
-├── CODE_REVIEW_CHECKLIST.md
-├── batches/
-├── plans/
-├── tasks/
-└── waves/
-```
-
-v0.6.0 可选结构如下，适合需要 Intake、Loop、Memory 或项目硬规则的长期项目；这些目录不是初始化必需项：
-
-```text
-docs/
-├── intake/
-├── loops/
-├── memory/
-└── PROJECT_CONSTITUTION.md
-```
-
-### 2. 把需求拆成任务
-
-```text
-请使用 ai-dev-flow，把下面需求拆成小任务：
-<粘贴需求>
-```
-
-任务会带上目标、非目标、完成标准、风险等级、建议执行位置和验证方式。
-
-### 3. 执行单个任务
-
-```text
-请使用 ai-dev-flow，执行 docs/tasks/TASK-001.md。
-```
-
-agent 应先检查 Git 状态、记录 base commit、遵守任务边界，完成后更新任务文件并提供验证证据。
-
-### 4. 基于 diff 审查
-
-```text
-请使用 ai-dev-flow，基于 diff 审查 docs/tasks/TASK-001.md。
-```
-
-审查应基于当前任务 diff，而不是泛泛读一遍文件。
-
-### 5. 明确用户动作等级
-
-每个任务完成后都应给出 `UA` 建议：
-
-- `UA0`：无需用户验收，agent 自证即可。
-- `UA1`：用户只看摘要。
-- `UA2`：用户读文档或方案。
-- `UA3`：用户只看验证证据，不自己运行。
-- `UA4`：用户本地运行验收。
-- `UA5`：用户在真实业务环境测试。
-- `UA6`：用户做回归验收。
-- `UA7`：必须用户决策。
-
-agent 不应该只写“需要人工验收”，而要写清楚用户到底要做什么。
-
-### 6. 处理验收失败反馈
-
-如果用户在本地运行、真实业务环境、实机设备或回归验收中发现问题，不应该让 agent 直接猜测改代码。
-
-推荐先说：
-
-```text
-请使用 ai-dev-flow 处理这次 UA5 实机验收失败反馈。
-先走验收失败反馈闸门，只读诊断，不要修改业务代码。
-判断这是原任务未完成、本轮回归、新需求、环境问题还是证据不足。
-只有确认属于当前任务范围内的问题，才建议进入 review_repair_loop。
-```
-
-这个闸门不是新任务状态，也不是新 Loop。它只是 `review_task` 下的只读诊断子模式，用来记录证据、判断范围，并决定下一步是 `Needs Fix`、`Blocked`、创建新 TASK，还是保持 Review。
-
-## 反馈闭环能力
-
-ai-dev-flow 不只管理任务状态，也帮助 agent 在真实项目中建立反馈闭环：用户反馈问题后，先把失败描述变成证据、信号和可复测步骤，再决定诊断、修复、阻塞还是拆新任务。
-
-新增指南包括：
-
-- Bug 诊断（`bug_diagnosis`）：根因不清时先建立证据、假设和复现信号。
-- 测试先行（`tdd_task`）：用 RED / GREEN 记录行为级失败和通过信号。
-- 需求拷问（`requirement_grilling`）：需求模糊或高风险时只问阻塞问题。
-- 项目语境（`project_context`）：沉淀长期术语、验证经验和常见误解。
-- 会话交接（`session_handoff`）：跨会话记录下一步、应读文件和不要重复尝试的路线。
-- 架构巡检（`architecture_review`）：只读发现反复返工、无测试缝隙或边界混乱。
-- 实机测试信号复现（`real_env_signal`）：把真实环境失败转成 RED / GREEN / SIGNAL 和用户 HITL 回传证据。
-
-这些 Markdown-first 指南和模板不表示当前版本具备自动状态写入、自动同步、自动多 agent 调度、自动实机控制、自动合并或自动发布能力；v0.7.0 新增的脚本仅执行只读检查。
-
-## Batch 和 Parallel Wave
-
-### Batch：批量小任务
-
-Batch 用来处理多个低风险小任务。
-
-一个执行会话顺序完成多个 A/B 任务，再由一个审查会话批量审查。
-
-规则：
-
-- 只用于 A/B 小任务。
-- C/D 任务仍然单独处理。
-- diff 必须能按任务拆分。
-- A 级文档 Batch 可以一个 commit。
-- B 级小代码 Batch 推荐每个 TASK 单独 commit；不单独 commit 时必须记录 per-task diff 归属。
-- 多个 B 级任务修改同一文件时，默认拆成单任务或等待用户确认。
-- 批量审查必须逐任务输出结论。
-
-### Parallel Wave：并行波次
-
-Parallel Wave 用来安全地并行处理多个互不冲突任务。
-
-并行前必须检查：
-
-- 预计修改文件；
-- 影响模块；
-- 依赖关系；
-- 文件锁；
-- 模块锁；
-- 任务风险等级；
-- 用户动作等级。
-
-规则：
-
-- 并行执行不是默认行为。
-- 必须用户确认。
-- D 级和 `UA5 / UA6 / UA7` 代码任务默认不进入代码并行。
-- 进入 Parallel Wave 的代码任务默认使用独立分支或 Worktree。
-- 多个代码执行会话不得默认共享同一工作区。
-- Review Hub 可以集中审查 Wave，但必须逐任务输出结论。
-
-## v0.7.0：Workflow Contract 与只读检查
-
-v0.7.0 在保留 v0.6.0 工作流的基础上，增加一组确定性的 Contract 与只读检查能力：
-
-- 使用 `adf/v0.7.0` Workflow Contract 统一任务状态、Review、UA 与交付语义。
-- 同时读取 legacy TASK 和显式 opt-in 的 v0.7 TASK，但不自动迁移旧任务。
-- 提供只读 `workflow_lint` CLI、稳定 Human/JSON diagnostics 和 provenance。
-- 为符合条件的新建 A/B 任务启用 Compact v0.7 模板；复杂路径继续使用 Full/Legacy。
-- 只读比较 TASK_BOARD 投影与 TASK，不提供 `--fix` 或反向写回。
-
-Skill 分发包版本 `0.7.0` 与 Contract 接口版本 `adf/v0.7.0` 独立演进。lint 通过只代表结构和当前可确定规则通过，不代表 Review、用户验收、merge、release 或任务关闭已经完成。
-
-## v0.6.0：设计级能力
-
-v0.6.0 增加一组 Markdown-first 的设计级工作流指南：
-
-- Intake：在拆任务前记录需求、成功标准、非目标、模糊点和可逆性。
-- Loop Engineering：编排 triage、goal、review-repair、status loop，但 Loop 不替代 TASK 或任务状态。
-- Review-Repair Loop：限制修复轮次，Reviewer 不直接修复，Engineer 不自我批准。
-- Role Guide：区分 Orchestrator、Planner、Engineer、Reviewer、Verifier、Repairer 和 Archivist。
-- Project Constitution：用 MUST / SHOULD / MUST NOT 记录项目硬规则。
-- Memory：在 `docs/memory/` 下沉淀长期项目知识。
-- GitHub Issues Optional Backend：只提供 TASK 到 Issue 的字段映射设计，不自动同步。
-- Harness Compatibility：说明 Codex、Claude Code、Cursor、Gemini CLI、DeepSeek 和通用 agent 的能力边界。
-- Bug Diagnosis：根因不清时建立证据、可证伪假设和复现信号。
-- TDD：用行为测试或替代验证记录 RED / GREEN。
-- Requirement Grilling：需求模糊或高风险时先问阻塞问题。
-- Project Context：沉淀长期项目语境和验证经验。
-- Session Handoff：跨会话继续任务时记录下一步和不要重复尝试的路线。
-- Architecture Review：只读巡检架构阻力和测试缝隙。
-- Real Environment Signal：处理用户实机失败反馈的 RED / GREEN / SIGNAL。
-
-这些能力主要由文档、模板和提示词约束，不表示当前版本具备自动状态写入、自动 GitHub 同步、自动 subagent 调度、自动多 agent 调度、自动实机控制、自动合并或自动发布；v0.7.0 的 Reader、lint 和 drift 检查保持只读。
+lint 通过只说明可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
 
 ## 仓库结构
 
@@ -350,77 +100,31 @@ v0.6.0 增加一组 Markdown-first 的设计级工作流指南：
 ai-dev-flow/
 ├── README.md
 ├── README.en.md
-├── LICENSE
-├── skills/
-│   └── ai-dev-flow/
-│       ├── SKILL.md
-│       ├── README.md
-│       ├── CHANGELOG.md
-│       ├── VERSION
-│       ├── references/
-│       └── scripts/
-└── .gitignore
+├── docs/
+├── evaluations/v0.8/
+└── skills/ai-dev-flow/
+    ├── SKILL.md
+    ├── VERSION
+    ├── references/
+    ├── scripts/
+    └── tests/
 ```
 
-根目录 `README.md` 是开源仓库首页。
-
-Skill 的详细使用手册在：
-
-```text
-skills/ai-dev-flow/README.md
-```
-
-## 安全默认值
-
-`ai-dev-flow` 默认保守：
-
-- 不自动 merge；
-- 不自动 push；
-- 不自动 release；
-- 不盲目 `git add .`；
-- 不自动删除分支；
-- 不自动删除 Worktree；
-- 不提交密钥、本机配置、构建产物、依赖目录或日志；
-- 没有 Git baseline 不开始代码任务；
-- 没有明确 diff 不做代码审查；
-- 没有验证证据不声称任务完成。
+详细手册见 `skills/ai-dev-flow/README.md`。
 
 ## 当前版本
 
 ```text
-0.7.0
+0.8.0
 ```
 
-仓库内部 Skill 分发包版本已收口为 `0.7.0`，当前状态为 **Release ready（尚未发布）**。Workflow Contract 接口版本独立为 `adf/v0.7.0`。仓库尚未创建 `v0.7.0` tag 或 GitHub Release，因此不能把该版本表述为已经对外发布。
+- 仓库内实现身份：`0.8.0`。
+- Workflow Contract：`adf/v0.7.0`，继续兼容。
+- 发布状态：v0.8 尚未发布；`VERSION` 变化不等于 tag、push 或 GitHub Release。
+- v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
 
-计划 tag 名称为 `v0.7.0`。只有在独立 Review 无 P0/P1、版本一致性验证通过并取得新的 UA7 用户明确授权后，才允许从获准的发布提交创建 tag；tag、push、GitHub Release 和 merge 均需分别授权。本机 Skill 同步不表示已经发布。
-
-变更记录见：
-
-```text
-skills/ai-dev-flow/CHANGELOG.md
-```
+变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。
 
 ## License
 
-本项目使用 MIT License。
-
-详见：
-
-```text
-LICENSE
-```
-
-## 贡献
-
-欢迎提交 issue 和 pull request。
-
-好的贡献应保持这套流程：
-
-- 通用；
-- Markdown-first；
-- agent-neutral；
-- Git-aware；
-- 默认安全；
-- 清楚区分 AI 验证和用户确认；
-- 不写入特定项目业务规则。
+MIT License，详见 [LICENSE](LICENSE)。
