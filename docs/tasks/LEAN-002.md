@@ -6,8 +6,8 @@
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Review`
-- `review_status`: `In Review`
+- `lifecycle`: `In Progress`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -112,7 +112,7 @@ git diff --check
 ## V003 协议与 stage A 独立 Review
 
 - 输入：authorization base `9c8ec36` 之后的原型两文件、`evaluations/v0.8/v003/**` 与本任务状态投影。
-- 当前计数：main=0；第 1 次协议 Review 为 `Needs Fix`，repair 独立复审尚未形成结论。
+- 当前计数：main=0；第 1 次协议 Review 为 `Needs Fix`，repair 独立复审已 `Passed`。
 - 门禁：只有结论为 `Passed` 且 P0=0、P1=0，才允许开始 V003 的三次串行 main。
 
 ### 第 1 次前置 Review
@@ -129,7 +129,15 @@ git diff --check
 - 由于收据是 parent 捕获而非平台签名，最终独立 Review 仍须结合当前任务树对 canonical task name 做实时交叉核对。
 - repair 验证：V003 verify 通过，stage A 8 / 8，专项测试 12 / 12，`git diff --check` 通过；等待独立复审。
 
+### 前置独立复审
+
+- 结论：`Passed`；P0=0，P1=0，P2=0，P3=0；`LEAN002-V003-P1-001` Closed，findings=none。
+- 旧 finding 状态：`LEAN002-P1-001` Closed；`LEAN002-P1-002` 在“同一父任务会话、平台未暴露 exact backend/opaque ID/签名收据”的有限结论边界内 Closed。
+- 验证：V003 verify 通过，专项测试 12 / 12；Reviewer 未修改文件。
+- 门禁结论：允许严格按 `no-skill -> lite -> full` 各执行一次 main，不得并行；每次完成并形成 hash-bound 收据后才能启动下一次。
+- 后续硬门禁：整体独立 Reviewer 必须结合当前任务树实时核对三个 canonical task name；本结论不代表整体 Review、UA、merge、release 或 Closed。
+
 ## 状态边界
 
-- 当前为 `Review / In Review`，V003 policy、协议和零额度回放已形成候选证据；不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- 当前为 `In Progress / Needs Fix`，V003 前置 Review 已通过并只解除了三次 main 门禁；不是 LEAN-002 整体 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
 - `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。
