@@ -36,4 +36,3 @@ Tracked 命中闸门但 Reviewer 不可用时，只能：
 - Review Passed、验证通过、UA、Accepted、commit、merge、release、Closed 互不推导。
 - 未经授权不提交敏感信息，不修改依赖、数据库结构、技术栈或外部状态。
 - 任何真实环境、用户观察或 delivery 证据缺失时，不得报告完成。
-

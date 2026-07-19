@@ -13,9 +13,12 @@
 - `commit_status`: `Uncommitted`
 - `merge_status`: `Not Applicable`
 
-## 目标
+## 目标与边界
 
-在不改变现行 v0.7 默认入口的前提下，制作最多 2 个核心文件、可通过删除目录整体回退的 v0.8 Lite 原型；随后按冻结的 `no-skill -> lite -> full` 顺序，使用当前执行会话同一模型完成三次同基线代表任务，生成可由 `replay.py score-phase-b` 机械复算的原始证据。
+- 目标：在不改变现行 v0.7 默认入口的前提下，制作最多 2 个核心文件、可通过删除目录整体回退的 v0.8 Lite 原型；随后按冻结顺序使用当前执行会话同一模型完成三次同基线代表任务，并生成可机械复算的原始证据。
+- 非目标：不全面精简或默认启用现行 Skill；不改冻结评估协议，不迁移历史 TASK，不作 v0.8 发布决定。
+- 允许修改：原型两文件、`evaluations/v0.8/results/phase-b/**`、本任务与任务板。
+- 禁止修改：现行 Skill/现行 references、冻结 manifest/oracle/threshold/benchmark baseline、历史 TASK、依赖文件、版本与发布身份。
 
 ## 依赖与授权
 
@@ -24,16 +27,6 @@
 - 用户授权：按 PLAN-001 串行执行 LEAN-001～003。
 - 允许当前任务形成独立 commit；不授权 merge、push、release、本机 Skill 同步或 `Closed`。
 - 后续 `LEAN-003` 只有在阶段 B 全部门槛与本任务独立 Review 均通过后才允许创建。
-
-## 允许范围
-
-- `skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md`
-- `skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md`
-- `evaluations/v0.8/results/phase-b/**`
-- `docs/tasks/LEAN-002.md`
-- `docs/TASK_BOARD.md`
-
-禁止修改现行 `skills/ai-dev-flow/SKILL.md`、现行 references、冻结 manifest/oracle/threshold、历史 TASK、依赖文件与版本/发布身份。
 
 ## 固定执行协议
 
@@ -45,7 +38,12 @@
 6. 每次保存模型输出、修改后文件、验证日志、逐文件输入 hash 与阻塞问题；Full 所需 Reviewer 另计调用，不伪装成 main。
 7. 评分只使用 `replay.py score-phase-b`；不得因看到结果而改冻结输入、阈值或 oracle。
 
-## 完成标准
+## 完成标准与验证
+
+- 完成标准：默认关闭原型满足两文件和维护/迁移预算；三次同模型 main 严格串行且任务结果通过；阶段 B 原始 JSON 可机械评分；独立 Review 给出后续门禁结论。
+- 验证命令或检查：stage A verify/replay、stage B scorer、评估专项 unittest、TASK lint 与 `git diff --check`。
+
+### 详细完成标准
 
 - [ ] 原型默认关闭，未接入现行入口，删除原型目录即可回退。
 - [ ] 原型核心文件不超过 2，活跃 reference 不超过 12，不增加依赖或历史 TASK 改写。
@@ -55,7 +53,7 @@
 - [ ] 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
 - [ ] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
 
-## 验证命令
+### 自动验证命令
 
 ```powershell
 python -B -X utf8 evaluations/v0.8/replay.py verify
