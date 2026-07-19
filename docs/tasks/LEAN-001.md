@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `LEAN-001` |
 | 任务类型 | 测试 |
-| 当前模式 | 第 1 轮有限修复后复审（`review_task`） |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 等待第 2 轮有限修复（`repair_task`） |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：新增可复现评估工具和冻结证据，但不修改现行 Skill 行为 |
@@ -63,8 +63,8 @@
 - 执行位置：独立分支
 - Worktree 路径：不适用
 - Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
-- 当前 HEAD：第 1 轮 repair commit（精确 hash 以 `git log -- docs/tasks/LEAN-001.md` 为准）
-- Diff 范围：`b7938ef..HEAD`
+- 当前 HEAD：`05d6828`（第 1 轮 repair commit）
+- Diff 范围：`b7938ef..05d6828`
 - 是否有未提交改动：开始前否
 - 是否存在不应提交文件：否
 - 是否允许 commit：是；按 LEAN 任务保留独立 commit
@@ -129,12 +129,12 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
+- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..05d6828
 - 隔离位置：独立分支 `codex/lean-v08-slimming`。
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 - 修改文件：`evaluations/v0.8/**`、`docs/tasks/LEAN-001.md`、`docs/TASK_BOARD.md`。
 - 验证证据：8 / 8 回放一致；7 / 7 评估工具专项、4 / 4 代表任务、41 / 41 仓库回归、JSON/AST、targeted lint 与 diff hygiene 通过。
-- Review findings：上一轮 `LEAN001-P1-001`～`003` 与 `LEAN001-P2-001`～`002` 已由 Repairer 逐项处理，等待独立复审确认。
+- Review findings：`LEAN001-P1-001-R1`；每个 run 尚未强制恰好一个 main，可能突破三次主任务硬上限。
 
 ## 修改文件
 
@@ -146,10 +146,10 @@ git diff --check
 
 ## 代码审查
 
-- 审查状态：审查中
+- 审查状态：需要修改
 - 审查人或审查 agent：Codex 隔离只读 Reviewer（第 1 轮 findings；同一上下文待复审）
-- 审查严重等级：待复审；第 1 轮为 P1，P0 0 项、P1 3 项、P2 2 项、P3 0 项
-- 审查结论：第 1 轮有限修复已完成，尚未由 Reviewer 确认关闭；仍不允许进入 `LEAN-002`
+- 审查严重等级：P1；P0 0 项、残留 P1 1 项、P2/P3 0 项
+- 审查结论：`Needs Fix`；原 P1-002、P1-003 与两项 P2 已关闭，P1-001 残留一项主任务预算缺口；不允许进入 `LEAN-002`
 - P0 / P1 必须修改项：
   1. `LEAN001-P1-001`：阶段 B 评分器信任缺失/负数/空 oracle/未绑定 hash 的调用方数字，可伪造 `all_gates_pass=true`。
   2. `LEAN001-P1-002`：authority / delivery / real-environment gate 未建模，`safety_gate` 仅因非 Lite 默认写 `Preserved`。
@@ -159,6 +159,15 @@ git diff --check
   2. `LEAN001-P2-002`：Git 事实仍停留在提交前 HEAD / working-tree。
 - 风险：若不修复，阶段 B 可以被伪造数据放行，未授权 delivery 和新增高严重 finding 可能被错误标记为安全。
 - 是否允许进入验收建议：否
+
+## 第 1 轮修复独立复审
+
+- 结论：`Needs Fix`；P0 0 项、残留 P1 1 项。
+- 已关闭：`LEAN001-P1-002`、`LEAN001-P1-003`、`LEAN001-P2-001`、`LEAN001-P2-002`。
+- 未完全关闭：`LEAN001-P1-001`。
+- `LEAN001-P1-001-R1`：model-call evidence 允许同一 run 出现多个 `kind=main`；三个 run 固定但主任务执行总数未强制等于 manifest 上限 3。
+- 必须修复：每个 run 恰好一个 main，三次 run 合计恰好 3 个 main；Reviewer/subagent/retry 单独计数；增加多 main payload 拒绝测试。
+- 范围：只允许修改评分器、专项测试、本任务和看板；不得进入原型或阶段 B。
 
 ## 审查-修复循环第 1 轮
 
@@ -178,8 +187,8 @@ git diff --check
 - 审查命令：`git diff b7938ef..HEAD`
 - 修改文件清单：`evaluations/v0.8/**`、本任务、看板
 - 范围越界文件：无
-- 审查状态：审查中
-- 审查结论：第 1 轮修复 diff 已形成并通过自动验证，等待 Reviewer 逐项确认原 3 项 P1、2 项 P2 是否关闭。
+- 审查状态：需要修改
+- 审查结论：第 1 轮修复范围无越界且自动验证通过，但残留主任务调用预算 P1；进入第 2 轮有限修复。
 - 是否允许进入验收建议：否
 
 ## 用户动作等级 / 验收建议
@@ -193,7 +202,7 @@ git diff --check
 ## 提交 / 合并
 
 - Commit 状态：已提交（本记录所在 LEAN-001 task commit）
-- Commit hash：实现 commit `c607cb75590cfeb5ea45c1d60e10b77a44208080`；第 1 轮审查记录 `9ef43d3`；repair commit 以本任务最新 Git 记录为准
+- Commit hash：实现 `c607cb7`；第 1 轮审查记录 `9ef43d3`；第 1 轮 repair `05d6828`；本次复审写回由下一独立 commit 记录
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 
@@ -213,6 +222,6 @@ git diff --check
 - 本次完成：冻结评估协议、代表任务与历史证据，完成零额度回放并生成原始 ledger / 报告。
 - 修改文件：`evaluations/v0.8/**`、本任务和看板。
 - 验证结果：8 / 8 回放一致；7 / 7 + 4 / 4 + 41 / 41 测试通过；targeted lint 无 error/violation。
-- 遗留问题：等待第 1 轮修复独立复审；阶段 B 尚未开始。
+- 遗留问题：第 2 轮只修复 `LEAN001-P1-001-R1`；阶段 B 尚未开始。
 - 下一会话建议读取：本任务、`PLAN-001`、v0.8 RFC、阶段 A 报告。
 - 不要重复尝试：不得在回放后更改冻结协议以制造通过结果。
