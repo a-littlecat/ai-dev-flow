@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-19
 > - 当前模式：`LEAN-002` 用户授权后的有限修复（`repair_task`）
-> - 当前阶段：`V08-LEAN-EVAL-003` 的单一 policy、provenance 合同与 stage A 已形成候选证据，正在做前置独立 Review；模型 main 调用仍为 0
+> - 当前阶段：`V08-LEAN-EVAL-003` 前置 Review 的 1 项 provenance P1 已形成 repair，等待独立复审；模型 main 调用仍为 0
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -88,7 +88,7 @@ REL-002 Closed / main@0422887
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；Repair Base `f240889` | In Review / V003 前置复审，main=0 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；Repair Base `f240889` | In Review / provenance P1 repair 待复审，main=0 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 
 ## PLAN-001 核心约束
 
@@ -102,7 +102,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-复审 `LEAN-002` 的 V003 前置证据：stage A 已直接读取实际原型 policy 并得到 8 / 8 零差异，provenance 合同已冻结同一父任务、无 override、canonical agent path、顺序和 hash 链收据。新协议独立 Review 无 P0/P1 前不得运行新的三次 main，也不得创建 `LEAN-003`。
+复审 `LEAN-002` 的 V003 provenance repair：stage A 已直接读取实际原型 policy 并得到 8 / 8 零差异；收据校验已从“只看路径/hash”改为解析 spawn/final 内容，反向绑定实际请求、canonical path、前序完成链、workflow bundle 和 main evidence。平台未暴露 exact backend/opaque ID/签名收据的边界必须保留，最终 Reviewer 还要实时核对任务树。独立复审无 P0/P1 前不得运行新的三次 main，也不得创建 `LEAN-003`。
 
 ## 停止条件
 

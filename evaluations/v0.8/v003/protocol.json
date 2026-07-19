@@ -10,6 +10,8 @@
   },
   "backend_identity": {
     "exact_version_exposed_by_platform": false,
+    "opaque_agent_or_call_id_exposed_by_platform": false,
+    "exposed_context_identifier": "canonical_task_name",
     "required_for_claim": false,
     "comparison_scope": "same-parent-task-session-only",
     "claim_boundary": "不声称跨会话或跨平台复现同一 backend 精确版本"
@@ -28,7 +30,13 @@
   "receipt_contract": {
     "spawn_receipt_required": true,
     "final_receipt_required": true,
-    "agent_id_required": true,
+    "parse_receipt_content": true,
+    "platform_signed_receipts_available": false,
+    "parent_captured_receipts_require_independent_live_cross_check": true,
+    "spawn_schema": "lean-agent-spawn-receipt/v1",
+    "final_schema": "lean-agent-final-receipt/v1",
+    "bind_run_workflow_bundle": true,
+    "bind_run_main_evidence": true,
     "previous_final_receipt_sha256_required_after_first": true,
     "artifact_root": "evaluations/v0.8/v003/results/phase-b/receipts/",
     "hash_algorithm": "sha256"

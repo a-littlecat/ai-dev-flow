@@ -15,7 +15,7 @@
   },
   "protocol": {
     "path": "evaluations/v0.8/v003/protocol.json",
-    "sha256": "2fc883e987c7b0bda60b806623700f0c8ea5c1f7934368dff0d0bf298edb2d36"
+    "sha256": "9f51ac36832837fcaa6ec72c90fb6b2995d640cb3f2f31473d06c8689f8aaf55"
   },
   "phase_b": {
     "execution_order": [

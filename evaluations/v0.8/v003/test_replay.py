@@ -98,10 +98,9 @@ class V003ReplayTests(unittest.TestCase):
                     "sequence": sequence,
                     "mode": mode,
                     "canonical_agent_path": self.protocol["canonical_main_agents"][mode],
-                    "agent_id": f"agent-{sequence}",
-                    "spawn_receipt_path": f"evaluations/v0.8/v003/results/phase-b/receipts/{mode}-spawn.json",
+                    "spawn_receipt_path": f"evaluations/v0.8/v003/results/phase-b/receipts/{sequence:02d}-{mode}-spawn.json",
                     "spawn_receipt_sha256": f"{sequence + 3}" * 64,
-                    "final_receipt_path": f"evaluations/v0.8/v003/results/phase-b/receipts/{mode}-final.md",
+                    "final_receipt_path": f"evaluations/v0.8/v003/results/phase-b/receipts/{sequence:02d}-{mode}-final.json",
                     "final_receipt_sha256": final_hash,
                     "previous_final_receipt_sha256": previous,
                 }
@@ -141,6 +140,104 @@ class V003ReplayTests(unittest.TestCase):
         with self.assertRaises(REPLAY.EvalError):
             REPLAY.validate_provenance_structure(
                 provenance, self.manifest, self.protocol
+            )
+
+    def _receipt_contents(self) -> tuple[list[dict], list[dict], list[dict]]:
+        provenance = self._valid_provenance()
+        spawns = []
+        finals = []
+        runs = []
+        for receipt in provenance["receipts"]:
+            sequence = receipt["sequence"]
+            mode = receipt["mode"]
+            canonical = receipt["canonical_agent_path"]
+            workflow_paths = (
+                self.manifest["phase_b"]["lite_workflow_files"]
+                if mode == "lite"
+                else self.effective["phase_b"][f"{mode.replace('-', '_')}_workflow_files"]
+            )
+            workflow_bundle = REPLAY.sha256_file_set(workflow_paths)
+            main_path = f"evaluations/v0.8/v003/results/phase-b/{mode}/model-call-main.md"
+            main_hash = f"{sequence + 6}" * 64
+            runs.append(
+                {
+                    "mode": mode,
+                    "workflow_inputs": [
+                        {"path": path, "sha256": REPLAY.sha256_file(REPLAY.relative_path(path))}
+                        for path in workflow_paths
+                    ],
+                    "model_call_evidence": [
+                        {
+                            "kind": "main",
+                            "evidence_path": main_path,
+                            "evidence_sha256": main_hash,
+                        }
+                    ],
+                }
+            )
+            spawns.append(
+                {
+                    "schema_version": self.protocol["receipt_contract"]["spawn_schema"],
+                    "evaluation_id": self.manifest["evaluation_id"],
+                    "sequence": sequence,
+                    "mode": mode,
+                    "parent_task_path": "/root",
+                    "tool": "collaboration.spawn_agent",
+                    "request": {
+                        "task_name": canonical.removeprefix("/root/"),
+                        "fork_turns": "none",
+                        "model_override": None,
+                        "reasoning_effort_override": None,
+                    },
+                    "tool_result": {"task_name": canonical},
+                    "previous_final_receipt_sha256": receipt[
+                        "previous_final_receipt_sha256"
+                    ],
+                    "workflow_bundle_sha256": workflow_bundle,
+                }
+            )
+            finals.append(
+                {
+                    "schema_version": self.protocol["receipt_contract"]["final_schema"],
+                    "evaluation_id": self.manifest["evaluation_id"],
+                    "sequence": sequence,
+                    "mode": mode,
+                    "canonical_task_name": canonical,
+                    "completion_status": "completed",
+                    "spawn_receipt_sha256": receipt["spawn_receipt_sha256"],
+                    "previous_final_receipt_sha256": receipt[
+                        "previous_final_receipt_sha256"
+                    ],
+                    "workflow_bundle_sha256": workflow_bundle,
+                    "main_evidence_path": main_path,
+                    "main_evidence_sha256": main_hash,
+                }
+            )
+        return runs, spawns, finals
+
+    def test_receipt_contents_bind_spawn_request_workflow_and_main_evidence(self) -> None:
+        provenance = self._valid_provenance()
+        runs, spawns, finals = self._receipt_contents()
+        REPLAY.validate_receipt_contents(
+            provenance, self.manifest, self.protocol, runs, spawns, finals
+        )
+
+    def test_receipt_contents_reject_fabricated_spawn_result_path(self) -> None:
+        provenance = self._valid_provenance()
+        runs, spawns, finals = self._receipt_contents()
+        spawns[1]["tool_result"] = {"task_name": "/root/fabricated"}
+        with self.assertRaises(REPLAY.EvalError):
+            REPLAY.validate_receipt_contents(
+                provenance, self.manifest, self.protocol, runs, spawns, finals
+            )
+
+    def test_receipt_contents_reject_unbound_final_evidence(self) -> None:
+        provenance = self._valid_provenance()
+        runs, spawns, finals = self._receipt_contents()
+        finals[2]["main_evidence_sha256"] = "0" * 64
+        with self.assertRaises(REPLAY.EvalError):
+            REPLAY.validate_receipt_contents(
+                provenance, self.manifest, self.protocol, runs, spawns, finals
             )
 
 

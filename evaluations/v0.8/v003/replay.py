@@ -405,7 +405,6 @@ def validate_provenance_structure(
             "sequence",
             "mode",
             "canonical_agent_path",
-            "agent_id",
             "spawn_receipt_path",
             "spawn_receipt_sha256",
             "final_receipt_path",
@@ -418,36 +417,158 @@ def validate_provenance_structure(
             raise EvalError(f"{mode} provenance sequence mismatch")
         if receipt["canonical_agent_path"] != protocol["canonical_main_agents"][mode]:
             raise EvalError(f"{mode} canonical agent path mismatch")
-        if not isinstance(receipt["agent_id"], str) or not receipt["agent_id"]:
-            raise EvalError(f"{mode} agent_id is missing")
         expected_previous = None if sequence == 1 else receipts[sequence - 2]["final_receipt_sha256"]
         if receipt["previous_final_receipt_sha256"] != expected_previous:
             raise EvalError(f"{mode} provenance receipt chain is broken")
+        receipt_root = protocol["receipt_contract"]["artifact_root"]
+        slug = f"{sequence:02d}-{mode}"
+        if receipt["spawn_receipt_path"] != f"{receipt_root}{slug}-spawn.json":
+            raise EvalError(f"{mode} spawn receipt path drifted")
+        if receipt["final_receipt_path"] != f"{receipt_root}{slug}-final.json":
+            raise EvalError(f"{mode} final receipt path drifted")
+
+
+def validate_receipt_contents(
+    provenance: dict[str, Any],
+    manifest: dict[str, Any],
+    protocol: dict[str, Any],
+    runs: list[dict[str, Any]],
+    spawn_receipts: list[dict[str, Any]],
+    final_receipts: list[dict[str, Any]],
+) -> None:
+    for sequence, (receipt, spawn, final, run) in enumerate(
+        zip(provenance["receipts"], spawn_receipts, final_receipts, runs), 1
+    ):
+        mode = receipt["mode"]
+        canonical = protocol["canonical_main_agents"][mode]
+        workflow_paths = [item.get("path") for item in run.get("workflow_inputs", [])]
+        workflow_bundle = sha256_file_set(workflow_paths)
+        model_calls = run.get("model_call_evidence", [])
+        main_calls = [item for item in model_calls if item.get("kind") == "main"]
+        if len(main_calls) != 1:
+            raise EvalError(f"{mode} receipt cannot bind exactly one main evidence")
+        main_call = main_calls[0]
+
+        spawn_keys = {
+            "schema_version",
+            "evaluation_id",
+            "sequence",
+            "mode",
+            "parent_task_path",
+            "tool",
+            "request",
+            "tool_result",
+            "previous_final_receipt_sha256",
+            "workflow_bundle_sha256",
+        }
+        if not isinstance(spawn, dict) or set(spawn) != spawn_keys:
+            raise EvalError(f"{mode} spawn receipt has missing or unknown fields")
+        if spawn["schema_version"] != protocol["receipt_contract"]["spawn_schema"]:
+            raise EvalError(f"{mode} spawn receipt schema mismatch")
+        if (
+            spawn["evaluation_id"] != manifest["evaluation_id"]
+            or spawn["sequence"] != sequence
+            or spawn["mode"] != mode
+            or spawn["parent_task_path"] != protocol["parent_task_path"]
+            or spawn["tool"] != "collaboration.spawn_agent"
+        ):
+            raise EvalError(f"{mode} spawn receipt identity mismatch")
+        expected_request = {
+            "task_name": canonical.removeprefix(f"{protocol['parent_task_path']}/"),
+            "fork_turns": protocol["context_creation"]["fork_turns"],
+            "model_override": protocol["context_creation"]["model_override"],
+            "reasoning_effort_override": protocol["context_creation"][
+                "reasoning_effort_override"
+            ],
+        }
+        if spawn["request"] != expected_request:
+            raise EvalError(f"{mode} actual spawn request drifted")
+        if spawn["tool_result"] != {"task_name": canonical}:
+            raise EvalError(f"{mode} actual spawn result path drifted")
+        if spawn["previous_final_receipt_sha256"] != receipt[
+            "previous_final_receipt_sha256"
+        ]:
+            raise EvalError(f"{mode} spawn was not chained after the previous final")
+        if spawn["workflow_bundle_sha256"] != workflow_bundle:
+            raise EvalError(f"{mode} spawn receipt workflow bundle mismatch")
+
+        final_keys = {
+            "schema_version",
+            "evaluation_id",
+            "sequence",
+            "mode",
+            "canonical_task_name",
+            "completion_status",
+            "spawn_receipt_sha256",
+            "previous_final_receipt_sha256",
+            "workflow_bundle_sha256",
+            "main_evidence_path",
+            "main_evidence_sha256",
+        }
+        if not isinstance(final, dict) or set(final) != final_keys:
+            raise EvalError(f"{mode} final receipt has missing or unknown fields")
+        if final["schema_version"] != protocol["receipt_contract"]["final_schema"]:
+            raise EvalError(f"{mode} final receipt schema mismatch")
+        if (
+            final["evaluation_id"] != manifest["evaluation_id"]
+            or final["sequence"] != sequence
+            or final["mode"] != mode
+            or final["canonical_task_name"] != canonical
+            or final["completion_status"] != "completed"
+        ):
+            raise EvalError(f"{mode} final receipt identity/status mismatch")
+        if final["spawn_receipt_sha256"] != receipt["spawn_receipt_sha256"]:
+            raise EvalError(f"{mode} final receipt is not bound to its spawn receipt")
+        if final["previous_final_receipt_sha256"] != receipt[
+            "previous_final_receipt_sha256"
+        ]:
+            raise EvalError(f"{mode} final receipt chain mismatch")
+        if final["workflow_bundle_sha256"] != workflow_bundle:
+            raise EvalError(f"{mode} final receipt workflow bundle mismatch")
+        if (
+            final["main_evidence_path"] != main_call.get("evidence_path")
+            or final["main_evidence_sha256"] != main_call.get("evidence_sha256")
+        ):
+            raise EvalError(f"{mode} final receipt is not bound to main-call evidence")
 
 
 def verify_provenance(
-    provenance_path: Path, manifest: dict[str, Any], protocol: dict[str, Any]
+    provenance_path: Path,
+    manifest: dict[str, Any],
+    protocol: dict[str, Any],
+    runs: list[dict[str, Any]],
 ) -> dict[str, Any]:
     provenance = load_json(provenance_path)
     validate_provenance_structure(provenance, manifest, protocol)
+    spawn_receipts: list[dict[str, Any]] = []
+    final_receipts: list[dict[str, Any]] = []
     for receipt in provenance["receipts"]:
-        verify_bound_artifact(
+        spawn_path = verify_bound_artifact(
             receipt["spawn_receipt_path"],
             receipt["spawn_receipt_sha256"],
             f"{receipt['mode']} spawn receipt",
         )
-        verify_bound_artifact(
+        final_path = verify_bound_artifact(
             receipt["final_receipt_path"],
             receipt["final_receipt_sha256"],
             f"{receipt['mode']} final receipt",
         )
+        spawn_receipts.append(load_json(spawn_path))
+        final_receipts.append(load_json(final_path))
+    validate_receipt_contents(
+        provenance, manifest, protocol, runs, spawn_receipts, final_receipts
+    )
     return {
         "pass": True,
         "same_parent_task": True,
         "fork_turns_none": True,
         "no_model_or_reasoning_override": True,
         "canonical_order_and_agent_paths": True,
-        "receipt_chain_valid": True,
+        "receipt_content_and_chain_valid": True,
+        "workflow_and_main_evidence_bound": True,
+        "platform_agent_or_call_id": "not-exposed-by-platform",
+        "platform_signed_receipts": False,
+        "independent_live_cross_check_required": True,
         "backend_exact_model_version": "not-exposed-by-platform",
         "claim_scope": "same-parent-task-session-only",
     }
@@ -465,7 +586,7 @@ def score_phase_b(
     lite_inputs = [item.get("path") for item in runs[1].get("workflow_inputs", [])]
     if lite_inputs != expected_lite_paths:
         raise EvalError("V003 Lite workflow inputs drifted from the frozen prototype")
-    provenance = verify_provenance(provenance_path, manifest, protocol)
+    provenance = verify_provenance(provenance_path, manifest, protocol, runs)
 
     original_verify = V002.verify_bound_artifact
     original_stage_a = V002.stage_a_records
