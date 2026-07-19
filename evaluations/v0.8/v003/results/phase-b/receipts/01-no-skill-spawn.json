@@ -1,0 +1,19 @@
+{
+  "schema_version": "lean-agent-spawn-receipt/v1",
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "sequence": 1,
+  "mode": "no-skill",
+  "parent_task_path": "/root",
+  "tool": "collaboration.spawn_agent",
+  "request": {
+    "task_name": "lean002_v003_no_skill",
+    "fork_turns": "none",
+    "model_override": null,
+    "reasoning_effort_override": null
+  },
+  "tool_result": {
+    "task_name": "/root/lean002_v003_no_skill"
+  },
+  "previous_final_receipt_sha256": null,
+  "workflow_bundle_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d"
+}

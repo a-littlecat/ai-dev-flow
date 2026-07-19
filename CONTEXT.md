@@ -27,8 +27,8 @@
 | Review | 独立于 lifecycle 的审查状态和 findings | 已建立，当前存在重复表达 |
 | UA | `UA0`–`UA7` 用户动作/验收等级及其结果 | 已建立 |
 | RED / GREEN / SIGNAL | 失败信号、通过信号和证据来源 | 已建立 |
-| Workflow Contract Module | 归一化 TASK、校验不变量并生成只读报告的深模块 | v0.7 方案已批准，未实现 |
-| Contract Interface | 人、agent、校验器和投影 Adapter 共同读取的稳定语义入口 | v0.7 方案已批准，未实现 |
+| Workflow Contract Module | 归一化 TASK、校验不变量并生成只读报告的深模块 | v0.7 已实现并发布，v0.8 继续兼容 |
+| Contract Interface | 人、agent、校验器和投影 Adapter 共同读取的稳定语义入口 | `adf/v0.7.0` 已实现并稳定兼容 |
 | Overlay | 只在复杂路径触发时增加的约束层，不重定义核心状态 | v0.7 后续范围，未实现 |
 | Adapter | 在 Markdown 版本、输出格式或外部系统边界做转换的实现 | v0.7 方案已批准，未实现 |
 
@@ -46,14 +46,13 @@
 
 ## 当前已知张力
 
-- 仓库内部版本身份已收口为 `0.6.0`，当前为 Release ready（尚未发布）；计划 tag 为 `v0.6.0`，但实际 tag、push、GitHub Release、merge 和本机 Skill 同步仍需分别取得授权。
-- `TASK_TEMPLATE.md` 同时保存“代码审查 / Diff 审查”以及两组合并状态，容易形成重复真相。
-- `TASK_BOARD_TEMPLATE.md` 一方面声明只保留索引和状态，另一方面提供约 30 列完整视图，人工维护成本较高。
-- 当前没有确定性的 Contract validator 和回归 fixture；规则一致性主要依赖 agent 阅读长文档。
+- Skill 包当前发布候选为 `0.8.0`，正式发布状态以仓库 tag 和 GitHub Release 证据为准；Workflow Contract 接口版本继续为 `adf/v0.7.0`。
+- v0.8 默认运行时已收敛为 `SKILL.md + references/CORE.md`；历史长手册仍保留为按需兼容资料，不能重新进入默认预加载路径。
+- 当前 Contract validator、回归 fixtures 和 TASK_BOARD drift 检查均为只读能力，不自动改写任务状态或授予外部操作权限。
 - 不同 harness 的安装副本可能与仓库源发生版本漂移，需要分发校验，但分发问题不应污染核心 Contract。
 
 ## 当前架构方向
 
-v0.7 已批准按一个深的 `Workflow Contract Module` 推进：用单一语义入口读取 TASK、保守兼容旧格式、校验状态不变量，并把 TASK_BOARD 作为只读投影进行对照。正式任务已排期，但尚未开始实现；第一阶段不实现状态写入器、通用插件系统或自动外部同步。
+v0.7 已交付并发布 `Workflow Contract Module`、Legacy / v0.7 Reader、只读 lint、Compact Writer 路由和 TASK_BOARD drift 检查。v0.8 在保持这些接口兼容的前提下，把默认运行时收敛为两文件内核，并通过 Lite / Tracked / Controlled 三档路由减少低风险任务的无效工作流消耗；仍不引入状态写入器、通用插件系统、数据库或自动外部同步。
 
-详见 `docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`。
+详见 `docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md` 与 `docs/plans/V0.8_SKILL_SLIMMING_RFC.md`。

@@ -2,363 +2,129 @@
 
 [中文](README.md)
 
-A reusable AI-assisted development workflow for solo developers who want coding agents to work on real projects without turning the repo into a mystery box.
+A risk-activated workflow for AI-assisted software development. It uses project rules, Git/diff, deterministic validation, and task records when they add value without forcing the full process onto every small change.
 
-`ai-dev-flow` is a Markdown-first Skill that helps Codex, Claude Code, Gemini CLI, Cursor, DeepSeek, and other coding agents manage long-running software work with clear task files, Git baselines, diff reviews, validation evidence, and human acceptance decisions.
+The v0.8 behavior is simple:
 
-The goal is simple: let AI move faster, but keep the project understandable, reviewable, and under your control.
+- low-risk work exits the Skill and proceeds with project rules and validation;
+- work that needs durable evidence uses a Tracked TASK;
+- high-risk, real-environment, or delivery work uses Controlled governance and mandatory review at enforcement points.
 
-## Why This Exists
+## Why v0.8
 
-AI coding agents are excellent at making changes, but long-running projects need more than code edits.
+Earlier releases could govern complex projects, but their default documentation and prompt surface became too large. With frontier models, that can consume context, add Reviewer calls, and interrupt users without improving the result.
 
-Without a workflow, it is easy to lose track of:
-
-- what task the agent is doing;
-- which files were supposed to change;
-- what diff belongs to which task;
-- whether a task was reviewed or only "looked done";
-- what the human actually needs to verify;
-- whether multiple agents are about to edit the same module;
-- when it is safe to merge.
-
-`ai-dev-flow` turns those fuzzy moments into explicit project files and reusable checklists.
-
-## What You Get
-
-- Task decomposition for long-running solo projects.
-- A `TASK_BOARD` and per-task Markdown records.
-- Git baseline and precheck rules.
-- A/B/C/D task risk levels.
-- Branch / Worktree guidance without forcing every tiny task into a branch.
-- Diff-based code review instead of vague file reading.
-- Review severity levels: `P0 / P1 / P2 / P3`.
-- User action levels: `UA0` through `UA7`.
-- Batch flow for small A/B tasks.
-- Parallel Wave flow for safe multi-agent scheduling.
-- v0.6.0 design-level guides for Intake, Loop Engineering, Review-Repair Loop, Roles, Project Constitution, Memory, optional GitHub Issues backend, and harness compatibility.
-- Safety rules for merge, push, release, deletion, secrets, and local config.
-- Prompt templates that work even in agents without native Skill support.
-
-## Core Idea
-
-`TASK` is always the smallest responsibility unit.
-
-Batch, Wave, and Loop are only organization strategies:
-
-- `Single Task`: one session works on one task.
-- `Batch`: one session sequentially completes several low-risk A/B tasks.
-- `Parallel Wave`: multiple sessions work on multiple non-conflicting tasks after lock and dependency checks.
-- `Loop`: an outer orchestration layer for existing modes; it does not replace task state.
-
-No Batch, Wave, or Loop is allowed to hide task boundaries. Reviews, diffs, validation, and user action levels stay per task.
-
-## Roles Are Not Sessions
-
-The v0.6.0 role model constrains responsibilities. It does not require one separate session for every role.
-
-The default minimal session model is:
-
-- Overview session: Orchestrator / Planner / Archivist.
-- Execution session: Engineer / Verifier / Repairer.
-- Review session: Reviewer.
-
-One session may switch roles across different phases, but each round should declare the current role and mode. Reviewer does not repair, and Engineer / Repairer do not self-approve.
-
-ai-dev-flow does not forbid a model or harness from automatically using subagents, including ultra mode-like internal acceleration. Subagents are optional capability, not a default dependency. Agents without subagent support can still run the workflow through Markdown, Git, and TASK files.
-
-Read-only subagents are a good fit for review, validation, status triage, documentation checks, log cleanup, and test result summarization. Coding subagents are allowed only with boundaries: task id, role, mode, allowed scope, forbidden scope, validation method, and final Reviewer review. Parallel coding subagents require user confirmation, independent branches or Worktrees by default, lock checks, and per-task diff review. Subagents must not automatically merge, push, release, or delete.
-
-## Who It Is For
-
-Use this if you are a solo developer who:
-
-- uses AI agents for real software projects;
-- wants persistent task state outside chat history;
-- wants AI edits to be diff-reviewable;
-- wants to avoid accidental broad refactors;
-- wants clear rules for when humans need to read, run, test, or decide;
-- sometimes uses multiple AI sessions and needs conflict control.
-
-It is intentionally generic. It does not assume a specific language, framework, product domain, or coding agent.
-
-## Who It Is Not For
-
-This is probably too much process for:
-
-- one-off scripts;
-- throwaway demos;
-- quick experiments;
-- pure Q&A with no project files;
-- projects where you do not want Git, task records, or review checkpoints.
-
-## Install
-
-This repository contains the Skill at:
-
-```text
-skills/ai-dev-flow/
-```
-
-### Codex
-
-Copy the Skill folder into your Codex skills directory:
-
-```text
-~/.codex/skills/ai-dev-flow/
-```
-
-On Windows, this is usually:
-
-```text
-C:\Users\<you>\.codex\skills\ai-dev-flow\
-```
-
-Then ask Codex:
-
-```text
-Use ai-dev-flow to initialize this project workflow.
-```
-
-You can also use Chinese trigger phrases such as:
-
-```text
-用 AI开发流程，帮我拆任务。
-```
-
-### Claude Code, Gemini CLI, Cursor, DeepSeek, or Other Agents
-
-If your agent supports Skills or custom instruction packs, copy `skills/ai-dev-flow/` to that agent's Skill directory.
-
-If it does not support Skills, ask the agent to read these files as plain Markdown:
+The v0.8 default runtime is only:
 
 ```text
 skills/ai-dev-flow/SKILL.md
-skills/ai-dev-flow/references/WORKFLOW.md
-skills/ai-dev-flow/references/PROMPTS.md
+skills/ai-dev-flow/references/CORE.md
 ```
 
-That is enough to use the workflow manually.
+All other guides remain available on demand.
 
-## Quick Start
+## Routing outcomes
 
-### 1. Initialize a Project Workflow
+| Outcome | Use when | Default behavior |
+|---|---|---|
+| `DoNotUseSkill` | Low risk, one session, few files, complete deterministic validation | No TASK, Reviewer, or repair loop |
+| `Tracked` | Cross-session work, broader scope, or durable evidence is needed | TASK; read-only Reviewer only when risk flags trigger |
+| `Controlled` | Class D, high-risk, real-environment, delivery, or irreversible actions | Full TASK; mandatory independent Review at enforcement points |
+| `Blocked` | Input, authority, capability, or evidence is missing | Stop and report the minimum blocking information |
+
+The exact rules have one source: `references/CORE.md` → `POLICY_JSON`.
+
+## Quick start
+
+Install `skills/ai-dev-flow/` in the agent's Skill directory, then ask:
 
 ```text
-Use ai-dev-flow to initialize the workflow for this project.
-Read the existing README, AGENTS.md, docs/, and key config files first.
-Do not modify business code.
+Use ai-dev-flow for this task. First route it to DoNotUseSkill, Tracked, Controlled, or Blocked.
 ```
 
-The agent should create or suggest a minimal structure like:
+A Skill-capable agent reads only `SKILL.md + CORE.md` by default. Projects without Skill support can merge the minimal rules from `references/AGENTS_COMPAT.md` into their existing `AGENTS.md`.
 
-```text
-docs/
-├── PROJECT_INDEX.md
-├── TASK_BOARD.md
-├── DECISIONS.md
-├── CODE_REVIEW_CHECKLIST.md
-├── batches/
-├── plans/
-├── tasks/
-└── waves/
+## What remains core
+
+- User intent and project rules take precedence.
+- Git state, base commit, diff ownership, and rollback boundaries.
+- TASK as the source of truth for Tracked and Controlled work.
+- Validation evidence covering completion criteria.
+- Authority, real-environment, sensitive-data, and side-effect gates.
+- An isolated, read-only Reviewer when policy requires it.
+- Separate Review, UA, Accepted, commit, merge, release, and Closed states.
+
+## What leaves the default path
+
+These materials remain compatible but are no longer loaded by default:
+
+- the long prompt library;
+- Batch, Parallel Wave, and general Loop orchestration;
+- Memory, Project Constitution, and role declarations;
+- provider and harness branches;
+- universal Reviewer calls and unconditional repair loops.
+
+v0.8 does not add a scheduler, database, telemetry, billing, or model adapter. It never auto-merges, pushes, releases, deletes, or performs external synchronization.
+
+## TASK and v0.7 compatibility
+
+- Lite creates no TASK.
+- New Tracked or Controlled work uses `references/TASK_TEMPLATE.md`.
+- Existing TASK files keep their format and are not batch-migrated.
+- `TASK_TEMPLATE_COMPACT.md` remains only for v0.7 Writer/Reader compatibility.
+- The Skill package is `0.8.0`; the Workflow Contract schema remains `adf/v0.7.0`.
+
+See `skills/ai-dev-flow/references/V0.8_MIGRATION.md` for the migration guide.
+
+## Reviewer and the third repair round
+
+- Tracked uses one isolated, read-only Reviewer only when deterministic risk flags trigger.
+- Controlled requires Review before acceptance recommendation, delivery, merge, and release.
+- The repair budget starts at two rounds. A third round is allowed only when all progress conditions pass.
+- Three is the absolute maximum. Changing models does not reset the budget, and external side effects are never automatically retried.
+
+## Read-only checks
+
+The v0.7 standard-library Reader, `workflow_lint`, and TASK_BOARD drift checks remain available:
+
+```powershell
+python skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-001.md --format human
+python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
 ```
 
-Optional v0.6.0 structure for long-running projects that need Intake, Loop, Memory, or project-level hard rules. These files and folders are not required for initialization:
+A passing lint result does not imply Review, UA, merge, release, or task closure.
 
-```text
-docs/
-├── intake/
-├── loops/
-├── memory/
-└── PROJECT_CONSTITUTION.md
-```
-
-### 2. Break a Requirement Into Tasks
-
-```text
-Use ai-dev-flow to split this requirement into small tasks:
-<paste requirement>
-```
-
-The agent should create task entries with goals, non-goals, validation, risk level, and execution boundaries.
-
-### 3. Execute One Task
-
-```text
-Use ai-dev-flow to execute docs/tasks/TASK-001.md.
-```
-
-The agent should check Git status, record the base commit, follow the task boundary, update the task file, and provide validation evidence.
-
-### 4. Review the Diff
-
-```text
-Use ai-dev-flow to review docs/tasks/TASK-001.md based on its diff.
-```
-
-The review should be based on the task diff, not a vague read-through of files.
-
-### 5. Decide the Human Action Level
-
-Every task should end with a clear `UA` recommendation:
-
-- `UA0`: no user acceptance needed; agent evidence is enough.
-- `UA1`: user only reads the summary.
-- `UA2`: user reads the document or plan.
-- `UA3`: user checks evidence, not local runtime.
-- `UA4`: user runs locally.
-- `UA5`: user tests in a real business environment.
-- `UA6`: user performs regression acceptance.
-- `UA7`: user decision required.
-
-The agent should not simply say "needs human acceptance." It must say what the human actually needs to do.
-
-## Batch and Parallel Wave
-
-### Batch
-
-Batch is for small low-risk tasks.
-
-One execution session sequentially completes several A/B tasks, then one review session reviews them in a batch.
-
-Rules:
-
-- A/B tasks only.
-- C/D tasks stay separate.
-- The diff must stay clear and separable per task.
-- A-level documentation Batch may use one commit.
-- B-level small code Batch should preferably use one commit per TASK; if not, record per-task diff ownership.
-- If multiple B-level tasks modify the same file, split them by default or require explicit user confirmation.
-- Review must output a conclusion for every task.
-
-### Parallel Wave
-
-Parallel Wave is for safe parallel execution.
-
-Multiple sessions work on multiple non-conflicting tasks after checking:
-
-- expected modified files;
-- affected modules;
-- dependencies;
-- file locks;
-- module locks;
-- task risk level;
-- user action level.
-
-Rules:
-
-- Parallel execution is not automatic.
-- The user must confirm it.
-- D-level and `UA5 / UA6 / UA7` code tasks do not enter code parallelism by default.
-- Code tasks in a Parallel Wave should use an independent branch or Worktree by default.
-- Multiple code execution sessions must not share the same workspace by default.
-- Review Hub may review a Wave, but must output per-task conclusions.
-
-## v0.7.0: Workflow Contract and Read-Only Checks
-
-v0.7.0 preserves the v0.6.0 workflow and adds deterministic Contract and read-only inspection capabilities:
-
-- A canonical `adf/v0.7.0` Workflow Contract for task lifecycle, Review, UA, and delivery semantics.
-- Dual-read support for legacy tasks and explicitly opted-in v0.7 tasks without automatic migration.
-- A read-only `workflow_lint` CLI with stable Human/JSON diagnostics and provenance.
-- Compact v0.7 routing for eligible new A/B tasks while complex paths remain Full/Legacy.
-- Read-only TASK_BOARD projection comparison with no `--fix` or reverse write-back.
-
-The Skill distribution version `0.7.0` and Contract interface version `adf/v0.7.0` evolve independently. A passing lint result covers only structure and currently decidable rules; it does not mean Review, user acceptance, merge, release, or task closure is complete.
-
-## v0.6.0: Design-Level Guides
-
-v0.6.0 adds Markdown-first design-level workflow guides for:
-
-- Intake before task creation.
-- Loop Engineering for triage, goal, review-repair, and status loops.
-- Review-Repair Loop with bounded repair rounds.
-- Role Guide for Orchestrator, Planner, Engineer, Reviewer, Verifier, Repairer, and Archivist.
-- Project Constitution using MUST / SHOULD / MUST NOT rules.
-- Memory under `docs/memory/`.
-- Optional GitHub Issues backend mapping without automatic sync.
-- Harness compatibility for Codex, Claude Code, Cursor, Gemini CLI, DeepSeek, and generic agents.
-
-These guides remain document- and prompt-driven. They do not imply automatic state writes, automatic GitHub sync, automatic subagent or multi-agent scheduling, automatic merge, or automatic release; the scripts added in v0.7.0 are read-only checks.
-
-## Repository Structure
+## Repository layout
 
 ```text
 ai-dev-flow/
 ├── README.md
-├── skills/
-│   └── ai-dev-flow/
-│       ├── SKILL.md
-│       ├── README.md
-│       ├── CHANGELOG.md
-│       ├── VERSION
-│       ├── references/
-│       └── scripts/
-└── .gitignore
+├── README.en.md
+├── docs/
+├── evaluations/v0.8/
+└── skills/ai-dev-flow/
+    ├── SKILL.md
+    ├── VERSION
+    ├── references/
+    ├── scripts/
+    └── tests/
 ```
 
-The root `README.md` is the public project introduction.
+See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 
-The Skill's detailed manual is here:
+## Current version
 
 ```text
-skills/ai-dev-flow/README.md
+0.8.0
 ```
 
-## Important Safety Defaults
+- Current release candidate: `0.8.0`.
+- Workflow Contract: `adf/v0.7.0`, still compatible.
+- Release status: the repository `v0.8.0` tag and GitHub Release are the authoritative publication evidence.
+- The historical v0.7.0 tag remains unchanged.
 
-`ai-dev-flow` is intentionally conservative:
-
-- no automatic merge;
-- no automatic push;
-- no automatic release;
-- no blind `git add .`;
-- no branch deletion without confirmation;
-- no Worktree deletion without confirmation;
-- no secret, local config, build artifact, dependency folder, or log submission;
-- no code task without Git baseline;
-- no review without a clear diff;
-- no task completion claim without validation evidence.
-
-## Version
-
-Current Skill version:
-
-```text
-0.7.0
-```
-
-The repository-internal Skill distribution version is now `0.7.0`, with a status of **release ready (not published)**. The Workflow Contract interface version remains independently identified as `adf/v0.7.0`. No `v0.7.0` tag or GitHub Release exists yet, so this version must not be described as publicly released.
-
-The planned tag is `v0.7.0`. It may be created from the approved release commit only after an independent review reports no P0/P1 findings, version-consistency checks pass, and the user explicitly grants new UA7 authorization. Tagging, pushing, creating a GitHub Release, and merging each require separate authorization. Synchronizing local Skill copies does not mean the version has been published.
-
-See:
-
-```text
-skills/ai-dev-flow/CHANGELOG.md
-```
+See `skills/ai-dev-flow/CHANGELOG.md` for changes.
 
 ## License
 
-This project is released under the MIT License.
-
-See:
-
-```text
-LICENSE
-```
-
-## Contributing
-
-Issues and pull requests are welcome.
-
-Good contributions should keep the workflow:
-
-- generic;
-- Markdown-first;
-- agent-neutral;
-- Git-aware;
-- safe by default;
-- clear about human confirmation;
-- free of project-specific business rules.
+MIT License. See [LICENSE](LICENSE).

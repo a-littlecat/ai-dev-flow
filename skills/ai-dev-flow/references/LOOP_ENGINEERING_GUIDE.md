@@ -62,7 +62,7 @@ execute_task -> validation -> review_task -> repair_task -> review_task -> accep
 用途：
 
 - 针对 Review 后的 Needs Fix。
-- 默认最多 2 轮 repair。
+- 基础 repair 预算为 2 轮；仅 `CORE.md` progress gate 全部通过时允许第 3 轮，3 为绝对上限。
 - P0/P1 必须修。
 - P2 可转后续任务。
 - P3 不阻塞。
@@ -96,16 +96,16 @@ execute_task -> validation -> review_task -> repair_task -> review_task -> accep
 
 - `triage_loop`：默认 1 轮，只读。
 - `goal_loop`：默认 1 个任务闭环。
-- `review_repair_loop`：默认最多 2 轮 repair。
+- `review_repair_loop`：基础 2 轮；严格收敛时可有且仅有第 3 轮。
 - `status_loop`：默认 1 轮，只读。
 
-超过默认次数必须说明原因，并等待用户确认。
+第 3 轮只由 `CORE.md` progress gate 自动授予并记录原因；不得用用户确认或更换模型突破 3 轮绝对上限。
 
 ## 人工接管条件
 
 - 风险等级无法判断。
 - 需要合并、发布、删除、重构、依赖变更或架构决策。
-- 两轮修复后仍有 P0/P1。
+- 第 2 轮后 progress gate 不通过，或第 3 轮后仍有 P0/P1。
 - 验证环境无法由 agent 复现。
 - 用户动作等级为 UA7。
 

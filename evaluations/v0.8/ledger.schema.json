@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ai-dev-flow/lean-eval-ledger.schema.json",
+  "title": "ai-dev-flow v0.8 evaluation ledger",
+  "type": "object",
+  "required": ["schema_version", "record_type", "evaluation_id"],
+  "properties": {
+    "schema_version": {"const": "lean-eval-ledger/v1"},
+    "record_type": {
+      "enum": ["stage_a_route", "stage_a_repair", "phase_b_run", "phase_b_summary"]
+    },
+    "evaluation_id": {"type": "string", "minLength": 1},
+    "sample_id": {"type": "string"},
+    "expected": {},
+    "actual": {},
+    "difference": {"type": "array"},
+    "mode": {"enum": ["no-skill", "lite", "full"]},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 3},
+    "workflow_input_bytes": {"type": "integer", "minimum": 0},
+    "workflow_input_nonempty_lines": {"type": "integer", "minimum": 0},
+    "model_calls": {"type": "integer", "minimum": 0},
+    "reviewer_calls": {"type": "integer", "minimum": 0},
+    "blocking_user_questions": {"type": "integer", "minimum": 0},
+    "test_exit": {"type": "integer"},
+    "test_passed": {"type": "integer", "minimum": 0},
+    "test_total": {"type": "integer", "minimum": 0},
+    "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "completion_criteria": {"type": "object"},
+    "scope_violation": {"type": "boolean"},
+    "sensitive_data_exposed": {"type": "boolean"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"record_type": {"const": "stage_a_route"}}},
+      "then": {"required": ["sample_id", "expected", "actual", "difference"]}
+    },
+    {
+      "if": {"properties": {"record_type": {"const": "stage_a_repair"}}},
+      "then": {"required": ["sample_id", "expected", "actual", "difference"]}
+    },
+    {
+      "if": {"properties": {"record_type": {"const": "phase_b_run"}}},
+      "then": {
+        "required": [
+          "mode", "sequence", "workflow_input_bytes", "workflow_input_nonempty_lines",
+          "model_calls", "reviewer_calls", "blocking_user_questions", "test_exit",
+          "test_passed", "test_total", "output_sha256", "completion_criteria",
+          "scope_violation", "sensitive_data_exposed"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": true
+}

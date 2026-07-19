@@ -1,0 +1,60 @@
+# v0.8 Skill 瘦身评估
+
+本目录是 `PLAN-001` 的可复现评估合同。它先于 v0.8 原型存在，用于防止在看到结果后追溯修改样本、标签、统计单位或通过阈值。
+
+## 冻结边界
+
+- `manifest.json`：6 个路由样本、2 个 repair trace、历史 Git 证据、阶段 B 代表任务、执行顺序和量化门槛。
+- `ledger.schema.json`：阶段 A 与阶段 B 原始 ledger 的字段合同。
+- `fixtures/`：Lite 合成任务、repair trace 和阶段 B 的同基线代表任务。
+- `replay.py`：只读校验、零额度回放和阶段 B 机械评分器；仅使用 Python 标准库。
+- `results/`：由冻结输入机械生成的 ledger 与报告。
+
+## 阶段 A
+
+```powershell
+python -B -X utf8 evaluations/v0.8/replay.py verify
+python -B -X utf8 evaluations/v0.8/replay.py replay --check
+```
+
+如需在冻结内容首次形成时生成结果：
+
+```powershell
+python -B -X utf8 evaluations/v0.8/replay.py replay --write
+```
+
+阶段 A 不调用模型、Reviewer、subagent 或外部服务，也不修改 `skills/ai-dev-flow/**`。
+
+## 阶段 B
+
+`LEAN-002` 必须按 `manifest.json` 中的顺序，在同一冻结基线、同一任务、同一完成标准、同一验证命令和同一模型版本下，依次执行：
+
+1. `no-skill`
+2. `lite`
+3. `full`
+
+三次执行完成后，把原始结果写入单一 JSON，并运行：
+
+```powershell
+python -B -X utf8 evaluations/v0.8/replay.py score-phase-b --runs <runs.json>
+```
+
+评分器不接受调用方直接填写汇总数字。每次 run 必须绑定：
+
+- manifest 中的 benchmark baseline / brief hash；
+- 当前仓库内逐文件 hash 的 workflow input 清单；
+- 非空且三次一致的当前模型版本标识；
+- 每次 main / Reviewer / retry 调用的输入 bundle hash 与证据文件；
+- 输出文件和验证日志的仓库内相对路径与 SHA256；
+- 精确且非空的 6 项 completion oracle；
+- 阻塞用户问题原始列表，以及布尔 scope / sensitive-data 结果。
+
+工作流字节/行、模型/Reviewer 调用数、用户问题数、阶段 A 安全结果、活跃核心文件、历史 TASK 改写、依赖清单变化和实施 TASK 数均由评分器复算。负数、缺字段、空 oracle、错 hash、重复证据或不在 `results/phase-b/` 下的证据会直接拒绝，不进入门槛计算。
+
+零分母规则已冻结：当 Full 基线为 0 时，不得伪造百分比；该指标记为 `insufficient` 并阻止全面实施。任务结果、P0/P1、authority、真实环境和 delivery 门禁不允许用其他效率指标抵消。
+
+## 禁止事项
+
+- 不得在看到阶段 A/B 结果后修改 expected label、阈值、计量单位、代表任务或 oracle，并继续沿用旧评估 ID。
+- 任何冻结输入变化都必须创建新的评估 ID，旧 ledger 与新结果不得合并。
+- 不得把固定样本上的零漏检外推为所有项目都不会漏检。

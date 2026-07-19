@@ -145,7 +145,7 @@ ai-dev-flow 对 subagents 的兼容原则：
 ## Cursor
 
 - 可通过项目文档、rules 或 Markdown 引用使用。
-- 如果不支持原生 Skill，先读取 `SKILL.md`、`WORKFLOW.md`、`PROMPTS.md`。
+- 如果不支持原生 Skill，读取 `SKILL.md` 与 `CORE.md`；其他文件按需读取。
 - UI 内的多 agent 行为必须用户确认。
 
 ## Gemini CLI
@@ -163,8 +163,7 @@ ai-dev-flow 对 subagents 的兼容原则：
 
 - 最小读取文件：
   - `skills/ai-dev-flow/SKILL.md`
-  - `skills/ai-dev-flow/references/WORKFLOW.md`
-  - `skills/ai-dev-flow/references/PROMPTS.md`
+  - `skills/ai-dev-flow/references/CORE.md`
 - 只能使用通用机制：Markdown、Git、任务文件、任务看板、审查清单。
 - 不支持某能力时，必须降级为手动步骤或停止等待用户确认。
 

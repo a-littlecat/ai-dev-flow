@@ -1,6 +1,9 @@
-# <TASK-ID>：<任务标题>
+# v0.7 Compact TASK 兼容模板
 
-> Compact v0.7 仅用于新建的 A/B 任务，且必须同时满足 `overlays=none`、非 Batch、非 Wave、非 `real_env_signal`。已确定不满足时使用 Full/Legacy `TASK_TEMPLATE.md`；条件未知时停止、记录“待确认”，不得选择任何模板。已存在的 legacy TASK 保持原格式。
+> 本文件只为 v0.7 Writer/Reader、golden fixtures 和既有项目保留。v0.8 的 Lite 结果为 `DoNotUseSkill`，不创建 Compact TASK；新建 Tracked / Controlled TASK 使用 `TASK_TEMPLATE.md`。旧任务无需迁移。
+
+```markdown
+# <TASK-ID>：<任务标题>
 
 ## Workflow Contract
 
@@ -13,27 +16,24 @@
 - `ua_level`: `<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>`
 - `ua_status`: `<Not Required|Pending|Passed|Failed|Deferred|TBD>`
 
-<!-- 仅在语义要求时增加条件字段：ua_evidence、acceptance_authority、close_authority、commit_status、merge_status、merge_authority。overlays=none 可省略；不要机械填充空状态。 -->
-
 ## 目标与边界
 
-- 目标：<可验证目标>
-- 非目标：<明确不做的内容；确无非目标时写 none>
-- 允许修改：<路径或模块>
-- 禁止修改：<路径或模块>
+- 目标：<待填写>
+- 非目标：<待填写>
+- 允许修改：<待填写>
+- 禁止修改：<待填写>
 
 ## 完成标准与验证
 
-- 完成标准：<可观察完成条件>
-- 验证命令或检查：<可重复命令或人工检查>
+- [ ] <标准与证据>
 
 ## Outcome
 
-<!-- Draft/Ready 阶段可暂不填写 Outcome；进入对应状态后按 WORKFLOW_CONTRACT.md 的正文门禁增加所需字段。 -->
+- Base / Diff：<待填写>
+- 修改文件：<待填写>
+- 验证结果：<待填写>
+- Review / UA：<待填写>
+- 剩余风险：<待填写>
+```
 
-- Base / Diff：base=<base-ref>;diff=<base-ref>..<head-ref>
-- 修改文件：<实际文件>
-- 验证证据：<命令、日志或报告引用>
-- Review findings：none
-
-<!-- C/D、Batch、Wave、real_env_signal、验收失败反馈和未知条件不得继续使用本模板。Compact 后续进入复杂路径时停止并待确认，不得自动迁移，也不得补回 legacy 的双 Review 或双 delivery 段落。 -->
+兼容写入只能更新现有 Contract 和 Outcome，不重建 legacy 的重复状态段落。条件未知时停止并写“待确认”，不得用本模板替代 v0.8 路由。

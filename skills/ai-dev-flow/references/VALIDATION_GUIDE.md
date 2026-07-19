@@ -108,9 +108,9 @@
 未验证项：
 - 无
 
-## 验收建议（Full/Legacy 写回格式）
+## 验收建议写回格式
 
-> 格式路由：新建 A/B、`overlays=none`、非 Batch/Wave/`real_env_signal` 使用 `TASK_TEMPLATE_COMPACT.md`；C/D、Batch、Wave、`real_env_signal` 和 existing legacy 使用 Full/Legacy `TASK_TEMPLATE.md`；未知条件停止并写“待确认”。Compact TASK 不新增本段，只更新 `Workflow Contract` 的 UA 字段，并在 `Outcome` 写 `UA 动作与结果`；不得自动迁移或重建 legacy 段落。
+> v0.8 Lite 不建 TASK；新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md` 并把 UA 证据写入 Outcome。既有 v0.7 Compact / Full / Legacy TASK 沿用原格式，不自动迁移或重建段落。
 
 用户动作等级：UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认
 

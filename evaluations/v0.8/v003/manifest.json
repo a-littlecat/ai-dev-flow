@@ -1,0 +1,36 @@
+{
+  "schema_version": "lean-eval-manifest/v2",
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "replacement_for": "V08-LEAN-EVAL-002",
+  "repair_base_commit": "f240889bd77876d107ea38fbb567bbcd25259016",
+  "authorization_commit": "9c8ec366a968a16941530279a05c09eab8a07d00",
+  "migration_measurement_base_commit": "9c8ec366a968a16941530279a05c09eab8a07d00",
+  "base_manifest": {
+    "path": "evaluations/v0.8/manifest.json",
+    "sha256": "2f62888de0f3fc5c5884dfac739d4c199252df701c008f58689f24f99848314f"
+  },
+  "policy": {
+    "path": "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md",
+    "file_sha256": "7a034e60528fb21aab0dd374a2a58bf07ee0a19d6868b5d7f84fea89a6bf9e86",
+    "schema_version": "ai-dev-flow/v0.8-policy-rc1"
+  },
+  "protocol": {
+    "path": "evaluations/v0.8/v003/protocol.json",
+    "sha256": "9f51ac36832837fcaa6ec72c90fb6b2995d640cb3f2f31473d06c8689f8aaf55"
+  },
+  "phase_b": {
+    "execution_order": [
+      "no-skill",
+      "lite",
+      "full"
+    ],
+    "maximum_main_task_executions": 3,
+    "lite_workflow_files": [
+      "skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md",
+      "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md"
+    ],
+    "lite_workflow_sha256": "547a24ad3bc24d44bc8a934d7d8dc28f45f1cb9edbf57661a933a9cd8f50da85",
+    "evidence_root": "evaluations/v0.8/v003/results/phase-b/",
+    "provenance_path": "evaluations/v0.8/v003/results/phase-b/run-provenance.json"
+  }
+}

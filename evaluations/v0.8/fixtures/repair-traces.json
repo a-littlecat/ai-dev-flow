@@ -1,0 +1,83 @@
+{
+  "schema_version": "lean-repair-trace/v1",
+  "traces": [
+    {
+      "id": "REPAIR-SYN-001",
+      "mode": "Tracked",
+      "scope_hashes": ["scope-a", "scope-a", "scope-a"],
+      "finding_snapshots": [
+        {
+          "round": 0,
+          "findings": [
+            {"id": "F-1", "severity": "P1"},
+            {"id": "F-2", "severity": "P1"},
+            {"id": "F-3", "severity": "P1"}
+          ]
+        },
+        {
+          "round": 1,
+          "findings": [
+            {"id": "F-2", "severity": "P1"},
+            {"id": "F-3", "severity": "P1"}
+          ]
+        },
+        {
+          "round": 2,
+          "findings": [
+            {"id": "F-3", "severity": "P1"}
+          ]
+        }
+      ],
+      "validation_scores": [6, 8, 10],
+      "dependencies_frozen": true,
+      "authority_frozen": true,
+      "root_cause_known": true,
+      "round_3_target": "关闭 F-3",
+      "reviewer_capable": true,
+      "repairer_capable": true,
+      "within_cost_boundary": true,
+      "external_side_effect": false,
+      "model_changed": false,
+      "expected_decision": "ExtendRound3"
+    },
+    {
+      "id": "REPAIR-SYN-002",
+      "mode": "Tracked",
+      "scope_hashes": ["scope-b", "scope-b", "scope-b"],
+      "finding_snapshots": [
+        {
+          "round": 0,
+          "findings": [
+            {"id": "F-7", "severity": "P1"},
+            {"id": "F-8", "severity": "P1"}
+          ]
+        },
+        {
+          "round": 1,
+          "findings": [
+            {"id": "F-7", "severity": "P1"},
+            {"id": "F-8", "severity": "P1"}
+          ]
+        },
+        {
+          "round": 2,
+          "findings": [
+            {"id": "F-7", "severity": "P1"},
+            {"id": "F-8", "severity": "P1"}
+          ]
+        }
+      ],
+      "validation_scores": [9, 9, 8],
+      "dependencies_frozen": true,
+      "authority_frozen": true,
+      "root_cause_known": false,
+      "round_3_target": null,
+      "reviewer_capable": true,
+      "repairer_capable": true,
+      "within_cost_boundary": true,
+      "external_side_effect": false,
+      "model_changed": true,
+      "expected_decision": "Stop"
+    }
+  ]
+}

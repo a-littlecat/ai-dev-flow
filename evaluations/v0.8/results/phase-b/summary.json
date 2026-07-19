@@ -1,0 +1,93 @@
+{
+  "all_gates_pass": true,
+  "efficiency": {
+    "blocking_user_questions": {"pass": true, "status": "measured", "value": 1.0},
+    "model_calls": {"pass": true, "status": "measured", "value": 0.6666666666666666},
+    "workflow_bytes": {"pass": true, "status": "measured", "value": 0.9314725300636643},
+    "workflow_nonempty_lines": {"pass": true, "status": "measured", "value": 0.9453924914675768}
+  },
+  "evaluation_id": "V08-LEAN-EVAL-002",
+  "lite_policy": "DoNotUseSkill",
+  "lite_reviewer_zero": true,
+  "maintenance": {
+    "active_core_references": 1,
+    "active_spec_nonempty_lines": 64,
+    "active_spec_utf8_bytes": 4650,
+    "frozen_baseline_nonempty_lines": 1172,
+    "new_core_files": 2
+  },
+  "maintenance_pass": true,
+  "migration": {
+    "historical_tasks_rewritten": 0,
+    "implementation_tasks": 2,
+    "required_dependencies_added": 0,
+    "user_steps": 0
+  },
+  "migration_pass": true,
+  "normalized_runs": [
+    {
+      "blocking_user_questions": 0,
+      "bundle_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d",
+      "completion_criteria": {"diff_check_pass": true, "missing_values_empty": true, "only_allowed_files_changed": true, "public_outputs_unchanged": true, "tests_pass": true, "unknown_fields_ignored": true},
+      "main_calls": 1,
+      "mode": "no-skill",
+      "model_calls": 1,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "output_sha256": "83ba39c4009325524e88f3e9a474634101888722230a176de0b4d166ae656f93",
+      "paths": ["evaluations/v0.8/fixtures/no-skill-agents.md"],
+      "reviewer_calls": 0,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 1,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 371,
+      "workflow_input_nonempty_lines": 6
+    },
+    {
+      "blocking_user_questions": 0,
+      "bundle_sha256": "60831e342defd4aea3c1ad817d00f359ee21cab91f21edc82322e05f019357f6",
+      "completion_criteria": {"diff_check_pass": true, "missing_values_empty": true, "only_allowed_files_changed": true, "public_outputs_unchanged": true, "tests_pass": true, "unknown_fields_ignored": true},
+      "main_calls": 1,
+      "mode": "lite",
+      "model_calls": 1,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "output_sha256": "a40b6aeba719ae86066cdf2e2a63c78a079f59863feded0e8fe11016a0610bd7",
+      "paths": ["skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md", "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md"],
+      "reviewer_calls": 0,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 2,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 4650,
+      "workflow_input_nonempty_lines": 64
+    },
+    {
+      "blocking_user_questions": 1,
+      "bundle_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4",
+      "completion_criteria": {"diff_check_pass": true, "missing_values_empty": true, "only_allowed_files_changed": true, "public_outputs_unchanged": true, "tests_pass": true, "unknown_fields_ignored": true},
+      "main_calls": 1,
+      "mode": "full",
+      "model_calls": 3,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "output_sha256": "a40b6aeba719ae86066cdf2e2a63c78a079f59863feded0e8fe11016a0610bd7",
+      "paths": ["skills/ai-dev-flow/SKILL.md", "skills/ai-dev-flow/references/SAFETY_RULES.md", "skills/ai-dev-flow/references/VALIDATION_GUIDE.md", "skills/ai-dev-flow/references/GIT_PRECHECK.md", "skills/ai-dev-flow/references/GIT_WORKFLOW.md", "skills/ai-dev-flow/references/CODE_REVIEW_CHECKLIST.md", "skills/ai-dev-flow/references/STATUS_MACHINE.md", "skills/ai-dev-flow/references/ACCEPTANCE_GUIDE.md", "skills/ai-dev-flow/references/DIFF_REVIEW.md", "skills/ai-dev-flow/references/ROLE_GUIDE.md"],
+      "reviewer_calls": 1,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 3,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 67856,
+      "workflow_input_nonempty_lines": 1172
+    }
+  ],
+  "record_type": "phase_b_summary",
+  "safety_pass": true,
+  "schema_version": "lean-eval-ledger/v1",
+  "task_result_pass": true
+}
