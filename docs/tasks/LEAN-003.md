@@ -13,7 +13,8 @@
 - `ua_evidence`: `docs/tasks/LEAN-003.md#outcome`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -103,9 +104,10 @@ git diff --check
 - Review findings：`LEAN003-P1-001`、`LEAN003-P1-002` 均 Closed；最终 P0=0、P1=0、P2=0、P3=0，结论 Passed。
 - UA 动作与结果：UA3 Passed；用户于 2026-07-19 查看精简量、47 / 47 自动测试和独立 Review 证据后明确回复“继续，我已确认。完成上述操作”。
 - 发布决策：用户于 2026-07-19 明确授权合并、推送、正式发布 v0.8.0 并同步本机 Skill；实际 merge commit、远端 main、tag、Release 和本机哈希收据在操作完成后补录。
+- 合并目标与事实证据：`codex/lean-v08-slimming` 已通过 merge commit `6b672cd4e74a65c031f9a2515c1459841e1dcf26` 合并到本地 `main`；远端推送、tag、Release 与本机同步仍以后续收据为准。
 - 历史评估边界：V002/V003 live manifest 绑定实施前 Full workflow，正式入口变化后 full digest 红灯是预期 tripwire；不得修改旧 manifest 造假绿，本任务以 evaluation/prototype 零 diff 和正式 policy 与冻结 prototype 完全相等作为证据。
 
 ## 状态边界
 
-- 当前为 `Accepted / Review Passed / UA3 Passed / Committed / Unmerged`，发布交付已获授权、尚待实际收据。
+- 当前为 `Accepted / Review Passed / UA3 Passed / Committed / Merged`，发布交付已获授权、尚待远端与本机实际收据。
 - `VERSION=0.8.0` 与 Accepted 不单独等于 tag、Published、Released、Merged 或 Closed；实际状态以 Git 和 GitHub 收据为准。

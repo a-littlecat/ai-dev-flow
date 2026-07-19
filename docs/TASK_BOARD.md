@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-19
 > - 当前模式：`LEAN-003` v0.8.0 发布交付
-> - 当前阶段：`LEAN-003` 已 Accepted、Review Passed、UA3 Passed；合并、推送、发布和本机 Skill 同步已获授权，等待实际收据
+> - 当前阶段：`LEAN-003` 已 Accepted、Review Passed、UA3 Passed，并通过 `6b672cd` 合并到本地 `main`；等待远端发布与本机同步收据
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -71,7 +71,7 @@ REL-002 Closed / main@0422887
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
               -> LEAN-002 Review / Passed：V003 all_gates_pass=true
-                  -> LEAN-003 Accepted / Review Passed / UA3 Passed：v0.8.0 发布交付已授权
+                  -> LEAN-003 Accepted / Review Passed / UA3 Passed / Merged：v0.8.0 等待远端发布与本机同步
 ```
 
 原 `V0.8_LOOP_DECISION_RFC`、`LOOP-001`～`LOOP-009` 和临时 PLAN-002 均未提交、未形成 baseline，已由用户授权从当前规划集移除。必要的 risk/progress/stall/authority 语义已作为瘦身 RFC 中 `LEAN-002` 的候选小模块保留，不再建设九任务通用 Loop 平台。
@@ -91,7 +91,7 @@ REL-002 Closed / main@0422887
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
-| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Accepted | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Release delivery / `codex/lean-v08-slimming` | [LEAN-003](tasks/LEAN-003.md) |
+| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Accepted | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged `main@6b672cd` / release pending | [LEAN-003](tasks/LEAN-003.md) |
 
 ## PLAN-001 核心约束
 
