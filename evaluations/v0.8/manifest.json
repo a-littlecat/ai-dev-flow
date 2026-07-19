@@ -1,0 +1,202 @@
+{
+  "schema_version": "lean-eval-manifest/v1",
+  "evaluation_id": "V08-LEAN-EVAL-001",
+  "freeze_date": "2026-07-19",
+  "freeze_commit": "b7938ef61a13ddb1ea22787c9a9a2d70298aadd4",
+  "protocol": {
+    "workflow_input": "实际加载的工作流或规则文件按 UTF-8 字节数与非空行数分别求和；业务 brief、代码 diff、测试输出和所有模式共用的 harness wrapper 不计入工作流输入。",
+    "model_calls": "每个主模型、Reviewer、subagent 或重试上下文请求计 1；同一请求内工具调用不另计。",
+    "blocking_user_questions": "必须收到用户回复才能继续的流程问题计 1；无需回复的状态通知不计。",
+    "task_result": "固定验证命令 exit、通过数、输出文件 SHA256、范围和完成标准逐项布尔值。",
+    "zero_denominator": "Full 指标为 0 时记为 insufficient；不得伪造百分比，且该指标阻止全面实施。",
+    "frozen_change_rule": "任一冻结输入、expected label、oracle、阈值或当前模型版本变化都必须使用新 evaluation_id，禁止与旧 ledger 合并。"
+  },
+  "thresholds": {
+    "lite_vs_full_workflow_bytes_reduction": 0.5,
+    "lite_vs_full_workflow_nonempty_lines_reduction": 0.5,
+    "lite_vs_full_model_calls_reduction": 0.5,
+    "lite_vs_full_blocking_questions_reduction": 0.5,
+    "lite_reviewer_calls": 0,
+    "p0_p1_false_negatives": 0,
+    "authority_or_delivery_misses": 0,
+    "active_core_references_max": 12,
+    "new_core_files_max": 2,
+    "active_spec_nonempty_lines_not_above_baseline": true,
+    "user_migration_steps_max": 3,
+    "historical_tasks_rewritten": 0,
+    "required_dependencies_added": 0,
+    "implementation_tasks_max": 3,
+    "repair_round_absolute_max": 3
+  },
+  "baseline": {
+    "skill_files": 85,
+    "skill_markdown_files": 69,
+    "skill_markdown_lines": 8227,
+    "reference_files": 36,
+    "reference_markdown_lines": 6320,
+    "skill_md_lines": 288,
+    "workflow_md_lines": 615,
+    "task_template_md_lines": 389,
+    "prompts_md_lines": 1182
+  },
+  "phase_b": {
+    "execution_order": ["no-skill", "lite", "full"],
+    "maximum_main_task_executions": 3,
+    "same_current_model_required": true,
+    "extra_model_provider_allowed": false,
+    "benchmark_brief": "evaluations/v0.8/fixtures/lite-benchmark/brief.md",
+    "benchmark_baseline_files": [
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/task_summary.py",
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/test_task_summary.py",
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/TASK-BENCH-001.md"
+    ],
+    "allowed_modified_files": ["task_summary.py"],
+    "verification_commands": [
+      "python -B -X utf8 -m unittest -v",
+      "git diff --check"
+    ],
+    "oracle": {
+      "tests_total": 4,
+      "all_tests_pass": true,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "expected_public_outputs_unchanged": true
+    },
+    "artifact_sha256": {
+      "evaluations/v0.8/fixtures/lite-benchmark/brief.md": "7c63f29a39a6d470a1fae086f06c0758f805b15fe46a31cd9d67cfb524133746",
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/task_summary.py": "a5088c57f5d1ef6cefde411b9fd49adf654001cd83d00d3874af801c2211deaf",
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/test_task_summary.py": "319c660cc83579e2a66278d3e7ae4baa3bb54c7de160dcd19116518e620ac5cf",
+      "evaluations/v0.8/fixtures/lite-benchmark/baseline/TASK-BENCH-001.md": "1d4657eb4213f28295989940fc5ff29250757014d764eb8dc3b985dbd9e128f1",
+      "evaluations/v0.8/fixtures/no-skill-agents.md": "0d039452e37dbdddd63c63d75b3a2266ec0f75e04e11e3b6b9f12a29d380ed70"
+    }
+  },
+  "routes": [
+    {
+      "id": "LITE-SYN-001",
+      "source_kind": "synthetic",
+      "source_path": "evaluations/v0.8/fixtures/lite-syn-001.md",
+      "source_sha256": "9bde0aa3765957e0d8f7fd0c62d8fc9950f6e385d609d0d0e8b0dac040f086c6",
+      "task_class": "A",
+      "ua_level": "UA0",
+      "deterministic_coverage": true,
+      "user_observation_required": false,
+      "risk_flags": ["documentation_only", "single_file"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Preserved"}
+    },
+    {
+      "id": "LITE-SYN-002",
+      "source_kind": "synthetic",
+      "source_path": "evaluations/v0.8/fixtures/lite-benchmark/brief.md",
+      "source_sha256": "7c63f29a39a6d470a1fae086f06c0758f805b15fe46a31cd9d67cfb524133746",
+      "task_class": "B",
+      "ua_level": "UA3",
+      "deterministic_coverage": true,
+      "user_observation_required": false,
+      "risk_flags": ["single_business_file", "internal_refactor", "behavior_tests_cover_oracle"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Preserved"}
+    },
+    {
+      "id": "TRACKED-HIST-001",
+      "source_kind": "git_history",
+      "task_class": "C",
+      "ua_level": "UA3",
+      "deterministic_coverage": false,
+      "user_observation_required": false,
+      "risk_flags": ["business_files_gt_3", "historical_p1", "explicit_independent_review"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Preserved"},
+      "git_evidence": {
+        "base_commit": "28e74f80df98efcd1f975d34950b1edbc058fb20",
+        "payload_commit": "c8626a108e92da731b593ed6bed2bbecc0dfa29b",
+        "review_commit": "4da8643a367f98a2174ed1f874b74cf975a9cbc0",
+        "validation_commit": "a41f087f0089d42cb28a7fd7d0d3096122a51f16",
+        "task_path": "docs/tasks/CONTRACT-002-golden-fixtures.md",
+        "task_sha256": "f9d8d29a4d25e34f6eb457f350901104a01ff671d96bb9febb736d61f1912da6",
+        "review_sha256": "f77aa3ad2034ed4a811100ed46f05bb3d397d996ed729909190d002802d896e7",
+        "validation_sha256": "19cd576e9c4373ca526eca28f8f7c5cae0c711edcb6e7c66a9e68f0a2d64b63c",
+        "payload_diff_sha256": "005942777537e157934e27515fb617d3ae21bbff69fb336b865509a596116562"
+      }
+    },
+    {
+      "id": "TRACKED-HIST-002",
+      "source_kind": "git_history",
+      "task_class": "C",
+      "ua_level": "UA3",
+      "deterministic_coverage": false,
+      "user_observation_required": false,
+      "risk_flags": ["core_execution_path", "historical_p1", "explicit_independent_review"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Preserved"},
+      "git_evidence": {
+        "base_commit": "f7d870de19f6394349cc4b56879bbcddb0504a8a",
+        "payload_commit": "0e1d7467b19ca6d453dcc8eaf2cd733e95efae4a",
+        "review_commit": "6922cd951a2d7aa8b79dd7a28026933caf84f128",
+        "validation_commit": "04d432fed2b0920bded3eafe4b7122dbffcba74b",
+        "task_path": "docs/tasks/CONTRACT-003-readonly-contract-readers.md",
+        "task_sha256": "2bce55eb488e386994be231e5f1356ff423d77f65fb090cf96831bc90bc8020e",
+        "review_sha256": "6c53b291dc4cd92247bad996919ba85ff9d448c99732cb68a88a31b54107b7a2",
+        "validation_sha256": "4c15740316d3e33b58c30d511b24e96a72d316a50229985b3cd4694104e15ce6",
+        "payload_diff_sha256": "287155f802f2986bb3d3344af9efcb1c9cfb32a1b7881e33cac010db94561411"
+      }
+    },
+    {
+      "id": "CONTROLLED-HIST-001",
+      "source_kind": "git_history",
+      "task_class": "D",
+      "ua_level": "UA6",
+      "deterministic_coverage": false,
+      "user_observation_required": true,
+      "risk_flags": ["core_writer_path", "historical_p1", "explicit_independent_review", "regression_acceptance"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Preserved"},
+      "git_evidence": {
+        "base_commit": "7f0f7e5a54d0727098457811359dc6dbee5e7cf4",
+        "payload_commit": "f99dbb209f9b51b86dd718ca7f7a59106637285a",
+        "review_commit": "48d1c01779e8a64704c5cb02351fe77cb3057bb9",
+        "validation_commit": "818313ac5d918ee6816630d0f0b874540bb05ec8",
+        "task_path": "docs/tasks/CONTRACT-005-compact-template-writer-routing.md",
+        "task_sha256": "951cd2d4d82e0a8816ac5c891b20c3ebb9fa35b3f259822c506b36a63bae1120",
+        "review_sha256": "2e28797708c704c32a8ecce6043d9e92eddb34b76362212af6353d702874d50c",
+        "validation_sha256": "e44afa7a683b71b190df0ac5e574a6695281bdfea5c7511e7e098894d9cd7413",
+        "payload_diff_sha256": "d9358a184c47f559a327aa754f38d0a0aefaf5b78fe25db36e0550dcb306c920"
+      }
+    },
+    {
+      "id": "CONTROLLED-HIST-002",
+      "source_kind": "git_history",
+      "task_class": "B",
+      "ua_level": "UA7",
+      "deterministic_coverage": false,
+      "user_observation_required": true,
+      "risk_flags": ["release", "delivery", "external_sync", "historical_p1", "explicit_independent_review"],
+      "review_authority": true,
+      "review_capability": true,
+      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Preserved"},
+      "git_evidence": {
+        "base_commit": "63b4f7e99640e1d09a4fb6efcd2f9496cf732582",
+        "payload_commit": "512533bbf40599488e7c3a57194d5cb0e1029272",
+        "review_commit": "99f3323dd988d436470244007b963cab398f1e42",
+        "validation_commit": "98e6051615e43ad755efb5ba7c26437622228096",
+        "task_path": "docs/tasks/REL-002-close-v07-release-identity-and-sync.md",
+        "task_sha256": "710c2ce4fee66ee02f74b5c2993745ab41ef0fcc5602a64d29a2079ffe99c18f",
+        "review_sha256": "d95f985da3a34091b0f92292e8ba30b47b0aefa109e5ad1c708ab2dc8f2c549a",
+        "validation_sha256": "0ac4fa14be2c2dca67cd0a68c33f5d0a91cbc7d9968ab7cfa085f86b2ed44734",
+        "payload_diff_sha256": "0d1a5caf3a05374d30a2855b6494710b2d3ea14ae7d5acd9330ea5e3f00733ea"
+      }
+    }
+  ],
+  "repair_trace_path": "evaluations/v0.8/fixtures/repair-traces.json",
+  "repair_trace_sha256": "765cb51d0e0d3e3620e39646f8d3cd730ba8067742663f6b7d86652034b2ef18",
+  "keep_simplify_retire": {
+    "keep": ["Git baseline/diff", "TASK fact source for Tracked/Controlled", "authority/evidence gates", "Review-UA-delivery separation", "RED/GREEN/SIGNAL on triggered paths"],
+    "simplify": ["default SKILL entry", "A/B routing", "UA display", "active reference set", "short prompts", "Tracked review trigger"],
+    "retire_from_default_runtime": ["per-turn role declaration", "PROMPTS.md", "Full TASK for Lite", "unconditional Reviewer", "Batch/Wave/Memory/Constitution eager loading", "vendor/model branches"]
+  }
+}
