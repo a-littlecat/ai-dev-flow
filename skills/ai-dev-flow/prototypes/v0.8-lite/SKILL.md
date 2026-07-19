@@ -25,25 +25,15 @@ description: 默认关闭的 v0.8 精简工作流原型，仅供 LEAN-002 固定
 5. 运行覆盖全部完成标准的确定性验证和 `git diff --check`。
 6. 报告实际修改、验证、风险与未完成状态，不把自动化通过写成用户验收或交付完成。
 
-## Lite 路由
+## 路由、审核与修复
 
-只有同时满足以下条件才使用 Lite：
+[CORE.md](references/CORE.md) 中 `POLICY_JSON` 是三档路由、Reviewer 闸门和第 3 轮 repair 的唯一规则源；本文不复制第二套触发列表。
 
-- 任务为 A/B 级、范围小且可回退；
-- 用户已授权该改动；
-- 无外部写入、delivery、发布、数据库迁移、敏感数据或不可逆动作；
-- 无真实环境或用户观察要求；
-- 每项完成标准都有确定性验证；
-- 未命中项目规则要求独立 Review 的风险标记。
-
-Lite 不创建 TASK、不调用 Reviewer、不进入 repair loop，也不提出流程性验收问题。验证失败时只做同一冻结范围内的直接修复；范围或风险改变则升级 Tracked。
-
-## Tracked / Controlled
-
-- 不满足 Lite，但仍是可隔离、可审查的仓库改动：Tracked。
-- 涉及外部副作用、真实环境、delivery、发布、不可逆动作或高风险 authority：Controlled。
-- 两档都使用 TASK 作为边界与事实源，并按 [CORE.md](references/CORE.md) 执行审核、修复和停止规则。
-- 缺少所需 Reviewer、authority 或证据时必须 `Blocked` 或请求明确授权，不得自批或静默降级。
+- Lite 不创建 TASK、不调用 Reviewer、不进入 repair loop，也不提出流程性验收问题。
+- Tracked 使用 TASK；只有 policy 的确定性风险标记命中时才调用一个隔离只读 Reviewer。
+- Controlled 使用完整 TASK，并在验收建议、delivery、merge 或 release 前强制独立 Review。
+- policy 无法解析、字段未知或所需 authority/capability/evidence 缺失时，必须 `Blocked`，不得猜测降级。
+- 验证失败只能在冻结范围内直接修复；范围或风险改变时重新路由。
 
 ## 输出格式
 

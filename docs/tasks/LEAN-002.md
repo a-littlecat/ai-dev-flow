@@ -6,8 +6,8 @@
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Ready`
-- `review_status`: `Needs Fix`
+- `lifecycle`: `Review`
+- `review_status`: `In Review`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -58,10 +58,12 @@
 
 - [x] 原型默认关闭，未接入现行入口，删除原型目录即可回退。
 - [x] 原型核心文件不超过 2，活跃 reference 不超过 12，不增加依赖或历史 TASK 改写。
-- [x] 三次 main 按固定顺序串行完成，模型标识一致且每次输入/输出/验证均绑定 hash。
-- [x] 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
-- [x] Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
-- [x] 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
+- [x] V003 stage A 直接读取实际原型 policy，6 个 route + 2 个 repair trace 零差异。
+- [x] V003 协议冻结同一父任务、`fork_turns=none`、无 override、canonical agent path、顺序和 hash 链收据；明确 backend 精确版本未暴露及结论边界。
+- [ ] V003 三次 main 按固定顺序串行完成，每次输入/输出/验证与 provenance 均绑定 hash。
+- [ ] V003 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
+- [ ] V003 Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
+- [ ] V003 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
 - [ ] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
 
 ### 自动验证命令
@@ -69,7 +71,9 @@
 ```powershell
 python -B -X utf8 evaluations/v0.8/replay.py verify
 python -B -X utf8 evaluations/v0.8/replay.py replay --check
-python -B -X utf8 evaluations/v0.8/replay.py score-phase-b --runs evaluations/v0.8/results/phase-b/runs.json
+python -B -X utf8 evaluations/v0.8/v003/replay.py verify
+python -B -X utf8 evaluations/v0.8/v003/replay.py replay --check
+python -B -X utf8 evaluations/v0.8/v003/replay.py score-phase-b --runs evaluations/v0.8/v003/results/phase-b/runs.json --check
 python -B -X utf8 -m unittest discover -s evaluations/v0.8 -p "test_*.py" -v
 python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/LEAN-002.md --format human
 git diff --check
@@ -77,19 +81,17 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=f240889;diff=working-tree
+- Base / Diff：base=9c8ec36;diff=working-tree
 - 隔离位置：专用分支 `codex/lean-v08-slimming`；每次 benchmark 另用独立临时 Git 工作区。
 - 回滚方式：回退本任务独立 commit 并移除未接入入口的原型目录；不得使用破坏性 reset。
-- 修改文件：原型两文件、`evaluations/v0.8/results/phase-b/**`、本任务与任务板；现行 Skill、冻结 manifest 和依赖未改。
-- 验证证据：stage A 8 / 8 零差异；三档各 4 / 4；阶段 B 保存结果与机械评分一致；`all_gates_pass=true`。
-- 原型状态：默认关闭、未接入现行入口；2 个新核心文件、1 个活跃 reference、64 个活跃规范非空行。
-- 三档结果：严格串行 3 次 main；no-skill/lite/full 调用数为 1/1/3，阻塞问题为 0/0/1，Lite Reviewer 为 0。
-- 效率结果：Lite 相对 Full 的字节、非空行、模型调用、阻塞问题分别降低 93.15%、94.54%、66.67%、100%。
-- 阶段 B 门禁：机械评分全部通过，但整体独立 Review 发现 2 项 P1，因此全面实施门禁失败。
-- Review findings：待修复 `LEAN002-P1-001` 与 `LEAN002-P1-002`；旧 finding 和 Reviewer 证据保持原样，新证据使用 V003。
+- 修改文件：原型两文件、`evaluations/v0.8/v003/**`、本任务与任务板；现行 Skill、V002 冻结 manifest/replay/tests/results 和依赖未改。
+- 验证证据：实际原型 policy 驱动 stage A 8 / 8 零差异；专项测试 9 / 9；协议明确可获得的 provenance 与结论边界。Repair base 为 `f240889`，续做授权 commit 为 `9c8ec36`。
+- V003 调用计数：main=0、Reviewer=0；必须先完成本轮协议/stage A 独立 Review。
+- V002 历史结果：三档各 4 / 4 且机械门禁全通过，但整体独立 Review 的 2 项 P1 仍原样保留，不与 V003 合并。
+- Review findings：V003 候选修复 `LEAN002-P1-001` 与 `LEAN002-P1-002`，等待独立 Reviewer 判定；旧 finding ID 与旧 Reviewer 证据不改。
 - UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
 
-## 独立整体复审
+## V002 独立整体复审（历史只读）
 
 - Reviewer：Codex 隔离只读 Reviewer。
 - 结论：`Blocked`；P0=0，P1=2，P2=0，P3=0。
@@ -107,7 +109,13 @@ git diff --check
 
 用户续做授权后，原型仅为 V003 repair 重新开放；仍未接入现行入口，也不得在新整体 Review 前作为正式 v0.8 入口。
 
+## V003 协议与 stage A 独立 Review
+
+- 输入：authorization base `9c8ec36` 之后的原型两文件、`evaluations/v0.8/v003/**` 与本任务状态投影。
+- 当前计数：main=0；协议 Reviewer 尚未形成结论。
+- 门禁：只有结论为 `Passed` 且 P0=0、P1=0，才允许开始 V003 的三次串行 main。
+
 ## 状态边界
 
-- 当前为 `Ready / Needs Fix`，等待 V003 policy 与零额度协议实现；不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- 当前为 `Review / In Review`，V003 policy、协议和零额度回放已形成候选证据；不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
 - `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。

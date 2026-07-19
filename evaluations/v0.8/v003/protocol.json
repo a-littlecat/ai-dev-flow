@@ -1,0 +1,36 @@
+{
+  "schema_version": "lean-eval-protocol/v1",
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "replacement_for": "V08-LEAN-EVAL-002",
+  "parent_task_path": "/root",
+  "context_creation": {
+    "fork_turns": "none",
+    "model_override": null,
+    "reasoning_effort_override": null
+  },
+  "backend_identity": {
+    "exact_version_exposed_by_platform": false,
+    "required_for_claim": false,
+    "comparison_scope": "same-parent-task-session-only",
+    "claim_boundary": "不声称跨会话或跨平台复现同一 backend 精确版本"
+  },
+  "execution_order": [
+    "no-skill",
+    "lite",
+    "full"
+  ],
+  "canonical_main_agents": {
+    "no-skill": "/root/lean002_v003_no_skill",
+    "lite": "/root/lean002_v003_lite",
+    "full": "/root/lean002_v003_full"
+  },
+  "maximum_main_task_executions": 3,
+  "receipt_contract": {
+    "spawn_receipt_required": true,
+    "final_receipt_required": true,
+    "agent_id_required": true,
+    "previous_final_receipt_sha256_required_after_first": true,
+    "artifact_root": "evaluations/v0.8/v003/results/phase-b/receipts/",
+    "hash_algorithm": "sha256"
+  }
+}
