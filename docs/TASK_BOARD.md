@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`PLAN-001` Accepted Git baseline 提交（`close_task` 交付写回）
-> - 当前阶段：Review Passed + UA2 Passed + commit 已授权；未授权实现、merge、push、release、本机同步或 `Closed`
+> - 当前模式：`PLAN-001` Accepted 后模型术语澄清提交（A 级文档 `execute_task`）
+> - 当前阶段：Accepted baseline `54ebc98` 已形成；术语澄清 commit 已授权，未授权实现、merge、push、release、本机同步或 `Closed`
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -17,19 +17,22 @@
 
 用户随后于 2026-07-19 明确要求“提交”，因此仅授权把 RFC、PLAN-001 和本看板形成 Accepted Git baseline；该授权不包含 merge、push、release、本机同步、`Closed` 或后续 `LEAN-*` 实施。
 
+用户随后要求统一澄清模型来源表述。本轮只使用“当前执行模型真实任务对照”和“额外模型供应商”两个术语，明确独立 Reviewer 可以使用同一平台/模型的隔离上下文；不改变三次上限、评估门禁或授权边界。用户随后再次明确要求“提交”，因此仅授权把该三文件澄清形成独立 commit。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
 - 更新本看板；
 - 移除同一未提交规划集中被新方案取代的原 Loop RFC、9 个 `LOOP-*` Draft 和临时 PLAN-002。
 - 精确提交上述三文件，形成 PLAN-001 Accepted Git baseline。
+- 精确提交上述三文件的模型术语澄清。
 
 本轮不允许：
 
 - 修改 `skills/ai-dev-flow/**`、代码、测试或现行行为；
 - 创建或执行 `LEAN-*`；
-- 调用外部模型做对照测试；
-- 除已明确授权的 PLAN-001 Accepted baseline commit 外，不执行 merge、push、release、删除已提交历史或同步本机 Skill。
+- 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
+- 除已明确授权的 PLAN-001 Accepted baseline 与术语澄清 commit 外，不执行 merge、push、release、删除已提交历史或同步本机 Skill。
 
 ## 真相源与状态规则
 
@@ -83,7 +86,7 @@ REL-002 Closed / main@0422887
 - Lite 不建 TASK、不调用独立 Reviewer、不进入 repair loop。
 - 首版自动审核只实现确定性闸门：Lite 禁止，Tracked 风险触发，Controlled 交付前强制；Tracked 命中门禁但缺 Reviewer 时必须 Blocked、合法升级或取得明确授权，不能静默跳过。
 - Tracked / Controlled repair 基础预算为 2；finding 单调减少、验证改善且范围冻结时自动增加第 3 轮，3 为绝对上限。
-- 外部模型对照先冻结样本与计量协议并做零额度回放；通过后只做可整体回退的最小原型，真实对照只用一个模型、一个 Lite 任务、最多 3 次执行；全面收缩必须等待对照通过。
+- 当前模型真实任务对照前先冻结样本与计量协议并做零额度回放；通过后只做可整体回退的最小原型，使用当前执行会话所用模型、一个 Lite 任务、最多 3 次执行；不接入额外模型供应商，全面收缩必须等待对照通过。
 - 首版候选实施任务不超过 3 个，验收前不创建。
 - 如果不能把工作流输入、模型调用和用户流程问题至少降低 50%，或出现更多 P0/P1、权限越界、状态误报，则停止 v0.8 扩建。
 
