@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `LEAN-001` |
 | 任务类型 | 测试 |
-| 当前模式 | 待独立审查（`review_task`） |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 等待第 1 轮有限修复（`repair_task`） |
+| 任务状态 | 需修复（`Needs Fix`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：新增可复现评估工具和冻结证据，但不修改现行 Skill 行为 |
@@ -63,8 +63,8 @@
 - 执行位置：独立分支
 - Worktree 路径：不适用
 - Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=working-tree
-- 当前 HEAD：`b7938ef61a13ddb1ea22787c9a9a2d70298aadd4`
-- Diff 范围：`b7938ef..HEAD`
+- 当前 HEAD：`c607cb75590cfeb5ea45c1d60e10b77a44208080`
+- Diff 范围：`b7938ef..c607cb7`
 - 是否有未提交改动：开始前否
 - 是否存在不应提交文件：否
 - 是否允许 commit：是；按 LEAN 任务保留独立 commit
@@ -103,7 +103,7 @@
 python -B -X utf8 evaluations/v0.8/replay.py verify
 python -B -X utf8 evaluations/v0.8/replay.py replay --check
 python -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_*.py" -v
-python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py --project-root . --task docs/tasks/LEAN-001.md --format human
+python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/LEAN-001.md --format human
 git diff --check
 ```
 
@@ -128,12 +128,12 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
+- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..c607cb7
 - 隔离位置：独立分支 `codex/lean-v08-slimming`。
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 - 修改文件：`evaluations/v0.8/**`、`docs/tasks/LEAN-001.md`、`docs/TASK_BOARD.md`。
 - 验证证据：8 / 8 回放一致；历史 hash、4 / 4 代表任务测试、41 / 41 回归、JSON/AST、targeted lint 与 diff hygiene 通过。
-- Review findings：pending independent review。
+- Review findings：`LEAN001-P1-001`～`003` 与 `LEAN001-P2-001`～`002`；第 1 轮有限修复待执行。
 
 ## 修改文件
 
@@ -145,11 +145,18 @@ git diff --check
 
 ## 代码审查
 
-- 审查状态：未审查
-- 审查人或审查 agent：待独立 Reviewer
-- 审查严重等级：待确认
-- 审查结论：待填写
-- P0 / P1 必须修改项：待确认
+- 审查状态：需要修改
+- 审查人或审查 agent：Codex 隔离只读 Reviewer（第 1 轮）
+- 审查严重等级：P1；P0 0 项、P1 3 项、P2 2 项、P3 0 项
+- 审查结论：`Needs Fix`；不允许进入 `LEAN-002`
+- P0 / P1 必须修改项：
+  1. `LEAN001-P1-001`：阶段 B 评分器信任缺失/负数/空 oracle/未绑定 hash 的调用方数字，可伪造 `all_gates_pass=true`。
+  2. `LEAN001-P1-002`：authority / delivery / real-environment gate 未建模，`safety_gate` 仅因非 Lite 默认写 `Preserved`。
+  3. `LEAN001-P1-003`：repair 只比较 P0+P1 总数，未阻止新增 P0/P1、严重度升级或稳定 ID 漂移。
+- P2 建议修改项：
+  1. `LEAN001-P2-001`：targeted lint 文档命令使用了 CLI 不支持的参数。
+  2. `LEAN001-P2-002`：Git 事实仍停留在提交前 HEAD / working-tree。
+- 风险：若不修复，阶段 B 可以被伪造数据放行，未授权 delivery 和新增高严重 finding 可能被错误标记为安全。
 - 是否允许进入验收建议：否
 
 ## Diff 审查
@@ -158,8 +165,8 @@ git diff --check
 - 审查命令：`git diff b7938ef..HEAD`
 - 修改文件清单：`evaluations/v0.8/**`、本任务、看板
 - 范围越界文件：无
-- 审查状态：未审查
-- 审查结论：待填写
+- 审查状态：需要修改
+- 审查结论：范围与现有 hash/测试通过，但存在 3 项阻塞阶段 B 的 P1；进入第 1 轮有限修复。
 - 是否允许进入验收建议：否
 
 ## 用户动作等级 / 验收建议
@@ -173,7 +180,7 @@ git diff --check
 ## 提交 / 合并
 
 - Commit 状态：已提交（本记录所在 LEAN-001 task commit）
-- Commit hash：以 `git log -- docs/tasks/LEAN-001.md` 的最新记录为准
+- Commit hash：实现 commit `c607cb75590cfeb5ea45c1d60e10b77a44208080`；本审查写回由下一独立 commit 记录
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 
@@ -193,6 +200,6 @@ git diff --check
 - 本次完成：冻结评估协议、代表任务与历史证据，完成零额度回放并生成原始 ledger / 报告。
 - 修改文件：`evaluations/v0.8/**`、本任务和看板。
 - 验证结果：8 / 8 回放一致；4 / 4 + 41 / 41 测试通过；targeted lint 无 error/violation。
-- 遗留问题：等待独立 Review；阶段 B 尚未开始。
+- 遗留问题：第 1 轮 Review 发现 3 项 P1、2 项 P2；阶段 B 尚未开始。
 - 下一会话建议读取：本任务、`PLAN-001`、v0.8 RFC、阶段 A 报告。
 - 不要重复尝试：不得在回放后更改冻结协议以制造通过结果。
