@@ -6,7 +6,7 @@
 |---|---|
 | 任务编号 | `LEAN-001` |
 | 任务类型 | 测试 |
-| 当前模式 | 第 2 轮有限修复后复审（`review_task`） |
+| 当前模式 | 独立复审通过，等待 UA3（`review_task` 完成） |
 | 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
@@ -63,8 +63,8 @@
 - 执行位置：独立分支
 - Worktree 路径：不适用
 - Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
-- 当前 HEAD：第 2 轮 repair commit（精确 hash 以本任务最新 Git 记录为准）
-- Diff 范围：`b7938ef..HEAD`
+- 当前 HEAD：`84fb56c`（第 2 轮 repair commit）
+- Diff 范围：`b7938ef..84fb56c`
 - 是否有未提交改动：开始前否
 - 是否存在不应提交文件：否
 - 是否允许 commit：是；按 LEAN 任务保留独立 commit
@@ -95,7 +95,7 @@
 - [x] ledger schema 能逐样本记录原始数据，不只记录汇总结论。
 - [x] 当前规模、keep / simplify / retire 和维护/迁移预算可机械复算。
 - [x] 回放不修改现行 Skill，不调用模型或外部服务，不引入依赖。
-- [ ] 独立 Review 无 P0/P1。
+- [x] 独立 Review 无 P0/P1。
 
 ## 自动验证命令
 
@@ -129,12 +129,12 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
+- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..84fb56c
 - 隔离位置：独立分支 `codex/lean-v08-slimming`。
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 - 修改文件：`evaluations/v0.8/**`、`docs/tasks/LEAN-001.md`、`docs/TASK_BOARD.md`。
 - 验证证据：8 / 8 回放一致；8 / 8 评估工具专项、4 / 4 代表任务、41 / 41 仓库回归、JSON/AST、targeted lint 与 diff hygiene 通过。
-- Review findings：`LEAN001-P1-001-R1` 已由 Repairer 增加 per-run / aggregate main 硬门禁与拒绝测试，等待独立复审确认。
+- Review findings：none；第 1 轮 3 P1 / 2 P2 与第 2 轮残留 `LEAN001-P1-001-R1` 全部关闭。
 
 ## 修改文件
 
@@ -146,10 +146,10 @@ git diff --check
 
 ## 代码审查
 
-- 审查状态：审查中
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 隔离只读 Reviewer（第 1 轮 findings；同一上下文待复审）
-- 审查严重等级：待复审；上一轮 P0 0 项、残留 P1 1 项、P2/P3 0 项
-- 审查结论：第 2 轮有限修复已完成，等待 Reviewer 确认 `LEAN001-P1-001-R1`；确认前不允许进入 `LEAN-002`
+- 审查严重等级：无；P0/P1/P2/P3 均为 0
+- 审查结论：`Passed`；原 findings 全部关闭，允许进入 `LEAN-002`
 - P0 / P1 必须修改项：
   1. `LEAN001-P1-001`：阶段 B 评分器信任缺失/负数/空 oracle/未绑定 hash 的调用方数字，可伪造 `all_gates_pass=true`。
   2. `LEAN001-P1-002`：authority / delivery / real-environment gate 未建模，`safety_gate` 仅因非 Lite 默认写 `Preserved`。
@@ -158,7 +158,16 @@ git diff --check
   1. `LEAN001-P2-001`：targeted lint 文档命令使用了 CLI 不支持的参数。
   2. `LEAN001-P2-002`：Git 事实仍停留在提交前 HEAD / working-tree。
 - 风险：若不修复，阶段 B 可以被伪造数据放行，未授权 delivery 和新增高严重 finding 可能被错误标记为安全。
-- 是否允许进入验收建议：否
+- 是否允许进入验收建议：是；仅进入 LEAN-001 的 UA3，不代表已验收或 `Accepted`
+
+## 第 2 轮修复独立复审
+
+- 结论：`Passed`；`LEAN001-P1-001-R1` 已关闭，P0/P1/P2/P3 均为 0。
+- 预算门禁：每个 run 恰好一个 `main`，三次 run 合计恰好 3 个 `main`；Reviewer、subagent、retry 独立计数。
+- 反例验证：同一 run 含多个 `main` 的 payload 被拒绝，新增专项测试通过。
+- Reviewer 证据：8 / 8 专项测试、manifest/hash、8 条 stage A ledger、`0509d05..84fb56c` diff 与 clean worktree 均通过。
+- 范围：第 2 轮仅修改评分器、专项测试、本任务和看板；未创建原型、未运行阶段 B、未修改现行 Skill。
+- 门禁结论：允许创建并串行执行 `LEAN-002`；不代表 UA3 已通过、`Accepted`、merge、release 或 `Closed`。
 
 ## 第 1 轮修复独立复审
 
@@ -195,22 +204,22 @@ git diff --check
 - 审查命令：`git diff b7938ef..HEAD`
 - 修改文件清单：`evaluations/v0.8/**`、本任务、看板
 - 范围越界文件：无
-- 审查状态：审查中
-- 审查结论：第 2 轮仅修改评分器 main 调用计数与对应测试，等待独立复审。
-- 是否允许进入验收建议：否
+- 审查状态：已通过
+- 审查结论：独立 Reviewer 已审查 `b7938ef..84fb56c`，原 findings 全部关闭，P0/P1/P2/P3 均为 0。
+- 是否允许进入验收建议：是；LEAN-001 保持 UA3 Pending
 
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA3
 - 是否需要用户实机测试：否
 - 用户需要做什么：查看阶段 A hash、ledger、expected / actual 与门禁结论；无需自己运行命令。
-- agent 已提供的证据：历史 hash 校验、8 条原始 ledger、阶段 A 报告、4 / 4 + 41 / 41 测试、targeted lint、JSON/AST 与 diff hygiene。
+- agent 已提供的证据：历史 hash 校验、8 条原始 ledger、阶段 A 报告、8 / 8 专项测试、4 / 4 + 41 / 41 回归、targeted lint、JSON/AST、diff hygiene 与独立 Review `Passed`。
 - 是否允许关闭任务：否；本轮未包含 `Closed` 授权。
 
 ## 提交 / 合并
 
 - Commit 状态：已提交（本记录所在 LEAN-001 task commit）
-- Commit hash：实现 `c607cb7`；第 1 轮审查 `9ef43d3`；第 1 轮 repair `05d6828`；第 1 轮复审 `0509d05`；第 2 轮 repair 以本任务最新 Git 记录为准
+- Commit hash：实现 `c607cb7`；第 1 轮审查 `9ef43d3`；第 1 轮 repair `05d6828`；第 1 轮复审 `0509d05`；第 2 轮 repair `84fb56c`；最终复审写回以本任务最新 Git 记录为准
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 
@@ -223,13 +232,13 @@ git diff --check
 
 ## 下一步建议
 
-- 仅在阶段 A 与独立 Review 通过后创建并执行 `LEAN-002`。
+- 阶段 A 与独立 Review 已通过；按 PLAN-001 创建并串行执行 `LEAN-002`，同时保持 LEAN-001 UA3 Pending。
 
 ## 交接摘要
 
 - 本次完成：冻结评估协议、代表任务与历史证据，完成零额度回放并生成原始 ledger / 报告。
 - 修改文件：`evaluations/v0.8/**`、本任务和看板。
 - 验证结果：8 / 8 回放一致；8 / 8 专项测试通过；完整 4 / 4 + 41 / 41 回归在最终收口前复跑。
-- 遗留问题：等待第 2 轮独立复审；阶段 B 尚未开始。
+- 遗留问题：LEAN-001 UA3 Pending；阶段 B 尚未开始。
 - 下一会话建议读取：本任务、`PLAN-001`、v0.8 RFC、阶段 A 报告。
 - 不要重复尝试：不得在回放后更改冻结协议以制造通过结果。
