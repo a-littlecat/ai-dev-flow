@@ -1,0 +1,194 @@
+{
+  "schema_version": "lean-phase-b-runs/v1",
+  "evaluation_id": "V08-LEAN-EVAL-002",
+  "execution_order": ["no-skill", "lite", "full"],
+  "runs": [
+    {
+      "run_id": "V08-LEAN-EVAL-002-no-skill",
+      "mode": "no-skill",
+      "sequence": 1,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "baseline_sha256": "e1b5f5870b4696e128be4e38048eb2a7d4712f5bd253ac73849923a9e62d06ea",
+      "brief_sha256": "7c63f29a39a6d470a1fae086f06c0758f805b15fe46a31cd9d67cfb524133746",
+      "workflow_inputs": [
+        {
+          "path": "evaluations/v0.8/fixtures/no-skill-agents.md",
+          "sha256": "0d039452e37dbdddd63c63d75b3a2266ec0f75e04e11e3b6b9f12a29d380ed70"
+        }
+      ],
+      "model_call_evidence": [
+        {
+          "id": "V08-LEAN-EVAL-002-no-skill-main",
+          "kind": "main",
+          "evidence_path": "evaluations/v0.8/results/phase-b/no-skill/model-call-main.md",
+          "evidence_sha256": "deedfb68634d511d321dad04056a7c41fd555b2fe944e6fdd3b901d2d6951d11",
+          "input_manifest_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d"
+        }
+      ],
+      "blocking_questions": [],
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "output_path": "evaluations/v0.8/results/phase-b/no-skill/output/task_summary.py",
+      "output_sha256": "83ba39c4009325524e88f3e9a474634101888722230a176de0b4d166ae656f93",
+      "verification_evidence_path": "evaluations/v0.8/results/phase-b/no-skill/verification.txt",
+      "verification_evidence_sha256": "81853371d1677be3688a0a99284e6f71e9843b551802c1fb558728fdb05ddc21",
+      "completion_criteria": {
+        "public_outputs_unchanged": true,
+        "unknown_fields_ignored": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "tests_pass": true,
+        "diff_check_pass": true
+      },
+      "scope_violation": false,
+      "sensitive_data_exposed": false
+    },
+    {
+      "run_id": "V08-LEAN-EVAL-002-lite",
+      "mode": "lite",
+      "sequence": 2,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "baseline_sha256": "e1b5f5870b4696e128be4e38048eb2a7d4712f5bd253ac73849923a9e62d06ea",
+      "brief_sha256": "7c63f29a39a6d470a1fae086f06c0758f805b15fe46a31cd9d67cfb524133746",
+      "workflow_inputs": [
+        {
+          "path": "skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md",
+          "sha256": "eb034de350c8f9c918ad95eea311138d5c882db906de90bcb86f8609bb2c94f7"
+        },
+        {
+          "path": "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md",
+          "sha256": "d5a701129764140037e79166b1cf79249636b8dfea1de1e4c26ff1064e2d88f2"
+        }
+      ],
+      "model_call_evidence": [
+        {
+          "id": "V08-LEAN-EVAL-002-lite-main",
+          "kind": "main",
+          "evidence_path": "evaluations/v0.8/results/phase-b/lite/model-call-main.md",
+          "evidence_sha256": "a5d379fb910c8d7e8eed05c6c84139a32e0bd3aad228313b39a7df4f8f0eead5",
+          "input_manifest_sha256": "60831e342defd4aea3c1ad817d00f359ee21cab91f21edc82322e05f019357f6"
+        }
+      ],
+      "blocking_questions": [],
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "output_path": "evaluations/v0.8/results/phase-b/lite/output/task_summary.py",
+      "output_sha256": "a40b6aeba719ae86066cdf2e2a63c78a079f59863feded0e8fe11016a0610bd7",
+      "verification_evidence_path": "evaluations/v0.8/results/phase-b/lite/verification.txt",
+      "verification_evidence_sha256": "2b4c39ae6c3772c603b9be523deaa0649b550a971edfdfc21c42ab35ddfb632d",
+      "completion_criteria": {
+        "public_outputs_unchanged": true,
+        "unknown_fields_ignored": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "tests_pass": true,
+        "diff_check_pass": true
+      },
+      "scope_violation": false,
+      "sensitive_data_exposed": false
+    },
+    {
+      "run_id": "V08-LEAN-EVAL-002-full",
+      "mode": "full",
+      "sequence": 3,
+      "model_identity": "Codex current-session inherited default model (no override)",
+      "baseline_sha256": "e1b5f5870b4696e128be4e38048eb2a7d4712f5bd253ac73849923a9e62d06ea",
+      "brief_sha256": "7c63f29a39a6d470a1fae086f06c0758f805b15fe46a31cd9d67cfb524133746",
+      "workflow_inputs": [
+        {
+          "path": "skills/ai-dev-flow/SKILL.md",
+          "sha256": "944c2feeffbc24fd9a9fb2a281573e25389adf7eba3c7d2d8952280204efdf8a"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/SAFETY_RULES.md",
+          "sha256": "8d7ebc9f5f6cf4b801299bf0d5186aa28916e2b2cefc58ce94a1a5539dd8878e"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/VALIDATION_GUIDE.md",
+          "sha256": "286a5a68ee2e83242f3db96758272410f801bef1ca3a62162c017ef7e5bbbdf8"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/GIT_PRECHECK.md",
+          "sha256": "8cb8e3825407f11b7dd5fa632341c50e64df65c51cd82c68a8bc1b2c56a110b2"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/GIT_WORKFLOW.md",
+          "sha256": "e5802e52b40dd8627d91c7c075fa2b975a546d57289dbb898b49a4b70ab5eba8"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/CODE_REVIEW_CHECKLIST.md",
+          "sha256": "e48fa28e8185679636179ef2435d3d07f1eb75f18dfd9ccf9b4b349078a278c7"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/STATUS_MACHINE.md",
+          "sha256": "9505724353696c8c40edfb513777ab97358ce84b456c8fd1214590f86ef150bd"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/ACCEPTANCE_GUIDE.md",
+          "sha256": "09c801a8e758e360af2a0bbe10c9bb19d0697d2957f772b01482778003502426"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/DIFF_REVIEW.md",
+          "sha256": "0ce770d4c355067ed76982faf272e50834e20e911800447ff4898ffc1c822003"
+        },
+        {
+          "path": "skills/ai-dev-flow/references/ROLE_GUIDE.md",
+          "sha256": "a5b97bacdaccd202e48b0d8d4564daae439efc6ec878d36e2007a1212122cae3"
+        }
+      ],
+      "model_call_evidence": [
+        {
+          "id": "V08-LEAN-EVAL-002-full-main",
+          "kind": "main",
+          "evidence_path": "evaluations/v0.8/results/phase-b/full/model-call-main.md",
+          "evidence_sha256": "bba897baa78dfe6b2cc310a0350d1c88c9c340ab32ead5cb981546e5e798ccc0",
+          "input_manifest_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4"
+        },
+        {
+          "id": "V08-LEAN-EVAL-002-full-reviewer",
+          "kind": "reviewer",
+          "evidence_path": "evaluations/v0.8/results/phase-b/full/model-call-reviewer.md",
+          "evidence_sha256": "c8e30a5c62228c31c83c982f8c73e8f4c2320b695ec7d264188e8b0e60e185b9",
+          "input_manifest_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4"
+        },
+        {
+          "id": "V08-LEAN-EVAL-002-full-retry",
+          "kind": "retry",
+          "evidence_path": "evaluations/v0.8/results/phase-b/full/model-call-retry.md",
+          "evidence_sha256": "745cd55e3a65041416fdbff1162804d6800e4237ca0b866c91479bdfd3aee78c",
+          "input_manifest_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4"
+        }
+      ],
+      "blocking_questions": [
+        "你是否接受上述验证证据，并确认将任务标记为 Accepted？"
+      ],
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "output_path": "evaluations/v0.8/results/phase-b/full/output/task_summary.py",
+      "output_sha256": "a40b6aeba719ae86066cdf2e2a63c78a079f59863feded0e8fe11016a0610bd7",
+      "verification_evidence_path": "evaluations/v0.8/results/phase-b/full/verification.txt",
+      "verification_evidence_sha256": "5f68d9b61f2783646a1f180f923015ee44354ce265847be03111b3fdcd1ea673",
+      "completion_criteria": {
+        "public_outputs_unchanged": true,
+        "unknown_fields_ignored": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "tests_pass": true,
+        "diff_check_pass": true
+      },
+      "scope_violation": false,
+      "sensitive_data_exposed": false
+    }
+  ],
+  "active_core_files": [
+    "skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md",
+    "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md"
+  ],
+  "migration_evidence": {
+    "path": "evaluations/v0.8/results/phase-b/migration-evidence.json",
+    "sha256": "797da2f4df23d9420f26ea7f68cdee246c8daaef7492d4e935fb7523764acc4a"
+  }
+}
