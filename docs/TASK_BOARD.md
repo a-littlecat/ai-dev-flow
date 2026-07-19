@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`LEAN-001` 独立复审通过，准备串行进入 `LEAN-002`
-> - 当前阶段：阶段 A 8 / 8 零差异，全部 findings 已关闭；LEAN-001 保持 UA3 Pending，技术门禁允许创建 `LEAN-002`
+> - 当前模式：`LEAN-002` 默认关闭最小原型与阶段 B 串行对照
+> - 当前阶段：LEAN-001 Review Passed / UA3 Pending；正在准备 `no-skill -> lite -> full` 三次同模型隔离执行
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -65,7 +65,7 @@ REL-002 Closed / main@0422887
   -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
-              -> LEAN-002：阶段 A 与独立 Review 已通过，允许创建
+              -> LEAN-002 In Progress：默认关闭原型 + 三次串行对照
                   -> LEAN-003：仅在阶段 B 全部门槛通过后创建
 ```
 
@@ -85,6 +85,7 @@ REL-002 Closed / main@0422887
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | In Progress | 高 | 高 | LEAN-001 Review Passed；Base `da66c04` | 未开始 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 
 ## PLAN-001 核心约束
 
@@ -98,7 +99,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`LEAN-001` 阶段 A 与独立 Review 已通过，技术门禁允许创建并串行执行 `LEAN-002`。LEAN-001 仍为 UA3 Pending，不写成 `Accepted`；下一步只允许建设默认关闭、可整体回退的最小原型，并按 `no-skill -> lite -> full` 固定顺序完成最多三次当前执行模型主任务对照。
+执行 `LEAN-002`：只建设默认关闭、可整体回退的两文件原型，并按 `no-skill -> lite -> full` 固定顺序完成恰好三次当前执行模型主任务对照。不得并行、修改冻结协议、接入额外模型供应商或提前创建 `LEAN-003`。
 
 ## 停止条件
 
