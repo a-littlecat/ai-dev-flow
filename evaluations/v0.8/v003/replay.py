@@ -120,6 +120,13 @@ def verify_manifest(manifest: dict[str, Any]) -> tuple[dict[str, Any], dict[str,
         raise EvalError("unexpected V003 evaluation_id")
     if manifest.get("replacement_for") != "V08-LEAN-EVAL-002":
         raise EvalError("replacement relationship drifted")
+    if manifest.get("migration_measurement_base_commit") != manifest.get(
+        "authorization_commit"
+    ):
+        raise EvalError("V003 migration measurement base drifted from authorization")
+    V002.git_bytes(
+        "cat-file", "-e", f"{manifest['migration_measurement_base_commit']}^{{commit}}"
+    )
     phase_b = manifest["phase_b"]
     if phase_b.get("execution_order") != ["no-skill", "lite", "full"]:
         raise EvalError("V003 execution order drifted")
@@ -574,6 +581,46 @@ def verify_provenance(
     }
 
 
+def migration_change_counts(manifest: dict[str, Any]) -> dict[str, int]:
+    base = manifest["migration_measurement_base_commit"]
+    task_changes = V002.git_text(
+        "diff", "--name-only", base, "--", "docs/tasks"
+    ).splitlines()
+    historical_rewrites = sum(
+        not Path(path).name.startswith("LEAN-") for path in task_changes
+    )
+    dependency_names = {
+        "package.json",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "pyproject.toml",
+        "requirements.txt",
+        "poetry.lock",
+        "Pipfile",
+        "Pipfile.lock",
+    }
+    all_changes = V002.git_text("diff", "--name-only", base, "--").splitlines()
+    return {
+        "historical_tasks_rewritten": historical_rewrites,
+        "required_dependencies_added": sum(
+            Path(path).name in dependency_names for path in all_changes
+        ),
+    }
+
+
+def mechanical_costs_v003(
+    manifest: dict[str, Any],
+    effective: dict[str, Any],
+    payload: dict[str, Any],
+    lite_paths: list[str],
+    base_mechanical_costs: Any,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    maintenance, migration = base_mechanical_costs(effective, payload, lite_paths)
+    migration.update(migration_change_counts(manifest))
+    return maintenance, migration
+
+
 def score_phase_b(
     manifest: dict[str, Any], effective: dict[str, Any], policy: dict[str, Any],
     protocol: dict[str, Any], runs_path: Path, provenance_path: Path
@@ -590,13 +637,22 @@ def score_phase_b(
 
     original_verify = V002.verify_bound_artifact
     original_stage_a = V002.stage_a_records
+    original_mechanical_costs = V002.mechanical_costs
     try:
         V002.verify_bound_artifact = verify_bound_artifact
         V002.stage_a_records = lambda _manifest: stage_a_records(manifest, policy, effective)
+        V002.mechanical_costs = lambda _manifest, _payload, _lite_paths: mechanical_costs_v003(
+            manifest,
+            effective,
+            _payload,
+            _lite_paths,
+            original_mechanical_costs,
+        )
         result = V002.score_phase_b(effective, runs_path)
     finally:
         V002.verify_bound_artifact = original_verify
         V002.stage_a_records = original_stage_a
+        V002.mechanical_costs = original_mechanical_costs
     result["schema_version"] = "lean-eval-ledger/v2"
     result["provenance"] = provenance
     result["all_gates_pass"] = bool(result["all_gates_pass"] and provenance["pass"])

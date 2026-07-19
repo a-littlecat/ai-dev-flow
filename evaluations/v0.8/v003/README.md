@@ -10,6 +10,7 @@
 - 三次 main 均从同一父任务以 `fork_turns=none` 创建，不传 model 或 reasoning override；评分器会解析 parent 捕获的 spawn/final JSON 收据，把实际请求、canonical task name、前序完成链、workflow bundle 和 main evidence 反向绑定。
 - 平台没有暴露 backend 精确版本，因此结论只限于同一父任务会话内的三次继承默认模型对照，不作跨会话同版本声明。
 - 平台也没有提供 opaque agent/call ID 或签名收据；仓库不伪造这些字段，最终独立 Review 必须结合当前任务树对 canonical task name 做一次实时交叉核对。
+- 维护成本仍相对 V002 冻结基线计量；“历史 TASK/依赖是否被 phase B 改写”相对 V003 续做授权 commit 计量，避免把授权本身对 PLAN-001 的控制面说明误算成实施迁移。
 
 ## 回放命令
 

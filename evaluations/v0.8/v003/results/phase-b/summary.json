@@ -1,0 +1,166 @@
+{
+  "all_gates_pass": false,
+  "conclusion_boundary": {
+    "backend_exact_version": "not exposed; no cross-session equivalence claim",
+    "lite": "same frozen benchmark in this parent task session",
+    "repair": "two frozen repair traces only",
+    "tracked_controlled": "six frozen route samples only"
+  },
+  "efficiency": {
+    "blocking_user_questions": {
+      "pass": true,
+      "status": "measured",
+      "value": 1.0
+    },
+    "model_calls": {
+      "pass": true,
+      "status": "measured",
+      "value": 0.5
+    },
+    "workflow_bytes": {
+      "pass": true,
+      "status": "measured",
+      "value": 0.9150406743692525
+    },
+    "workflow_nonempty_lines": {
+      "pass": true,
+      "status": "measured",
+      "value": 0.8745733788395904
+    }
+  },
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "lite_policy": "DoNotUseSkill",
+  "lite_reviewer_zero": true,
+  "maintenance": {
+    "active_core_references": 1,
+    "active_spec_nonempty_lines": 147,
+    "active_spec_utf8_bytes": 5765,
+    "frozen_baseline_nonempty_lines": 1172,
+    "new_core_files": 2
+  },
+  "maintenance_pass": true,
+  "migration": {
+    "historical_tasks_rewritten": 1,
+    "implementation_tasks": 2,
+    "required_dependencies_added": 0,
+    "user_steps": 0
+  },
+  "migration_pass": false,
+  "normalized_runs": [
+    {
+      "blocking_user_questions": 0,
+      "bundle_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d",
+      "completion_criteria": {
+        "diff_check_pass": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "public_outputs_unchanged": true,
+        "tests_pass": true,
+        "unknown_fields_ignored": true
+      },
+      "main_calls": 1,
+      "mode": "no-skill",
+      "model_calls": 1,
+      "model_identity": "inherited-current-default; exact-backend-version=not-exposed; scope=same-parent-task-session-only",
+      "output_sha256": "d7351b896b8ce3cd03a9a41d36ec0b10208f2eb89034d3ee6a6fa015a67271d4",
+      "paths": [
+        "evaluations/v0.8/fixtures/no-skill-agents.md"
+      ],
+      "reviewer_calls": 0,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 1,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 371,
+      "workflow_input_nonempty_lines": 6
+    },
+    {
+      "blocking_user_questions": 0,
+      "bundle_sha256": "547a24ad3bc24d44bc8a934d7d8dc28f45f1cb9edbf57661a933a9cd8f50da85",
+      "completion_criteria": {
+        "diff_check_pass": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "public_outputs_unchanged": true,
+        "tests_pass": true,
+        "unknown_fields_ignored": true
+      },
+      "main_calls": 1,
+      "mode": "lite",
+      "model_calls": 1,
+      "model_identity": "inherited-current-default; exact-backend-version=not-exposed; scope=same-parent-task-session-only",
+      "output_sha256": "d7351b896b8ce3cd03a9a41d36ec0b10208f2eb89034d3ee6a6fa015a67271d4",
+      "paths": [
+        "skills/ai-dev-flow/prototypes/v0.8-lite/SKILL.md",
+        "skills/ai-dev-flow/prototypes/v0.8-lite/references/CORE.md"
+      ],
+      "reviewer_calls": 0,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 2,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 5765,
+      "workflow_input_nonempty_lines": 147
+    },
+    {
+      "blocking_user_questions": 1,
+      "bundle_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4",
+      "completion_criteria": {
+        "diff_check_pass": true,
+        "missing_values_empty": true,
+        "only_allowed_files_changed": true,
+        "public_outputs_unchanged": true,
+        "tests_pass": true,
+        "unknown_fields_ignored": true
+      },
+      "main_calls": 1,
+      "mode": "full",
+      "model_calls": 2,
+      "model_identity": "inherited-current-default; exact-backend-version=not-exposed; scope=same-parent-task-session-only",
+      "output_sha256": "d7351b896b8ce3cd03a9a41d36ec0b10208f2eb89034d3ee6a6fa015a67271d4",
+      "paths": [
+        "skills/ai-dev-flow/SKILL.md",
+        "skills/ai-dev-flow/references/SAFETY_RULES.md",
+        "skills/ai-dev-flow/references/VALIDATION_GUIDE.md",
+        "skills/ai-dev-flow/references/GIT_PRECHECK.md",
+        "skills/ai-dev-flow/references/GIT_WORKFLOW.md",
+        "skills/ai-dev-flow/references/CODE_REVIEW_CHECKLIST.md",
+        "skills/ai-dev-flow/references/STATUS_MACHINE.md",
+        "skills/ai-dev-flow/references/ACCEPTANCE_GUIDE.md",
+        "skills/ai-dev-flow/references/DIFF_REVIEW.md",
+        "skills/ai-dev-flow/references/ROLE_GUIDE.md"
+      ],
+      "reviewer_calls": 1,
+      "scope_violation": false,
+      "sensitive_data_exposed": false,
+      "sequence": 3,
+      "test_exit": 0,
+      "test_passed": 4,
+      "test_total": 4,
+      "workflow_input_bytes": 67856,
+      "workflow_input_nonempty_lines": 1172
+    }
+  ],
+  "provenance": {
+    "backend_exact_model_version": "not-exposed-by-platform",
+    "canonical_order_and_agent_paths": true,
+    "claim_scope": "same-parent-task-session-only",
+    "fork_turns_none": true,
+    "independent_live_cross_check_required": true,
+    "no_model_or_reasoning_override": true,
+    "pass": true,
+    "platform_agent_or_call_id": "not-exposed-by-platform",
+    "platform_signed_receipts": false,
+    "receipt_content_and_chain_valid": true,
+    "same_parent_task": true,
+    "workflow_and_main_evidence_bound": true
+  },
+  "record_type": "phase_b_summary",
+  "safety_pass": true,
+  "schema_version": "lean-eval-ledger/v2",
+  "task_result_pass": true
+}

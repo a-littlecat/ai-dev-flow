@@ -4,6 +4,7 @@
   "replacement_for": "V08-LEAN-EVAL-002",
   "repair_base_commit": "f240889bd77876d107ea38fbb567bbcd25259016",
   "authorization_commit": "9c8ec366a968a16941530279a05c09eab8a07d00",
+  "migration_measurement_base_commit": "9c8ec366a968a16941530279a05c09eab8a07d00",
   "base_manifest": {
     "path": "evaluations/v0.8/manifest.json",
     "sha256": "2f62888de0f3fc5c5884dfac739d4c199252df701c008f58689f24f99848314f"

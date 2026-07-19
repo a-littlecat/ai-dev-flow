@@ -1,0 +1,13 @@
+V08-LEAN-EVAL-003 no-skill verification
+workspace=D:\open-source\ai-dev-flow-lean-eval-003-3cf3776\no-skill
+canonical_task_name=/root/lean002_v003_no_skill
+python -B -X utf8 -m unittest -v: exit=0 passed=4 total=4
+git diff --check: exit=0 whitespace_errors=0
+git status --short: M evaluations/v0.8/fixtures/lite-benchmark/baseline/task_summary.py
+only_allowed_files_changed=true
+public_outputs_unchanged=true
+unknown_fields_ignored=true
+missing_values_empty=true
+scope_violation=false
+sensitive_data_exposed=false
+blocking_user_questions=0

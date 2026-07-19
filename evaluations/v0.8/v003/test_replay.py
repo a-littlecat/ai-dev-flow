@@ -87,6 +87,15 @@ class V003ReplayTests(unittest.TestCase):
         self.assertFalse(backend["exact_version_exposed_by_platform"])
         self.assertEqual("same-parent-task-session-only", backend["comparison_scope"])
 
+    def test_migration_measurement_starts_after_authorization_amendment(self) -> None:
+        self.assertEqual(
+            self.manifest["authorization_commit"],
+            self.manifest["migration_measurement_base_commit"],
+        )
+        counts = REPLAY.migration_change_counts(self.manifest)
+        self.assertEqual(0, counts["historical_tasks_rewritten"])
+        self.assertEqual(0, counts["required_dependencies_added"])
+
     def _valid_provenance(self) -> dict:
         order = self.protocol["execution_order"]
         receipts = []

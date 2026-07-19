@@ -60,9 +60,9 @@
 - [x] 原型核心文件不超过 2，活跃 reference 不超过 12，不增加依赖或历史 TASK 改写。
 - [x] V003 stage A 直接读取实际原型 policy，6 个 route + 2 个 repair trace 零差异。
 - [x] V003 协议冻结同一父任务、`fork_turns=none`、无 override、canonical agent path、顺序和 hash 链收据；评分器解析收据内容并反向绑定实际 spawn 请求、workflow bundle 与 main evidence；明确平台未暴露 exact backend/opaque ID/签名收据及结论边界。
-- [ ] V003 三次 main 按固定顺序串行完成，每次输入/输出/验证与 provenance 均绑定 hash。
-- [ ] V003 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
-- [ ] V003 Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
+- [x] V003 三次 main 按固定顺序串行完成，每次输入/输出/验证与 provenance 均绑定 hash。
+- [x] V003 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
+- [x] V003 Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
 - [ ] V003 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
 - [ ] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
 
@@ -137,7 +137,24 @@ git diff --check
 - 门禁结论：允许严格按 `no-skill -> lite -> full` 各执行一次 main，不得并行；每次完成并形成 hash-bound 收据后才能启动下一次。
 - 后续硬门禁：整体独立 Reviewer 必须结合当前任务树实时核对三个 canonical task name；本结论不代表整体 Review、UA、merge、release 或 Closed。
 
+## V003 阶段 B 原始结果
+
+- 串行事实：`no-skill -> lite -> full` 各恰好一次 main；三个 worktree 均来自 commit `3cf3776`，前一 final hash 已写入下一次 spawn 收据。
+- 任务结果：三档均只修改 `task_summary.py`，输出 SHA256 均为 `d7351b89...`，各 4 / 4、`git diff --check` exit 0、六项标准全部满足。
+- 成本：no-skill/lite/full model contexts 为 1 / 1 / 2；blocking questions 为 0 / 0 / 1；Lite Reviewer=0，Full Reviewer=1，retry=0。
+- 效率：Lite 相对 Full 的 workflow bytes、非空行、model calls、blocking questions 分别降低 91.50%、87.46%、50%、100%。
+- provenance：内容解析、hash 链、canonical path、无 override、workflow bundle 与 main evidence 全部机械通过；平台未暴露项与同父任务结论边界保持不变。
+
+### 初次机械评分 finding
+
+- 初次 summary SHA256：`80a4f8f14352a549a64571c1062a9cadfdee93342d8ded6df65cc2ec5744bf8d`，原样保存在 `summary-pre-migration-baseline-repair.json`。
+- 结果：任务、效率、安全、维护、provenance 全部通过；migration 因 `historical_tasks_rewritten=1` 导致 `all_gates_pass=false`。
+- `LEAN002-V003-SCORER-P1-001`：V003 wrapper 复用了 V002 冻结 commit 同时计算维护基线与 phase B 迁移差异，把用户续做授权 commit 中对 `PLAN-001` 的控制面说明误算成实施阶段改写历史 TASK。
+- Repair 边界：不改任何阈值、oracle、三次运行输入或原始 evidence；维护成本仍相对 V002 基线，只有 phase B 的历史 TASK/依赖改动从 V003 `authorization_commit` 开始计算。
+- Repair 验证：从 authorization commit 到当前仅 `LEAN-002.md` 发生 TASK 变化，历史 TASK=0、依赖=0；V003 verify 通过，专项测试 13 / 13，`git diff --check` 通过。
+- 门禁：独立 Reviewer 确认这只是基线归属修复而非改指标/为结果开后门前，不覆盖初次 summary、不重新评分、不创建 `LEAN-003`。
+
 ## 状态边界
 
-- 当前为 `In Progress / Needs Fix`，V003 前置 Review 已通过并只解除了三次 main 门禁；不是 LEAN-002 整体 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- 当前为 `In Progress / Needs Fix`，三次 main 已完成，正在复审 scorer 的迁移基线 repair；不是 LEAN-002 整体 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
 - `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。

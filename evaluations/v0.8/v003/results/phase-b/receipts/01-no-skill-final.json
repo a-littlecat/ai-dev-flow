@@ -1,0 +1,13 @@
+{
+  "schema_version": "lean-agent-final-receipt/v1",
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "sequence": 1,
+  "mode": "no-skill",
+  "canonical_task_name": "/root/lean002_v003_no_skill",
+  "completion_status": "completed",
+  "spawn_receipt_sha256": "7a2062852d3de00a050989666565e3ef0556135de9dda38fd81fc69d9357802c",
+  "previous_final_receipt_sha256": null,
+  "workflow_bundle_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d",
+  "main_evidence_path": "evaluations/v0.8/v003/results/phase-b/no-skill/model-call-main.md",
+  "main_evidence_sha256": "d2a728cfa96c74c40e7ba56813b7a76de7cf52733212c13f01fd63284c8ff546"
+}

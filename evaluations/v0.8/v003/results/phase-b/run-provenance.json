@@ -1,0 +1,46 @@
+{
+  "schema_version": "lean-run-provenance/v1",
+  "evaluation_id": "V08-LEAN-EVAL-003",
+  "parent_task_path": "/root",
+  "fork_turns": "none",
+  "model_override": null,
+  "reasoning_effort_override": null,
+  "backend_exact_model_version": "not-exposed-by-platform",
+  "execution_order": [
+    "no-skill",
+    "lite",
+    "full"
+  ],
+  "receipts": [
+    {
+      "sequence": 1,
+      "mode": "no-skill",
+      "canonical_agent_path": "/root/lean002_v003_no_skill",
+      "spawn_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/01-no-skill-spawn.json",
+      "spawn_receipt_sha256": "7a2062852d3de00a050989666565e3ef0556135de9dda38fd81fc69d9357802c",
+      "final_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/01-no-skill-final.json",
+      "final_receipt_sha256": "8e6b6f120f43d3cd15c663d4f2a17a0fea36d65090362f8fd1d1c046685b4fab",
+      "previous_final_receipt_sha256": null
+    },
+    {
+      "sequence": 2,
+      "mode": "lite",
+      "canonical_agent_path": "/root/lean002_v003_lite",
+      "spawn_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/02-lite-spawn.json",
+      "spawn_receipt_sha256": "5737e44c485b9dbca8ba69b69aad24ad6435ce3df40ec1777fe8a529cede9297",
+      "final_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/02-lite-final.json",
+      "final_receipt_sha256": "d36df7df2560c0463879b0a2e751eb5cfb646c0e82b569b8fccabd394ac23b27",
+      "previous_final_receipt_sha256": "8e6b6f120f43d3cd15c663d4f2a17a0fea36d65090362f8fd1d1c046685b4fab"
+    },
+    {
+      "sequence": 3,
+      "mode": "full",
+      "canonical_agent_path": "/root/lean002_v003_full",
+      "spawn_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/03-full-spawn.json",
+      "spawn_receipt_sha256": "ca3a49f6d6bffbe23577fa53f79cfa012b594ba6721c964a3fc54a0b6b1a054e",
+      "final_receipt_path": "evaluations/v0.8/v003/results/phase-b/receipts/03-full-final.json",
+      "final_receipt_sha256": "e6f81cb0a47d1fb5bcdadf94c3488507f80069529d62ec5646f99d360860bfad",
+      "previous_final_receipt_sha256": "d36df7df2560c0463879b0a2e751eb5cfb646c0e82b569b8fccabd394ac23b27"
+    }
+  ]
+}
