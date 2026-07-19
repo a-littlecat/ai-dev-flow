@@ -6,8 +6,8 @@
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Review`
-- `review_status`: `In Review`
+- `lifecycle`: `Blocked`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -66,7 +66,7 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=da66c04;diff=da66c04..HEAD
+- Base / Diff：base=da66c04;diff=da66c04..1c4729d
 - 隔离位置：专用分支 `codex/lean-v08-slimming`；每次 benchmark 另用独立临时 Git 工作区。
 - 回滚方式：回退本任务独立 commit 并移除未接入入口的原型目录；不得使用破坏性 reset。
 - 修改文件：原型两文件、`evaluations/v0.8/results/phase-b/**`、本任务与任务板；现行 Skill、冻结 manifest 和依赖未改。
@@ -74,11 +74,27 @@ git diff --check
 - 原型状态：默认关闭、未接入现行入口；2 个新核心文件、1 个活跃 reference、64 个活跃规范非空行。
 - 三档结果：严格串行 3 次 main；no-skill/lite/full 调用数为 1/1/3，阻塞问题为 0/0/1，Lite Reviewer 为 0。
 - 效率结果：Lite 相对 Full 的字节、非空行、模型调用、阻塞问题分别降低 93.15%、94.54%、66.67%、100%。
-- 阶段 B 门禁：机械评分全部通过；固定样本策略为 `DoNotUseSkill`，只说明该 Lite 样本中 no-skill 成本更低且质量相同。
-- Review findings：pending independent LEAN-002 review；Full benchmark 内部 Reviewer 已 Passed，但不替代本任务整体 Review。
+- 阶段 B 门禁：机械评分全部通过，但整体独立 Review 发现 2 项 P1，因此全面实施门禁失败。
+- Review findings：`LEAN002-P1-001` 实际原型未与 stage A 路由/repair 语义绑定且存在 RFC 漂移；`LEAN002-P1-002` 缺少平台可持久化的精确模型版本、call/agent ID 与顺序收据。
 - UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
+
+## 独立整体复审
+
+- Reviewer：Codex 隔离只读 Reviewer。
+- 结论：`Blocked`；P0=0，P1=2，P2=0，P3=0。
+- `LEAN002-P1-001`：stage A 由 `replay.py` 内置 `route_sample()` / `repair_decision()` 自洽生成，未读取原型；阶段 B 又只真实执行 Lite 样本，不能证明 Tracked、Controlled 与第三轮 repair 的实际原型规则。
+- `LEAN002-P1-002`：仓库只能证明三个隔离上下文均继承当前默认模型且未传 override；运行平台未暴露可持久化的精确模型版本或 opaque call ID，无法满足冻结协议的独立审计要求。
+- 已确认通过：授权 diff、默认关闭与可回退、三工作区单文件范围及各 4 / 4、stage A 8 / 8、scorer 与保存 summary 等值、专项 8 / 8、TASK lint、diff hygiene 和固定样本结论边界。
+- 修复约束：修改原型会改变 Lite workflow hash，必须创建新 evaluation ID 并重跑三次；PLAN-001 的当前模型 main 总预算已用满，且平台级版本/call ID 证据当前不可获得，不能用 repair 或改协议绕过。
+- 后续门禁：不允许创建 `LEAN-003`。
+
+## 原型关闭
+
+- 处理：原型保持未接入现行入口，并在控制面标记为关闭；不得再显式激活或作为 v0.8 实施入口。
+- 保留原因：两文件原样保留为 `V08-LEAN-EVAL-002` 的 hash-bound 审计输入，使 scorer 仍可复算；这不代表原型可用或已验收。
+- 回退事实：如需物理移除，可回退原型 commits `0622ba7` / `8aa3f55`；当前未做破坏性删除。
 
 ## 状态边界
 
-- 当前为 `Review / In Review`，不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
-- 阶段 B 机械评分已通过，但必须等待本任务整体独立 Review 后才能判断 `LEAN-003` 技术门禁。
+- 当前为 `Blocked / Needs Fix`，不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- 阶段 B 机械评分通过不能抵消两项 P1；串行链在 LEAN-002 停止，`LEAN-003` 未创建。
