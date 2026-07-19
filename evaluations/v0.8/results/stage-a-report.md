@@ -1,6 +1,6 @@
 # LEAN-001 阶段 A 零额度回放报告
 
-- 评估 ID：`V08-LEAN-EVAL-001`
+- 评估 ID：`V08-LEAN-EVAL-002`
 - 冻结 commit：`b7938ef61a13ddb1ea22787c9a9a2d70298aadd4`
 - 模型 / Reviewer / subagent 调用：0
 - 原始记录：8（6 个路由样本 + 2 个 repair trace）
@@ -11,12 +11,12 @@
 
 | 样本 | 类型 | Expected | Actual | Difference |
 |---|---|---|---|---|
-| `LITE-SYN-001` | `stage_a_route` | route=Lite, review=Skipped, safety_gate=Preserved | route=Lite, review=Skipped, safety_gate=Preserved | 无 |
-| `LITE-SYN-002` | `stage_a_route` | route=Lite, review=Skipped, safety_gate=Preserved | route=Lite, review=Skipped, safety_gate=Preserved | 无 |
-| `TRACKED-HIST-001` | `stage_a_route` | route=Tracked, review=Triggered, safety_gate=Preserved | route=Tracked, review=Triggered, safety_gate=Preserved | 无 |
-| `TRACKED-HIST-002` | `stage_a_route` | route=Tracked, review=Triggered, safety_gate=Preserved | route=Tracked, review=Triggered, safety_gate=Preserved | 无 |
-| `CONTROLLED-HIST-001` | `stage_a_route` | route=Controlled, review=Triggered, safety_gate=Preserved | route=Controlled, review=Triggered, safety_gate=Preserved | 无 |
-| `CONTROLLED-HIST-002` | `stage_a_route` | route=Controlled, review=Triggered, safety_gate=Preserved | route=Controlled, review=Triggered, safety_gate=Preserved | 无 |
+| `LITE-SYN-001` | `stage_a_route` | route=Lite, review=Skipped, safety_gate=Allowed | route=Lite, review=Skipped, safety_gate=Allowed | 无 |
+| `LITE-SYN-002` | `stage_a_route` | route=Lite, review=Skipped, safety_gate=Allowed | route=Lite, review=Skipped, safety_gate=Allowed | 无 |
+| `TRACKED-HIST-001` | `stage_a_route` | route=Tracked, review=Triggered, safety_gate=Allowed | route=Tracked, review=Triggered, safety_gate=Allowed | 无 |
+| `TRACKED-HIST-002` | `stage_a_route` | route=Tracked, review=Triggered, safety_gate=Allowed | route=Tracked, review=Triggered, safety_gate=Allowed | 无 |
+| `CONTROLLED-HIST-001` | `stage_a_route` | route=Controlled, review=Triggered, safety_gate=Blocked | route=Controlled, review=Triggered, safety_gate=Blocked | 无 |
+| `CONTROLLED-HIST-002` | `stage_a_route` | route=Controlled, review=Triggered, safety_gate=Blocked | route=Controlled, review=Triggered, safety_gate=Blocked | 无 |
 | `REPAIR-SYN-001` | `stage_a_repair` | decision=ExtendRound3 | decision=ExtendRound3 | 无 |
 | `REPAIR-SYN-002` | `stage_a_repair` | decision=Stop | decision=Stop | 无 |
 
@@ -29,8 +29,8 @@
 
 ## 有限结论
 
-- Lite 两个固定合成样本均跳过 Reviewer，且未绕过已编码的 authority / 真实环境 / delivery 门禁。
-- Tracked 两个历史 P1 样本均触发 Reviewer；Controlled 两个高风险样本均强制 Reviewer。
+- Lite 两个固定合成样本均跳过 Reviewer，且只在 action authority 为 Allowed、无真实环境或 delivery 阻断时继续。
+- Tracked 两个历史 P1 样本均触发 Reviewer；Controlled 两个高风险样本均强制 Reviewer，缺少真实环境证据和 release authority 的动作均被 Blocked。
 - 收敛 trace 只获得一次第 3 轮，停滞/回退 trace 被停止；模型变化未重置预算。
 - 结论只适用于本 manifest；当前尚未验证真实任务的工作流输入、模型调用和用户问题是否下降。
 

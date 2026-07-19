@@ -53,6 +53,28 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
 
 
+def sha256_file_set(paths: list[str]) -> str:
+    digest = hashlib.sha256()
+    for path_text in sorted(paths):
+        data = relative_path(path_text).read_bytes()
+        digest.update(path_text.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(data)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def utf8_metrics(paths: list[str]) -> tuple[int, int]:
+    byte_count = 0
+    nonempty_lines = 0
+    for path_text in paths:
+        data = relative_path(path_text).read_bytes()
+        text = data.decode("utf-8")
+        byte_count += len(data)
+        nonempty_lines += sum(bool(line.strip()) for line in text.splitlines())
+    return byte_count, nonempty_lines
+
+
 def git_bytes(*args: str) -> bytes:
     process = subprocess.run(
         ["git", *args],
@@ -166,8 +188,29 @@ def verify_manifest(manifest: dict[str, Any]) -> None:
     if manifest["phase_b"]["maximum_main_task_executions"] != 3:
         raise EvalError("phase B execution budget drifted")
 
+    phase_b = manifest["phase_b"]
+    if sha256_file_set(phase_b["benchmark_baseline_files"]) != phase_b[
+        "benchmark_baseline_sha256"
+    ]:
+        raise EvalError("benchmark baseline digest drifted")
+    if sha256_file_set(phase_b["no_skill_workflow_files"]) != phase_b[
+        "no_skill_workflow_sha256"
+    ]:
+        raise EvalError("no-skill workflow digest drifted")
+    if sha256_file_set(phase_b["full_workflow_files"]) != phase_b[
+        "full_workflow_sha256"
+    ]:
+        raise EvalError("full workflow digest drifted")
+
     verify_baseline(manifest)
     for sample in manifest["routes"]:
+        if sample.get("requested_action") in {None, ""}:
+            raise EvalError(f"{sample['id']} requested_action is missing")
+        if sample.get("action_authority") not in {"Allowed", "Denied", "Unknown"}:
+            raise EvalError(f"{sample['id']} action_authority is invalid")
+        for key in ("delivery_action", "real_environment_required", "real_environment_evidence"):
+            if not isinstance(sample.get(key), bool):
+                raise EvalError(f"{sample['id']} {key} must be boolean")
         if sample["source_kind"] == "git_history":
             verify_git_evidence(sample)
         else:
@@ -222,23 +265,50 @@ def route_sample(sample: dict[str, Any]) -> dict[str, str]:
     ):
         review = "Blocked"
 
-    safety_gate = "Preserved"
-    if route == "Lite" and (
-        ua_level >= 5
-        or bool(flags & CONTROLLED_FLAGS)
-        or sample["user_observation_required"]
+    safety_gate = "Allowed"
+    if (
+        sample["action_authority"] != "Allowed"
+        or review == "Blocked"
+        or (sample["real_environment_required"] and not sample["real_environment_evidence"])
+        or (sample["delivery_action"] and route != "Controlled")
     ):
-        safety_gate = "Missed"
+        safety_gate = "Blocked"
     return {"route": route, "review": review, "safety_gate": safety_gate}
 
 
 def repair_decision(trace: dict[str, Any]) -> str:
     snapshots = trace["finding_snapshots"]
-    counts = [item["p0"] + item["p1"] for item in snapshots]
+    if len(snapshots) != 3 or [item.get("round") for item in snapshots] != [0, 1, 2]:
+        return "Stop"
+    finding_maps: list[dict[str, str]] = []
+    for snapshot in snapshots:
+        findings = snapshot.get("findings")
+        if not isinstance(findings, list):
+            return "Stop"
+        mapped: dict[str, str] = {}
+        for finding in findings:
+            finding_id = finding.get("id") if isinstance(finding, dict) else None
+            severity = finding.get("severity") if isinstance(finding, dict) else None
+            if not finding_id or severity not in {"P0", "P1"} or finding_id in mapped:
+                return "Stop"
+            mapped[finding_id] = severity
+        finding_maps.append(mapped)
+    counts = [len(item) for item in finding_maps]
     validations = trace["validation_scores"]
     scope_frozen = len(set(trace["scope_hashes"])) == 1
     findings_improve = counts[0] > counts[1] > counts[2]
-    validation_improves = validations[0] < validations[1] < validations[2]
+    validation_improves = (
+        len(validations) == 3 and validations[0] < validations[1] < validations[2]
+    )
+    severity_rank = {"P1": 1, "P0": 2}
+    no_new_high_findings = True
+    no_severity_regression = True
+    for previous, current in zip(finding_maps, finding_maps[1:]):
+        if set(current) - set(previous):
+            no_new_high_findings = False
+        for finding_id in set(previous) & set(current):
+            if severity_rank[current[finding_id]] > severity_rank[previous[finding_id]]:
+                no_severity_regression = False
     capabilities = trace["reviewer_capable"] and trace["repairer_capable"]
     monotonic_progress = all(
         [
@@ -246,6 +316,8 @@ def repair_decision(trace: dict[str, Any]) -> str:
             trace["dependencies_frozen"],
             trace["authority_frozen"],
             findings_improve,
+            no_new_high_findings,
+            no_severity_regression,
             validation_improves,
             trace["root_cause_known"],
             bool(trace["round_3_target"]),
@@ -337,8 +409,8 @@ def render_report(manifest: dict[str, Any], records: list[dict[str, Any]]) -> st
             "",
             "## 有限结论",
             "",
-            "- Lite 两个固定合成样本均跳过 Reviewer，且未绕过已编码的 authority / 真实环境 / delivery 门禁。",
-            "- Tracked 两个历史 P1 样本均触发 Reviewer；Controlled 两个高风险样本均强制 Reviewer。",
+            "- Lite 两个固定合成样本均跳过 Reviewer，且只在 action authority 为 Allowed、无真实环境或 delivery 阻断时继续。",
+            "- Tracked 两个历史 P1 样本均触发 Reviewer；Controlled 两个高风险样本均强制 Reviewer，缺少真实环境证据和 release authority 的动作均被 Blocked。",
             "- 收敛 trace 只获得一次第 3 轮，停滞/回退 trace 被停止；模型变化未重置预算。",
             "- 结论只适用于本 manifest；当前尚未验证真实任务的工作流输入、模型调用和用户问题是否下降。",
             "",
@@ -358,29 +430,289 @@ def reduction(full: int, lite: int) -> dict[str, Any]:
     return {"status": "measured", "value": value, "pass": value >= 0.5}
 
 
+def is_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value)
+    )
+
+
+def require_nonnegative_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise EvalError(f"{label} must be a non-negative integer")
+    return value
+
+
+def verify_bound_artifact(path_text: Any, expected_hash: Any, label: str) -> Path:
+    if not isinstance(path_text, str) or not path_text.startswith(
+        "evaluations/v0.8/results/phase-b/"
+    ):
+        raise EvalError(f"{label} path is outside the phase B evidence root")
+    if not is_sha256(expected_hash):
+        raise EvalError(f"{label} hash is missing or invalid")
+    path = relative_path(path_text)
+    if not path.is_file() or sha256_file(path) != expected_hash:
+        raise EvalError(f"{label} artifact is missing or hash-mismatched")
+    return path
+
+
+def normalize_workflow_inputs(
+    manifest: dict[str, Any], mode: str, inputs: Any
+) -> dict[str, Any]:
+    if not isinstance(inputs, list) or not inputs:
+        raise EvalError(f"{mode} workflow_inputs must be a non-empty list")
+    if any(not isinstance(item, dict) or set(item) != {"path", "sha256"} for item in inputs):
+        raise EvalError(f"{mode} workflow_inputs must contain only path/sha256 records")
+    paths = [item["path"] for item in inputs]
+    if any(not isinstance(path, str) or not path for path in paths) or len(paths) != len(set(paths)):
+        raise EvalError(f"{mode} workflow input paths are empty or duplicated")
+    for item in inputs:
+        if not is_sha256(item["sha256"]):
+            raise EvalError(f"{mode} workflow input hash is invalid")
+        path = relative_path(item["path"])
+        if not path.is_file() or sha256_file(path) != item["sha256"]:
+            raise EvalError(f"{mode} workflow input is missing or hash-mismatched: {item['path']}")
+
+    phase_b = manifest["phase_b"]
+    if mode == "no-skill" and paths != phase_b["no_skill_workflow_files"]:
+        raise EvalError("no-skill workflow input set drifted")
+    if mode == "full" and paths != phase_b["full_workflow_files"]:
+        raise EvalError("full workflow input set drifted")
+    if mode == "lite":
+        prefix = phase_b["lite_workflow_prefix"]
+        if len(paths) > manifest["thresholds"]["new_core_files_max"]:
+            raise EvalError("Lite prototype exceeds the frozen core-file budget")
+        if any(not path.startswith(prefix) for path in paths):
+            raise EvalError("Lite workflow input is outside the default-off prototype")
+        if not any(path.endswith("/SKILL.md") for path in paths):
+            raise EvalError("Lite workflow input is missing prototype SKILL.md")
+
+    expected_bundle = sha256_file_set(paths)
+    byte_count, nonempty_lines = utf8_metrics(paths)
+    return {
+        "paths": paths,
+        "bundle_sha256": expected_bundle,
+        "workflow_input_bytes": byte_count,
+        "workflow_input_nonempty_lines": nonempty_lines,
+    }
+
+
+def normalize_model_calls(calls: Any, workflow_bundle_sha256: str, mode: str) -> dict[str, Any]:
+    if not isinstance(calls, list) or not calls:
+        raise EvalError(f"{mode} model_call_evidence must contain the main task call")
+    allowed_keys = {"id", "kind", "evidence_path", "evidence_sha256", "input_manifest_sha256"}
+    ids: set[str] = set()
+    paths: set[str] = set()
+    reviewer_calls = 0
+    for call in calls:
+        if not isinstance(call, dict) or set(call) != allowed_keys:
+            raise EvalError(f"{mode} model call evidence has missing or unknown fields")
+        if not isinstance(call["id"], str) or not call["id"] or call["id"] in ids:
+            raise EvalError(f"{mode} model call IDs are empty or duplicated")
+        ids.add(call["id"])
+        if call["kind"] not in {"main", "reviewer", "subagent", "retry"}:
+            raise EvalError(f"{mode} model call kind is invalid")
+        if call["input_manifest_sha256"] != workflow_bundle_sha256:
+            raise EvalError(f"{mode} model call is not bound to its workflow input")
+        verify_bound_artifact(call["evidence_path"], call["evidence_sha256"], f"{mode} model call")
+        if call["evidence_path"] in paths:
+            raise EvalError(f"{mode} model call evidence path is duplicated")
+        paths.add(call["evidence_path"])
+        reviewer_calls += call["kind"] == "reviewer"
+    if calls[0]["kind"] != "main":
+        raise EvalError(f"{mode} first model call must be the main task execution")
+    return {"model_calls": len(calls), "reviewer_calls": reviewer_calls}
+
+
+def normalize_run(manifest: dict[str, Any], run: Any, mode: str, sequence: int) -> dict[str, Any]:
+    allowed_keys = {
+        "run_id",
+        "mode",
+        "sequence",
+        "model_identity",
+        "baseline_sha256",
+        "brief_sha256",
+        "workflow_inputs",
+        "model_call_evidence",
+        "blocking_questions",
+        "test_exit",
+        "test_passed",
+        "test_total",
+        "output_path",
+        "output_sha256",
+        "verification_evidence_path",
+        "verification_evidence_sha256",
+        "completion_criteria",
+        "scope_violation",
+        "sensitive_data_exposed",
+    }
+    if not isinstance(run, dict) or set(run) != allowed_keys:
+        raise EvalError(f"{mode} run has missing or unknown fields")
+    if run["run_id"] != f"{manifest['evaluation_id']}-{mode}" or run["mode"] != mode:
+        raise EvalError(f"{mode} run identity mismatch")
+    if run["sequence"] != sequence:
+        raise EvalError(f"{mode} run sequence mismatch")
+    if not isinstance(run["model_identity"], str) or not run["model_identity"].strip():
+        raise EvalError(f"{mode} model identity is missing")
+    if run["baseline_sha256"] != manifest["phase_b"]["benchmark_baseline_sha256"]:
+        raise EvalError(f"{mode} baseline hash is not bound to the manifest")
+    brief_path = manifest["phase_b"]["benchmark_brief"]
+    if run["brief_sha256"] != manifest["phase_b"]["artifact_sha256"][brief_path]:
+        raise EvalError(f"{mode} brief hash is not bound to the manifest")
+
+    workflow = normalize_workflow_inputs(manifest, mode, run["workflow_inputs"])
+    calls = normalize_model_calls(
+        run["model_call_evidence"], workflow["bundle_sha256"], mode
+    )
+    questions = run["blocking_questions"]
+    if not isinstance(questions, list) or any(
+        not isinstance(item, str) or not item.strip() for item in questions
+    ):
+        raise EvalError(f"{mode} blocking questions must be non-empty strings")
+
+    test_exit = run["test_exit"]
+    if isinstance(test_exit, bool) or not isinstance(test_exit, int):
+        raise EvalError(f"{mode} test_exit must be an integer")
+    test_passed = require_nonnegative_int(run["test_passed"], f"{mode} test_passed")
+    test_total = require_nonnegative_int(run["test_total"], f"{mode} test_total")
+    verify_bound_artifact(run["output_path"], run["output_sha256"], f"{mode} output")
+    verify_bound_artifact(
+        run["verification_evidence_path"],
+        run["verification_evidence_sha256"],
+        f"{mode} verification",
+    )
+
+    criteria = run["completion_criteria"]
+    required_criteria = manifest["phase_b"]["completion_criteria"]
+    if (
+        not isinstance(criteria, dict)
+        or set(criteria) != set(required_criteria)
+        or any(not isinstance(value, bool) for value in criteria.values())
+    ):
+        raise EvalError(f"{mode} completion criteria are incomplete or invalid")
+    if not isinstance(run["scope_violation"], bool) or not isinstance(
+        run["sensitive_data_exposed"], bool
+    ):
+        raise EvalError(f"{mode} scope/security flags must be boolean")
+
+    return {
+        "mode": mode,
+        "sequence": sequence,
+        "model_identity": run["model_identity"].strip(),
+        **workflow,
+        **calls,
+        "blocking_user_questions": len(questions),
+        "test_exit": test_exit,
+        "test_passed": test_passed,
+        "test_total": test_total,
+        "output_sha256": run["output_sha256"],
+        "completion_criteria": criteria,
+        "scope_violation": run["scope_violation"],
+        "sensitive_data_exposed": run["sensitive_data_exposed"],
+    }
+
+
+def path_exists_at_commit(commit: str, path_text: str) -> bool:
+    process = subprocess.run(
+        ["git", "cat-file", "-e", f"{commit}:{path_text}"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return process.returncode == 0
+
+
+def mechanical_costs(manifest: dict[str, Any], payload: dict[str, Any], lite_paths: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+    if payload.get("active_core_files") != lite_paths:
+        raise EvalError("active_core_files must exactly match the Lite workflow inputs")
+    active_bytes, active_lines = utf8_metrics(lite_paths)
+    _, baseline_lines = utf8_metrics(manifest["phase_b"]["full_workflow_files"])
+    maintenance = {
+        "active_core_references": sum("/references/" in path for path in lite_paths),
+        "new_core_files": sum(
+            not path_exists_at_commit(manifest["freeze_commit"], path) for path in lite_paths
+        ),
+        "active_spec_utf8_bytes": active_bytes,
+        "active_spec_nonempty_lines": active_lines,
+        "frozen_baseline_nonempty_lines": baseline_lines,
+    }
+
+    migration_ref = payload.get("migration_evidence")
+    if not isinstance(migration_ref, dict) or set(migration_ref) != {"path", "sha256"}:
+        raise EvalError("migration_evidence must be a bound path/hash record")
+    migration_path = verify_bound_artifact(
+        migration_ref["path"], migration_ref["sha256"], "migration evidence"
+    )
+    migration_payload = load_json(migration_path)
+    if migration_payload.get("schema_version") != "lean-migration-evidence/v1":
+        raise EvalError("migration evidence schema is invalid")
+    user_steps = migration_payload.get("user_steps")
+    if not isinstance(user_steps, list) or any(
+        not isinstance(item, str) or not item.strip() for item in user_steps
+    ):
+        raise EvalError("migration user steps must be a list of non-empty strings")
+
+    task_changes = git_text(
+        "diff", "--name-only", manifest["freeze_commit"], "--", "docs/tasks"
+    ).splitlines()
+    historical_rewrites = sum(
+        not Path(path).name.startswith("LEAN-") for path in task_changes
+    )
+    dependency_names = {
+        "package.json",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "pyproject.toml",
+        "requirements.txt",
+        "poetry.lock",
+        "Pipfile",
+        "Pipfile.lock",
+    }
+    all_changes = git_text("diff", "--name-only", manifest["freeze_commit"], "--").splitlines()
+    dependency_changes = sum(Path(path).name in dependency_names for path in all_changes)
+    migration = {
+        "user_steps": len(user_steps),
+        "historical_tasks_rewritten": historical_rewrites,
+        "required_dependencies_added": dependency_changes,
+        "implementation_tasks": len(list((ROOT / "docs" / "tasks").glob("LEAN-*.md"))),
+    }
+    return maintenance, migration
+
+
 def score_phase_b(manifest: dict[str, Any], runs_path: Path) -> dict[str, Any]:
     payload = load_json(runs_path)
+    required_payload_keys = {
+        "schema_version",
+        "evaluation_id",
+        "execution_order",
+        "runs",
+        "active_core_files",
+        "migration_evidence",
+    }
+    if not isinstance(payload, dict) or set(payload) != required_payload_keys:
+        raise EvalError("phase B payload has missing or unknown fields")
     if payload.get("schema_version") != "lean-phase-b-runs/v1":
         raise EvalError("unsupported phase B runs schema")
     if payload.get("evaluation_id") != manifest["evaluation_id"]:
         raise EvalError("phase B evaluation_id mismatch")
     if payload.get("execution_order") != manifest["phase_b"]["execution_order"]:
         raise EvalError("phase B execution order mismatch")
-    runs = payload.get("runs", [])
-    if len(runs) != 3 or [item.get("mode") for item in runs] != [
-        "no-skill",
-        "lite",
-        "full",
-    ]:
+    runs = payload.get("runs")
+    if not isinstance(runs, list) or len(runs) != 3:
         raise EvalError("phase B requires exactly three ordered runs")
-    if len({item.get("model_identity") for item in runs}) != 1:
+    normalized = [
+        normalize_run(manifest, run, mode, sequence)
+        for run, mode, sequence in zip(
+            runs, manifest["phase_b"]["execution_order"], (1, 2, 3)
+        )
+    ]
+    if len({item["model_identity"] for item in normalized}) != 1:
         raise EvalError("phase B model identity changed")
-    if len({item.get("baseline_sha256") for item in runs}) != 1:
-        raise EvalError("phase B baseline changed")
-    if len({item.get("brief_sha256") for item in runs}) != 1:
-        raise EvalError("phase B brief changed")
 
-    by_mode = {item["mode"]: item for item in runs}
+    by_mode = {item["mode"]: item for item in normalized}
     lite = by_mode["lite"]
     full = by_mode["full"]
     no_skill = by_mode["no-skill"]
@@ -401,14 +733,12 @@ def score_phase_b(manifest: dict[str, Any], runs_path: Path) -> dict[str, Any]:
         and all(run["completion_criteria"].values())
         and not run["scope_violation"]
         and not run["sensitive_data_exposed"]
-        for run in runs
+        for run in normalized
     )
-    stage_a = payload.get("stage_a", {})
-    maintenance = payload.get("maintenance", {})
-    migration = payload.get("migration", {})
-    safety_ok = (
-        stage_a.get("p0_p1_false_negatives") == 0
-        and stage_a.get("authority_or_delivery_misses") == 0
+    stage_a = stage_a_records(manifest)
+    safety_ok = len(stage_a) == 8 and all(not record["difference"] for record in stage_a)
+    maintenance, migration = mechanical_costs(
+        manifest, payload, lite["paths"]
     )
     maintenance_ok = (
         maintenance.get("active_core_references", 10**9)
@@ -419,11 +749,11 @@ def score_phase_b(manifest: dict[str, Any], runs_path: Path) -> dict[str, Any]:
         <= maintenance.get("frozen_baseline_nonempty_lines", -1)
     )
     migration_ok = (
-        migration.get("user_steps", 10**9)
+        migration["user_steps"]
         <= manifest["thresholds"]["user_migration_steps_max"]
-        and migration.get("historical_tasks_rewritten") == 0
-        and migration.get("required_dependencies_added") == 0
-        and migration.get("implementation_tasks", 10**9)
+        and migration["historical_tasks_rewritten"] == 0
+        and migration["required_dependencies_added"] == 0
+        and migration["implementation_tasks"]
         <= manifest["thresholds"]["implementation_tasks_max"]
     )
     efficiency_ok = all(item["pass"] for item in efficiency.values())
@@ -451,8 +781,11 @@ def score_phase_b(manifest: dict[str, Any], runs_path: Path) -> dict[str, Any]:
         "safety_pass": safety_ok,
         "maintenance_pass": maintenance_ok,
         "migration_pass": migration_ok,
+        "maintenance": maintenance,
+        "migration": migration,
         "lite_reviewer_zero": lite_review_ok,
         "all_gates_pass": all_gates_pass,
+        "normalized_runs": normalized,
         "lite_policy": (
             "DoNotUseSkill"
             if no_skill_same_quality and no_skill_lower_cost

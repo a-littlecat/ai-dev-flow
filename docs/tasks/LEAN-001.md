@@ -6,8 +6,8 @@
 |---|---|
 | 任务编号 | `LEAN-001` |
 | 任务类型 | 测试 |
-| 当前模式 | 等待第 1 轮有限修复（`repair_task`） |
-| 任务状态 | 需修复（`Needs Fix`） |
+| 当前模式 | 第 1 轮有限修复后复审（`review_task`） |
+| 任务状态 | 待审查（`Review`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：新增可复现评估工具和冻结证据，但不修改现行 Skill 行为 |
@@ -62,9 +62,9 @@
 - 当前分支：`codex/lean-v08-slimming`
 - 执行位置：独立分支
 - Worktree 路径：不适用
-- Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=working-tree
-- 当前 HEAD：`c607cb75590cfeb5ea45c1d60e10b77a44208080`
-- Diff 范围：`b7938ef..c607cb7`
+- Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
+- 当前 HEAD：第 1 轮 repair commit（精确 hash 以 `git log -- docs/tasks/LEAN-001.md` 为准）
+- Diff 范围：`b7938ef..HEAD`
 - 是否有未提交改动：开始前否
 - 是否存在不应提交文件：否
 - 是否允许 commit：是；按 LEAN 任务保留独立 commit
@@ -113,10 +113,11 @@ git diff --check
 
 - `replay.py verify`：通过；6 个路由样本、2 个 repair trace、历史 Git 对象/hash 与冻结规模基线全部一致。
 - `replay.py replay --check`：通过；8 条原始记录，expected / actual 差异 0，模型/Reviewer/subagent 调用 0。
+- 评估工具专项回归：7 / 7 通过；覆盖旧伪造 payload、错 baseline hash、空 oracle、负数、Denied/Unknown authority、新增 P0、严重度升级和非法轮次。
 - 代表任务基线：4 / 4 单元测试通过。
 - 仓库回归：41 / 41 单元测试通过。
 - 静态检查：`replay.py` AST 与 `evaluations/v0.8/**` 全部 JSON 解析通过。
-- targeted workflow lint：0 error / 0 violation / 2 warning；warning 为预期 Legacy 映射和任务新建时 transition 尚不可验证。
+- targeted workflow lint：0 error / 0 violation / 1 warning；warning 为预期 Legacy 映射。
 - `git diff --check`：通过。
 - 历史验证命令漂移：仓库及本机安装副本均不存在旧 `quick_validate.py`；本任务未声称执行该命令，使用当前真实验证入口替代。
 
@@ -128,12 +129,12 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..c607cb7
+- Base / Diff：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
 - 隔离位置：独立分支 `codex/lean-v08-slimming`。
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 - 修改文件：`evaluations/v0.8/**`、`docs/tasks/LEAN-001.md`、`docs/TASK_BOARD.md`。
-- 验证证据：8 / 8 回放一致；历史 hash、4 / 4 代表任务测试、41 / 41 回归、JSON/AST、targeted lint 与 diff hygiene 通过。
-- Review findings：`LEAN001-P1-001`～`003` 与 `LEAN001-P2-001`～`002`；第 1 轮有限修复待执行。
+- 验证证据：8 / 8 回放一致；7 / 7 评估工具专项、4 / 4 代表任务、41 / 41 仓库回归、JSON/AST、targeted lint 与 diff hygiene 通过。
+- Review findings：上一轮 `LEAN001-P1-001`～`003` 与 `LEAN001-P2-001`～`002` 已由 Repairer 逐项处理，等待独立复审确认。
 
 ## 修改文件
 
@@ -145,10 +146,10 @@ git diff --check
 
 ## 代码审查
 
-- 审查状态：需要修改
-- 审查人或审查 agent：Codex 隔离只读 Reviewer（第 1 轮）
-- 审查严重等级：P1；P0 0 项、P1 3 项、P2 2 项、P3 0 项
-- 审查结论：`Needs Fix`；不允许进入 `LEAN-002`
+- 审查状态：审查中
+- 审查人或审查 agent：Codex 隔离只读 Reviewer（第 1 轮 findings；同一上下文待复审）
+- 审查严重等级：待复审；第 1 轮为 P1，P0 0 项、P1 3 项、P2 2 项、P3 0 项
+- 审查结论：第 1 轮有限修复已完成，尚未由 Reviewer 确认关闭；仍不允许进入 `LEAN-002`
 - P0 / P1 必须修改项：
   1. `LEAN001-P1-001`：阶段 B 评分器信任缺失/负数/空 oracle/未绑定 hash 的调用方数字，可伪造 `all_gates_pass=true`。
   2. `LEAN001-P1-002`：authority / delivery / real-environment gate 未建模，`safety_gate` 仅因非 Lite 默认写 `Preserved`。
@@ -159,14 +160,26 @@ git diff --check
 - 风险：若不修复，阶段 B 可以被伪造数据放行，未授权 delivery 和新增高严重 finding 可能被错误标记为安全。
 - 是否允许进入验收建议：否
 
+## 审查-修复循环第 1 轮
+
+- Repairer 范围：只处理第 1 轮 3 项 P1、2 项 P2；未创建原型、未执行阶段 B、未修改现行 Skill。
+- `LEAN001-P1-001`：阶段 B 改为严格 raw evidence 合同；baseline/brief/workflow/model call/output/verification 均绑定路径与 hash，工作流输入、调用数、阶段 A、维护/迁移成本由评分器复算；缺字段、负数、空 oracle、错 hash、重复/越界证据直接拒绝。
+- `LEAN001-P1-002`：6 个样本新增 requested action、action authority、delivery 与 real-environment evidence；未授权 release 和缺 UA6 真实环境证据均实际返回 `Blocked`。冻结合同发生语义修复，按规则启用新评估 ID `V08-LEAN-EVAL-002`，未与旧 ledger 合并。
+- `LEAN001-P1-003`：repair 按稳定 ID 与 P0/P1 严重度逐轮比较；新增 P0/P1、P1→P0、验证不改善、轮次结构异常或绝对上限异常立即 `Stop`。
+- `LEAN001-P2-001`：targeted lint 改为当前 CLI 支持的 positional target。
+- `LEAN001-P2-002`：Git 事实更新为已提交实现 / 审查记录与本轮 `b7938ef..HEAD`。
+- 新增回归：7 项，包含 Reviewer 提供的伪通过与新增 P0 反例。
+- 验证：8 / 8 零差异、7 / 7 + 4 / 4 + 41 / 41 测试、JSON/JSONL/AST、targeted lint 0 error/violation、`git diff --check` 通过。
+- 是否需要复审：是；Engineer / Repairer 不自批。
+
 ## Diff 审查
 
 - 审查方式：post-commit diff
 - 审查命令：`git diff b7938ef..HEAD`
 - 修改文件清单：`evaluations/v0.8/**`、本任务、看板
 - 范围越界文件：无
-- 审查状态：需要修改
-- 审查结论：范围与现有 hash/测试通过，但存在 3 项阻塞阶段 B 的 P1；进入第 1 轮有限修复。
+- 审查状态：审查中
+- 审查结论：第 1 轮修复 diff 已形成并通过自动验证，等待 Reviewer 逐项确认原 3 项 P1、2 项 P2 是否关闭。
 - 是否允许进入验收建议：否
 
 ## 用户动作等级 / 验收建议
@@ -180,7 +193,7 @@ git diff --check
 ## 提交 / 合并
 
 - Commit 状态：已提交（本记录所在 LEAN-001 task commit）
-- Commit hash：实现 commit `c607cb75590cfeb5ea45c1d60e10b77a44208080`；本审查写回由下一独立 commit 记录
+- Commit hash：实现 commit `c607cb75590cfeb5ea45c1d60e10b77a44208080`；第 1 轮审查记录 `9ef43d3`；repair commit 以本任务最新 Git 记录为准
 - Merge 状态：未合并
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 
@@ -199,7 +212,7 @@ git diff --check
 
 - 本次完成：冻结评估协议、代表任务与历史证据，完成零额度回放并生成原始 ledger / 报告。
 - 修改文件：`evaluations/v0.8/**`、本任务和看板。
-- 验证结果：8 / 8 回放一致；4 / 4 + 41 / 41 测试通过；targeted lint 无 error/violation。
-- 遗留问题：第 1 轮 Review 发现 3 项 P1、2 项 P2；阶段 B 尚未开始。
+- 验证结果：8 / 8 回放一致；7 / 7 + 4 / 4 + 41 / 41 测试通过；targeted lint 无 error/violation。
+- 遗留问题：等待第 1 轮修复独立复审；阶段 B 尚未开始。
 - 下一会话建议读取：本任务、`PLAN-001`、v0.8 RFC、阶段 A 报告。
 - 不要重复尝试：不得在回放后更改冻结协议以制造通过结果。

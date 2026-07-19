@@ -39,6 +39,18 @@ python -B -X utf8 evaluations/v0.8/replay.py replay --write
 python -B -X utf8 evaluations/v0.8/replay.py score-phase-b --runs <runs.json>
 ```
 
+评分器不接受调用方直接填写汇总数字。每次 run 必须绑定：
+
+- manifest 中的 benchmark baseline / brief hash；
+- 当前仓库内逐文件 hash 的 workflow input 清单；
+- 非空且三次一致的当前模型版本标识；
+- 每次 main / Reviewer / retry 调用的输入 bundle hash 与证据文件；
+- 输出文件和验证日志的仓库内相对路径与 SHA256；
+- 精确且非空的 6 项 completion oracle；
+- 阻塞用户问题原始列表，以及布尔 scope / sensitive-data 结果。
+
+工作流字节/行、模型/Reviewer 调用数、用户问题数、阶段 A 安全结果、活跃核心文件、历史 TASK 改写、依赖清单变化和实施 TASK 数均由评分器复算。负数、缺字段、空 oracle、错 hash、重复证据或不在 `results/phase-b/` 下的证据会直接拒绝，不进入门槛计算。
+
 零分母规则已冻结：当 Full 基线为 0 时，不得伪造百分比；该指标记为 `insufficient` 并阻止全面实施。任务结果、P0/P1、authority、真实环境和 delivery 门禁不允许用其他效率指标抵消。
 
 ## 禁止事项

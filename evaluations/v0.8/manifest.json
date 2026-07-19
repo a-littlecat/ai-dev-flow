@@ -1,6 +1,6 @@
 {
   "schema_version": "lean-eval-manifest/v1",
-  "evaluation_id": "V08-LEAN-EVAL-001",
+  "evaluation_id": "V08-LEAN-EVAL-002",
   "freeze_date": "2026-07-19",
   "freeze_commit": "b7938ef61a13ddb1ea22787c9a9a2d70298aadd4",
   "protocol": {
@@ -50,6 +50,33 @@
       "evaluations/v0.8/fixtures/lite-benchmark/baseline/test_task_summary.py",
       "evaluations/v0.8/fixtures/lite-benchmark/baseline/TASK-BENCH-001.md"
     ],
+    "benchmark_baseline_sha256": "e1b5f5870b4696e128be4e38048eb2a7d4712f5bd253ac73849923a9e62d06ea",
+    "no_skill_workflow_files": [
+      "evaluations/v0.8/fixtures/no-skill-agents.md"
+    ],
+    "no_skill_workflow_sha256": "514998bacaf6966624ece428bd15900124af7386fa31616ea0a7f895525d963d",
+    "full_workflow_files": [
+      "skills/ai-dev-flow/SKILL.md",
+      "skills/ai-dev-flow/references/SAFETY_RULES.md",
+      "skills/ai-dev-flow/references/VALIDATION_GUIDE.md",
+      "skills/ai-dev-flow/references/GIT_PRECHECK.md",
+      "skills/ai-dev-flow/references/GIT_WORKFLOW.md",
+      "skills/ai-dev-flow/references/CODE_REVIEW_CHECKLIST.md",
+      "skills/ai-dev-flow/references/STATUS_MACHINE.md",
+      "skills/ai-dev-flow/references/ACCEPTANCE_GUIDE.md",
+      "skills/ai-dev-flow/references/DIFF_REVIEW.md",
+      "skills/ai-dev-flow/references/ROLE_GUIDE.md"
+    ],
+    "full_workflow_sha256": "d86f6fdef4580aca970fdd301977c4725a505d4f09557030574605cdc7c5fbe4",
+    "lite_workflow_prefix": "skills/ai-dev-flow/prototypes/v0.8-lite/",
+    "completion_criteria": [
+      "public_outputs_unchanged",
+      "unknown_fields_ignored",
+      "missing_values_empty",
+      "only_allowed_files_changed",
+      "tests_pass",
+      "diff_check_pass"
+    ],
     "allowed_modified_files": ["task_summary.py"],
     "verification_commands": [
       "python -B -X utf8 -m unittest -v",
@@ -81,9 +108,14 @@
       "deterministic_coverage": true,
       "user_observation_required": false,
       "risk_flags": ["documentation_only", "single_file"],
+      "requested_action": "edit_document",
+      "action_authority": "Allowed",
+      "delivery_action": false,
+      "real_environment_required": false,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Preserved"}
+      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Allowed"}
     },
     {
       "id": "LITE-SYN-002",
@@ -95,9 +127,14 @@
       "deterministic_coverage": true,
       "user_observation_required": false,
       "risk_flags": ["single_business_file", "internal_refactor", "behavior_tests_cover_oracle"],
+      "requested_action": "edit_internal_code",
+      "action_authority": "Allowed",
+      "delivery_action": false,
+      "real_environment_required": false,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Preserved"}
+      "expected": {"route": "Lite", "review": "Skipped", "safety_gate": "Allowed"}
     },
     {
       "id": "TRACKED-HIST-001",
@@ -107,9 +144,14 @@
       "deterministic_coverage": false,
       "user_observation_required": false,
       "risk_flags": ["business_files_gt_3", "historical_p1", "explicit_independent_review"],
+      "requested_action": "edit_fixtures",
+      "action_authority": "Allowed",
+      "delivery_action": false,
+      "real_environment_required": false,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Preserved"},
+      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Allowed"},
       "git_evidence": {
         "base_commit": "28e74f80df98efcd1f975d34950b1edbc058fb20",
         "payload_commit": "c8626a108e92da731b593ed6bed2bbecc0dfa29b",
@@ -130,9 +172,14 @@
       "deterministic_coverage": false,
       "user_observation_required": false,
       "risk_flags": ["core_execution_path", "historical_p1", "explicit_independent_review"],
+      "requested_action": "edit_core_reader",
+      "action_authority": "Allowed",
+      "delivery_action": false,
+      "real_environment_required": false,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Preserved"},
+      "expected": {"route": "Tracked", "review": "Triggered", "safety_gate": "Allowed"},
       "git_evidence": {
         "base_commit": "f7d870de19f6394349cc4b56879bbcddb0504a8a",
         "payload_commit": "0e1d7467b19ca6d453dcc8eaf2cd733e95efae4a",
@@ -153,9 +200,14 @@
       "deterministic_coverage": false,
       "user_observation_required": true,
       "risk_flags": ["core_writer_path", "historical_p1", "explicit_independent_review", "regression_acceptance"],
+      "requested_action": "enter_regression_acceptance",
+      "action_authority": "Allowed",
+      "delivery_action": false,
+      "real_environment_required": true,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Preserved"},
+      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Blocked"},
       "git_evidence": {
         "base_commit": "7f0f7e5a54d0727098457811359dc6dbee5e7cf4",
         "payload_commit": "f99dbb209f9b51b86dd718ca7f7a59106637285a",
@@ -176,9 +228,14 @@
       "deterministic_coverage": false,
       "user_observation_required": true,
       "risk_flags": ["release", "delivery", "external_sync", "historical_p1", "explicit_independent_review"],
+      "requested_action": "release",
+      "action_authority": "Denied",
+      "delivery_action": true,
+      "real_environment_required": false,
+      "real_environment_evidence": false,
       "review_authority": true,
       "review_capability": true,
-      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Preserved"},
+      "expected": {"route": "Controlled", "review": "Triggered", "safety_gate": "Blocked"},
       "git_evidence": {
         "base_commit": "63b4f7e99640e1d09a4fb6efcd2f9496cf732582",
         "payload_commit": "512533bbf40599488e7c3a57194d5cb0e1029272",
@@ -193,7 +250,7 @@
     }
   ],
   "repair_trace_path": "evaluations/v0.8/fixtures/repair-traces.json",
-  "repair_trace_sha256": "765cb51d0e0d3e3620e39646f8d3cd730ba8067742663f6b7d86652034b2ef18",
+  "repair_trace_sha256": "032e2691bcec1d3e8a281c2fa65cccf17429b0daf8d42f728d9bab9930378e32",
   "keep_simplify_retire": {
     "keep": ["Git baseline/diff", "TASK fact source for Tracked/Controlled", "authority/evidence gates", "Review-UA-delivery separation", "RED/GREEN/SIGNAL on triggered paths"],
     "simplify": ["default SKILL entry", "A/B routing", "UA display", "active reference set", "short prompts", "Tracked review trigger"],
