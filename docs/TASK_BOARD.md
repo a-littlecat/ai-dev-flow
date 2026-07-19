@@ -1,47 +1,45 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-12
-> - 当前模式：`REL-002` 正式发布与关闭已收口
-> - 当前阶段：`v0.7.0` tag、GitHub Release、发布收据和 Closed 状态均已完成
-> - 方案来源：`docs/plans/V0.7_WORKFLOW_CONTRACT_RFC.md`
+> - 快照日期：2026-07-19
+> - 当前模式：`PLAN-001` Accepted Git baseline 提交（`close_task` 交付写回）
+> - 当前阶段：Review Passed + UA2 Passed + commit 已授权；未授权实现、merge、push、release、本机同步或 `Closed`
+> - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
-## 本轮授权边界
+## 当前授权边界
 
-用户于 2026-07-11 明确要求“完成 CONTRACT-001~006”，授权按既定串行依赖逐项进入执行、验证、独立 Review 和对应 UA 门禁，并允许为任务建立必要的独立分支 / Worktree 与可追溯 commit。
+用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
-CONTRACT-001～006 原执行轮次仍不授权：
+用户随后要求补齐两项缺口：首版应有轻量自动审核流程；两轮修复后如果仍在持续收敛，不应仅因次数耗尽就要求用户接管。
 
-- merge、push 或发布版本。
-- 创建或删除 Git tag、GitHub Release。
-- 跳过前置 Accepted、独立 Review 或任务规定的用户动作等级。
+独立 Review 随后记录 4 项 P1；用户明确要求“修改”，因此授权第 1 轮有限 `repair_task` 只处理 Lite 验证边界、Tracked Reviewer 降级路径、收益验证/实施顺序和可复现净收益协议。该授权不包含实施、创建 `LEAN-*`、代替独立复审或任何 delivery 动作。
 
-用户于 2026-07-12 明确要求执行 `REL-002`，因此授权该任务完成仓库内 `0.7.0` 版本身份修改，并在独立 Review 无 P0/P1 后同步 Codex、OpenCode、Gemini/Antigravity 三个已确认的本机 Skill 副本。该授权不包含 tag、push、GitHub Release、merge、Closed 或其他本机 Skill 操作。
+独立复审关闭全部 4 项 P1 后，用户于 2026-07-19 明确确认“审核及验收通过”。该确认写回为 Review Passed、UA2 Passed 和 `Accepted`，不扩展为创建/执行 `LEAN-*`、commit、merge、push、release、本机同步或 `Closed` 授权。
 
-任务必须保持逐项可审查 diff；后继任务只有在前置任务满足 Accepted 与祖先关系门禁后才能开始。
+用户随后于 2026-07-19 明确要求“提交”，因此仅授权把 RFC、PLAN-001 和本看板形成 Accepted Git baseline；该授权不包含 merge、push、release、本机同步、`Closed` 或后续 `LEAN-*` 实施。
+
+本轮允许：
+
+- 重写 PLAN-001 和对应 RFC；
+- 更新本看板；
+- 移除同一未提交规划集中被新方案取代的原 Loop RFC、9 个 `LOOP-*` Draft 和临时 PLAN-002。
+- 精确提交上述三文件，形成 PLAN-001 Accepted Git baseline。
+
+本轮不允许：
+
+- 修改 `skills/ai-dev-flow/**`、代码、测试或现行行为；
+- 创建或执行 `LEAN-*`；
+- 调用外部模型做对照测试；
+- 除已明确授权的 PLAN-001 Accepted baseline commit 外，不执行 merge、push、release、删除已提交历史或同步本机 Skill。
 
 ## 真相源与状态规则
 
-- 任务详情、边界、验证和验收要求以对应 TASK 文件为细粒度真相源。
-- 本看板只保留索引、当前状态和依赖，不复制完整完成门禁。
-- TASK 与看板不一致时，先停止状态推进并复核，不静默选择一边。
-- Review、UA、Commit、Merge 和 lifecycle 是不同维度；任何一项通过都不自动代表其他项通过。
-- 后置任务先保持 `Draft`，待前置任务达到 `Accepted` 且形成可引用 Git baseline 后，按合法流转 `Draft -> Ready`。
-- `CONTRACT-005` Accepted 前，本任务集继续使用当前 legacy TASK 记录区块；不得提前用尚未启用的 Compact Writer 自举。
-- `Accepted` 不等于前置 commit 已进入后继分支。每个后继任务转为 `Ready` 前，必须用 `git merge-base --is-ancestor <前置 Accepted commit> <当前 Base>` 证明当前 Base 包含前置结果。
-- 任务之间可以从前置 Accepted commit 顺序分支，不要求为了传递依赖而提前 merge；任何实际 merge 仍需独立 UA7 用户确认。
+- TASK 是任务边界、验证和验收的细粒度事实源；看板只保留索引、状态、依赖和当前授权。
+- Review、UA、Accepted、Commit、Merge、Release、Closed 相互独立。
+- 用户需求发生实质变化时可以重开规划任务，但必须记录原因并重新 Review / UA，不能沿用旧验收。
+- 未形成 Git baseline 的 Draft 规划可在用户明确授权后被替换；不得把未提交草案伪装成已发布历史。
+- 任何新实施任务都必须在 PLAN-001 新方案 Review Passed、UA2 通过并形成 Accepted baseline 后另行创建。
 
-## 全局执行前置门禁
-
-在任何任务进入 `In Progress` 前必须满足：
-
-1. 本轮新增的 RFC、CONTEXT、TASK_BOARD 和 TASK 文件已形成清晰 Git baseline。
-2. `git status --short` 中没有来源不明或与目标任务无关的改动。
-3. 任务文件已更新当前分支、Base commit、HEAD 和 Diff 范围。
-4. 后继任务已证明当前 Base 是所有前置 Accepted commit 的 descendant。
-5. C/D 任务已按任务文件建立独立分支或 Worktree；没有用户确认时不得启动代码并行。
-6. 每个任务单独执行、验证、Review 和 UA，不允许只做一次总 Review 或总验收。
-
-## 串行依赖链
+## 已完成 v0.7 依赖链
 
 ```text
 REL-001
@@ -51,39 +49,57 @@ REL-001
   -> CONTRACT-004
   -> CONTRACT-005
   -> CONTRACT-006
-  -> REL-002
+  -> REL-002 Closed / v0.7.0
 ```
 
-- 整条链严格串行，不建立 Batch 或 Parallel Wave。
-- `CONTRACT-006` 显式依赖 `CONTRACT-004` 和 `CONTRACT-005`；图中因 `005 -> 004` 已隐含前一依赖而简化显示。
-- `CONTRACT-007` 及以后不属于本轮任务集。
-- `REL-002` 是 CONTRACT-001～006 之后的新建发布治理任务；建档不等于授权执行、tag、push、GitHub Release 或 merge。
+## v0.8 当前入口
+
+```text
+REL-002 Closed / main@0422887
+  -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
+      -> Review Passed + 新 UA2 Passed
+          -> 候选 LEAN-001～003（当前不存在，须另行授权创建）
+```
+
+原 `V0.8_LOOP_DECISION_RFC`、`LOOP-001`～`LOOP-009` 和临时 PLAN-002 均未提交、未形成 baseline，已由用户授权从当前规划集移除。必要的 risk/progress/stall/authority 语义已作为瘦身 RFC 中 `LEAN-002` 的候选小模块保留，不再建设九任务通用 Loop 平台。
 
 ## 当前任务
 
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 `codex/contract-001-semantics` | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Accepted | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1（1 类 P2 不阻塞） | UA3 已通过 | Single / 独立分支 `codex/contract-002-golden-fixtures` | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
-| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Accepted | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1（1 项 P2） | UA3 已通过 | Single / 独立分支 `codex/contract-003-readonly-readers` | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
-| CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1（1 项 P2） | UA4 已通过 | Single / 独立分支 `codex/contract-004-workflow-lint` | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
-| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-005` | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
-| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004 `7f0f7e5`、005 `61d0911` Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Single / Worktree `ai-dev-flow-contract-006` | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
-| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted；Base `63b4f7e` | Passed / 无 P0-P3 | UA3 Passed / User Confirmed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Accepted | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1 | UA3 已通过 | Single / 独立分支 | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
+| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Accepted | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1 | UA3 已通过 | Single / 独立分支 | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
+| CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1 | UA4 已通过 | Single / 独立分支 | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
+| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
+| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Worktree | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
+| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
+| PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
+
+## PLAN-001 核心约束
+
+- Lite 是默认，但必须有覆盖全部关键完成标准的确定性验证；容易回滚不能替代验证，需要用户观察或真实环境证据时升级 Tracked。
+- Lite 不建 TASK、不调用独立 Reviewer、不进入 repair loop。
+- 首版自动审核只实现确定性闸门：Lite 禁止，Tracked 风险触发，Controlled 交付前强制；Tracked 命中门禁但缺 Reviewer 时必须 Blocked、合法升级或取得明确授权，不能静默跳过。
+- Tracked / Controlled repair 基础预算为 2；finding 单调减少、验证改善且范围冻结时自动增加第 3 轮，3 为绝对上限。
+- 外部模型对照先冻结样本与计量协议并做零额度回放；通过后只做可整体回退的最小原型，真实对照只用一个模型、一个 Lite 任务、最多 3 次执行；全面收缩必须等待对照通过。
+- 首版候选实施任务不超过 3 个，验收前不创建。
+- 如果不能把工作流输入、模型调用和用户流程问题至少降低 50%，或出现更多 P0/P1、权限越界、状态误报，则停止 v0.8 扩建。
 
 ## 下一允许动作
 
-`REL-002` 已完成 `0.7.0` 版本收口、本机 Skill 同步、Review、UA3、merge/push、annotated tag 与正式 GitHub Release，并依据用户明确授权进入 Closed。当前没有本任务遗留动作。
+PLAN-001 已完成 Review 和新的 UA2，并由用户授权形成 Accepted commit baseline。下一步如需继续实施，须另行授权创建 `LEAN-001` 进入零额度固定样本回放；merge、push、release、本机同步和 `Closed` 仍需分别授权。
 
-## 整体停止条件
+当前没有 `LEAN-*`，也没有实施授权；Accepted Git baseline 只固定方案，不表示规则已生效。
 
-- v0.6 发布身份仍无法形成单一结论。
-- 任一任务要求新增大型依赖、数据库、守护进程、通用插件运行时或外部双向同步。
-- Markdown Contract 无法在标准库优先的约束下稳定解析。
-- Legacy Reader 需要猜测冲突才能继续。
-- Compact Template 会让 C/D、Batch、Wave 或 `real_env_signal` 在 `CONTRACT-007` 前被误路由。
-- TASK_BOARD projection 需要写回文件、`--fix` 或以看板覆盖 TASK。
-- GPT‑5.6 或任一模型能力变成核心流程必需依赖。
+## 停止条件
 
-出现上述情况时：尚未启动的 Draft 保持 Draft；Ready、In Progress、Review 仅按状态机允许路径进入 Blocked；已经 Blocked 的任务保持 Blocked；其他状态停止并等待合法流转决定。不得把执行中的任务退回 Draft。
+- PLAN-001 最终范围超出 RFC、TASK_BOARD 和 TASK 文件。
+- 瘦身方案仍要求首版执行超过 3 个任务。
+- Lite 绕过 authority、真实环境、数据、发布或不可逆动作门禁。
+- 自动审核扩张为通用调度平台、数据库、模型 Adapter，或在低风险任务上产生无理由调用。
+- 第 3 轮缺少 progress 证据、突破绝对上限，或用于自动重试不可逆外部动作。
+- 任一模型成为核心依赖，或模型更换重置额度/repair 计数。
+- 需要自动调度器、数据库、遥测或计费系统才能证明收益。
+- 未经新 Review / UA 即推进实施、commit、merge、push、release 或同步本机 Skill。
