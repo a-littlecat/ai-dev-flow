@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`LEAN-001` 第 2 轮有限修复（C 级 `repair_task`）
-> - 当前阶段：第 1 轮复审关闭 2 P1 / 2 P2，残留主任务三次硬预算 P1；`LEAN-002` 保持禁止创建
+> - 当前模式：`LEAN-001` 第 2 轮有限修复后复审（C 级 `review_task`）
+> - 当前阶段：主任务三次硬预算缺口已修复并新增拒绝测试；Reviewer 确认前 `LEAN-002` 保持禁止创建
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -64,7 +64,7 @@ REL-001
 REL-002 Closed / main@0422887
   -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
       -> Review Passed + 新 UA2 Passed
-          -> LEAN-001 Needs Fix：第 2 轮仅修复多 main 调用预算缺口
+          -> LEAN-001 Review：第 2 轮多 main 门禁修复完成，等待复审
               -> LEAN-002：仅在阶段 A 通过后创建
                   -> LEAN-003：仅在阶段 B 全部门槛通过后创建
 ```
@@ -84,7 +84,7 @@ REL-002 Closed / main@0422887
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Worktree | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
-| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Needs Fix | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | 残留 1 P1 待第 2 轮修复 | UA3 未开始 | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
+| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | 第 2 轮修复待复审 | UA3 未开始 | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
 
 ## PLAN-001 核心约束
 
@@ -98,7 +98,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-当前第 2 轮只修复 `LEAN001-P1-001-R1`：每个 run 必须恰好一个 main，三 run 合计恰好 3 个主任务执行，并增加多 main 拒绝测试。其他已关闭 finding 不重开，不扩大范围；复审无 P0/P1 前不得创建 `LEAN-002`。
+当前只复审 `LEAN001-P1-001-R1`：每个 run 恰好一个 main、三 run 合计恰好 3 个主任务执行，以及多 main 拒绝测试。其他已关闭 finding 不重开，不扩大范围；复审无 P0/P1 前不得创建 `LEAN-002`。
 
 ## 停止条件
 

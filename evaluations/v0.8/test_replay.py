@@ -117,6 +117,22 @@ class ReplayContractTests(unittest.TestCase):
         with self.assertRaises(replay.EvalError):
             replay.require_nonnegative_int(-1, "test")
 
+    def test_multiple_main_calls_in_one_run_are_rejected(self):
+        bundle = "a" * 64
+        calls = [
+            {
+                "id": f"main-{index}",
+                "kind": "main",
+                "evidence_path": f"evaluations/v0.8/results/phase-b/main-{index}.txt",
+                "evidence_sha256": "b" * 64,
+                "input_manifest_sha256": bundle,
+            }
+            for index in (1, 2)
+        ]
+        with mock.patch.object(replay, "verify_bound_artifact", return_value=Path("evidence")):
+            with self.assertRaises(replay.EvalError):
+                replay.normalize_model_calls(calls, bundle, "lite")
+
     def _base_run(self, mode, sequence):
         brief = self.manifest["phase_b"]["benchmark_brief"]
         return {

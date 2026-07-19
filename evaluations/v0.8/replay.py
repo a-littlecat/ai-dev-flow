@@ -505,6 +505,7 @@ def normalize_model_calls(calls: Any, workflow_bundle_sha256: str, mode: str) ->
     ids: set[str] = set()
     paths: set[str] = set()
     reviewer_calls = 0
+    main_calls = 0
     for call in calls:
         if not isinstance(call, dict) or set(call) != allowed_keys:
             raise EvalError(f"{mode} model call evidence has missing or unknown fields")
@@ -520,9 +521,16 @@ def normalize_model_calls(calls: Any, workflow_bundle_sha256: str, mode: str) ->
             raise EvalError(f"{mode} model call evidence path is duplicated")
         paths.add(call["evidence_path"])
         reviewer_calls += call["kind"] == "reviewer"
+        main_calls += call["kind"] == "main"
     if calls[0]["kind"] != "main":
         raise EvalError(f"{mode} first model call must be the main task execution")
-    return {"model_calls": len(calls), "reviewer_calls": reviewer_calls}
+    if main_calls != 1:
+        raise EvalError(f"{mode} must contain exactly one main task execution")
+    return {
+        "model_calls": len(calls),
+        "main_calls": main_calls,
+        "reviewer_calls": reviewer_calls,
+    }
 
 
 def normalize_run(manifest: dict[str, Any], run: Any, mode: str, sequence: int) -> dict[str, Any]:
@@ -711,6 +719,10 @@ def score_phase_b(manifest: dict[str, Any], runs_path: Path) -> dict[str, Any]:
     ]
     if len({item["model_identity"] for item in normalized}) != 1:
         raise EvalError("phase B model identity changed")
+    if sum(item["main_calls"] for item in normalized) != manifest["phase_b"][
+        "maximum_main_task_executions"
+    ]:
+        raise EvalError("phase B main task execution budget was exceeded")
 
     by_mode = {item["mode"]: item for item in normalized}
     lite = by_mode["lite"]
