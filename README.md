@@ -118,9 +118,9 @@ ai-dev-flow/
 0.8.0
 ```
 
-- 仓库内实现身份：`0.8.0`。
+- 当前发布候选：`0.8.0`。
 - Workflow Contract：`adf/v0.7.0`，继续兼容。
-- 发布状态：v0.8 尚未发布；`VERSION` 变化不等于 tag、push 或 GitHub Release。
+- 发布状态：正式发布身份以仓库 `v0.8.0` tag 和 GitHub Release 证据为准。
 - v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
 
 变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。

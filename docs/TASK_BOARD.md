@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`LEAN-003` 验收证据交接（`close_task` 前总结）
-> - 当前阶段：`LEAN-003` 实现、自动验证和独立 Review 已 Passed；v0.8.0 已实现但尚未发布，等待 UA3
+> - 当前模式：`LEAN-003` v0.8.0 发布交付
+> - 当前阶段：`LEAN-003` 已 Accepted、Review Passed、UA3 Passed；合并、推送、发布和本机 Skill 同步已获授权，等待实际收据
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -23,6 +23,8 @@
 
 `LEAN-002` 随后因实际原型未绑定 stage A、平台不暴露精确 backend model/call ID 而被整体 Review 阻断。用户在理解原因后明确要求继续完成 v0.8；该新指令授权同一 `LEAN-002` 创建 `V08-LEAN-EVAL-003`、先修复两项 P1，再在新协议 Review 通过后执行一个新的三次替代周期。V002 不改、不混用；新授权不包含第三个周期、额外 provider、merge、push、release、本机同步或 `Closed`。
 
+用户于 2026-07-19 明确回复“继续，我已确认。完成上述操作”，完成 `LEAN-003` UA3；随后明确要求“合并推送发布，并且同步本机 skill”。当前授权包括：形成验收/发布候选提交，合并到 `main`，推送 `main`，创建并推送 annotated tag `v0.8.0`，创建正式 GitHub Release，以及同步已确认存在的本机 Skill 副本。该授权不包含 `Closed`、删除分支、改写历史或其他项目的外部操作。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -31,13 +33,14 @@
 - 精确提交上述三文件，形成 PLAN-001 Accepted Git baseline。
 - 精确提交上述三文件的模型术语澄清。
 - 创建并串行执行 `LEAN-001`～`003`，每项保持独立任务合同、diff、验证、Review 和 commit；后项只能在前项门禁通过后开始。
+- 写回 `LEAN-003` UA3 Passed / Accepted，并完成已明确授权的 merge、push、`v0.8.0` tag、GitHub Release 和本机 Skill 同步。
 
 本轮不允许：
 
 - 在 `LEAN-001` 阶段修改 `skills/ai-dev-flow/**`、现行行为或执行当前模型真实任务对照；
 - 绕过阶段门禁提前创建或执行后续 `LEAN-*`；
 - 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
-- 除已明确授权的 PLAN-001 Accepted baseline 与术语澄清 commit 外，不执行 merge、push、release、删除已提交历史或同步本机 Skill。
+- 不执行 `Closed`、删除分支、改写已提交历史、额外版本发布或同步未确认的本机目录。
 
 ## 真相源与状态规则
 
@@ -68,7 +71,7 @@ REL-002 Closed / main@0422887
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
               -> LEAN-002 Review / Passed：V003 all_gates_pass=true
-                  -> LEAN-003 Review / Passed：v0.8.0 已实现，UA3 Pending
+                  -> LEAN-003 Accepted / Review Passed / UA3 Passed：v0.8.0 发布交付已授权
 ```
 
 原 `V0.8_LOOP_DECISION_RFC`、`LOOP-001`～`LOOP-009` 和临时 PLAN-002 均未提交、未形成 baseline，已由用户授权从当前规划集移除。必要的 risk/progress/stall/authority 语义已作为瘦身 RFC 中 `LEAN-002` 的候选小模块保留，不再建设九任务通用 Loop 平台。
@@ -88,7 +91,7 @@ REL-002 Closed / main@0422887
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
-| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Review | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-003](tasks/LEAN-003.md) |
+| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Accepted | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Release delivery / `codex/lean-v08-slimming` | [LEAN-003](tasks/LEAN-003.md) |
 
 ## PLAN-001 核心约束
 
@@ -102,7 +105,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-用户查看 `LEAN-003` 的精简量、47 / 47 自动测试和独立 Review 证据，完成 UA3。此后如需 merge、push、tag、GitHub Release、本机 Skill 同步或 `Closed`，仍须分别明确授权。
+按已获授权顺序完成：发布前验证与候选提交；合并并推送 `main`；创建并推送 `v0.8.0` tag；创建正式 GitHub Release；同步已确认的本机 Skill 副本并做逐文件 SHA256 校验；最后写回实际收据。`Closed` 仍需单独授权。
 
 ## 停止条件
 
@@ -113,4 +116,4 @@ REL-002 Closed / main@0422887
 - 第 3 轮缺少 progress 证据、突破绝对上限，或用于自动重试不可逆外部动作。
 - 任一模型成为核心依赖，或模型更换重置额度/repair 计数。
 - 需要自动调度器、数据库、遥测或计费系统才能证明收益。
-- 未经新 Review / UA 即推进实施、commit、merge、push、release 或同步本机 Skill。
+- 超出本次明确授权范围推进 `Closed`、历史改写、分支删除、额外发布或未确认路径的本机同步。

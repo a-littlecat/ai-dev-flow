@@ -118,9 +118,9 @@ See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 0.8.0
 ```
 
-- Repository implementation identity: `0.8.0`.
+- Current release candidate: `0.8.0`.
 - Workflow Contract: `adf/v0.7.0`, still compatible.
-- Release status: v0.8 is not released; changing `VERSION` does not create a tag, push, or GitHub Release.
+- Release status: the repository `v0.8.0` tag and GitHub Release are the authoritative publication evidence.
 - The historical v0.7.0 tag remains unchanged.
 
 See `skills/ai-dev-flow/CHANGELOG.md` for changes.
