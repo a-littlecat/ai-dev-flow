@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-19
-> - 当前模式：`LEAN-002` 整体 Review `Blocked`，串行链停止
-> - 当前阶段：阶段 B scorer 虽为 true，但原型验证绑定与精确模型 provenance 两项 P1 未通过；`LEAN-003` 禁止创建
+> - 当前模式：`LEAN-002` 用户授权后的有限修复（`repair_task`）
+> - 当前阶段：准备 `V08-LEAN-EVAL-003` 的单一 policy 与可获得 provenance 合同；新协议 Review 前模型 main 调用为 0
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -20,6 +20,8 @@
 用户随后要求统一澄清模型来源表述。本轮只使用“当前执行模型真实任务对照”和“额外模型供应商”两个术语，明确独立 Reviewer 可以使用同一平台/模型的隔离上下文；不改变三次上限、评估门禁或授权边界。用户随后再次明确要求“提交”，因此仅授权把该三文件澄清形成独立 commit。
 
 用户于 2026-07-19 进一步明确要求“按 PLAN-001 串行执行 LEAN-001～003”。该授权允许创建并顺序执行最多 3 个 LEAN TASK、在专用实施分支形成逐任务 commit，并在计划规定的确定性门禁触发时使用隔离只读 Reviewer；不授权并行写代码、merge、push、release、本机 Skill 同步或 `Closed`。若阶段 A、阶段 B 或全面实施门禁失败，串行链必须在失败点停止，不能为了执行到 LEAN-003 而改写阈值或证据。
+
+`LEAN-002` 随后因实际原型未绑定 stage A、平台不暴露精确 backend model/call ID 而被整体 Review 阻断。用户在理解原因后明确要求继续完成 v0.8；该新指令授权同一 `LEAN-002` 创建 `V08-LEAN-EVAL-003`、先修复两项 P1，再在新协议 Review 通过后执行一个新的三次替代周期。V002 不改、不混用；新授权不包含第三个周期、额外 provider、merge、push、release、本机同步或 `Closed`。
 
 本轮允许：
 
@@ -65,8 +67,9 @@ REL-002 Closed / main@0422887
   -> PLAN-001 Accepted：整体 Skill 瘦身与净收益门禁
       -> Review Passed + 新 UA2 Passed
           -> LEAN-001 Review Passed / UA3 Pending
-              -> LEAN-002 Blocked：机械评分 true / 整体 Review 2 P1
-                  -X-> LEAN-003：未创建，全面实施门禁失败
+              -> LEAN-002 Ready / Needs Fix：V003 有限 repair 已获用户授权
+                  -> 新协议 Review + 3 次替代对照 + 整体 Review
+                      -> LEAN-003：仍只在全部新门禁通过后创建
 ```
 
 原 `V0.8_LOOP_DECISION_RFC`、`LOOP-001`～`LOOP-009` 和临时 PLAN-002 均未提交、未形成 baseline，已由用户授权从当前规划集移除。必要的 risk/progress/stall/authority 语义已作为瘦身 RFC 中 `LEAN-002` 的候选小模块保留，不再建设九任务通用 Loop 平台。
@@ -85,7 +88,7 @@ REL-002 Closed / main@0422887
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Blocked | 高 | 高 | LEAN-001 Review Passed；Base `da66c04` | Needs Fix / 2 P1 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Ready | 高 | 高 | LEAN-001 Review Passed；Repair Base `f240889` | Needs Fix / 2 P1 待修复 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 
 ## PLAN-001 核心约束
 
@@ -99,7 +102,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-串行实施链在 `LEAN-002` 停止：不创建 `LEAN-003`，不重跑已用满的三次 main，不修改冻结协议或原型来追溯制造通过。原型保持未接入并标记关闭；评估输入只为 hash-bound 审计保留。若未来平台能提供精确模型/version 与 call receipts，需要用户重新授权新 evaluation ID 和新预算后从头评估。
+执行 `LEAN-002` 有限 repair：先建立 `V08-LEAN-EVAL-003`，让 stage A 直接验证实际原型 policy，并冻结同一父任务、无 override、canonical agent path 与顺序收据合同。新协议独立 Review 无 P0/P1 前不得运行新的三次 main，也不得创建 `LEAN-003`。
 
 ## 停止条件
 

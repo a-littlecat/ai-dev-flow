@@ -84,6 +84,17 @@
 - 先冻结样本/标签/计量协议并做零额度回放；通过后仅制作默认关闭、可整体回退的最小原型，再使用当前执行会话所用模型和一个 Lite 代表任务完成最多 3 次真实任务对照；全部门槛通过后才全面收缩和迁移。
 - 候选实施链最多 3 个 LEAN TASK，验收前不创建。
 
+## 2026-07-19 用户续做修订
+
+- 触发原因：`LEAN-002` 的机械 scorer 通过，但整体 Review 因“实际原型未绑定 stage A”和“平台不暴露精确 backend model/call ID”两项 P1 阻断；用户随后明确要求继续完成 v0.8，而不是停在 v0.7。
+- 新授权：允许在同一个 `LEAN-002` 内做有限 repair，创建 `V08-LEAN-EVAL-003`，并在新协议独立 Review 通过后重新执行 `no-skill -> lite -> full` 各一次 main。
+- 预算：替代周期最多 3 次 main，不接入额外 provider，不允许第三个评估周期；Reviewer 与验收交接按实际调用另计。
+- 原型验证：路由、审核、repair 必须收敛为实际原型内的单一机器可读 policy，stage A 直接读取并验证。
+- 模型证据：冻结同一父任务、无 override、canonical agent path、严格顺序和收据 hash；精确 backend 版本若平台不暴露则明确写“不可获得”，结论不得跨会话外推。
+- 历史边界：`V08-LEAN-EVAL-002` 保持原样和 `Blocked` 结论；新结果只属于新 evaluation ID，不合并旧 ledger。
+- 任务数量：仍只有 `LEAN-001`～`003` 三个实施 TASK；本次是 `LEAN-002` repair，不新增实施任务。
+- 后续门禁：新协议和零额度回放先独立 Review；新阶段 B 与 LEAN-002 整体 Review 均无 P0/P1 后，才允许创建 `LEAN-003`。
+
 ## 关键量化门槛
 
 - Lite 运行时除 `SKILL.md` 外最多读取 1 份 reference，总工作流说明不超过 400 行。

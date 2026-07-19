@@ -6,7 +6,7 @@
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Blocked`
+- `lifecycle`: `Ready`
 - `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
@@ -15,10 +15,10 @@
 
 ## 目标与边界
 
-- 目标：在不改变现行 v0.7 默认入口的前提下，制作最多 2 个核心文件、可通过删除目录整体回退的 v0.8 Lite 原型；随后按冻结顺序使用当前执行会话同一模型完成三次同基线代表任务，并生成可机械复算的原始证据。
-- 非目标：不全面精简或默认启用现行 Skill；不改冻结评估协议，不迁移历史 TASK，不作 v0.8 发布决定。
-- 允许修改：原型两文件、`evaluations/v0.8/results/phase-b/**`、本任务与任务板。
-- 禁止修改：现行 Skill/现行 references、冻结 manifest/oracle/threshold/benchmark baseline、历史 TASK、依赖文件、版本与发布身份。
+- 目标：修复两项整体 Review P1；用实际原型 policy 直接驱动新 stage A，并在新协议独立 Review 通过后完成一个新的三次同基线代表任务对照。
+- 非目标：不修改或合并 `V08-LEAN-EVAL-002` 历史证据；不提前全面精简或默认启用现行 Skill；不迁移历史 TASK，不作 v0.8 发布决定。
+- 允许修改：原型两文件、`evaluations/v0.8/v003/**`、本任务、PLAN-001、v0.8 RFC 与任务板。
+- 禁止修改：`evaluations/v0.8` 下 V002 的 manifest/replay/tests/results、现行 Skill/现行 references、历史 TASK、依赖文件、版本与发布身份。
 
 ## 依赖与授权
 
@@ -27,6 +27,17 @@
 - 用户授权：按 PLAN-001 串行执行 LEAN-001～003。
 - 允许当前任务形成独立 commit；不授权 merge、push、release、本机 Skill 同步或 `Closed`。
 - 后续 `LEAN-003` 只有在阶段 B 全部门槛与本任务独立 Review 均通过后才允许创建。
+
+## 用户续做授权与修复合同
+
+- 用户指令：用户在看到 `Blocked` 解释后明确要求“那就继续完成 v0.8”，不接受把 v0.7 作为最终建议。
+- Repair Base：`f240889`。
+- 本轮只修复 `LEAN002-P1-001`、`LEAN002-P1-002`，不重开已确认通过的效率、任务结果、范围和维护/迁移结论。
+- 新 evaluation ID：`V08-LEAN-EVAL-003`；V002 全部文件和结论只读保留。
+- 新 main 预算：严格 3 次，顺序仍为 `no-skill -> lite -> full`；新协议独立 Review 前调用数为 0。
+- 模型一致性：冻结同一父任务、`fork_turns=none`、无 model/reasoning override、canonical agent path 与顺序收据；不伪造平台未暴露的 backend 精确版本。
+- 原型一致性：单一机器可读 policy 是 route/review/repair 的事实源；stage A 必须直接读取它验证 6 routes + 2 traces。
+- 停止条件：新协议 Review 有 P0/P1、stage A 有差异、三档任一任务失败、scorer 门槛失败或整体 Review 有 P0/P1 时停止，不创建 `LEAN-003`。
 
 ## 固定执行协议
 
@@ -66,7 +77,7 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=da66c04;diff=da66c04..1c4729d
+- Base / Diff：base=f240889;diff=working-tree
 - 隔离位置：专用分支 `codex/lean-v08-slimming`；每次 benchmark 另用独立临时 Git 工作区。
 - 回滚方式：回退本任务独立 commit 并移除未接入入口的原型目录；不得使用破坏性 reset。
 - 修改文件：原型两文件、`evaluations/v0.8/results/phase-b/**`、本任务与任务板；现行 Skill、冻结 manifest 和依赖未改。
@@ -75,7 +86,7 @@ git diff --check
 - 三档结果：严格串行 3 次 main；no-skill/lite/full 调用数为 1/1/3，阻塞问题为 0/0/1，Lite Reviewer 为 0。
 - 效率结果：Lite 相对 Full 的字节、非空行、模型调用、阻塞问题分别降低 93.15%、94.54%、66.67%、100%。
 - 阶段 B 门禁：机械评分全部通过，但整体独立 Review 发现 2 项 P1，因此全面实施门禁失败。
-- Review findings：`LEAN002-P1-001` 实际原型未与 stage A 路由/repair 语义绑定且存在 RFC 漂移；`LEAN002-P1-002` 缺少平台可持久化的精确模型版本、call/agent ID 与顺序收据。
+- Review findings：待修复 `LEAN002-P1-001` 与 `LEAN002-P1-002`；旧 finding 和 Reviewer 证据保持原样，新证据使用 V003。
 - UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
 
 ## 独立整体复审
@@ -94,7 +105,9 @@ git diff --check
 - 保留原因：两文件原样保留为 `V08-LEAN-EVAL-002` 的 hash-bound 审计输入，使 scorer 仍可复算；这不代表原型可用或已验收。
 - 回退事实：如需物理移除，可回退原型 commits `0622ba7` / `8aa3f55`；当前未做破坏性删除。
 
+用户续做授权后，原型仅为 V003 repair 重新开放；仍未接入现行入口，也不得在新整体 Review 前作为正式 v0.8 入口。
+
 ## 状态边界
 
-- 当前为 `Blocked / Needs Fix`，不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
-- 阶段 B 机械评分通过不能抵消两项 P1；串行链在 LEAN-002 停止，`LEAN-003` 未创建。
+- 当前为 `Ready / Needs Fix`，等待 V003 policy 与零额度协议实现；不是 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。
