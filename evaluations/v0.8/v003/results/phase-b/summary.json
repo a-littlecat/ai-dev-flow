@@ -1,5 +1,5 @@
 {
-  "all_gates_pass": false,
+  "all_gates_pass": true,
   "conclusion_boundary": {
     "backend_exact_version": "not exposed; no cross-session equivalence claim",
     "lite": "same frozen benchmark in this parent task session",
@@ -40,12 +40,12 @@
   },
   "maintenance_pass": true,
   "migration": {
-    "historical_tasks_rewritten": 1,
+    "historical_tasks_rewritten": 0,
     "implementation_tasks": 2,
     "required_dependencies_added": 0,
     "user_steps": 0
   },
-  "migration_pass": false,
+  "migration_pass": true,
   "normalized_runs": [
     {
       "blocking_user_questions": 0,

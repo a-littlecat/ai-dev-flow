@@ -6,8 +6,8 @@
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `In Progress`
-- `review_status`: `Needs Fix`
+- `lifecycle`: `Review`
+- `review_status`: `In Review`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -63,7 +63,7 @@
 - [x] V003 三次 main 按固定顺序串行完成，每次输入/输出/验证与 provenance 均绑定 hash。
 - [x] V003 三次均只修改 `task_summary.py`，4 / 4 测试及 `git diff --check` 通过。
 - [x] V003 Lite Reviewer 调用为 0；Full 的 Reviewer/流程问题按实际证据记录。
-- [ ] V003 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
+- [x] V003 阶段 B 原始 JSON 可被评分器接受，汇总结论不由人工填写。
 - [ ] 独立 Review 无 P0/P1，且明确是否允许创建 `LEAN-003`。
 
 ### 自动验证命令
@@ -81,14 +81,14 @@ git diff --check
 
 ## Outcome
 
-- Base / Diff：base=9c8ec36;diff=working-tree
+- Base / Diff：base=735bcbd;diff=working-tree
 - 隔离位置：专用分支 `codex/lean-v08-slimming`；每次 benchmark 另用独立临时 Git 工作区。
 - 回滚方式：回退本任务独立 commit 并移除未接入入口的原型目录；不得使用破坏性 reset。
 - 修改文件：原型两文件、`evaluations/v0.8/v003/**`、本任务与任务板；现行 Skill、V002 冻结 manifest/replay/tests/results 和依赖未改。
-- 验证证据：实际原型 policy 驱动 stage A 8 / 8 零差异；provenance repair 后专项测试 12 / 12；协议明确可获得的 provenance、平台未暴露项与结论边界。Repair base 为 `f240889`，续做授权 commit 为 `9c8ec36`。
-- V003 调用计数：main=0、Reviewer=0；必须先完成本轮协议/stage A 独立 Review。
+- 验证证据：实际原型 policy 驱动 stage A 8 / 8；三档各 4 / 4；V003 专项 13 / 13；scorer write/check 通过且 `all_gates_pass=true`；协议明确可获得的 provenance、平台未暴露项与结论边界。
+- V003 调用计数：三档 main=3；Full 隔离 Reviewer=1；前置/repair/scorer Reviewer 另按控制面实际调用记录，不混入代表任务 model-call 指标。
 - V002 历史结果：三档各 4 / 4 且机械门禁全通过，但整体独立 Review 的 2 项 P1 仍原样保留，不与 V003 合并。
-- Review findings：V003 候选修复 `LEAN002-P1-001` 与 `LEAN002-P1-002`，等待独立 Reviewer 判定；旧 finding ID 与旧 Reviewer 证据不改。
+- Review findings：前置 `LEAN002-V003-P1-001` 与 scorer `LEAN002-V003-SCORER-P1-001` 均已独立复审 Closed；等待 LEAN-002 整体独立 Review。
 - UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
 
 ## V002 独立整体复审（历史只读）
@@ -154,7 +154,15 @@ git diff --check
 - Repair 验证：从 authorization commit 到当前仅 `LEAN-002.md` 发生 TASK 变化，历史 TASK=0、依赖=0；V003 verify 通过，专项测试 13 / 13，`git diff --check` 通过。
 - 门禁：独立 Reviewer 确认这只是基线归属修复而非改指标/为结果开后门前，不覆盖初次 summary、不重新评分、不创建 `LEAN-003`。
 
+### scorer repair 独立复审与重评分
+
+- 独立复审：`Passed`；P0=0，P1=0，P2=0，P3=0；`LEAN002-V003-SCORER-P1-001` Closed。
+- 允许动作：不重跑任何 main，直接重新机械评分；不代表 LEAN-002 整体 Review 或允许创建 LEAN-003。
+- 重评分：`all_gates_pass=true`；task result、safety、maintenance、migration、Lite Reviewer zero、efficiency、provenance 全部通过。
+- migration：历史 TASK=0、依赖=0、用户步骤=0、实施 TASK=2。
+- 保存校验：`score-phase-b --write` 与随后 `--check` 均 exit 0；初次失败 summary 继续原样保留。
+
 ## 状态边界
 
-- 当前为 `In Progress / Needs Fix`，三次 main 已完成，正在复审 scorer 的迁移基线 repair；不是 LEAN-002 整体 Review Passed、UA3 Passed、Accepted、Merged、Released 或 Closed。
+- 当前为 `Review / In Review`，V003 三次 main 与机械评分已完成；正在做 LEAN-002 整体独立 Review，不是 UA3 Passed、Accepted、Merged、Released 或 Closed。
 - `LEAN-003` 仍未创建；只有新评估和 LEAN-002 整体 Review 均通过才解除门禁。
