@@ -110,7 +110,7 @@
 
 ## 验收建议写回格式
 
-> v0.8 Lite 不建 TASK；新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md` 并把 UA 证据写入 Outcome。既有 v0.7 Compact / Full / Legacy TASK 沿用原格式，不自动迁移或重建段落。
+> v0.8 Lite 不建 TASK；新建任务按 `SKILL.md` 路由选择 `TASK_TEMPLATE_BRIEF.md` 或 `TASK_TEMPLATE.md`，全部 Controlled 使用完整模板，并把 UA 证据写入 Outcome。既有 v0.7 Compact / Full / Legacy TASK 沿用原格式，不自动迁移或重建段落。
 
 用户动作等级：UA0 / UA1 / UA2 / UA3 / UA4 / UA5 / UA6 / UA7 / 待确认
 

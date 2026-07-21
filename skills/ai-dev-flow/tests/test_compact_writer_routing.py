@@ -33,7 +33,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.policy = policy_from(REFERENCES / "CORE.md")
 
     def test_version_and_contract_identity_are_independent(self):
-        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.0")
+        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.1")
         for path in (
             ROOT / "README.md",
             ROOT / "README.en.md",
@@ -43,7 +43,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         ):
             with self.subTest(path=path.name):
                 text = read(path)
-                self.assertIn("0.8.0", text)
+                self.assertIn("0.8.1", text)
                 self.assertIn("adf/v0.7.0", text)
         self.assertNotIn("adf/v0.8.0", read(REFERENCES / "TASK_TEMPLATE.md"))
 
@@ -149,6 +149,22 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.assertIn("`Skipped by policy` 不等于 `Passed`", template)
         self.assertIn("`review_status` 保持 `Pending`", template)
 
+    def test_brief_template_is_tracked_only_and_v07_compatible(self):
+        template = read(REFERENCES / "TASK_TEMPLATE_BRIEF.md")
+        for value in (
+            "adf/v0.7.0",
+            "<document|plan|code|review|repair|test>",
+            "<A|B|C>",
+            "<Pending|In Review|Passed|Needs Fix|Do Not Merge>",
+            "<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>",
+            "<Not Required|Pending|Passed|Failed|Deferred|TBD>",
+            "`review_status` 保持 `Pending`",
+        ):
+            with self.subTest(value=value):
+                self.assertIn(value, template)
+        self.assertIn("全部 Controlled 任务一律使用 `TASK_TEMPLATE.md`", template)
+        self.assertIn("跨会话需求时，升级回完整模板", template)
+
     def test_active_documents_are_materially_smaller_than_v07(self):
         frozen_v07_lines = {
             "SKILL.md": 288,
@@ -165,6 +181,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         names = (
             "WORKFLOW.md",
             "TASK_TEMPLATE.md",
+            "TASK_TEMPLATE_BRIEF.md",
             "CODE_REVIEW_CHECKLIST.md",
             "ACCEPTANCE_GUIDE.md",
             "GIT_PRECHECK.md",

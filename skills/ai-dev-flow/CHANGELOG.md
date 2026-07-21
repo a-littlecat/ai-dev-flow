@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1 - Unreleased
+
+> 当前为未发布开发线身份；没有 `v0.8.1` tag 或 GitHub Release，正式发布版本仍为 `0.8.0`。
+
+- Add a brief TASK template for eligible single-session Tracked work while keeping the full template mandatory for Controlled and handoff-oriented work.
+- Clarify that Reviewer isolation requires both independent context and real read-only enforcement.
+- Keep template routing consistent across active on-demand references and add focused regression coverage.
+
 ## 0.8.0 - 2026-07-19
 
 > Skill `0.8.0` 已通过 annotated tag `v0.8.0` 与正式 GitHub Release 发布；Workflow Contract schema 继续为 `adf/v0.7.0`。

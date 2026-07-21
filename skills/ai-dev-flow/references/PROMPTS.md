@@ -13,7 +13,7 @@
 
 ```text
 请创建 docs/tasks/<TASK-ID>.md。
-使用 TASK_TEMPLATE.md，写清目标、非目标、允许/禁止范围、authority、base commit、完成标准、验证、Review 闸门和 UA；同步 TASK_BOARD。
+按 SKILL.md 路由选择 TASK_TEMPLATE_BRIEF.md 或 TASK_TEMPLATE.md；全部 Controlled 使用完整模板。写清模板要求的目标、范围、authority、完成标准、验证、Review 闸门和 UA；同步 TASK_BOARD。
 只创建任务，不实现业务。
 ```
 

@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-19
-> - 当前模式：`LEAN-003` 关闭收据
-> - 当前阶段：`LEAN-003` 已 Closed；`v0.8.0` 已发布并完成本机同步，实施分支已安全删除并验证本地/远端均不存在
+> - 快照日期：2026-07-21
+> - 当前模式：`SYNC-001` 受控同步
+> - 当前阶段：审查用户提供的 Skill 增量；通过后同步仓库与已存在的本机副本，并推送 `main`
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -26,6 +26,8 @@
 用户于 2026-07-19 明确回复“继续，我已确认。完成上述操作”，完成 `LEAN-003` UA3；随后明确要求“合并推送发布，并且同步本机 skill”。当前授权包括：形成验收/发布候选提交，合并到 `main`，推送 `main`，创建并推送 annotated tag `v0.8.0`，创建正式 GitHub Release，以及同步已确认存在的本机 Skill 副本。该授权不包含 `Closed`、删除分支、改写历史或其他项目的外部操作。
 
 用户随后于 2026-07-19 明确要求“关闭并删除分支”。该指令授权把 `LEAN-003` 从 Accepted 流转为 Closed，并删除已确认完全合并的本地 `codex/lean-v08-slimming` 分支；远端不存在同名分支。该授权不包含其他分支、tag、Release 或历史改写。
+
+用户于 2026-07-21 明确要求审查其提供的 `.agents` Skill 源目录更新；确认无问题后同步到本项目和本机其他 Skill 位置，并推送远端。该授权覆盖 `SYNC-001` 的内容审查、已存在目标的文件同步、精确 commit 和 `main` push；不包含 tag、GitHub Release、删除未知附加文件或创建不存在的安装目录。Review 发现已发布 `v0.8.0` 与新增内容不能共用版本身份，因此 repair 将工作树身份收口为未发布 `0.8.1`，不制造发布事实。
 
 本轮允许：
 
@@ -95,6 +97,7 @@ REL-002 Closed / main@0422887
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
+| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Single / `main` / Controlled | [SYNC-001](tasks/SYNC-001.md) |
 
 ## PLAN-001 核心约束
 
@@ -108,7 +111,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`LEAN-003` 已关闭，实施分支已安全删除，本轮没有剩余动作；保留 `v0.8.0` tag、GitHub Release、`main` 历史和其他分支不变。
+执行 `SYNC-001`：仅在源增量验证和隔离只读 Review 无阻断 finding 后，同步仓库与已存在的本机副本，精确提交并推送 `main`；保留 `v0.8.0` tag、GitHub Release、历史任务和其他分支不变。
 
 ## 停止条件
 

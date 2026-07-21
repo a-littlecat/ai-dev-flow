@@ -1,6 +1,6 @@
 # v0.7 Compact TASK 兼容模板
 
-> 本文件只为 v0.7 Writer/Reader、golden fixtures 和既有项目保留。v0.8 的 Lite 结果为 `DoNotUseSkill`，不创建 Compact TASK；新建 Tracked / Controlled TASK 使用 `TASK_TEMPLATE.md`。旧任务无需迁移。
+> 本文件只为 v0.7 Writer/Reader、golden fixtures 和既有项目保留。v0.8 的 Lite 结果为 `DoNotUseSkill`，不创建 Compact TASK；新建任务按 `SKILL.md` 路由选择 `TASK_TEMPLATE_BRIEF.md` 或 `TASK_TEMPLATE.md`，全部 Controlled 使用完整模板。旧任务无需迁移。
 
 ```markdown
 # <TASK-ID>：<任务标题>

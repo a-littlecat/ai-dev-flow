@@ -1,6 +1,6 @@
 # Tracked / Controlled TASK 模板
 
-> Skill 包 `0.8.0` 新建 Tracked / Controlled 任务使用本模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK。`adf/v0.7.0` Contract schema 保持兼容，不随 Skill 包版本变化。
+> Skill 包 `0.8.1` 开发线中，其他 Tracked 与全部 Controlled 任务使用本完整模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK；符合单会话条件的 Tracked 可改用 `TASK_TEMPLATE_BRIEF.md`。`adf/v0.7.0` Contract schema 保持兼容，不随 Skill 包版本变化。
 
 ```markdown
 # <TASK-ID>：<任务标题>

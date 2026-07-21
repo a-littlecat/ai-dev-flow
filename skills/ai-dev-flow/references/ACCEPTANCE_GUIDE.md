@@ -225,7 +225,7 @@
 先判断当前路由与现有 TASK 格式：
 
 - Lite 为 `DoNotUseSkill`，不建 TASK，只在最终交接说明验证与用户动作。
-- 新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md`，把验收建议写入 Outcome。
+- 新建任务按 `SKILL.md` 路由选择 `TASK_TEMPLATE_BRIEF.md` 或 `TASK_TEMPLATE.md`；全部 Controlled 使用完整模板，并把验收建议写入 Outcome。
 - 既有 v0.7 Compact / Full / Legacy TASK 沿用其现有字段或段落，不自动迁移；格式未知时停止并写“待确认”。
 
 每个任务完成后必须输出：

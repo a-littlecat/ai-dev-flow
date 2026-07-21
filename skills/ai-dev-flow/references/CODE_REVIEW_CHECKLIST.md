@@ -2,7 +2,7 @@
 
 本清单用于审查代码任务。审查线程只做审查和判断，不直接改代码。结论应写回任务文件或项目约定的审查记录中。
 
-v0.8 路由：Lite 为 `DoNotUseSkill`，不建 TASK 或调用 Reviewer；新建 Tracked / Controlled 使用 `TASK_TEMPLATE.md`，Reviewer 是否需要由 `CORE.md` policy 决定。既有 v0.7 Compact / Full / Legacy TASK 继续原格式，审查只写回其现有 Contract / Outcome 或项目约定的 review record，不自动迁移。
+v0.8 路由：Lite 为 `DoNotUseSkill`，不建 TASK 或调用 Reviewer；新建任务按 `SKILL.md` 路由选择 `TASK_TEMPLATE_BRIEF.md` 或 `TASK_TEMPLATE.md`，全部 Controlled 始终使用完整模板；Reviewer 是否需要由 `CORE.md` policy 决定。既有 v0.7 Compact / Full / Legacy TASK 继续原格式，审查只写回其现有 Contract / Outcome 或项目约定的 review record，不自动迁移。
 
 ## 审查严重等级
 
