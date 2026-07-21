@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Not Applicable`
 
 ## 目标与边界
@@ -44,19 +44,19 @@
 - [x] 仓库 Skill 源与用户提供的源目录逐文件 SHA256 一致（忽略运行生成的 `__pycache__` / `.pyc`）。
 - [x] 已存在的本机安装副本与仓库 Skill 源逐文件 SHA256 一致；不创建不存在的副本。
 - [x] 仓库完整 unittest、Skill validator、TASK lint、本地 Markdown 链接和 `git diff --check` 通过。
-- [ ] 精确提交本任务 diff，并确认 `origin/main` 到达该提交。
+- [x] 精确提交本任务 diff，并确认 `origin/main` 到达该提交。
 
 ## Outcome
 
-- Base / Diff：base=d4854a791e09115fff0e3490afc725b4161d7acc;diff=d4854a791e09115fff0e3490afc725b4161d7acc..working-tree。
+- Base / Diff：base=d4854a791e09115fff0e3490afc725b4161d7acc;diff=d4854a791e09115fff0e3490afc725b4161d7acc..fcd3a3e。
 - 隔离位置：`main`；独立只读 Reviewer 使用隔离 subagent。
 - 回滚方式：对本任务精确提交执行 `git revert`；本机副本可从提交前哈希清单核对并重新同步已发布 `v0.8.0` 源。
 - 修改文件：新增 `TASK_TEMPLATE_BRIEF.md`；更新 Skill 入口、Reviewer 隔离、模板路由、版本/Changelog、根目录中英文 README、专项测试，以及 `SYNC-001` / TASK_BOARD 记录。
 - 验证证据：原始源目录 47 项 unittest 中 44 通过、3 项因安装目录缺少仓库根 `README.md` / `README.en.md` 报错，符合已知安装副本测试边界；repair 后仓库 Skill validator、48 / 48 unittest、78 个 Markdown 本地链接与 `git diff --check` 通过；新增 `test_brief_template_is_tracked_only_and_v07_compatible` 专项覆盖。
 - 验证证据：用户提供的 `.agents` 源、Codex、OpenCode、cc-switch、Trae 五个目标均为 `VERSION=0.8.1`、90 / 90 文件，逐文件 SHA256 为 `Missing=0 / Extra=0 / Changed=0`，且五个目标的 Skill validator 全部通过；未创建缺失目录。
-- 验证证据：同步前 `main...origin/main` divergence 为 `0 / 0`；远端最终 ref 待 push 后记录。
+- 验证证据：同步前 `main...origin/main` divergence 为 `0 / 0`；实现提交 `fcd3a3e` 已成功 push 到 `origin/main`，远端返回 `d4854a7..fcd3a3e main -> main`。
 - Review findings：第 1 轮 `Needs Fix`，经两轮有限 repair 与隔离复审后 `SYNC-001-P1-01`～`P1-04`、`P2-01`～`P2-04` 全部 Closed；最终结论 `Passed`，P0-P3 无开放项，允许进入同步、精确 commit 和 push。
 - UA 动作与结果：UA3 Pending；用户已授权执行审查、同步和 push，但完成结果尚未交付，不把动作授权写成验收通过。
-- 状态边界：本机同步已验证；尚未 commit 或 push；未授权 tag、Release、删除或新建不存在的安装目录。
-- 剩余风险：精确 commit、push 和远端 ref 核对尚未完成；UA3 仍 Pending。
-- 下一步：精确提交当前任务文件并 push `main`，再记录远端收据。
+- 状态边界：本机同步、实现 commit 和 push 已完成；Review Passed；UA3 仍 Pending；未创建或授权 tag、Release、删除或新建不存在的安装目录。
+- 剩余风险：`0.8.1` 是未发布开发线，不等于正式 release；用户尚未对最终证据完成 UA3。
+- 下一步：提交并 push 本收据记录；用户查看证据后可决定是否接受，未来如需正式发布 `v0.8.1` 应另行授权。

@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-21
 > - 当前模式：`SYNC-001` 受控同步
-> - 当前阶段：审查用户提供的 Skill 增量；通过后同步仓库与已存在的本机副本，并推送 `main`
+> - 当前阶段：Skill 增量已通过 Review，同步仓库与五个本机目标并推送 `main`；`0.8.1` 仍为未发布开发线，UA3 Pending
 > - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
 
 ## 当前授权边界
@@ -97,7 +97,7 @@ REL-002 Closed / main@0422887
 | LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
-| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Single / `main` / Controlled | [SYNC-001](tasks/SYNC-001.md) |
+| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
 
 ## PLAN-001 核心约束
 
@@ -111,7 +111,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-执行 `SYNC-001`：仅在源增量验证和隔离只读 Review 无阻断 finding 后，同步仓库与已存在的本机副本，精确提交并推送 `main`；保留 `v0.8.0` tag、GitHub Release、历史任务和其他分支不变。
+`SYNC-001` 已完成 Review、仓库/本机同步、精确提交和 `main` push；下一步仅为用户查看最终证据（UA3 Pending）。保留 `v0.8.0` tag、GitHub Release、历史任务和其他分支不变；`0.8.1` 未创建 tag / Release。
 
 ## 停止条件
 
