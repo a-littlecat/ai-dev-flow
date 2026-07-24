@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `#outcome`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -103,6 +103,7 @@
 - Review findings：AR-3 隔离只读复审 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`AR1-REV-002`、`AR1-REV-003`、`AR2-REV-001` 全部 Closed，新 finding 为 0。Reviewer 未在只读沙箱重跑 Python，但静态核对完整 base..working-tree（含 4 个 untracked 文件）、冻结目录 diff，并确认审查前后 Git 状态一致。
 - CADCat 同步 Review：`DOC-020` 隔离只读 Review `Passed`，P0/P1/P2/P3=`0/0/0/0`；确认不会继续拒绝有效的 chain-bound AI 授权，也不会让策略升级自动恢复现有 PLOT Stop chain。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-24 明确回复“验收通过，提交并推送”。
-- 状态边界：Accepted / Uncommitted / Unmerged / Unreleased / Not Closed；当前仅取得精确 commit 与分支 push 授权，未取得 merge、tag、Release 或 Closed 授权。
+- Git 收据：实现与验收提交 `2e9b718` 已形成于 `codex/repair-escalation-001`；分支 push 待执行。
+- 状态边界：Accepted / Committed / Unmerged / Unreleased / Not Closed；当前仅取得精确 commit 与分支 push 授权，未取得 merge、tag、Release 或 Closed 授权。
 - 剩余风险：receipt 可机械验证结构、连续性和绑定，但不能密码学证明平台用户身份；授权主体真实性仍依赖当前对话、harness 或项目事实源，缺少时必须 Blocked。
-- 下一步：执行精确 commit 与 `codex/repair-escalation-001` 分支 push，并写回 Git 收据；不执行 merge、tag、Release、delivery 或 Closed。
+- 下一步：提交本收据并推送 `codex/repair-escalation-001` 分支；不执行 merge、tag、Release、delivery 或 Closed。
