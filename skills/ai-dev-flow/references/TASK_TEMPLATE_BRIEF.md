@@ -1,6 +1,6 @@
 # 单会话 Tracked TASK 简版模板
 
-> Skill 包 `0.8.1` 开发线新增，当前尚未形成 tag / Release。仅用于同时满足以下条件的 Tracked 任务：运行在大上下文模型上（完整任务与 diff 可留在会话内）、预期单会话内完成、无跨会话交接需求。其余 Tracked 任务与全部 Controlled 任务一律使用 `TASK_TEMPLATE.md`。Contract schema 仍为 `adf/v0.7.0`，不随模板简化而变化。
+> Skill 包 `0.8.2` 开发线沿用，当前尚未形成对应 tag / Release。仅用于同时满足以下条件的 Tracked 任务：运行在大上下文模型上（完整任务与 diff 可留在会话内）、预期单会话内完成、无跨会话交接需求。其余 Tracked 任务与全部 Controlled 任务一律使用 `TASK_TEMPLATE.md`。Contract schema 仍为 `adf/v0.7.0`，不随模板简化而变化。
 
 ```markdown
 # <TASK-ID>：<任务标题>
@@ -37,4 +37,4 @@
 - 剩余风险与下一步：<无或明确列出>
 ```
 
-写回规则与 `TASK_TEMPLATE.md` 相同：执行者不自批 Review；`Skipped by policy` 不等于 `Passed`，未做真实只读 Review 时 `review_status` 保持 `Pending`；范围、风险变化或出现跨会话需求时，升级回完整模板。
+写回规则与 `TASK_TEMPLATE.md` 相同：执行者不自批 Review；`Skipped by policy` 不等于 `Passed`，未做真实只读 Review 时 `review_status` 保持 `Pending`；进入 repair、范围/风险变化或出现跨会话需求时，升级回完整模板并记录 repair chain，换 TASK 不重置计数。

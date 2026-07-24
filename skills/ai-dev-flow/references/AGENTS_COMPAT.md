@@ -14,6 +14,7 @@
 - 只修改当前任务允许范围，不顺手重构；范围、风险、依赖或 authority 改变时停止。
 - 修改后运行最相关的构建、测试、静态检查或人工验证，并检查 diff。
 - 审查只读，修复只处理明确 finding；缺少独立 Reviewer 时不得自批通过。
+- repair 预算绑定稳定 chain/finding/closure contract，换 TASK 或模型不重置；3 是自主修复上限，`Stop` 后用户可明确授权有界 AI 修复，失败不得自动连跑。
 - 自动验证、Review、UA、Accepted、commit、merge、release、Closed 是不同状态，不得互相推导。
 - 未经明确授权，不执行 merge、push、release、删除、外部同步或不可逆动作。
 - 不输出或提交密钥、Token、账号密码、证书、隐私数据和本机敏感配置。

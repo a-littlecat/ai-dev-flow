@@ -1,12 +1,17 @@
 # Changelog
 
-## 0.8.1 - Unreleased
+## 0.8.2 - Unreleased
 
-> 当前为未发布开发线身份；没有 `v0.8.1` tag 或 GitHub Release，正式发布版本仍为 `0.8.0`。
+> 当前为未发布开发线身份；没有 `v0.8.2` tag 或 GitHub Release，正式发布版本仍为 `0.8.0`。
 
 - Add a brief TASK template for eligible single-session Tracked work while keeping the full template mandatory for Controlled and handoff-oriented work.
 - Clarify that Reviewer isolation requires both independent context and real read-only enforcement.
 - Keep template routing consistent across active on-demand references and add focused regression coverage.
+- Define three rounds as the autonomous AutoRepair maximum instead of a permanent ban on AI repair.
+- Add explicit, bounded user-authorized EscalatedRepair after Stop, with one attempt by default and independent re-review after every attempt.
+- Bind repair history to a stable chain/finding/closure contract so TASK or model changes cannot reset the budget.
+- Replace raw P0/P1-count and ad hoc validation-score progress with per-finding RED/GREEN, regression, severity, and evidence-coverage gates.
+- Add the dependency-free read-only `repair_gate.py` evaluator, external trusted-context comparison, mechanical-eligibility/final-authorization separation, canonical policy digest, and boundary regression tests.
 
 ## 0.8.0 - 2026-07-19
 

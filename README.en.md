@@ -72,16 +72,23 @@ v0.8 does not add a scheduler, database, telemetry, billing, or model adapter. I
 - New Tracked work uses `references/TASK_TEMPLATE_BRIEF.md` or `references/TASK_TEMPLATE.md` according to the runtime route; Controlled work always uses the full template.
 - Existing TASK files keep their format and are not batch-migrated.
 - `TASK_TEMPLATE_COMPACT.md` remains only for v0.7 Writer/Reader compatibility.
-- The working-tree Skill package is `0.8.1` (unreleased); the Workflow Contract schema remains `adf/v0.7.0`.
+- The working-tree Skill package is `0.8.2` (unreleased); the Workflow Contract schema remains `adf/v0.7.0`.
 
 See `skills/ai-dev-flow/references/V0.8_MIGRATION.md` for the migration guide.
 
-## Reviewer and the third repair round
+## Reviewer and repair boundaries
 
 - Tracked uses one isolated, read-only Reviewer only when deterministic risk flags trigger.
 - Controlled requires Review before acceptance recommendation, delivery, merge, and release.
-- The repair budget starts at two rounds. A third round is allowed only when all progress conditions pass.
-- Three is the absolute maximum. Changing models does not reset the budget, and external side effects are never automatically retried.
+- `AutoRepair` starts with two rounds. A third round requires frozen-finding RED-to-GREEN progress, no regression, and increased evidence coverage.
+- Three is the autonomous loop maximum, not a permanent ban on AI repair. After `Stop`, explicit user authority may grant one bounded `EscalatedRepair` attempt by default; failure returns to `Stop`.
+- The chain follows its findings and closure contract, so changing TASKs or models does not reset history. Irreversible external side effects are never automatically retried.
+
+Use the read-only gate to evaluate a ledger:
+
+```powershell
+python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
+```
 
 ## Read-only checks
 
@@ -115,10 +122,10 @@ See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 ## Current version
 
 ```text
-0.8.1
+0.8.2
 ```
 
-- Current working-tree version: `0.8.1`, with no tag or Release yet.
+- Current working-tree version: `0.8.2`, with no tag or Release yet.
 - Current formal release: `0.8.0`.
 - Workflow Contract: `adf/v0.7.0`, still compatible.
 - Release status: `v0.8.0` was formally published on 2026-07-19; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0).

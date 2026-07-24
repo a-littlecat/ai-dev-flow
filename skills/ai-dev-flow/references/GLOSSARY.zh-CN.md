@@ -39,6 +39,17 @@
 | 审查-修复循环 | review_repair_loop | 有限次数的审查、修复、复审循环。 |
 | 状态循环 | status_loop | 只读状态汇总。 |
 
+## Repair 决策
+
+| 中文名称 | 英文标识 | 说明 |
+| --- | --- | --- |
+| 自主修复 | AutoRepair | agent 在 policy 预算内自主执行的有界修复；基础 2 轮，第 3 轮需 progress gate。 |
+| 停止 | Stop | 当前自主或已授权尝试结束；等待用户裁决，不等于 AI 永久禁修。 |
+| 用户裁决 | UserDecisionRequired | 用户选择补证据、缩小范围、人工实现或明确授权有界 AI 修复。 |
+| 升级修复 | EscalatedRepair | `Stop` 后由用户明确授权的有限 AI 修复尝试，默认一次，失败回到 `Stop`。 |
+| 修复链 | repair_chain_id | 绑定 finding 和 closure contract 的稳定历史；换 TASK 或模型不重置。 |
+| 机械资格成立 | MechanicallyEligible | 不可信 ledger 与独立 trusted context 的结构/收据一致；仍需 Orchestrator 用真实上游证据提升为最终 Allowed。 |
+
 ## 用户动作等级
 
 | 等级 | 中文说明 |

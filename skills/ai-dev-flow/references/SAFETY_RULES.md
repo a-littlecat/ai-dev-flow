@@ -37,7 +37,7 @@
 - 修改 `PROJECT_CONSTITUTION.md` 中的 MUST / MUST NOT 规则。
 - 写入或修改长期 Memory。
 - 创建、编辑、关闭 GitHub Issue。
-- 让 loop 超过默认最大循环次数。
+- 让自主 loop 超过默认最大循环次数；`Stop` 后的 `EscalatedRepair` 必须有用户明确、有限次数的授权。
 - 使用不支持 Worktree 的 harness 执行 Parallel Wave 代码任务。
 - 启动多个写代码 subagents 并行。
 - 让多个写代码 subagents 共享同一工作区修改同一批文件。
@@ -56,7 +56,8 @@
 - 绕过审查直接标记完成。
 - 用户 UA4 / UA5 / UA6 / UA7 验收失败后，agent 直接猜测修改业务代码。
 - 没有复现步骤、期望结果、实际结果或日志 / 证据时，继续扩大修复范围。
-- 第 2 轮后未通过 `CORE.md` progress gate 仍继续自修复，或突破第 3 轮绝对上限。
+- 第 2 轮后未通过 `CORE.md` progress gate 仍继续 `AutoRepair`，或自主 loop 突破第 3 轮上限。
+- 把用户授权 `EscalatedRepair` 解释成无限重试、清零历史，或省略冻结基线/RED-GREEN/目标/独立复审。
 - 将用户实机验收失败直接等同于新需求并顺手实现。
 - 未经过验收失败反馈闸门就把任务从失败反馈直接标记为 Accepted 或 Closed。
 - 未经用户确认启动多个执行会话。
@@ -100,8 +101,8 @@
 - 用户尚未确认并行执行。
 - 写代码 subagent 缺少任务编号、角色、模式、修改范围或验证方式。
 - 多个写代码 subagents 的工作区隔离、文件锁、模块锁或 diff 归属无法确认。
-- Loop 达到最大轮次但仍未满足停止条件。
-- Review-Repair Loop 第 2 轮后 progress gate 不通过，或第 3 轮后仍存在 P0/P1。
+- Loop 达到自主最大轮次但仍未满足停止条件：进入用户裁决，不得自动续跑。
+- Review-Repair Loop 第 2 轮后 progress gate 不通过，或第 3 轮后仍存在 P0/P1；如用户明确授权，可按冻结边界执行有限 `EscalatedRepair`。
 - 当前 harness 不支持所需能力，且无法安全降级。
 - Memory 候选内容包含敏感信息、本机路径或未确认事实。
 - GitHub Issue 映射涉及公开敏感信息。
@@ -110,6 +111,6 @@
 ## 停止时应做什么
 
 1. 停止继续修改。
-2. 更新任务文件，将状态改为 `Blocked` 或待确认。
+2. 更新任务文件，将自主 loop 记为 `Stop` / 用户裁决；只有缺少安全输入或能力时才记为 `Blocked`。
 3. 写清楚阻塞原因、已完成内容、风险和需要用户确认的问题。
-4. 不要用猜测继续推进。
+4. 不要用猜测继续推进；用户明确授权 AI 有界修复时，不得仅因自主轮次已满而拒绝。

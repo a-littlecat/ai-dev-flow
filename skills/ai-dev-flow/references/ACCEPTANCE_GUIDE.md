@@ -211,12 +211,14 @@
 
 修复限制：
 
-- 基础 repair 预算为 2 轮；只有 `CORE.md` progress gate 全部通过时才允许第 3 轮，3 为绝对上限。
+- 一轮 repair 只计冻结 finding 的 patch 到下一次独立复审；诊断、复审、无 patch UA、原样重跑测试、TASK/看板同步和记录纠错不计。
+- `AutoRepair` 基础预算为 2 轮；只有 `CORE.md` 的逐 finding progress gate 全部通过时才允许第 3 轮，3 为自主 loop 上限。
 - 每轮 repair 前必须说明本轮假设、证据、拟修改文件和验证方式。
 - 每轮 repair 后必须重新进入 `review_task`。
-- 两轮后 progress gate 不通过时必须停止并建议补证据、人工接管或重新拆任务，不得继续猜测修改。
+- 两轮后 progress gate 不通过时必须 `Stop` 并进入用户裁决，不得继续猜测修改。用户可选择补证据、缩小范围、人工实现，或明确授权默认一次的有界 `EscalatedRepair`。
 - 如果无法在 agent 环境中复现，必须补充日志、诊断命令、mock、截图说明或用户实机复测步骤。
-- 第 3 轮后仍未 GREEN 必须停止；更换模型不重置预算。
+- 第 3 轮后仍未 GREEN 时自主 loop 必须停止；同一 finding/closure contract 换 TASK 或模型不重置。明确授权的 `EscalatedRepair` 失败后回到 `Stop`，不得自动重复。
+- 用户授权 `EscalatedRepair` 时必须冻结干净基线、RED/GREEN、目标、允许文件、次数和独立 Reviewer；不可逆外部副作用仍不得自动重试。
 
 验收失败反馈必须记录到 TASK 文件的“用户验收反馈 / 实机测试反馈”区块；只在聊天中处理不算完成。
 

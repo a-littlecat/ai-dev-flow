@@ -33,7 +33,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.policy = policy_from(REFERENCES / "CORE.md")
 
     def test_version_and_contract_identity_are_independent(self):
-        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.1")
+        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.2")
         for path in (
             ROOT / "README.md",
             ROOT / "README.en.md",
@@ -43,7 +43,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         ):
             with self.subTest(path=path.name):
                 text = read(path)
-                self.assertIn("0.8.1", text)
+                self.assertIn("0.8.2", text)
                 self.assertIn("adf/v0.7.0", text)
         self.assertNotIn("adf/v0.8.0", read(REFERENCES / "TASK_TEMPLATE.md"))
 
@@ -54,11 +54,12 @@ class V08SlimRuntimeTests(unittest.TestCase):
                 self.assertNotIn("--check-board", text)
                 self.assertIn("workflow_lint.py . --format human", text)
 
-    def test_promoted_policy_is_identical_to_the_frozen_prototype(self):
-        self.assertEqual(
-            self.policy,
-            policy_from(PROTOTYPE / "references" / "CORE.md"),
-        )
+    def test_route_review_and_safety_still_match_the_frozen_prototype(self):
+        frozen = policy_from(PROTOTYPE / "references" / "CORE.md")
+        for section in ("routes", "review", "safety"):
+            with self.subTest(section=section):
+                self.assertEqual(self.policy[section], frozen[section])
+        self.assertNotEqual(self.policy["repair"], frozen["repair"])
 
     def test_default_runtime_is_two_files_and_within_budget(self):
         self.assertIn("SKILL.md", read(SKILL_ROOT / "README.md"))
@@ -106,18 +107,39 @@ class V08SlimRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(self.policy["review"]["missing_authority_or_capability"], "Blocked")
 
-    def test_third_repair_round_requires_monotonic_progress(self):
+    def test_repair_policy_has_autonomous_and_user_authorized_boundaries(self):
         repair = self.policy["repair"]
-        self.assertEqual(repair["base_rounds"], 2)
-        self.assertEqual(repair["absolute_max_rounds"], 3)
-        self.assertTrue(repair["scope_hashes_must_match"])
-        self.assertTrue(repair["finding_ids_must_be_stable"])
-        self.assertTrue(repair["p0_p1_counts_strictly_decrease"])
-        self.assertTrue(repair["severity_must_not_increase"])
-        self.assertTrue(repair["validation_scores_strictly_increase"])
-        self.assertTrue(repair["round_3_target_required"])
+        self.assertEqual(repair["repair_round_definition"], "patch_to_next_independent_review")
+        self.assertEqual(repair["base_auto_rounds"], 2)
+        self.assertEqual(repair["autonomous_max_rounds"], 3)
+        self.assertEqual(repair["history"]["attempt_count_source"], "validated_receipt_chain")
+        self.assertEqual(repair["round_3_progress"]["source"], "latest_independent_review_receipt")
+        self.assertTrue(repair["round_3_progress"]["require_red_to_green"])
+        self.assertTrue(repair["round_3_progress"]["evidence_coverage_must_strictly_increase"])
+        self.assertFalse(repair["task_change_resets_budget"])
         self.assertFalse(repair["model_change_resets_budget"])
         self.assertEqual(repair["required_false_fields"], ["external_side_effect"])
+        self.assertTrue(repair["post_stop"]["ai_repair_allowed_with_explicit_authority"])
+        self.assertFalse(repair["post_stop"]["manual_implementation_required"])
+        self.assertEqual(repair["post_stop"]["default_authorized_attempts"], 1)
+        self.assertEqual(repair["record_only_finding"]["default_severity"], ["P2", "P3"])
+        self.assertIn("authorized_attempt_ids", repair["post_stop"]["authority_must_bind"])
+        self.assertEqual(repair["mechanical_decisions"], ["MechanicallyEligible", "Stop", "Blocked"])
+        self.assertTrue(repair["promotion_requires_trusted_orchestrator"])
+
+    def test_repair_implementation_plan_keeps_mechanical_and_final_authority_separate(self):
+        plan = read(
+            ROOT
+            / "docs"
+            / "plans"
+            / "REPAIR-ESCALATION-001-user-authorized-repair.md"
+        )
+        self.assertIn("只机械判定 `MechanicallyEligible / Stop / Blocked`", plan)
+        self.assertIn("只能由持有真实对话、harness 或只读项目证据的 Orchestrator 提升", plan)
+        self.assertNotIn(
+            "机械判定 `AutoRepairAllowed / ExtendRound3 / Stop / EscalatedRepairAllowed / Blocked`",
+            plan,
+        )
 
     def test_new_task_and_migration_contracts_are_small_and_compatible(self):
         template = read(REFERENCES / "TASK_TEMPLATE.md")

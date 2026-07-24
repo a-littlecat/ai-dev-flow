@@ -21,7 +21,7 @@
 | 结果 | TASK | Reviewer | repair |
 |---|---|---|---|
 | `DoNotUseSkill` | 不创建 | 不调用 | 不进入 loop |
-| `Tracked` | 新建或沿用 | 风险命中才调用 | 基础 2 轮，满足 progress gate 才有第 3 轮 |
+| `Tracked` | 新建或沿用 | 风险命中才调用 | `AutoRepair` 基础 2 轮；`Stop` 后可由用户授权有界升级 |
 | `Controlled` | 必须有 | enforcement point 前强制 | 同上，且禁止重试外部副作用 |
 | `Blocked` | 记录阻塞（如已有 TASK） | 不得自批 | 不猜测继续 |
 
@@ -103,25 +103,30 @@ Reviewer 输入至少包括 TASK、base/diff、验证证据、项目规则和允
 - 是否允许进入对应 UA 或 delivery；
 - 未验证项和结论边界。
 
-## 6. Repair 与第 3 轮
+## 6. Repair、自主上限与用户授权升级
 
-基础 repair 预算为 2。每轮流程为：只读 Review → 冻结 finding → 有界 Repair → 验证 → 只读复审。
+一轮 repair 只计“针对冻结 finding 的 patch → 验证 → 下一次独立复审”。只读 Review、无 patch 的 UA、诊断取证、原样重跑测试、TASK/看板收据同步和纯记录纠错不计轮次。
 
-第 2 轮后只有 `CORE.md` policy 的全部 progress 条件同时满足才允许第 3 轮。记录建议结构：
+预算绑定 `repair_chain_id + finding_ids + closure_contract_hash`；换 TASK 或模型不重置。`AutoRepair` 基础预算为 2，第 2 轮后只有 `CORE.md` policy 的 progress 条件全部满足才允许第 3 轮。记录建议结构：
 
 ```text
-round: 2
-scope_hash: <value>
-finding_ids: [<stable-id>]
-p0_p1_before: <n>
-p0_p1_after: <n>
-validation_before: <score>
-validation_after: <score>
-round_3_target: <single target>
+repair_chain: <stable id + finding/closure/allowed-files hashes>
+trigger_review: <independent read-only receipt>
+attempts: [<AR-1 receipt>, <AR-2 receipt>]
+history_anchor: <attempt count + head receipt hash + TASK source ref>
+trusted_context: <external expected head/count + attested Review/authority receipt hashes>
+latest_review.progress:
+  closure_before / closure_after: <RED/GREEN vectors>
+  blocking_findings_before / after: <sets>
+  severity_before / after: <maps>
+  evidence_vector / before / after: <fixed vector and coverage>
+  round_3_target: <single frozen target>
 decision: ExtendRound3 / Stop
 ```
 
-任一范围变化、严重度上升、验证不改善、根因不清、authority/capability 缺失、外部副作用或成本越界都返回 `Stop`。第 3 轮后必须停止；更换模型不重置预算。
+第 3 轮后自主 loop 必须 `Stop`。这不是 AI 永久禁修：进入用户裁决后，用户可在查看证据/风险后明确授权默认一次的 `EscalatedRepair`。授权时必须冻结干净基线、RED/GREEN、目标、允许范围和独立 Reviewer；失败回到 `Stop`，不得自动连跑。外部副作用或不可逆动作仍为硬阻断。
+
+可用 `scripts/repair_gate.py` 对不可信 ledger 与独立 trusted context 做只读比较。脚本只返回 `MechanicallyEligible`，持有真实当前对话、harness 或只读项目证据的 Orchestrator 才能提升为最终 `*Allowed`；缺 trusted context 固定 `Blocked`。其通过不替代 Review 或 UA。
 
 ## 7. Git 与交付
 
