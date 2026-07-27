@@ -14,6 +14,7 @@
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
+- `merge_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -31,7 +32,8 @@
 - 已有 authority：用户于 2026-07-27 明确回复“可以，按新方案修改吧”，授权实现已讨论的连续修复方案；在 Review Passed、UA2 Pending 后又明确要求 Kimi 默认使用自身独立审核、不得借助其他 Agent/Harness（除非用户指定），并回复“认可，继续”，授权重开本任务、修订 Reviewer 路由和统一 CAD AutoTest 计数。
 - 验收 authority：用户在收到同 Harness 原生隔离 Reviewer、核心 4 次 / Harness 5 次阈值、CAD AutoTest 单一计数权及“尚未同步生效”的 UA2 摘要后明确回复“通过”；授权记录 UA2 Passed / Accepted。
 - 交付 authority：用户随后明确回复“提交并推送，同时同步本机 Skill”；授权精确提交本任务 diff、推送当前 `codex/repair-campaign-001` 分支，并同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本。
-- 未授权动作：merge、tag、Release、删除、创建不存在的安装目录、其他项目或服务的外部同步、Closed。
+- 发布 authority：用户在确认任务分支已推送、本机 Skill 已同步、但尚未 merge / tag / Release 后明确回复“同步并发版”；授权把当前任务分支合并到 `main`、推送 `main`、创建并推送 annotated tag `v0.8.3`、创建正式非 draft/非 prerelease GitHub Release，并按正式发布源复核现有本机 Skill。
+- 未授权动作：删除分支、删除或覆盖未知目标文件、创建不存在的安装目录、其他项目或服务的外部同步、历史改写、Closed。
 - 执行位置：独立 Worktree `D:\open-source\ai-dev-flow-wt\repair-campaign-001`；分支 `codex/repair-campaign-001`。
 
 ## 路由与风险
@@ -88,7 +90,7 @@
 - Escalated authority：不适用；本 TASK 是新功能执行，不消费下游项目 repair campaign。
 - 非计数动作：基线测试、只读源码/任务核对、计划和 TASK 初始化。
 - 机械判定：不适用；本任务实现 gate 本身。
-- Orchestrator 提升：当前用户 authority 已覆盖实现、验证、UA2 Accepted、当前任务精确 commit/branch push 和现有本机 Skill 同步；不包含 merge、Release、其他外部同步或 Closed。
+- Orchestrator 提升：当前用户 authority 已覆盖实现、验证、UA2 Accepted、commit、任务分支/main push、merge、`v0.8.3` tag、正式 GitHub Release 和现有本机 Skill 同步；不包含其他项目/服务同步、历史改写、分支删除或 Closed。
 
 ## Outcome
 
@@ -102,4 +104,4 @@
 - Git / 同步收据：实现与验收提交 `0e2c5fb` 已形成并首次推送；4 个现有 ai-dev-flow 安装目标已达 92 / 92 SHA256 parity，4 个现有 CAD AutoTest 目标已统一到复审候选哈希，8 / 8 validator 通过。
 - 状态边界：Accepted / Committed / Branch Pushed / Unmerged / Unreleased / Local Sync Verified / Not Closed。
 - 剩余风险：`0.8.3` 仍是未发布开发线且任务分支未合并；已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill。
-- 下一步：如需 merge、tag、Release 或 Closed，必须由用户另行授权；当前不自动执行。
+- 下一步：执行已授权的 `main` merge/push、`v0.8.3` annotated tag、正式 GitHub Release 和发布源本机同步复核；不删除分支、不改写历史、不记录 Closed。

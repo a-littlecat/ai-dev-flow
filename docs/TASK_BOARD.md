@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-27
 > - 当前模式：`REPAIR-CAMPAIGN-001` Accepted
-> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted / Committed / Branch Pushed / Local Sync Verified，尚未 merge、release 或 Closed
+> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted / Committed / Branch Pushed / Local Sync Verified，已取得 `main` merge、`v0.8.3` 正式发布和发布源同步授权，执行中
 > - 当前方案：`docs/plans/REPAIR-CAMPAIGN-001-continuous-repair-authority.md`
 
 ## 当前授权边界
@@ -37,6 +37,8 @@
 
 用户随后明确回复“提交并推送，同时同步本机 Skill”。该指令授权精确提交本任务 diff、推送当前 `codex/repair-campaign-001` 分支，并同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本；不授权 merge、tag、Release、删除、创建不存在的安装目录、其他项目/服务同步或 `Closed`。
 
+用户在确认任务分支已推送、本机 Skill 已同步、但尚未 merge / tag / Release 后明确回复“同步并发版”。该指令授权把当前任务分支合并到 `main`、推送 `main`、创建并推送 annotated tag `v0.8.3`、创建正式非 draft/非 prerelease GitHub Release，并按正式发布源复核现有本机 Skill；不授权删除分支、历史改写、其他项目/服务同步或 `Closed`。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -49,6 +51,7 @@
 - 写回 `LEAN-003` Closed，并在关闭收据提交后安全删除已完全合并的本地实施分支。
 - 在独立 Worktree 实现 `REPAIR-CAMPAIGN-001` 的 campaign policy、4 / 5 次连续无进展阈值、硬停止和兼容测试。
 - 精确提交并推送 `REPAIR-CAMPAIGN-001` 当前任务分支，同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本，并写回校验收据。
+- 将已验收任务分支合并并推送到 `main`，创建并推送 `v0.8.3` annotated tag 与正式 GitHub Release，并按发布源复核现有本机 Skill。
 
 本轮不允许：
 
@@ -56,7 +59,7 @@
 - 绕过阶段门禁提前创建或执行后续 `LEAN-*`；
 - 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
 - 不删除其他分支、tag 或 Release，不强制删除未合并分支，不改写已提交历史，不执行额外版本发布或同步未确认的本机目录。
-- 不在 `REPAIR-CAMPAIGN-001` 中 merge、tag、Release、删除、创建不存在的安装目录、同步其他项目/服务或记录 Closed。
+- 不在 `REPAIR-CAMPAIGN-001` 中删除分支、改写历史、创建不存在的安装目录、同步其他项目/服务或记录 Closed。
 
 ## 真相源与状态规则
 
@@ -125,7 +128,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`REPAIR-CAMPAIGN-001` 已完成已授权的精确 commit、当前任务 branch push 和现有本机 Skill 同步。如需 merge、tag、Release 或 Closed，必须由用户另行授权；当前不自动执行。
+执行用户已授权的 `REPAIR-CAMPAIGN-001` main merge/push、`v0.8.3` annotated tag、正式 GitHub Release 和发布源本机同步复核；不删除分支、不改写历史、不记录 Closed。
 
 ## 停止条件
 
