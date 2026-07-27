@@ -101,7 +101,7 @@
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\repair-campaign-001` / `codex/repair-campaign-001`。
 - 回滚方式：仅恢复本任务相对 `8df7399` 的未提交 diff，不改写历史、不删除 Worktree。
 - 修改文件：原 campaign 实现的 `SKILL.md + CORE.md` policy、`repair_gate.py`、repair/contract tests、Workflow、模板、README、版本与迁移说明、本 TASK、计划和任务板；`UCR-1` 追加 Reviewer policy/Workflow/tests，并在隔离暂存区形成 `cad-dotnet-autotest/SKILL.md` 候选补丁。
-- 验证证据：`UCR-1` 后定向 unittest 46 / 46、全套 unittest 81 / 81、仓库 Skill 与 CAD AutoTest 隔离候选的 validator 均通过；policy digest=`ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`，默认运行时 399 / 400 行，冻结目录零差异，tracked/untracked/候选 diff check 均通过；发布回执写回后，本 TASK lint 为 0 error / 0 violation / 2 warning，项目根 lint 为既有 19 error / 0 violation / 23 warning。
+- 验证证据：`UCR-1` 后定向 unittest 46 / 46、全套 unittest 81 / 81、仓库 Skill 与 CAD AutoTest 隔离候选的 validator 均通过；policy digest=`ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`，默认运行时 399 / 400 行，冻结目录零差异，tracked/untracked/候选 diff check 均通过；发布回执提交后，本 TASK lint 为 0 error / 0 violation / 1 warning，项目根 lint 为既有 19 error / 0 violation / 22 warning。
 - Review findings：`RCAMPAIGN-RVW-001`～`005` 的 findings 已分别由 `ER-1`～`ER-5` 关闭；`RCAMPAIGN-RVW-006` 对旧范围 Passed。`UCR-1` 的唯一 finding `RVW-007-F01` 已由 `ER-6` 关闭，`RCAMPAIGN-RVW-007` 最终 Passed，P0～P3 全为 0。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-27 在收到验收摘要后明确回复“通过”。
 - Git / 同步收据：实现与验收提交 `0e2c5fb` 已形成并首次推送；4 个现有 ai-dev-flow 安装目标已达 92 / 92 SHA256 parity，4 个现有 CAD AutoTest 目标已统一到复审候选哈希，8 / 8 validator 通过。
