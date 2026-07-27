@@ -86,6 +86,8 @@
 - Delivery receipt：实现与验收提交 `0e2c5fbd98efad0c13f6ceaec97f8e6d229e7e48` 已推送到 `origin/codex/repair-campaign-001`，首次远端核对 `LOCAL=REMOTE`。实盘确认存在的 4 个 `ai-dev-flow` 目标（`.agents`、`.codex`、OpenCode、cc-switch）已由仓库源同步为 `VERSION=0.8.3`，每处 92 / 92、Missing / Extra / Changed=`0 / 0 / 0`，policy digest 均为 `ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`。
 - CAD Skill receipt：同一 4 个目标中的 `cad-dotnet-autotest/SKILL.md` 已同步为复审通过候选，SHA256 均为 `35D70272179A57183CF1B2BCD9FB301E65C5404BE078C6D81A98E8E7FA911E88`；每处其余 12 个资产相对同步前备份均未变化。8 个安装目标的 Skill validator 全部通过；备份位于 `C:\Users\92336\.codex\visualizations\2026\07\27\019fa15f-d6c2-7421-ba69-91f55b2196ff\skill-sync-backup-20260727-153300`。
 - Merge receipt：用户授权后，任务分支 `f712443bb9bba36113410351907d9a29531ca70b` 已通过非快进合并提交 `d708d800e091b4f2898844852aa8033c5db5d76f` 进入本地 `main`；合并前确认 `main@0702673` 等于远端、是任务分支祖先，主工作区只有两个保留且未提交的 `__pycache__`。
+- Release receipt：发布身份提交 `a7c4fd61d350c9cf224eb42cdbdcbbb9c4e11232` 已推送到 `origin/main`；annotated tag `v0.8.3` 的 tag object=`5998a08ca5ddb5d29adc953a604d000f27ccb77e`、peeled target=`a7c4fd61d350c9cf224eb42cdbdcbbb9c4e11232`，均已由远端核对。正式 GitHub Release 已发布于 `https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.3`，`isDraft=false`、`isPrerelease=false`。
+- Release-source sync receipt：4 个现有 `ai-dev-flow` 安装目标已按正式发布源复核为 `VERSION=0.8.3`，每处 92 / 92、Missing / Extra / Changed=`0 / 0 / 0`，policy digest 保持一致；4 个现有 CAD AutoTest 目标保持复审候选 SHA256，8 / 8 validator 通过。发布源复核备份位于 `C:\Users\92336\.codex\visualizations\2026\07\27\019fa15f-d6c2-7421-ba69-91f55b2196ff\skill-sync-backup-v0.8.3-20260727-155415`。
 - History anchor：base=`8df7399`；source_ref=`task:docs/tasks/REPAIR-CAMPAIGN-001.md#repair-chain-ledger`。
 - Trusted context：当前对话、`REPAIR-ESCALATION-001` Accepted 事实源、当前 Git/Worktree 只读快照。
 - Escalated authority：不适用；本 TASK 是新功能执行，不消费下游项目 repair campaign。
@@ -99,11 +101,12 @@
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\repair-campaign-001` / `codex/repair-campaign-001`。
 - 回滚方式：仅恢复本任务相对 `8df7399` 的未提交 diff，不改写历史、不删除 Worktree。
 - 修改文件：原 campaign 实现的 `SKILL.md + CORE.md` policy、`repair_gate.py`、repair/contract tests、Workflow、模板、README、版本与迁移说明、本 TASK、计划和任务板；`UCR-1` 追加 Reviewer policy/Workflow/tests，并在隔离暂存区形成 `cad-dotnet-autotest/SKILL.md` 候选补丁。
-- 验证证据：`UCR-1` 后定向 unittest 46 / 46、全套 unittest 81 / 81、仓库 Skill 与 CAD AutoTest 隔离候选的 validator 均通过；policy digest=`ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`，默认运行时 399 / 400 行，冻结目录零差异，tracked/untracked/候选 diff check 均通过；本 TASK lint 为 0 error / 0 violation / 1 warning，项目根 lint 为既有 19 error / 0 violation / 22 warning。
+- 验证证据：`UCR-1` 后定向 unittest 46 / 46、全套 unittest 81 / 81、仓库 Skill 与 CAD AutoTest 隔离候选的 validator 均通过；policy digest=`ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`，默认运行时 399 / 400 行，冻结目录零差异，tracked/untracked/候选 diff check 均通过；发布回执写回后，本 TASK lint 为 0 error / 0 violation / 2 warning，项目根 lint 为既有 19 error / 0 violation / 23 warning。
 - Review findings：`RCAMPAIGN-RVW-001`～`005` 的 findings 已分别由 `ER-1`～`ER-5` 关闭；`RCAMPAIGN-RVW-006` 对旧范围 Passed。`UCR-1` 的唯一 finding `RVW-007-F01` 已由 `ER-6` 关闭，`RCAMPAIGN-RVW-007` 最终 Passed，P0～P3 全为 0。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-27 在收到验收摘要后明确回复“通过”。
 - Git / 同步收据：实现与验收提交 `0e2c5fb` 已形成并首次推送；4 个现有 ai-dev-flow 安装目标已达 92 / 92 SHA256 parity，4 个现有 CAD AutoTest 目标已统一到复审候选哈希，8 / 8 validator 通过。
 - 合并目标与事实证据：target=`main`；source=`codex/repair-campaign-001@f712443bb9bba36113410351907d9a29531ca70b`；merge=`d708d800e091b4f2898844852aa8033c5db5d76f`；用户已明确授权，合并前 `main@0702673` 与 `origin/main` 一致且为 source 祖先。
-- 状态边界：Accepted / Committed / Merged / Release Candidate / Local Sync Verified / Not Closed。
-- 剩余风险：正式 tag / GitHub Release 和发布源同步复核尚待执行；已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill。
-- 下一步：提交并推送 `v0.8.3` 发布身份，创建 annotated tag 与正式 GitHub Release，再按发布源复核现有本机 Skill；不删除分支、不改写历史、不记录 Closed。
+- 发布与同步收据：`main@a7c4fd6` 已推送；`v0.8.3` annotated tag 与正式非 draft/非 prerelease GitHub Release 已发布；4 个现有 ai-dev-flow 目标保持 92 / 92 parity，8 / 8 安装目标 validator 通过。
+- 状态边界：Accepted / Committed / Merged / Released `v0.8.3` / Local Sync Verified / Not Closed。
+- 剩余风险：已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill；任务分支仍保留，TASK 尚未 Closed。
+- 下一步：无自动后续动作；仅在用户另行授权后记录 Closed，并在确认完全合并后安全删除任务分支。
