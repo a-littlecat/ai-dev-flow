@@ -35,7 +35,8 @@
 
 ```text
 请只修复以下稳定 finding ID：<粘贴 finding>。
-不得扩大 TASK 范围。修复后运行指定验证并重新进入只读 Review；基础预算 2 轮，第 3 轮只能由 CORE.md progress gate 授予，3 为绝对上限。
+记录 repair_chain、连续 AR/ER + Review receipts 和外部 trusted context；不得通过换 TASK、模型或重写 ledger 清零。修复后运行指定验证并重新进入只读 Review；AutoRepair 基础 2 轮，第 3 轮只能由 CORE.md progress gate 授予。
+自主 loop Stop 后，等待用户裁决；用户明确授权时把 authority receipt 与真实对话/harness/项目证据绑定。只读 gate 的 MechanicallyEligible 需由 Orchestrator 提升为最终 Allowed；失败回 Stop，不要求用户必须亲自写代码。
 ```
 
 ## 验收失败诊断

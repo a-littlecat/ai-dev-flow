@@ -21,6 +21,28 @@ python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format json
 - project 报告包含 9 字段 expected projection，并可输出 `V_BOARD_DRIFT`、`W_BOARD_MISSING`、`W_BOARD_ORPHAN`、`E_BOARD_PARSE` 等确定性诊断。
 - CLI 不提供 `--fix` / `--write`，不会修改 TASK、TASK_BOARD、Git 或外部系统；TASK 始终是事实源。
 
+## v0.8.3 只读 Repair Gate
+
+`repair_gate.py` 把 repair ledger 视为不可信输入，并读取独立 trusted context 与 `CORE.md` policy，输出 `MechanicallyEligible / Stop / Blocked`；最终 `*Allowed` 只能由持有真实上游证据的 Orchestrator 提升：
+
+- 非 campaign ledger 可继续使用其原 `rc2` policy 验证旧单次 `EscalatedRepair` receipt；campaign 与新 receipt 使用 `rc3` policy，禁止混用；
+- 可选 `RepairCampaignAuthority` 绑定 TASK、验收合同、profile、外层 scope manifest 和生效 chain/history head；同 chain 只统计生效后的 patch，后续新 chain 的 AR/ER 都必须推进 state；
+- campaign state receipt 必须匹配 trusted context 唯一指定的当前 expected receipt，campaign TASK/验收合同也必须匹配独立 expected 值，并绑定 history head、最新 Review 和 hard-stop snapshot；核心产品连续无进展阈值为 4，Harness 为 5；
+- campaign 硬停止 flag 立即阻断，不等待次数耗尽。
+
+```powershell
+python -B -X utf8 skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
+python -B -X utf8 skills/ai-dev-flow/scripts/repair_gate.py --policy-digest --format json
+```
+
+- 只读，不修改 TASK、代码、Git 或外部系统。
+- 退出码：`0` 为机械资格成立（仍需 Orchestrator 提升），`1` 为 `Stop`，`2` 为输入/安全门禁 `Blocked`。
+- ledger 使用 `ai-dev-flow/repair-ledger-v1`；计数从连续 attempt/Review receipt 链推导，第 3 轮比较结构化 before/after，升级授权绑定 chain/scope/target/attempt。字段由 `TASK_TEMPLATE.md` 和 `CORE.md` 定义。
+- trusted context 使用 `ai-dev-flow/repair-trusted-context-v1`，独立提供 expected history head/count 和已确认的 Review/authority receipt；缺少时固定 `Blocked`。
+- policy digest 是规范化 `POLICY_JSON` 的 SHA256，可用于安装副本策略一致性检查。
+- receipt 只能机械验证结构、hash 和绑定，不能密码学证明消息发送者身份；该真实性必须由当前对话、harness 或项目事实源提供。
+- `MechanicallyEligible` 只表示结构与 trusted context 一致，不代表最终 Allowed、Review、UA、交付或 Closed。
+
 ## 后续只读脚本路线图
 
 未来可以考虑添加只读检查脚本：

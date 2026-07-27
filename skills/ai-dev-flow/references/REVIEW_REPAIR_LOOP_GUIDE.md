@@ -28,7 +28,11 @@
 
 ## 基本规则
 
-- 基础 repair 预算为 2 轮；只有 `CORE.md` progress gate 全部通过时才允许第 3 轮，3 为绝对上限。
+- 一轮 repair 只计“冻结 finding 的 patch 到下一次独立复审”；只读 Review、无 patch UA、诊断、测试重跑、收据同步和记录纠错不计。
+- `AutoRepair` 基础预算为 2 轮；只有 `CORE.md` progress gate 全部通过时才允许第 3 轮，3 为自主 loop 上限。
+- 达到 `Stop` 后进入用户裁决；用户可授权默认一次的 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`。
+- campaign 在核心产品连续 4 次、Harness 连续 5 次无实质进展后再回到用户裁决；P0、安全、数据、越界、不可逆、外部副作用或放宽 oracle 等硬停止立即生效。
+- 同一 finding / closure contract 继承 `repair_chain_id` 和计数；换 TASK 或模型不重置。
 - 每轮 repair 只能处理审查指出的问题。
 - 每轮结束必须重新进入 `review_task`。
 - `repair_task` 不得直接把任务标记为 Accepted。
@@ -56,13 +60,13 @@
 - 验证命令。
 - 验证结果。
 - 是否需要再审查。
-- 是否触发人工接管。
+- 是否进入用户裁决，以及是否获得单次 `EscalatedRepair` 或连续 `RepairCampaignAuthority`。
 
 ## 停止条件
 
 - P0/P1 已修复并复审通过。
 - 剩余问题均为 P2/P3，且已记录后续任务或风险。
-- 第 2 轮后 progress gate 不通过，或第 3 轮后仍无法通过。
+- 第 2 轮后 progress gate 不通过，或第 3 轮后仍无法通过：自主 loop `Stop`，进入用户裁决。
 - 修复需要扩大范围。
 - diff 归属不清。
 - 验证无法判断。
@@ -75,7 +79,9 @@
 
 - 当前任务：
 - 当前轮次：
-- 最大轮次：2
+- 自主最大轮次：3（基础 2；第 3 轮需 progress gate）
+- repair_chain_id：
+- 当前尝试：AR-1 / AR-2 / AR-3 / ER-1...
 - 本轮角色：修复者（Repairer）/ 审查者（Reviewer）
 
 ## 本轮处理
@@ -92,6 +98,7 @@
 ## 下一步
 
 - 进入 review_task
-- 停止并人工接管
+- Stop 并进入用户裁决
+- 按明确授权执行一次 EscalatedRepair 或 campaign 内下一次有界 attempt
 - 转后续任务
 ```

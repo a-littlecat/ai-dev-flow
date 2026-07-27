@@ -21,7 +21,7 @@
 | 结果 | TASK | Reviewer | repair |
 |---|---|---|---|
 | `DoNotUseSkill` | 不创建 | 不调用 | 不进入 loop |
-| `Tracked` | 新建或沿用 | 风险命中才调用 | 基础 2 轮，满足 progress gate 才有第 3 轮 |
+| `Tracked` | 新建或沿用 | 风险命中才调用 | `AutoRepair` 基础 2 轮；`Stop` 后可授权单次或 campaign 升级 |
 | `Controlled` | 必须有 | enforcement point 前强制 | 同上，且禁止重试外部副作用 |
 | `Blocked` | 记录阻塞（如已有 TASK） | 不得自批 | 不猜测继续 |
 
@@ -96,6 +96,14 @@ Reviewer 是否需要由 `CORE.md` policy 决定：
 - Controlled 在 acceptance recommendation、delivery、merge、release 前强制 Review。
 - 缺少独立 Reviewer authority/capability 时为 `Blocked`；不能由 Engineer 自批。
 
+Reviewer 来源按 `CORE.md` 的 `reviewer_selection` 决定：
+
+1. 默认只使用当前 Harness 的原生隔离 Reviewer。Kimi Code 用 Kimi 原生 `Agent` 新上下文，Codex 用 Codex 自身只读 subagent 或只读 `codex exec`，OpenCode 用自身禁写 Task reviewer。
+2. 同一主上下文切换角色只是 self-review，不能记为独立 Review；原生 Reviewer 缺少上下文或写权限隔离时保持 `Blocked/Pending`。
+3. 不得自动回退到其他 Harness。只有用户明确指定外部 Reviewer 来源时，才允许跨 Harness，并记录用户 authority、实际来源及只读证明。
+4. CLI 型 Reviewer 首次调用或参数失败时先读取当前 `--help`；参数错误属于 Harness 诊断，不得凭记忆追加其他版本参数，也不得因此自动换平台。
+5. 审查前后核对 HEAD、staged/unstaged/untracked 范围和必要哈希；存在 Reviewer 写入时该收据无效。
+
 Reviewer 输入至少包括 TASK、base/diff、验证证据、项目规则和允许范围。输出至少包括：
 
 - 结论：`Passed / Needs Fix / Blocked`；
@@ -103,25 +111,35 @@ Reviewer 输入至少包括 TASK、base/diff、验证证据、项目规则和允
 - 是否允许进入对应 UA 或 delivery；
 - 未验证项和结论边界。
 
-## 6. Repair 与第 3 轮
+## 6. Repair、自主上限与用户授权升级
 
-基础 repair 预算为 2。每轮流程为：只读 Review → 冻结 finding → 有界 Repair → 验证 → 只读复审。
+一轮 repair 只计“针对冻结 finding 的 patch → 验证 → 下一次独立复审”。只读 Review、无 patch 的 UA、诊断取证、原样重跑测试、TASK/看板收据同步和纯记录纠错不计轮次。
 
-第 2 轮后只有 `CORE.md` policy 的全部 progress 条件同时满足才允许第 3 轮。记录建议结构：
+预算绑定 `repair_chain_id + finding_ids + closure_contract_hash`；换 TASK 或模型不重置。`AutoRepair` 基础预算为 2，第 2 轮后只有 `CORE.md` policy 的 progress 条件全部满足才允许第 3 轮。记录建议结构：
 
 ```text
-round: 2
-scope_hash: <value>
-finding_ids: [<stable-id>]
-p0_p1_before: <n>
-p0_p1_after: <n>
-validation_before: <score>
-validation_after: <score>
-round_3_target: <single target>
+repair_chain: <stable id + finding/closure/allowed-files hashes>
+trigger_review: <independent read-only receipt>
+attempts: [<AR-1 receipt>, <AR-2 receipt>]
+history_anchor: <attempt count + head receipt hash + TASK source ref>
+trusted_context: <external expected head/count + attested Review/authority receipt hashes>
+latest_review.progress:
+  closure_before / closure_after: <RED/GREEN vectors>
+  blocking_findings_before / after: <sets>
+  severity_before / after: <maps>
+  evidence_vector / before / after: <fixed vector and coverage>
+  round_3_target: <single frozen target>
 decision: ExtendRound3 / Stop
 ```
 
-任一范围变化、严重度上升、验证不改善、根因不清、authority/capability 缺失、外部副作用或成本越界都返回 `Stop`。第 3 轮后必须停止；更换模型不重置预算。
+第 3 轮后自主 loop 必须 `Stop`。这不是 AI 永久禁修：进入用户裁决后，用户可在查看证据/风险后选择：
+
+- 默认一次、绑定当前 chain/finding/closure/实际文件的 `EscalatedRepair`；
+- 绑定 TASK、验收合同和外层 scope manifest 的 `RepairCampaignAuthority`。campaign 中每个 patch 仍建独立 chain/attempt、冻结实际文件并独立复审；不是无界循环。
+
+campaign streak 与 hard-stop snapshot 由 trusted context attested state receipt 锚定，不因换 TASK、模型、chain 或 finding 改名清零。有实质进展时清零；核心产品连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决。P0、安全、数据、越界、不可逆、外部副作用、放宽 oracle、未授权依赖或缺少证据立即阻断，不等待阈值。delivery/Accepted/Closed authority 始终独立。
+
+可用 `scripts/repair_gate.py` 对不可信 ledger、campaign state receipt 与独立 trusted context 做只读比较。脚本只返回 `MechanicallyEligible`，持有真实当前对话、harness 或只读项目证据的 Orchestrator 才能提升为最终 `*Allowed`；缺 trusted context 固定 `Blocked`。其通过不替代 Review 或 UA。
 
 ## 7. Git 与交付
 

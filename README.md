@@ -72,16 +72,25 @@ v0.8 不建设自动调度器、数据库、遥测、计费、模型 Adapter，�
 - 新建 Tracked 按环境使用 `references/TASK_TEMPLATE_BRIEF.md` 或 `references/TASK_TEMPLATE.md`；Controlled 始终使用完整模板。
 - 旧 TASK 不批量迁移，原格式继续可读。
 - `TASK_TEMPLATE_COMPACT.md` 只为 v0.7 Writer/Reader 兼容保留。
-- 当前工作树 Skill 包版本是 `0.8.1`（未发布开发线），Workflow Contract schema 继续是 `adf/v0.7.0`。
+- 当前工作树 Skill 包版本是 `0.8.3`（未发布开发线），Workflow Contract schema 继续是 `adf/v0.7.0`。
 
 迁移说明见 `skills/ai-dev-flow/references/V0.8_MIGRATION.md`，用户最多需要 3 步。
 
-## Reviewer 与第 3 轮 repair
+## Reviewer 与 repair 边界
 
 - Tracked 仅在确定性风险命中时调用一个隔离、只读 Reviewer。
 - Controlled 在验收建议、delivery、merge、release 前强制 Review。
-- repair 基础预算为 2 轮；只有范围冻结、finding 单调减少、验证改善等 progress 条件全部满足时才增加第 3 轮。
-- 3 是绝对上限；更换模型不重置预算；不可逆外部动作不得自动重试。
+- Reviewer 默认使用当前 Harness 自身的原生只读隔离能力；原生能力缺失时保持 Pending/Blocked，不自动调用其他 Harness，除非用户明确指定。
+- `AutoRepair` 基础预算为 2 轮；只有冻结 finding 的 RED→GREEN、无回归且证据覆盖增加时才增加第 3 轮。
+- 3 是自主 repair loop 上限，不是 AI 永久禁修。达到 `Stop` 后，用户可授权默认一次的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内连续工作的 `RepairCampaignAuthority`。
+- campaign 在核心产品代码连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决；P0、安全、数据、越界、不可逆、外部副作用和 oracle 放宽等硬停止立即生效。
+- repair chain 绑定 finding 和 closure contract；换 TASK 或模型不重置。不可逆外部动作不得自动重试。
+
+可用只读判定器机械检查 ledger：
+
+```powershell
+python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
+```
 
 ## 只读检查
 
@@ -115,10 +124,10 @@ ai-dev-flow/
 ## 当前版本
 
 ```text
-0.8.1
+0.8.3
 ```
 
-- 当前工作树版本：`0.8.1`，尚未创建 tag / Release。
+- 当前工作树版本：`0.8.3`，尚未创建 tag / Release。
 - 当前正式发布版本：`0.8.0`。
 - Workflow Contract：`adf/v0.7.0`，继续兼容。
 - 发布状态：`v0.8.0` 已于 2026-07-19 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0)。

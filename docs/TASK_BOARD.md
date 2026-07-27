@@ -1,9 +1,9 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-21
-> - 当前模式：`SYNC-001` 受控同步
-> - 当前阶段：Skill 增量已通过 Review，同步仓库与五个本机目标并推送 `main`；`0.8.1` 仍为未发布开发线，UA3 Pending
-> - 当前方案：`docs/plans/V0.8_SKILL_SLIMMING_RFC.md`
+> - 快照日期：2026-07-27
+> - 当前模式：`REPAIR-CAMPAIGN-001` Accepted
+> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted / Committed / Branch Pushed / Local Sync Verified，已取得 `main` merge、`v0.8.3` 正式发布和发布源同步授权，执行中
+> - 当前方案：`docs/plans/REPAIR-CAMPAIGN-001-continuous-repair-authority.md`
 
 ## 当前授权边界
 
@@ -29,6 +29,16 @@
 
 用户于 2026-07-21 明确要求审查其提供的 `.agents` Skill 源目录更新；确认无问题后同步到本项目和本机其他 Skill 位置，并推送远端。该授权覆盖 `SYNC-001` 的内容审查、已存在目标的文件同步、精确 commit 和 `main` push；不包含 tag、GitHub Release、删除未知附加文件或创建不存在的安装目录。Review 发现已发布 `v0.8.0` 与新增内容不能共用版本身份，因此 repair 将工作树身份收口为未发布 `0.8.1`，不制造发布事实。
 
+用户于 2026-07-24 在复盘修改轮数边界和“超限后即使授权 AI 也拒绝”的问题后明确要求实施。`REPAIR-ESCALATION-001` 获准在独立 Worktree 修改 Skill policy、只读判定器、测试和直接冲突文档；独立 Review 通过后可同步已存在的本机 Skill 副本和 CADCat 流程规则。用户随后明确回复“验收通过，提交并推送”，因此 UA2 记为 Passed，并授权精确 commit 当前任务 diff、推送 `codex/repair-escalation-001` 分支；该授权不包含 merge、tag、Release、删除、历史改写或 `Closed`。
+
+用户于 2026-07-27 进一步确认连续无实质进展阈值采用“核心产品 4 次、Harness 5 次”，并明确要求按新方案修改。`REPAIR-CAMPAIGN-001` 获准在 `REPAIR-ESCALATION-001` Accepted baseline 上实现任务级连续修复授权、只读 gate、测试和直接冲突文档；不授权 commit、push、merge、release、本机同步、Accepted 或 Closed。
+
+用户随后在收到同 Harness 原生隔离 Reviewer、核心 4 次 / Harness 5 次阈值、CAD AutoTest 单一计数权及“尚未同步生效”的 UA2 摘要后明确回复“通过”。该确认写回为 Review Passed、UA2 Passed 和 `Accepted`；不扩展为 commit、push、merge、tag、Release、本机 Skill 同步或 `Closed` 授权。
+
+用户随后明确回复“提交并推送，同时同步本机 Skill”。该指令授权精确提交本任务 diff、推送当前 `codex/repair-campaign-001` 分支，并同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本；不授权 merge、tag、Release、删除、创建不存在的安装目录、其他项目/服务同步或 `Closed`。
+
+用户在确认任务分支已推送、本机 Skill 已同步、但尚未 merge / tag / Release 后明确回复“同步并发版”。该指令授权把当前任务分支合并到 `main`、推送 `main`、创建并推送 annotated tag `v0.8.3`、创建正式非 draft/非 prerelease GitHub Release，并按正式发布源复核现有本机 Skill；不授权删除分支、历史改写、其他项目/服务同步或 `Closed`。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -39,6 +49,9 @@
 - 创建并串行执行 `LEAN-001`～`003`，每项保持独立任务合同、diff、验证、Review 和 commit；后项只能在前项门禁通过后开始。
 - 写回 `LEAN-003` UA3 Passed / Accepted，并完成已明确授权的 merge、push、`v0.8.0` tag、GitHub Release 和本机 Skill 同步。
 - 写回 `LEAN-003` Closed，并在关闭收据提交后安全删除已完全合并的本地实施分支。
+- 在独立 Worktree 实现 `REPAIR-CAMPAIGN-001` 的 campaign policy、4 / 5 次连续无进展阈值、硬停止和兼容测试。
+- 精确提交并推送 `REPAIR-CAMPAIGN-001` 当前任务分支，同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本，并写回校验收据。
+- 将已验收任务分支合并并推送到 `main`，创建并推送 `v0.8.3` annotated tag 与正式 GitHub Release，并按发布源复核现有本机 Skill。
 
 本轮不允许：
 
@@ -46,6 +59,7 @@
 - 绕过阶段门禁提前创建或执行后续 `LEAN-*`；
 - 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
 - 不删除其他分支、tag 或 Release，不强制删除未合并分支，不改写已提交历史，不执行额外版本发布或同步未确认的本机目录。
+- 不在 `REPAIR-CAMPAIGN-001` 中删除分支、改写历史、创建不存在的安装目录、同步其他项目/服务或记录 Closed。
 
 ## 真相源与状态规则
 
@@ -98,20 +112,23 @@ REL-002 Closed / main@0422887
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
 | SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
+| REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
+| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Committed `0e2c5fb` / Branch Pushed / Local Sync Verified / Unmerged | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
 
-## PLAN-001 核心约束
+## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
 - Lite 是默认，但必须有覆盖全部关键完成标准的确定性验证；容易回滚不能替代验证，需要用户观察或真实环境证据时升级 Tracked。
 - Lite 不建 TASK、不调用独立 Reviewer、不进入 repair loop。
 - 首版自动审核只实现确定性闸门：Lite 禁止，Tracked 风险触发，Controlled 交付前强制；Tracked 命中门禁但缺 Reviewer 时必须 Blocked、合法升级或取得明确授权，不能静默跳过。
-- Tracked / Controlled repair 基础预算为 2；finding 单调减少、验证改善且范围冻结时自动增加第 3 轮，3 为绝对上限。
+- Tracked / Controlled `AutoRepair` 基础预算为 2；逐 finding RED→GREEN、无回归且证据覆盖增加时可增加第 3 轮。3 是自主 loop 上限；`Stop` 后用户可明确授权有界 `EscalatedRepair`，换 TASK/模型不重置 chain。
+- 可选 `RepairCampaignAuthority` 在同一 TASK、验收合同和外层范围内连续处理新 chain；核心产品连续 4 次无实质进展、Harness 连续 5 次无实质进展后才进入用户裁决，硬停止条件立即生效。
 - 当前模型真实任务对照前先冻结样本与计量协议并做零额度回放；通过后只做可整体回退的最小原型，使用当前执行会话所用模型、一个 Lite 任务、最多 3 次执行；不接入额外模型供应商，全面收缩必须等待对照通过。
 - 首版候选实施任务不超过 3 个，验收前不创建。
 - 如果不能把工作流输入、模型调用和用户流程问题至少降低 50%，或出现更多 P0/P1、权限越界、状态误报，则停止 v0.8 扩建。
 
 ## 下一允许动作
 
-`SYNC-001` 已完成 Review、仓库/本机同步、精确提交和 `main` push；下一步仅为用户查看最终证据（UA3 Pending）。保留 `v0.8.0` tag、GitHub Release、历史任务和其他分支不变；`0.8.1` 未创建 tag / Release。
+执行用户已授权的 `REPAIR-CAMPAIGN-001` main merge/push、`v0.8.3` annotated tag、正式 GitHub Release 和发布源本机同步复核；不删除分支、不改写历史、不记录 Closed。
 
 ## 停止条件
 
@@ -119,7 +136,8 @@ REL-002 Closed / main@0422887
 - 瘦身方案仍要求首版执行超过 3 个任务。
 - Lite 绕过 authority、真实环境、数据、发布或不可逆动作门禁。
 - 自动审核扩张为通用调度平台、数据库、模型 Adapter，或在低风险任务上产生无理由调用。
-- 第 3 轮缺少 progress 证据、突破绝对上限，或用于自动重试不可逆外部动作。
+- 第 3 轮缺少 progress 证据、自主 loop 突破上限、`EscalatedRepair` 缺少有限用户授权/冻结信号，或用于自动重试不可逆外部动作。
+- campaign streak 可被换 chain/TASK/模型清零，4 / 5 阈值未按 profile 执行，或 P0、安全、数据、越界、不可逆、oracle 放宽等硬停止被延迟。
 - 任一模型成为核心依赖，或模型更换重置额度/repair 计数。
 - 需要自动调度器、数据库、遥测或计费系统才能证明收益。
 - 目标分支未完全合并、当前工作区不干净、远端出现未核对的同名分支，或清理动作需要强制删除、历史改写、额外发布或未确认路径同步。

@@ -52,15 +52,18 @@
 - 现有 TASK：继续原格式，不批量迁移。
 - `references/TASK_TEMPLATE_COMPACT.md`：只供 v0.7 Writer/Reader 兼容。
 
-TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为 `0.8.1`（未发布开发线），Workflow Contract schema 仍为 `adf/v0.7.0`。
+TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为 `0.8.3`（未发布开发线），Workflow Contract schema 仍为 `adf/v0.7.0`。
 
 ## Reviewer 和 repair
 
 - Tracked 只有命中 policy 风险标记时才调用一个隔离、只读 Reviewer。
 - Controlled 在验收建议、delivery、merge、release 前强制 Review。
+- Reviewer 默认由当前 Harness 自身建立原生只读隔离上下文；不得自动跨 Harness，只有用户明确指定时才允许。
 - Reviewer 只审查，Repairer 只处理稳定 finding ID。
-- repair 基础预算 2 轮；只有范围冻结、finding 单调减少、验证改善和其他 progress 条件全部满足时才增加第 3 轮。
-- 3 是绝对上限，更换模型不重置预算，外部副作用不得自动重试。
+- `AutoRepair` 基础预算 2 轮；只有冻结 finding 的 RED→GREEN、无回归且证据覆盖增加时才增加第 3 轮。
+- 3 是自主 repair loop 上限。`Stop` 后可授权默认一次的 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`。
+- campaign 在核心产品连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决；硬停止不等待计数耗尽。
+- repair chain 绑定 finding 和 closure contract；换 TASK 或模型不重置，失败回到 `Stop`，外部副作用不得自动重试。
 
 ## 按需文档
 
@@ -90,14 +93,15 @@ v0.7 Reader、`workflow_lint` 和 TASK_BOARD drift 检查继续保留：
 ```powershell
 python skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-001.md --format human
 python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
+python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
 ```
 
 lint 通过只代表可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
 
 ## 版本状态
 
-- 当前工作树 Skill 包：`0.8.1`，尚未创建 tag / Release。
+- 当前工作树 Skill 包：`0.8.3`，尚未创建 tag / Release。
 - 当前正式发布版本：`0.8.0`，已于 2026-07-19 发布。
 - Contract schema：`adf/v0.7.0`，继续兼容。
-- 发布状态：annotated tag `v0.8.0` 与正式 GitHub Release 均已创建；`0.8.1` 仍是未发布开发线，后续发布以实际 tag / Release 证据为准。
+- 发布状态：annotated tag `v0.8.0` 与正式 GitHub Release 均已创建；`0.8.3` 仍是未发布开发线，后续发布以实际 tag / Release 证据为准。
 - v0.8 评估证据保存在 `evaluations/v0.8/`，冻结原型保存在 `prototypes/v0.8-lite/`，不应在日常使用中加载或改写。

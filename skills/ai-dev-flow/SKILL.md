@@ -10,7 +10,7 @@ description: 按风险启用的 Git-first AI 开发治理内核。用于需要�
 ## 必读顺序
 
 1. 完整读取本文件。
-2. 完整读取 [CORE.md](references/CORE.md)。其中 `POLICY_JSON` 是路由、Reviewer 和第 3 轮 repair 的唯一规则源。
+2. 完整读取 [CORE.md](references/CORE.md)。其中 `POLICY_JSON` 是路由、Reviewer、repair 计数和超限授权的唯一规则源。
 3. 读取用户要求、项目 `AGENTS.md`、Git 状态和与任务直接相关的事实源。
 4. 先路由，再决定是否读取一份按需 reference。不要默认加载 `PROMPTS.md` 或整个 `references/`。
 
@@ -76,9 +76,9 @@ Tracked / Controlled 的最小闭环：
 
 ## Review 与 repair
 
-Reviewer 必须只读、与 Engineer/Repairer 上下文隔离（各环境的隔离实现见 `CORE.md` 的“隔离实现映射”；主上下文内自称审查员不算隔离），并输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
+Reviewer 必须只读、与 Engineer/Repairer 上下文隔离，并默认由当前 Harness 自身建立原生 Reviewer 上下文；不得自动调用其他 Harness，只有用户明确指定时才允许跨 Harness。原生隔离/只读能力缺失时保持 `Blocked/Pending`，主上下文自检不能记为独立 Review；各环境映射见 `CORE.md`。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
 
-Tracked / Controlled 默认最多 2 轮 repair。第 3 轮只能由 `CORE.md` 的 progress gate 授予，3 是绝对上限；更换模型不重置预算。不得用 repair 自动重试不可逆外部动作。
+Tracked / Controlled 默认有 2 轮 `AutoRepair`；第 3 轮只能由 `CORE.md` 的 progress gate 授予。3 是自主循环上限，不是 AI 永久禁修：`Stop` 后用户可授权单次 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`；后者在 `core_product` 连续 4 次、`harness` 连续 5 次无实质进展后再回到用户裁决，硬停止条件立即生效。预算和 streak 不因换 TASK、模型、chain 或 finding 改名清零，不可逆外部动作不得自动重试。只读 gate 只给机械资格，最终 Allowed 由持有真实对话/harness/项目证据的 Orchestrator 提升。
 
 ## 状态边界
 
