@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `#outcome`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -81,6 +81,8 @@
 - Attempt `ER-6`：仅关闭 `RVW-007-F01`；把 CAD 候选标准执行顺序改为 ai-dev-flow 激活时由 campaign 单独决定计数、继续或 Stop，仅 CAD Skill 单独运行时最多 3 轮；候选 validator 通过，安装原件 SHA256 保持 `132A73168C219987FB36CDDE15F58639C4FFC2846EBF70814C423D2033C0FF09`。
 - Trigger Review `RCAMPAIGN-RVW-007`：当前 Codex Harness 自身的隔离 Reviewer 在禁用 multi-agent、未调用其他 Harness 的条件下返回 Passed（P0=0 / P1=0 / P2=0 / P3=0）；确认 `RVW-007-F01` 已关闭，候选中所有本地 3 轮 / 2 次失败限制仅适用于 CAD Skill 单独运行。复审实际通过定向 46 / 46、全套 81 / 81、CAD validator 和 176 / 176 文件对照；候选 SHA256=`35D70272179A57183CF1B2BCD9FB301E65C5404BE078C6D81A98E8E7FA911E88`，允许进入 UA2。
 - UA2 receipt：用户于 2026-07-27 在收到明确的规则摘要、验证结果和“尚未同步生效”边界后回复“通过”；确认同 Harness 原生隔离 Reviewer、核心 4 次 / Harness 5 次阈值和 CAD AutoTest 单一计数权符合预期。该无 patch 验收与记录同步不计 repair attempt，也不授权 commit、push、merge、Release、本机同步或 Closed。
+- Delivery receipt：实现与验收提交 `0e2c5fbd98efad0c13f6ceaec97f8e6d229e7e48` 已推送到 `origin/codex/repair-campaign-001`，首次远端核对 `LOCAL=REMOTE`。实盘确认存在的 4 个 `ai-dev-flow` 目标（`.agents`、`.codex`、OpenCode、cc-switch）已由仓库源同步为 `VERSION=0.8.3`，每处 92 / 92、Missing / Extra / Changed=`0 / 0 / 0`，policy digest 均为 `ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`。
+- CAD Skill receipt：同一 4 个目标中的 `cad-dotnet-autotest/SKILL.md` 已同步为复审通过候选，SHA256 均为 `35D70272179A57183CF1B2BCD9FB301E65C5404BE078C6D81A98E8E7FA911E88`；每处其余 12 个资产相对同步前备份均未变化。8 个安装目标的 Skill validator 全部通过；备份位于 `C:\Users\92336\.codex\visualizations\2026\07\27\019fa15f-d6c2-7421-ba69-91f55b2196ff\skill-sync-backup-20260727-153300`。
 - History anchor：base=`8df7399`；source_ref=`task:docs/tasks/REPAIR-CAMPAIGN-001.md#repair-chain-ledger`。
 - Trusted context：当前对话、`REPAIR-ESCALATION-001` Accepted 事实源、当前 Git/Worktree 只读快照。
 - Escalated authority：不适用；本 TASK 是新功能执行，不消费下游项目 repair campaign。
@@ -97,6 +99,7 @@
 - 验证证据：`UCR-1` 后定向 unittest 46 / 46、全套 unittest 81 / 81、仓库 Skill 与 CAD AutoTest 隔离候选的 validator 均通过；policy digest=`ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`，默认运行时 399 / 400 行，冻结目录零差异，tracked/untracked/候选 diff check 均通过；本 TASK lint 为 0 error / 0 violation / 1 warning，项目根 lint 为既有 19 error / 0 violation / 22 warning。
 - Review findings：`RCAMPAIGN-RVW-001`～`005` 的 findings 已分别由 `ER-1`～`ER-5` 关闭；`RCAMPAIGN-RVW-006` 对旧范围 Passed。`UCR-1` 的唯一 finding `RVW-007-F01` 已由 `ER-6` 关闭，`RCAMPAIGN-RVW-007` 最终 Passed，P0～P3 全为 0。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-27 在收到验收摘要后明确回复“通过”。
-- 状态边界：Accepted / Uncommitted / Unmerged / Unreleased / Not Synced / Not Closed。
-- 剩余风险：CAD AutoTest 只有隔离候选，本机安装副本未修改，因此新行为尚未生效；Accepted 不替代 commit、同步、交付或 Closed。
-- 下一步：执行已授权的精确 commit、当前任务分支 push 和现有本机 Skill 同步并写回收据；不执行 merge、tag、Release、创建不存在的安装目录或 Closed。
+- Git / 同步收据：实现与验收提交 `0e2c5fb` 已形成并首次推送；4 个现有 ai-dev-flow 安装目标已达 92 / 92 SHA256 parity，4 个现有 CAD AutoTest 目标已统一到复审候选哈希，8 / 8 validator 通过。
+- 状态边界：Accepted / Committed / Branch Pushed / Unmerged / Unreleased / Local Sync Verified / Not Closed。
+- 剩余风险：`0.8.3` 仍是未发布开发线且任务分支未合并；已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill。
+- 下一步：如需 merge、tag、Release 或 Closed，必须由用户另行授权；当前不自动执行。

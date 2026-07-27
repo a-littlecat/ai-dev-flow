@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-27
 > - 当前模式：`REPAIR-CAMPAIGN-001` Accepted
-> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数候选已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted，已取得当前任务精确 commit、branch push 和现有本机 Skill 同步授权，执行中
+> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted / Committed / Branch Pushed / Local Sync Verified，尚未 merge、release 或 Closed
 > - 当前方案：`docs/plans/REPAIR-CAMPAIGN-001-continuous-repair-authority.md`
 
 ## 当前授权边界
@@ -110,7 +110,7 @@ REL-002 Closed / main@0422887
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
 | SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
 | REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
-| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | 独立 Worktree / Uncommitted / Not Synced | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
+| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Committed `0e2c5fb` / Branch Pushed / Local Sync Verified / Unmerged | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -125,7 +125,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-执行用户已授权的 `REPAIR-CAMPAIGN-001` 精确 commit、当前任务 branch push 和现有本机 Skill 同步并写回收据；不执行 merge、tag、Release、删除、创建不存在的安装目录、其他项目/服务同步或 Closed。
+`REPAIR-CAMPAIGN-001` 已完成已授权的精确 commit、当前任务 branch push 和现有本机 Skill 同步。如需 merge、tag、Release 或 Closed，必须由用户另行授权；当前不自动执行。
 
 ## 停止条件
 
