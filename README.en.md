@@ -72,7 +72,7 @@ v0.8 does not add a scheduler, database, telemetry, billing, or model adapter. I
 - New Tracked work uses `references/TASK_TEMPLATE_BRIEF.md` or `references/TASK_TEMPLATE.md` according to the runtime route; Controlled work always uses the full template.
 - Existing TASK files keep their format and are not batch-migrated.
 - `TASK_TEMPLATE_COMPACT.md` remains only for v0.7 Writer/Reader compatibility.
-- The working-tree Skill package is `0.8.3` (unreleased); the Workflow Contract schema remains `adf/v0.7.0`.
+- The working-tree Skill package is the formal `0.8.3` release; the Workflow Contract schema remains `adf/v0.7.0`.
 
 See `skills/ai-dev-flow/references/V0.8_MIGRATION.md` for the migration guide.
 
@@ -127,10 +127,10 @@ See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 0.8.3
 ```
 
-- Current working-tree version: `0.8.3`, with no tag or Release yet.
-- Current formal release: `0.8.0`.
+- Current working-tree version: `0.8.3`.
+- Current formal release: `0.8.3`.
 - Workflow Contract: `adf/v0.7.0`, still compatible.
-- Release status: `v0.8.0` was formally published on 2026-07-19; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0).
+- Release status: `v0.8.3` was formally published on 2026-07-27; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.3).
 - The historical v0.7.0 tag remains unchanged.
 
 See `skills/ai-dev-flow/CHANGELOG.md` for changes.

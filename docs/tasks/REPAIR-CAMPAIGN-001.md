@@ -13,7 +13,7 @@
 - `ua_evidence`: `#outcome`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
 
 ## 目标与边界
@@ -85,6 +85,7 @@
 - UA2 receipt：用户于 2026-07-27 在收到明确的规则摘要、验证结果和“尚未同步生效”边界后回复“通过”；确认同 Harness 原生隔离 Reviewer、核心 4 次 / Harness 5 次阈值和 CAD AutoTest 单一计数权符合预期。该无 patch 验收与记录同步不计 repair attempt，也不授权 commit、push、merge、Release、本机同步或 Closed。
 - Delivery receipt：实现与验收提交 `0e2c5fbd98efad0c13f6ceaec97f8e6d229e7e48` 已推送到 `origin/codex/repair-campaign-001`，首次远端核对 `LOCAL=REMOTE`。实盘确认存在的 4 个 `ai-dev-flow` 目标（`.agents`、`.codex`、OpenCode、cc-switch）已由仓库源同步为 `VERSION=0.8.3`，每处 92 / 92、Missing / Extra / Changed=`0 / 0 / 0`，policy digest 均为 `ec3ff867bb72d1a6dcb763b653d528018fc79ece1121e95638071d70da72f2fe`。
 - CAD Skill receipt：同一 4 个目标中的 `cad-dotnet-autotest/SKILL.md` 已同步为复审通过候选，SHA256 均为 `35D70272179A57183CF1B2BCD9FB301E65C5404BE078C6D81A98E8E7FA911E88`；每处其余 12 个资产相对同步前备份均未变化。8 个安装目标的 Skill validator 全部通过；备份位于 `C:\Users\92336\.codex\visualizations\2026\07\27\019fa15f-d6c2-7421-ba69-91f55b2196ff\skill-sync-backup-20260727-153300`。
+- Merge receipt：用户授权后，任务分支 `f712443bb9bba36113410351907d9a29531ca70b` 已通过非快进合并提交 `d708d800e091b4f2898844852aa8033c5db5d76f` 进入本地 `main`；合并前确认 `main@0702673` 等于远端、是任务分支祖先，主工作区只有两个保留且未提交的 `__pycache__`。
 - History anchor：base=`8df7399`；source_ref=`task:docs/tasks/REPAIR-CAMPAIGN-001.md#repair-chain-ledger`。
 - Trusted context：当前对话、`REPAIR-ESCALATION-001` Accepted 事实源、当前 Git/Worktree 只读快照。
 - Escalated authority：不适用；本 TASK 是新功能执行，不消费下游项目 repair campaign。
@@ -102,6 +103,7 @@
 - Review findings：`RCAMPAIGN-RVW-001`～`005` 的 findings 已分别由 `ER-1`～`ER-5` 关闭；`RCAMPAIGN-RVW-006` 对旧范围 Passed。`UCR-1` 的唯一 finding `RVW-007-F01` 已由 `ER-6` 关闭，`RCAMPAIGN-RVW-007` 最终 Passed，P0～P3 全为 0。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-27 在收到验收摘要后明确回复“通过”。
 - Git / 同步收据：实现与验收提交 `0e2c5fb` 已形成并首次推送；4 个现有 ai-dev-flow 安装目标已达 92 / 92 SHA256 parity，4 个现有 CAD AutoTest 目标已统一到复审候选哈希，8 / 8 validator 通过。
-- 状态边界：Accepted / Committed / Branch Pushed / Unmerged / Unreleased / Local Sync Verified / Not Closed。
-- 剩余风险：`0.8.3` 仍是未发布开发线且任务分支未合并；已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill。
-- 下一步：执行已授权的 `main` merge/push、`v0.8.3` annotated tag、正式 GitHub Release 和发布源本机同步复核；不删除分支、不改写历史、不记录 Closed。
+- 合并目标与事实证据：target=`main`；source=`codex/repair-campaign-001@f712443bb9bba36113410351907d9a29531ca70b`；merge=`d708d800e091b4f2898844852aa8033c5db5d76f`；用户已明确授权，合并前 `main@0702673` 与 `origin/main` 一致且为 source 祖先。
+- 状态边界：Accepted / Committed / Merged / Release Candidate / Local Sync Verified / Not Closed。
+- 剩余风险：正式 tag / GitHub Release 和发布源同步复核尚待执行；已经运行中的 Kimi/Codex 会话可能需要新建任务或重启后才重新加载 Skill。
+- 下一步：提交并推送 `v0.8.3` 发布身份，创建 annotated tag 与正式 GitHub Release，再按发布源复核现有本机 Skill；不删除分支、不改写历史、不记录 Closed。

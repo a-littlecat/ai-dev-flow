@@ -52,7 +52,7 @@
 - 现有 TASK：继续原格式，不批量迁移。
 - `references/TASK_TEMPLATE_COMPACT.md`：只供 v0.7 Writer/Reader 兼容。
 
-TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为 `0.8.3`（未发布开发线），Workflow Contract schema 仍为 `adf/v0.7.0`。
+TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为正式发布的 `0.8.3`，Workflow Contract schema 仍为 `adf/v0.7.0`。
 
 ## Reviewer 和 repair
 
@@ -100,8 +100,8 @@ lint 通过只代表可确定结构规则通过，不代表 Review、UA、merge�
 
 ## 版本状态
 
-- 当前工作树 Skill 包：`0.8.3`，尚未创建 tag / Release。
-- 当前正式发布版本：`0.8.0`，已于 2026-07-19 发布。
+- 当前工作树 Skill 包：`0.8.3`。
+- 当前正式发布版本：`0.8.3`，于 2026-07-27 发布。
 - Contract schema：`adf/v0.7.0`，继续兼容。
-- 发布状态：annotated tag `v0.8.0` 与正式 GitHub Release 均已创建；`0.8.3` 仍是未发布开发线，后续发布以实际 tag / Release 证据为准。
+- 发布状态：annotated tag `v0.8.3` 与正式 GitHub Release 均已创建；`0.8.2` 未单独发布，其累计变更包含在 `v0.8.3` 中。
 - v0.8 评估证据保存在 `evaluations/v0.8/`，冻结原型保存在 `prototypes/v0.8-lite/`，不应在日常使用中加载或改写。

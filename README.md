@@ -72,7 +72,7 @@ v0.8 不建设自动调度器、数据库、遥测、计费、模型 Adapter，�
 - 新建 Tracked 按环境使用 `references/TASK_TEMPLATE_BRIEF.md` 或 `references/TASK_TEMPLATE.md`；Controlled 始终使用完整模板。
 - 旧 TASK 不批量迁移，原格式继续可读。
 - `TASK_TEMPLATE_COMPACT.md` 只为 v0.7 Writer/Reader 兼容保留。
-- 当前工作树 Skill 包版本是 `0.8.3`（未发布开发线），Workflow Contract schema 继续是 `adf/v0.7.0`。
+- 当前工作树 Skill 包版本是正式发布的 `0.8.3`，Workflow Contract schema 继续是 `adf/v0.7.0`。
 
 迁移说明见 `skills/ai-dev-flow/references/V0.8_MIGRATION.md`，用户最多需要 3 步。
 
@@ -127,10 +127,10 @@ ai-dev-flow/
 0.8.3
 ```
 
-- 当前工作树版本：`0.8.3`，尚未创建 tag / Release。
-- 当前正式发布版本：`0.8.0`。
+- 当前工作树版本：`0.8.3`。
+- 当前正式发布版本：`0.8.3`。
 - Workflow Contract：`adf/v0.7.0`，继续兼容。
-- 发布状态：`v0.8.0` 已于 2026-07-19 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.0)。
+- 发布状态：`v0.8.3` 已于 2026-07-27 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.3)。
 - v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
 
 变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。

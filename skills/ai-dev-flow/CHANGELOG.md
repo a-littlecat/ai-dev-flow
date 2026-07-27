@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.8.3 - Unreleased
+## 0.8.3 - 2026-07-27
 
-> 当前为未发布开发线身份；没有 `v0.8.3` tag 或 GitHub Release，正式发布版本仍为 `0.8.0`。
+> Skill `0.8.3` 的正式发布身份；对应 annotated tag `v0.8.3` 和正式 GitHub Release，Workflow Contract schema 继续为 `adf/v0.7.0`。
 
 - Add optional task/acceptance/scope-bound `RepairCampaignAuthority`; non-campaign ledgers retain their original rc2-policy verification path for existing one-attempt `EscalatedRepair` receipts, while campaign and new receipts use rc3 policy.
 - Stop core-product campaigns after four consecutive no-progress attempts and Harness campaigns after five; measurable progress resets the streak.
@@ -12,9 +12,9 @@
 - Default independent Review to the current Harness's own native isolated read-only context; block instead of automatically falling back across Harnesses unless the user explicitly selects an external Reviewer.
 - Extend the read-only repair gate and regression suite with campaign scope, history, threshold, compatibility, and hard-stop coverage.
 
-## 0.8.2 - Unreleased
+## 0.8.2 - Unreleased development snapshot
 
-> 当前为未发布开发线身份；没有 `v0.8.2` tag 或 GitHub Release，正式发布版本仍为 `0.8.0`。
+> `0.8.2` 未单独创建 tag 或 GitHub Release；其累计变更随 `v0.8.3` 正式发布。
 
 - Add a brief TASK template for eligible single-session Tracked work while keeping the full template mandatory for Controlled and handoff-oriented work.
 - Clarify that Reviewer isolation requires both independent context and real read-only enforcement.
