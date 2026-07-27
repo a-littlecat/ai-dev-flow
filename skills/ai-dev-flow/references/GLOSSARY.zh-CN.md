@@ -47,6 +47,7 @@
 | 停止 | Stop | 当前自主或已授权尝试结束；等待用户裁决，不等于 AI 永久禁修。 |
 | 用户裁决 | UserDecisionRequired | 用户选择补证据、缩小范围、人工实现或明确授权有界 AI 修复。 |
 | 升级修复 | EscalatedRepair | `Stop` 后由用户明确授权的有限 AI 修复尝试，默认一次，失败回到 `Stop`。 |
+| 连续修复授权 | RepairCampaignAuthority | 绑定 TASK、验收合同和外层范围的持续授权；核心产品连续 4 次、Harness 连续 5 次无实质进展后回到用户裁决，硬停止立即生效。 |
 | 修复链 | repair_chain_id | 绑定 finding 和 closure contract 的稳定历史；换 TASK 或模型不重置。 |
 | 机械资格成立 | MechanicallyEligible | 不可信 ledger 与独立 trusted context 的结构/收据一致；仍需 Orchestrator 用真实上游证据提升为最终 Allowed。 |
 

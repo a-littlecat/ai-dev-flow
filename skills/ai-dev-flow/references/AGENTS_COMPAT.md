@@ -13,8 +13,8 @@
 - TASK 是范围、状态和证据事实源；TASK_BOARD 只是索引和投影。
 - 只修改当前任务允许范围，不顺手重构；范围、风险、依赖或 authority 改变时停止。
 - 修改后运行最相关的构建、测试、静态检查或人工验证，并检查 diff。
-- 审查只读，修复只处理明确 finding；缺少独立 Reviewer 时不得自批通过。
-- repair 预算绑定稳定 chain/finding/closure contract，换 TASK 或模型不重置；3 是自主修复上限，`Stop` 后用户可明确授权有界 AI 修复，失败不得自动连跑。
+- 审查只读，默认使用当前 Harness 自身的原生隔离 Reviewer；不得自动调用其他 Harness，只有用户明确指定时才允许。缺少原生隔离/只读能力时保持 Pending/Blocked，不得自批通过。
+- repair 预算绑定稳定 chain/finding/closure contract，换 TASK 或模型不重置；3 是自主修复上限。`Stop` 后可授权单次修复或 TASK/验收合同/外层 scope-bound campaign；campaign 在核心产品连续 4 次、Harness 连续 5 次无实质进展后再询问用户，硬停止立即生效。
 - 自动验证、Review、UA、Accepted、commit、merge、release、Closed 是不同状态，不得互相推导。
 - 未经明确授权，不执行 merge、push、release、删除、外部同步或不可逆动作。
 - 不输出或提交密钥、Token、账号密码、证书、隐私数据和本机敏感配置。

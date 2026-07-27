@@ -21,9 +21,14 @@ python -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format json
 - project 报告包含 9 字段 expected projection，并可输出 `V_BOARD_DRIFT`、`W_BOARD_MISSING`、`W_BOARD_ORPHAN`、`E_BOARD_PARSE` 等确定性诊断。
 - CLI 不提供 `--fix` / `--write`，不会修改 TASK、TASK_BOARD、Git 或外部系统；TASK 始终是事实源。
 
-## v0.8.2 只读 Repair Gate
+## v0.8.3 只读 Repair Gate
 
 `repair_gate.py` 把 repair ledger 视为不可信输入，并读取独立 trusted context 与 `CORE.md` policy，输出 `MechanicallyEligible / Stop / Blocked`；最终 `*Allowed` 只能由持有真实上游证据的 Orchestrator 提升：
+
+- 非 campaign ledger 可继续使用其原 `rc2` policy 验证旧单次 `EscalatedRepair` receipt；campaign 与新 receipt 使用 `rc3` policy，禁止混用；
+- 可选 `RepairCampaignAuthority` 绑定 TASK、验收合同、profile、外层 scope manifest 和生效 chain/history head；同 chain 只统计生效后的 patch，后续新 chain 的 AR/ER 都必须推进 state；
+- campaign state receipt 必须匹配 trusted context 唯一指定的当前 expected receipt，campaign TASK/验收合同也必须匹配独立 expected 值，并绑定 history head、最新 Review 和 hard-stop snapshot；核心产品连续无进展阈值为 4，Harness 为 5；
+- campaign 硬停止 flag 立即阻断，不等待次数耗尽。
 
 ```powershell
 python -B -X utf8 skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human

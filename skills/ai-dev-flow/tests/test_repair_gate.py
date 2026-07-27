@@ -24,12 +24,14 @@ def seal(record):
     return record
 
 
-def base_chain():
+def base_chain(*, chain_id="chain-001", finding_ids=None, allowed_files=None):
+    allowed_files = allowed_files or ["src/a.py"]
     return {
-        "repair_chain_id": "chain-001",
-        "finding_ids": ["F-001"],
+        "repair_chain_id": chain_id,
+        "finding_ids": finding_ids or ["F-001"],
         "closure_contract_hash": repair_gate.canonical_hash(["criterion-1"]),
-        "allowed_files_hash": repair_gate.canonical_hash(["src/a.py"]),
+        "allowed_files": allowed_files,
+        "allowed_files_hash": repair_gate.canonical_hash(allowed_files),
     }
 
 
@@ -85,8 +87,134 @@ def authority_receipt(chain, next_attempt_id="ER-1", authorized_attempt_ids=None
     return seal(record)
 
 
-def base_ledger(**updates):
-    chain = base_chain()
+def campaign_authority_receipt(
+    ledger,
+    *,
+    campaign_id="campaign-001",
+    profile="core_product",
+    allowed_scope=None,
+):
+    allowed_scope = allowed_scope or {
+        "allowed_exact_files": ["docs/tasks/TASK-001.md"],
+        "allowed_path_prefixes": ["src/", "tests/"],
+    }
+    record = {
+        "authority_id": f"authority-{campaign_id}",
+        "authority_mode": "repair_campaign",
+        "source_kind": "user_message",
+        "source_ref": f"conversation:thread-001#message-{campaign_id}",
+        "source_text_sha256": repair_gate.canonical_hash(f"authorize {campaign_id}"),
+        "campaign_id": campaign_id,
+        "task_id": ledger["current_task_id"],
+        "acceptance_contract_hash": repair_gate.canonical_hash(["acceptance-ready"]),
+        "allowed_scope": allowed_scope,
+        "allowed_scope_hash": repair_gate.canonical_hash(allowed_scope),
+        "profile": profile,
+        "activation_chain_digest": repair_gate.canonical_hash(
+            ledger["repair_chain"]
+        ),
+        "activation_history_head_hash": ledger["history_anchor"][
+            "head_receipt_hash"
+        ],
+        "target": "reach acceptance readiness inside the frozen task scope",
+    }
+    return seal(record)
+
+
+def campaign_state_receipt(
+    authority,
+    *,
+    attempt_count=0,
+    consecutive_no_progress=0,
+    latest_outcome=None,
+    safety=None,
+    history_head_hash=None,
+    latest_review_receipt_hash=None,
+):
+    safety = safety or {
+        name: False
+        for name in POLICY["repair"]["campaign"]["hard_stop_flags"]
+    }
+    if latest_outcome is None:
+        latest_outcome = "NotStarted" if attempt_count == 0 else (
+            "MeasurableProgress" if consecutive_no_progress == 0 else "NoProgress"
+        )
+    record = {
+        "schema_version": "ai-dev-flow/repair-campaign-state-v1",
+        "campaign_id": authority["campaign_id"],
+        "authority_receipt_hash": authority["receipt_hash"],
+        "attempt_count": attempt_count,
+        "consecutive_no_progress": consecutive_no_progress,
+        "history_head_hash": history_head_hash or (
+            authority["receipt_hash"]
+            if attempt_count == 0
+            else repair_gate.canonical_hash(
+                {
+                    "campaign_id": authority["campaign_id"],
+                    "attempt_count": attempt_count,
+                }
+            )
+        ),
+        "latest_outcome": latest_outcome,
+        "latest_review_receipt_hash": latest_review_receipt_hash or (
+            None
+            if attempt_count == 0
+            else repair_gate.canonical_hash(
+                {
+                    "campaign_id": authority["campaign_id"],
+                    "latest_review": attempt_count,
+                }
+            )
+        ),
+        "safety_hash": repair_gate.canonical_hash(safety),
+        "source_ref": "task:docs/tasks/TASK-001.md#repair-campaign-state",
+        "source_text_sha256": repair_gate.canonical_hash(
+            [
+                attempt_count,
+                consecutive_no_progress,
+                latest_outcome,
+                history_head_hash,
+                latest_review_receipt_hash,
+            ]
+        ),
+    }
+    return seal(record)
+
+
+def attach_campaign(
+    ledger,
+    *,
+    profile="core_product",
+    attempt_count=0,
+    consecutive_no_progress=0,
+    authority=None,
+    state=None,
+):
+    authority = authority or campaign_authority_receipt(ledger, profile=profile)
+    safety = {
+        name: False
+        for name in POLICY["repair"]["campaign"]["hard_stop_flags"]
+    }
+    state = state or campaign_state_receipt(
+        authority,
+        attempt_count=attempt_count,
+        consecutive_no_progress=consecutive_no_progress,
+        safety=safety,
+    )
+    ledger["authority_records"].append(authority)
+    ledger["repair_campaign"] = {
+        "campaign_id": authority["campaign_id"],
+        "acceptance_contract_hash": authority["acceptance_contract_hash"],
+        "profile": authority["profile"],
+        "authority_receipt_hash": authority["receipt_hash"],
+        "state": state,
+        "safety": safety,
+    }
+    return authority
+
+
+def base_ledger(chain=None, **updates):
+    chain = chain or base_chain()
     trigger = review_receipt(
         chain,
         "TRIGGER",
@@ -180,8 +308,36 @@ def trusted_context(ledger):
             item["receipt_hash"] for item in ledger["authority_records"]
         ],
     }
+    if isinstance(ledger.get("repair_campaign"), dict):
+        record["expected_task_id"] = ledger["current_task_id"]
+        record["expected_acceptance_contract_hash"] = ledger[
+            "repair_campaign"
+        ]["acceptance_contract_hash"]
+        record["expected_campaign_state_receipt_hash"] = ledger[
+            "repair_campaign"
+        ]["state"]["receipt_hash"]
     record["attestation_hash"] = repair_gate.attestation_hash(record)
     return record
+
+
+def rebind_ledger_policy(ledger, policy):
+    digest = repair_gate.policy_digest(policy)
+    trigger = ledger["trigger_review"]
+    trigger["policy_digest"] = digest
+    seal(trigger)
+    previous_hash = trigger["receipt_hash"]
+    for attempt in ledger["attempts"]:
+        attempt["previous_receipt_hash"] = previous_hash
+        attempt["policy_digest"] = digest
+        attempt["review"]["policy_digest"] = digest
+        seal(attempt["review"])
+        seal(attempt)
+        previous_hash = attempt["receipt_hash"]
+    ledger["history_anchor"]["head_receipt_hash"] = previous_hash
+    ledger["history_anchor"]["source_text_sha256"] = repair_gate.canonical_hash(
+        [item["receipt_hash"] for item in ledger["attempts"]]
+    )
+    return ledger
 
 
 class RepairGateTests(unittest.TestCase):
@@ -197,6 +353,23 @@ class RepairGateTests(unittest.TestCase):
         add_attempt(ledger, "AR-1", "AutoRepair")
         add_attempt(ledger, "AR-2", "AutoRepair", progress_value=progress(False))
         return ledger
+
+    def campaign_ledger(
+        self,
+        *,
+        profile="core_product",
+        attempt_count=0,
+        consecutive_no_progress=0,
+    ):
+        ledger = self.auto_stopped_ledger()
+        authority = attach_campaign(
+            ledger,
+            profile=profile,
+            attempt_count=attempt_count,
+            consecutive_no_progress=consecutive_no_progress,
+        )
+        ledger["requested_mode"] = "EscalatedRepair"
+        return ledger, authority
 
     def test_base_auto_rounds_are_derived_from_receipt_history(self):
         ledger = base_ledger()
@@ -316,7 +489,528 @@ class RepairGateTests(unittest.TestCase):
             ("MechanicallyEligible", "EscalatedRepair", "ER-1"),
         )
         self.assertEqual(result["authority_receipt_hash"], authority["receipt_hash"])
+        self.assertEqual(result["authority_mode"], "single_attempt")
+        self.assertFalse(result["would_consume_campaign_authority"])
         self.assertFalse(result["manual_implementation_required"])
+
+    def test_legacy_rc2_single_authority_receipts_remain_verifiable(self):
+        legacy_policy = copy.deepcopy(POLICY)
+        legacy_policy["schema_version"] = "ai-dev-flow/v0.8-policy-rc2"
+        del legacy_policy["reviewer_selection"]
+        del legacy_policy["repair"]["campaign"]
+        ledger = self.auto_stopped_ledger()
+        authority = authority_receipt(ledger["repair_chain"])
+        ledger["authority_records"].append(authority)
+        ledger["requested_mode"] = "EscalatedRepair"
+        rebind_ledger_policy(ledger, legacy_policy)
+        context = trusted_context(ledger)
+
+        result = repair_gate.evaluate(ledger, legacy_policy, context)
+        self.assertEqual(
+            (result["decision"], result["eligible_mode"], result["next_attempt_id"]),
+            ("MechanicallyEligible", "EscalatedRepair", "ER-1"),
+        )
+
+        campaign, _ = self.campaign_ledger()
+        blocked = repair_gate.evaluate(
+            campaign,
+            legacy_policy,
+            trusted_context(campaign),
+        )
+        self.assertEqual(blocked["decision"], "Blocked")
+        self.assertIn("POLICY_CONFLICT_SCHEMA_VERSION", blocked["reason_codes"])
+
+    def test_cli_accepts_legacy_rc2_policy_for_non_campaign_ledger(self):
+        legacy_policy = copy.deepcopy(POLICY)
+        legacy_policy["schema_version"] = "ai-dev-flow/v0.8-policy-rc2"
+        del legacy_policy["reviewer_selection"]
+        del legacy_policy["repair"]["campaign"]
+        ledger = self.auto_stopped_ledger()
+        authority = authority_receipt(ledger["repair_chain"])
+        ledger["authority_records"].append(authority)
+        ledger["requested_mode"] = "EscalatedRepair"
+        rebind_ledger_policy(ledger, legacy_policy)
+        context = trusted_context(ledger)
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            policy_path = root / "CORE.md"
+            ledger_path = root / "ledger.json"
+            context_path = root / "context.json"
+            policy_path.write_text(
+                "<!-- POLICY_JSON_BEGIN -->\n```json\n"
+                + json.dumps(legacy_policy, ensure_ascii=False)
+                + "\n```\n<!-- POLICY_JSON_END -->\n",
+                encoding="utf-8",
+            )
+            ledger_path.write_text(
+                json.dumps(ledger, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            context_path.write_text(
+                json.dumps(context, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    "-X",
+                    "utf8",
+                    str(SCRIPT),
+                    str(ledger_path),
+                    "--policy",
+                    str(policy_path),
+                    "--trusted-context",
+                    str(context_path),
+                    "--format",
+                    "json",
+                ],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+                capture_output=True,
+                check=False,
+            )
+            digest_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    "-X",
+                    "utf8",
+                    str(SCRIPT),
+                    "--policy",
+                    str(policy_path),
+                    "--policy-digest",
+                    "--format",
+                    "json",
+                ],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout)["decision"], "MechanicallyEligible")
+        self.assertEqual(digest_result.returncode, 0)
+        self.assertEqual(
+            json.loads(digest_result.stdout)["policy_digest"],
+            repair_gate.policy_digest(legacy_policy),
+        )
+
+    def test_core_campaign_allows_three_no_progress_attempts_and_stops_at_four(self):
+        for streak in range(4):
+            ledger, authority = self.campaign_ledger(
+                attempt_count=streak,
+                consecutive_no_progress=streak,
+            )
+            with self.subTest(streak=streak):
+                result = self.evaluate(ledger)
+                self.assertEqual(
+                    (
+                        result["decision"],
+                        result["eligible_mode"],
+                        result["authority_mode"],
+                        result["next_attempt_id"],
+                    ),
+                    (
+                        "MechanicallyEligible",
+                        "EscalatedRepair",
+                        "repair_campaign",
+                        "ER-1",
+                    ),
+                )
+                self.assertEqual(
+                    result["authority_receipt_hash"],
+                    authority["receipt_hash"],
+                )
+                self.assertEqual(result["campaign_no_progress_limit"], 4)
+                self.assertEqual(
+                    result["campaign_consecutive_no_progress"],
+                    streak,
+                )
+        stopped, _ = self.campaign_ledger(
+            attempt_count=4,
+            consecutive_no_progress=4,
+        )
+        result = self.evaluate(stopped)
+        self.assertEqual(result["decision"], "Stop")
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            result["reason_codes"],
+        )
+
+    def test_harness_campaign_allows_four_no_progress_attempts_and_stops_at_five(self):
+        allowed, _ = self.campaign_ledger(
+            profile="harness",
+            attempt_count=4,
+            consecutive_no_progress=4,
+        )
+        allowed_result = self.evaluate(allowed)
+        self.assertEqual(
+            (allowed_result["decision"], allowed_result["campaign_no_progress_limit"]),
+            ("MechanicallyEligible", 5),
+        )
+        stopped, _ = self.campaign_ledger(
+            profile="harness",
+            attempt_count=5,
+            consecutive_no_progress=5,
+        )
+        stopped_result = self.evaluate(stopped)
+        self.assertEqual(stopped_result["decision"], "Stop")
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            stopped_result["reason_codes"],
+        )
+
+    def test_latest_review_terminal_state_precedes_campaign_limit(self):
+        cases = (
+            ("Blocked", "Blocked", "LATEST_REVIEW_BLOCKED"),
+            ("Passed", "Stop", "REPAIR_ALREADY_PASSED"),
+        )
+        for review_decision, expected_decision, expected_reason in cases:
+            ledger = base_ledger()
+            add_attempt(ledger, "AR-1", "AutoRepair")
+            add_attempt(
+                ledger,
+                "AR-2",
+                "AutoRepair",
+                decision=review_decision,
+                progress_value=progress(False),
+            )
+            attach_campaign(
+                ledger,
+                attempt_count=4,
+                consecutive_no_progress=4,
+            )
+            ledger["requested_mode"] = "EscalatedRepair"
+            with self.subTest(review_decision=review_decision):
+                result = self.evaluate(ledger)
+                self.assertEqual(result["decision"], expected_decision)
+                self.assertEqual(result["reason_codes"], [expected_reason])
+
+    def test_campaign_progress_resets_streak_but_inconsistent_state_is_blocked(self):
+        progressed, _ = self.campaign_ledger(
+            attempt_count=7,
+            consecutive_no_progress=0,
+        )
+        allowed = self.evaluate(progressed)
+        self.assertEqual(allowed["decision"], "MechanicallyEligible")
+
+        inconsistent, _ = self.campaign_ledger(
+            attempt_count=7,
+            consecutive_no_progress=1,
+        )
+        inconsistent["repair_campaign"]["state"]["latest_outcome"] = "MeasurableProgress"
+        seal(inconsistent["repair_campaign"]["state"])
+        context = trusted_context(inconsistent)
+        blocked = self.evaluate(inconsistent, context)
+        self.assertEqual(blocked["decision"], "Blocked")
+        self.assertIn(
+            "CAMPAIGN_PROGRESS_DID_NOT_RESET_STREAK",
+            blocked["reason_codes"],
+        )
+
+    def test_campaign_state_must_cover_latest_campaign_attempt_and_review(self):
+        ledger, authority = self.campaign_ledger(
+            attempt_count=3,
+            consecutive_no_progress=3,
+        )
+        attempt = add_attempt(
+            ledger,
+            "ER-1",
+            "EscalatedRepair",
+            authority_hash=authority["receipt_hash"],
+        )
+        stale = self.evaluate(ledger)
+        self.assertEqual(stale["decision"], "Blocked")
+        self.assertIn("CAMPAIGN_STATE_HISTORY_HEAD_STALE", stale["reason_codes"])
+        self.assertIn("CAMPAIGN_STATE_LATEST_REVIEW_STALE", stale["reason_codes"])
+
+        ledger["repair_campaign"]["state"] = campaign_state_receipt(
+            authority,
+            attempt_count=4,
+            consecutive_no_progress=4,
+            history_head_hash=attempt["receipt_hash"],
+            latest_review_receipt_hash=attempt["review"]["receipt_hash"],
+        )
+        stopped = self.evaluate(ledger)
+        self.assertEqual(stopped["decision"], "Stop")
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            stopped["reason_codes"],
+        )
+
+    def test_campaign_streak_cannot_be_reset_by_new_chain_task_or_model(self):
+        original, authority = self.campaign_ledger(
+            attempt_count=4,
+            consecutive_no_progress=4,
+        )
+
+        new_chain = base_chain(
+            chain_id="chain-002",
+            finding_ids=["F-002"],
+            allowed_files=["tests/harness.py"],
+        )
+        inherited = base_ledger(chain=new_chain)
+        add_attempt(inherited, "AR-1", "AutoRepair")
+        add_attempt(
+            inherited,
+            "AR-2",
+            "AutoRepair",
+            progress_value={
+                **progress(False),
+                "target_finding_id": "F-002",
+                "blocking_findings_before": ["F-002"],
+                "blocking_findings_after": ["F-002"],
+                "severity_before": {"F-002": "P1"},
+                "severity_after": {"F-002": "P1"},
+            },
+        )
+        latest_attempt = inherited["attempts"][-1]
+        state = campaign_state_receipt(
+            authority,
+            attempt_count=6,
+            consecutive_no_progress=6,
+            history_head_hash=latest_attempt["receipt_hash"],
+            latest_review_receipt_hash=latest_attempt["review"]["receipt_hash"],
+        )
+        attach_campaign(inherited, authority=authority, state=state)
+        inherited["requested_mode"] = "EscalatedRepair"
+        inherited["current_model"] = "model-b"
+        stopped = self.evaluate(inherited)
+        self.assertEqual(stopped["decision"], "Stop")
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            stopped["reason_codes"],
+        )
+
+        changed_task = copy.deepcopy(inherited)
+        changed_task["current_task_id"] = "TASK-002"
+        blocked = self.evaluate(changed_task)
+        self.assertEqual(blocked["decision"], "Blocked")
+        self.assertIn(
+            "CAMPAIGN_AUTHORITY_BINDING_TASK_ID",
+            blocked["reason_codes"],
+        )
+
+    def test_campaign_state_cannot_replay_across_chains(self):
+        original, authority = self.campaign_ledger(
+            attempt_count=3,
+            consecutive_no_progress=3,
+        )
+        stale_state = copy.deepcopy(original["repair_campaign"]["state"])
+
+        new_chain = base_chain(
+            chain_id="chain-002",
+            finding_ids=["F-002"],
+            allowed_files=["tests/harness.py"],
+        )
+        replayed = base_ledger(chain=new_chain)
+        add_attempt(replayed, "AR-1", "AutoRepair")
+        add_attempt(
+            replayed,
+            "AR-2",
+            "AutoRepair",
+            progress_value={
+                **progress(False),
+                "target_finding_id": "F-002",
+                "blocking_findings_before": ["F-002"],
+                "blocking_findings_after": ["F-002"],
+                "severity_before": {"F-002": "P1"},
+                "severity_after": {"F-002": "P1"},
+            },
+        )
+        attach_campaign(replayed, authority=authority, state=stale_state)
+        replayed["requested_mode"] = "EscalatedRepair"
+
+        blocked = self.evaluate(replayed)
+        self.assertEqual(blocked["decision"], "Blocked")
+        self.assertIn(
+            "CAMPAIGN_STATE_HISTORY_HEAD_STALE",
+            blocked["reason_codes"],
+        )
+        self.assertIn(
+            "CAMPAIGN_STATE_LATEST_REVIEW_STALE",
+            blocked["reason_codes"],
+        )
+
+        latest_attempt = replayed["attempts"][-1]
+        replayed["repair_campaign"]["state"] = campaign_state_receipt(
+            authority,
+            attempt_count=5,
+            consecutive_no_progress=5,
+            history_head_hash=latest_attempt["receipt_hash"],
+            latest_review_receipt_hash=latest_attempt["review"]["receipt_hash"],
+        )
+        stopped = self.evaluate(replayed)
+        self.assertEqual(stopped["decision"], "Stop")
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            stopped["reason_codes"],
+        )
+
+    def test_campaign_authority_cannot_replay_across_task_or_acceptance_context(self):
+        ledger, _ = self.campaign_ledger(
+            attempt_count=1,
+            consecutive_no_progress=1,
+        )
+        cases = (
+            (
+                "expected_task_id",
+                "TASK-002",
+                "TRUSTED_CONTEXT_CAMPAIGN_TASK_MISMATCH",
+            ),
+            (
+                "expected_acceptance_contract_hash",
+                repair_gate.canonical_hash(["different-acceptance-contract"]),
+                "TRUSTED_CONTEXT_CAMPAIGN_ACCEPTANCE_CONTRACT_MISMATCH",
+            ),
+        )
+        for field, value, reason in cases:
+            context = trusted_context(ledger)
+            context[field] = value
+            context["attestation_hash"] = repair_gate.attestation_hash(context)
+            with self.subTest(field=field):
+                blocked = self.evaluate(ledger, context)
+                self.assertEqual(blocked["decision"], "Blocked")
+                self.assertIn(reason, blocked["reason_codes"])
+
+        missing_cases = (
+            ("expected_task_id", "TRUSTED_CONTEXT_CAMPAIGN_TASK_MISSING"),
+            (
+                "expected_acceptance_contract_hash",
+                "TRUSTED_CONTEXT_CAMPAIGN_ACCEPTANCE_CONTRACT_MISSING",
+            ),
+        )
+        for field, reason in missing_cases:
+            context = trusted_context(ledger)
+            del context[field]
+            context["attestation_hash"] = repair_gate.attestation_hash(context)
+            with self.subTest(missing=field):
+                blocked = self.evaluate(ledger, context)
+                self.assertEqual(blocked["decision"], "Blocked")
+                self.assertIn(reason, blocked["reason_codes"])
+
+    def test_campaign_ledger_cannot_forge_streak_reset_without_trusted_state(self):
+        ledger, _ = self.campaign_ledger(
+            attempt_count=4,
+            consecutive_no_progress=4,
+        )
+        context = trusted_context(ledger)
+        authority = ledger["authority_records"][-1]
+        ledger["repair_campaign"]["state"] = campaign_state_receipt(
+            authority,
+            attempt_count=4,
+            consecutive_no_progress=0,
+        )
+        result = self.evaluate(ledger, context)
+        self.assertEqual(result["decision"], "Blocked")
+        self.assertIn(
+            "TRUSTED_CONTEXT_CAMPAIGN_STATE_MISMATCH",
+            result["reason_codes"],
+        )
+
+    def test_campaign_scope_and_hard_stops_block_before_attempt_budget(self):
+        outside = self.auto_stopped_ledger()
+        outside["repair_chain"]["allowed_files"] = ["frontend/app.py"]
+        outside["repair_chain"]["allowed_files_hash"] = repair_gate.canonical_hash(
+            outside["repair_chain"]["allowed_files"]
+        )
+        outside["trigger_review"] = review_receipt(
+            outside["repair_chain"],
+            "TRIGGER",
+            outside["repair_chain"]["closure_contract_hash"],
+        )
+        outside["attempts"] = []
+        outside["history_anchor"]["attempt_count"] = 0
+        outside["history_anchor"]["head_receipt_hash"] = outside["trigger_review"]["receipt_hash"]
+        add_attempt(outside, "AR-1", "AutoRepair")
+        add_attempt(outside, "AR-2", "AutoRepair", progress_value=progress(False))
+        attach_campaign(outside)
+        outside["requested_mode"] = "EscalatedRepair"
+        outside_result = self.evaluate(outside)
+        self.assertEqual(outside_result["decision"], "Blocked")
+        self.assertIn(
+            "CAMPAIGN_SCOPE_OUTSIDE_AUTHORITY",
+            outside_result["reason_codes"],
+        )
+
+        hard_stop, _ = self.campaign_ledger()
+        hard_stop["repair_campaign"]["safety"]["p0_finding"] = True
+        hard_stop_result = self.evaluate(hard_stop)
+        self.assertEqual(hard_stop_result["decision"], "Blocked")
+        self.assertIn(
+            "CAMPAIGN_HARD_STOP_P0_FINDING",
+            hard_stop_result["reason_codes"],
+        )
+        self.assertIn(
+            "CAMPAIGN_STATE_SAFETY_MISMATCH",
+            hard_stop_result["reason_codes"],
+        )
+
+    def test_campaign_limit_stops_auto_repair_in_a_new_chain(self):
+        ledger = base_ledger()
+        attach_campaign(
+            ledger,
+            attempt_count=4,
+            consecutive_no_progress=4,
+        )
+        result = self.evaluate(ledger)
+        self.assertEqual(result["decision"], "Stop")
+        self.assertEqual(result["auto_attempts_used"], 0)
+        self.assertIn(
+            "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+            result["reason_codes"],
+        )
+
+    def test_malformed_campaign_types_are_structured_blocked(self):
+        cases = {}
+
+        malformed_scope, _ = self.campaign_ledger()
+        malformed_scope["authority_records"][-1]["allowed_scope"][
+            "allowed_exact_files"
+        ] = [{}]
+        seal(malformed_scope["authority_records"][-1])
+        malformed_scope["repair_campaign"]["authority_receipt_hash"] = (
+            malformed_scope["authority_records"][-1]["receipt_hash"]
+        )
+        malformed_scope["repair_campaign"]["state"]["authority_receipt_hash"] = (
+            malformed_scope["authority_records"][-1]["receipt_hash"]
+        )
+        seal(malformed_scope["repair_campaign"]["state"])
+        cases["INVALID_CAMPAIGN_EXACT_FILES"] = malformed_scope
+
+        malformed_profile, _ = self.campaign_ledger()
+        malformed_profile["repair_campaign"]["profile"] = []
+        cases["INVALID_CAMPAIGN_PROFILE"] = malformed_profile
+
+        malformed_authority_hash, _ = self.campaign_ledger()
+        malformed_authority_hash["repair_campaign"]["authority_receipt_hash"] = {}
+        cases["CAMPAIGN_AUTHORITY_RECEIPT_NOT_FOUND"] = malformed_authority_hash
+
+        malformed_activation, _ = self.campaign_ledger()
+        malformed_activation_authority = malformed_activation[
+            "authority_records"
+        ][-1]
+        malformed_activation_authority["activation_chain_digest"] = []
+        seal(malformed_activation_authority)
+        malformed_activation["repair_campaign"]["authority_receipt_hash"] = (
+            malformed_activation_authority["receipt_hash"]
+        )
+        malformed_activation["repair_campaign"]["state"][
+            "authority_receipt_hash"
+        ] = malformed_activation_authority["receipt_hash"]
+        seal(malformed_activation["repair_campaign"]["state"])
+        cases["INVALID_CAMPAIGN_ACTIVATION_CHAIN_DIGEST"] = (
+            malformed_activation
+        )
+
+        for reason, ledger in cases.items():
+            with self.subTest(reason=reason):
+                result = self.evaluate(ledger)
+                self.assertEqual(result["decision"], "Blocked")
+                self.assertIn(reason, result["reason_codes"])
 
     def test_unattested_authority_cannot_produce_escalation_eligibility(self):
         ledger = self.auto_stopped_ledger()
@@ -423,6 +1117,22 @@ class RepairGateTests(unittest.TestCase):
         escalation_default = copy.deepcopy(POLICY)
         escalation_default["repair"]["post_stop"]["default_authorized_attempts"] = 2
         cases["POLICY_CONFLICT_POST_STOP_DEFAULT_AUTHORIZED_ATTEMPTS"] = escalation_default
+        campaign_profile = copy.deepcopy(POLICY)
+        campaign_profile["repair"]["campaign"]["profiles"]["core_product"][
+            "max_consecutive_no_progress"
+        ] = 5
+        cases["POLICY_CONFLICT_CAMPAIGN_PROFILES"] = campaign_profile
+        campaign_hard_stops = copy.deepcopy(POLICY)
+        campaign_hard_stops["repair"]["campaign"]["hard_stop_flags"].remove(
+            "test_oracle_weakened"
+        )
+        cases["POLICY_CONFLICT_CAMPAIGN_HARD_STOP_FLAGS"] = campaign_hard_stops
+        campaign_reset = copy.deepcopy(POLICY)
+        campaign_reset["repair"]["campaign"]["chain_change_resets_streak"] = True
+        cases["POLICY_CONFLICT_CAMPAIGN_CHAIN_CHANGE_RESETS_STREAK"] = campaign_reset
+        reviewer_selection = copy.deepcopy(POLICY)
+        reviewer_selection["reviewer_selection"]["cross_harness"] = "automatic_fallback"
+        cases["POLICY_CONFLICT_REVIEWER_SELECTION"] = reviewer_selection
         unknown_repair = copy.deepcopy(POLICY)
         unknown_repair["repair"]["reset_budget_on_new_task"] = True
         cases["POLICY_UNKNOWN_REPAIR_FIELDS"] = unknown_repair

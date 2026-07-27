@@ -19,7 +19,7 @@
 <!-- POLICY_JSON_BEGIN -->
 ```json
 {
-  "schema_version": "ai-dev-flow/v0.8-policy-rc2",
+  "schema_version": "ai-dev-flow/v0.8-policy-rc3",
   "unknown_input": "Blocked",
   "routes": {
     "controlled": {
@@ -97,6 +97,7 @@
     "delivery_requires_controlled": true,
     "missing_required_evidence": "Blocked"
   },
+  "reviewer_selection": {"default": "same_harness_native_isolated", "cross_harness": "explicit_user_authority_only", "native_unavailable": "Blocked", "same_context_self_review": "Pending"},
   "repair": {
     "repair_round_definition": "patch_to_next_independent_review",
     "non_counting_actions": [
@@ -170,6 +171,25 @@
       "history_resets": false,
       "failure_decision": "Stop"
     },
+    "campaign": {
+      "authority_mode": "RepairCampaignAuthority",
+      "ai_repair_allowed_with_explicit_authority": true,
+      "authority_source": "trusted_context_attested_task_bound_campaign_receipt",
+      "authority_must_bind": ["campaign_id", "task_id", "acceptance_contract_hash", "allowed_scope_hash", "profile", "activation_chain_digest", "activation_history_head_hash"],
+      "profiles": {
+        "core_product": {"max_consecutive_no_progress": 4},
+        "harness": {"max_consecutive_no_progress": 5}
+      },
+      "scope_manifest": {"exact_files_field": "allowed_exact_files", "path_prefixes_field": "allowed_path_prefixes", "require_relative_normalized_paths": true, "current_chain_files_must_be_subset": true},
+      "progress_source": "trusted_context_attested_campaign_state_receipt",
+      "progress_resets_no_progress_streak": true,
+      "task_change_resets_streak": false,
+      "model_change_resets_streak": false,
+      "chain_change_resets_streak": false,
+      "hard_stop_flags": ["p0_finding", "security_boundary_change", "data_integrity_risk", "scope_outside_campaign", "irreversible_action", "external_side_effect", "test_oracle_weakened", "unapproved_dependency_change", "required_evidence_missing"],
+      "independent_review_after_each_attempt": true,
+      "delivery_authority_separate": true
+    },
     "mechanical_decisions": [
       "MechanicallyEligible",
       "Stop",
@@ -211,19 +231,19 @@
 ## Reviewer 合同
 
 - Reviewer 只读，不修改业务代码，也不代替用户验收。
-- Reviewer 与执行/修复上下文隔离；同平台模型可以使用，但不得伪造平台未暴露的身份或调用证据。
+- Reviewer 默认由当前 Harness 自身建立原生隔离上下文；同平台、同模型可以使用。不得自动调用其他 Harness，只有用户明确指定外部 Reviewer 时才允许跨 Harness，也不得伪造平台未暴露的身份或调用证据。
 - finding 必须有稳定 ID、P0～P3、证据、范围、验证方式和处置结论。
 - P0/P1 在验收或交付前必须关闭；P2 可拆后续任务；P3 不阻塞。
 - Tracked 命中风险但缺 Reviewer 时只能 `Blocked`、合法升级或取得明确授权；不能静默跳过。
 
 ### 隔离实现映射
 
-- 原则：Reviewer 必须同时具备上下文隔离和写权限隔离。上下文隔离可由 subagent、独立进程或沙箱任务提供；写权限隔离必须由真实只读 sandbox、只读副本或等效机制提供。主上下文内切换角色、自称审查员不算隔离，仅启动普通可写子进程也不算只读，此类结果一律记为 `Pending`。
+- 原则：Reviewer 必须同时具备上下文隔离和写权限隔离，并优先使用当前 Harness 的原生能力。上下文隔离可由原生 reviewer 子上下文、独立进程或沙箱任务提供；写权限隔离必须由真实只读 sandbox、只读副本或等效机制提供。主上下文内切换角色、自称审查员不算隔离，仅启动普通可写子进程也不算只读，此类结果一律记为 `Pending`。
 - 已知环境映射（示例，非准入名单）：
-  - kimi-code：`Agent` 工具的 subagent（独立上下文，优先只读类型）。
-  - codex：subagent，或 `codex exec` 只读沙箱子进程；注意 subagent 继承父级 sandbox/approval 策略，只读约束须在任务定义中明确。
-  - opencode：Task 工具调用配置中禁用写权限的 reviewer 子代理。
-- 其他环境：存在等效的上下文隔离与写权限隔离机制时按本原则映射；没有或不确定时保持 `Blocked` / `Pending`，并说明所需最小输入。兜底 CLI 进程必须显式启用只读 sandbox 或面向只读副本运行，并在前后核对工作区状态；进程级隔离本身不授予只读能力。
+  - kimi-code：默认用 Kimi 原生 `Agent` 工具建立新的 Reviewer 上下文并限制为只读；不得自动调用 Codex、Claude、OpenCode 或其他 Harness。
+  - codex：默认用 Codex 自身的只读 subagent，或 `codex exec --ephemeral --sandbox read-only` 子进程；先按当前 CLI `--help` 核对参数，不把其他版本参数当成事实。
+  - opencode：默认用 OpenCode 自身的 Task 工具 reviewer 子上下文并禁用写权限。
+- 其他环境：存在等效原生上下文隔离与写权限隔离机制时按本原则映射；原生能力没有或不确定时保持 `Blocked` / `Pending`，说明最小缺口，不得自动跨 Harness。用户明确指定外部 Reviewer 后，外部进程仍必须显式只读或面向只读副本，并在前后核对工作区状态；进程级隔离本身不授予只读能力。
 - 新环境核实后可向本表追加映射，本原则不变。
 
 ## Repair 边界与用户授权升级
@@ -234,13 +254,17 @@
 
 基础 `AutoRepair` 预算为 2。第 3 轮只在至少一个冻结 closure criterion 从 RED 变 GREEN、没有 GREEN 变 RED、没有因 patch 新增阻断 finding、严重度不升、固定证据覆盖向量增加且目标冻结时返回 `ExtendRound3`。3 是自主 repair loop 上限，不是 AI 编码的永久禁令。
 
-达到 `Stop` 后进入用户裁决（`UserDecisionRequired`）。用户了解证据和风险后可明确授权 AI 执行有界 `EscalatedRepair`，默认一次；必须冻结干净基线、RED/GREEN、finding/closure target、允许范围和 Reviewer 能力。每次尝试后独立复审，失败回到 `Stop`，不得自动连跑；历史计数不清零。发布、迁移、删除、外部同步或其他不可逆副作用仍不得自动重试。
+达到 `Stop` 后，用户可授权默认一次、chain-bound 的 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`。非 campaign ledger 可用原 `rc2` policy 继续验证旧单次 receipt；campaign 与新 receipt 使用 `rc3` policy，不混用。campaign authority 绑定生效 chain/history head；同 chain 只统计生效后的 patch，后续新 chain 的 AR/ER 均推进 campaign state。每个 patch 仍冻结实际文件、RED/GREEN/SIGNAL并独立复审。
+
+campaign streak 与 hard-stop snapshot 由 trusted context attested state receipt 锚定，不因换 TASK、模型、chain 或 finding 改名清零；有实质进展时清零，非计数动作沿用上文定义。`core_product` 连续 4 次无进展、`harness` 连续 5 次后进入用户裁决。
+
+campaign 不是无限授权。P0、安全/数据风险、越界、不可逆或外部副作用、放宽 oracle、未授权依赖或缺证据时立即停止；merge、push、release、删除、外部同步、Accepted 和 Closed 始终需要独立 authority。
 
 纯记录不一致默认按 P2/P3 处理；只有它可能授权不安全动作或掩盖阻断 finding 时才升级为 P1。可用 `scripts/repair_gate.py` 对 repair ledger 的 chain、hash、Review、progress 和 authority 绑定做只读机械判定。
 
 ledger 一律视为不可信输入。判定器还必须接收由当前对话、harness 或只读项目快照提供的独立 trusted context，用它核对 expected history head/count 和已确认的 Review/authority receipt；缺失或不匹配时必须 `Blocked`。
 
-脚本只返回 `MechanicallyEligible + eligible_mode`，永不自行产生最终 `*Allowed`。持有真实上游证据的 Orchestrator 才能把机械资格提升为 policy 的 `AutoRepairAllowed / ExtendRound3 / EscalatedRepairAllowed`；该提升及证据必须写回 TASK。这样既允许用户授权 AI 继续修复，也不把自填 JSON 当成授权。
+脚本只返回 `MechanicallyEligible + eligible_mode`，永不自行产生最终 `*Allowed`。持有真实上游证据的 Orchestrator 才能把机械资格提升为 policy 的 `AutoRepairAllowed / ExtendRound3 / EscalatedRepairAllowed`；该提升及证据必须写回 TASK。campaign state receipt 与 ledger 一样是不可信输入，必须等于 trusted context 唯一指定的当前 expected receipt，TASK 与验收合同也必须匹配 trusted expected 值；这样既允许用户授权 AI 连续修复，也不把自填 JSON、伪造 streak、跨 chain/context 重放旧 state/authority 或换 chain 清零当成授权。
 
 ## 权限和证据硬门禁
 

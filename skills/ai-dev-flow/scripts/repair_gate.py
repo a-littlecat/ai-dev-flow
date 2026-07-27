@@ -1,4 +1,4 @@
-"""Read-only evaluator for receipt-backed AutoRepair and EscalatedRepair."""
+"""Read-only evaluator for receipt-backed AutoRepair and repair authorities."""
 
 import sys
 sys.dont_write_bytecode = True
@@ -12,12 +12,17 @@ import re
 
 LEDGER_SCHEMA = "ai-dev-flow/repair-ledger-v1"
 TRUSTED_CONTEXT_SCHEMA = "ai-dev-flow/repair-trusted-context-v1"
+CAMPAIGN_STATE_SCHEMA = "ai-dev-flow/repair-campaign-state-v1"
+CURRENT_POLICY_SCHEMA = "ai-dev-flow/v0.8-policy-rc3"
+LEGACY_SINGLE_POLICY_SCHEMA = "ai-dev-flow/v0.8-policy-rc2"
 ALLOWED_DECISIONS = {"MechanicallyEligible"}
 REVIEW_DECISIONS = {"Passed", "Needs Fix", "Blocked"}
 SEVERITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "Closed": 4}
 HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 ATTEMPT_PATTERN = re.compile(r"^(AR|ER)-([1-9][0-9]*)$")
 EVIDENCE_REF_PATTERN = re.compile(r"^(conversation|task):[^#]+#[^#]+$")
+CAMPAIGN_PROFILES = {"core_product", "harness"}
+CAMPAIGN_OUTCOMES = {"NotStarted", "MeasurableProgress", "NoProgress"}
 POLICY_PATTERN = re.compile(
     r"<!-- POLICY_JSON_BEGIN -->\s*```json\s*(\{.*?\})\s*```\s*<!-- POLICY_JSON_END -->",
     flags=re.DOTALL,
@@ -64,13 +69,31 @@ def load_policy(path):
         raise InvocationError(f"invalid POLICY_JSON: {exc}") from exc
 
 
-def validate_policy(policy):
+def validate_policy(policy, *, allow_legacy_single=False):
     if not isinstance(policy, dict):
         return ["POLICY_NOT_OBJECT"]
     repair = policy.get("repair")
     if not isinstance(repair, dict):
         return ["POLICY_REPAIR_SECTION_INVALID"]
     errors = []
+    legacy_single = (
+        allow_legacy_single
+        and policy.get("schema_version") == LEGACY_SINGLE_POLICY_SCHEMA
+        and "campaign" not in repair
+    )
+    expected_schema = (
+        LEGACY_SINGLE_POLICY_SCHEMA if legacy_single else CURRENT_POLICY_SCHEMA
+    )
+    if policy.get("schema_version") != expected_schema:
+        errors.append("POLICY_CONFLICT_SCHEMA_VERSION")
+    expected_reviewer_selection = {
+        "default": "same_harness_native_isolated",
+        "cross_harness": "explicit_user_authority_only",
+        "native_unavailable": "Blocked",
+        "same_context_self_review": "Pending",
+    }
+    if not legacy_single and policy.get("reviewer_selection") != expected_reviewer_selection:
+        errors.append("POLICY_CONFLICT_REVIEWER_SELECTION")
     expected_repair_fields = {
         "repair_round_definition",
         "non_counting_actions",
@@ -92,6 +115,8 @@ def validate_policy(policy):
         "promotion_requires_trusted_orchestrator",
         "eligible_modes",
     }
+    if not legacy_single:
+        expected_repair_fields.add("campaign")
     if set(repair) - expected_repair_fields:
         errors.append("POLICY_UNKNOWN_REPAIR_FIELDS")
     exact_values = {
@@ -172,7 +197,10 @@ def validate_policy(policy):
         errors.append("POLICY_UNKNOWN_RECORD_ONLY_FIELDS")
     if record_only != expected_record_only:
         errors.append("POLICY_CONFLICT_RECORD_ONLY_FINDING")
-    for name in ("history", "round_3_progress", "post_stop"):
+    required_sections = ["history", "round_3_progress", "post_stop"]
+    if not legacy_single:
+        required_sections.append("campaign")
+    for name in required_sections:
         if not isinstance(repair.get(name), dict):
             errors.append(f"POLICY_INVALID_{name.upper()}")
     history = repair.get("history")
@@ -238,7 +266,69 @@ def validate_policy(policy):
         ]
         if binds != expected_binds:
             errors.append("POLICY_CONFLICT_AUTHORITY_MUST_BIND")
+    campaign = repair.get("campaign")
+    if not legacy_single and isinstance(campaign, dict):
+        expected_campaign = {
+            "authority_mode": "RepairCampaignAuthority",
+            "ai_repair_allowed_with_explicit_authority": True,
+            "authority_source": "trusted_context_attested_task_bound_campaign_receipt",
+            "authority_must_bind": [
+                "campaign_id",
+                "task_id",
+                "acceptance_contract_hash",
+                "allowed_scope_hash",
+                "profile",
+                "activation_chain_digest",
+                "activation_history_head_hash",
+            ],
+            "profiles": {
+                "core_product": {"max_consecutive_no_progress": 4},
+                "harness": {"max_consecutive_no_progress": 5},
+            },
+            "scope_manifest": {
+                "exact_files_field": "allowed_exact_files",
+                "path_prefixes_field": "allowed_path_prefixes",
+                "require_relative_normalized_paths": True,
+                "current_chain_files_must_be_subset": True,
+            },
+            "progress_source": "trusted_context_attested_campaign_state_receipt",
+            "progress_resets_no_progress_streak": True,
+            "task_change_resets_streak": False,
+            "model_change_resets_streak": False,
+            "chain_change_resets_streak": False,
+            "hard_stop_flags": [
+                "p0_finding",
+                "security_boundary_change",
+                "data_integrity_risk",
+                "scope_outside_campaign",
+                "irreversible_action",
+                "external_side_effect",
+                "test_oracle_weakened",
+                "unapproved_dependency_change",
+                "required_evidence_missing",
+            ],
+            "independent_review_after_each_attempt": True,
+            "delivery_authority_separate": True,
+        }
+        if set(campaign) - set(expected_campaign):
+            errors.append("POLICY_UNKNOWN_CAMPAIGN_FIELDS")
+        for name, expected in expected_campaign.items():
+            if campaign.get(name) != expected:
+                errors.append(f"POLICY_CONFLICT_CAMPAIGN_{name.upper()}")
     return errors
+
+
+def _ledger_uses_campaign(ledger):
+    if not isinstance(ledger, dict):
+        return False
+    if ledger.get("repair_campaign") is not None:
+        return True
+    authorities = ledger.get("authority_records")
+    return isinstance(authorities, list) and any(
+        isinstance(authority, dict)
+        and authority.get("authority_mode") == "repair_campaign"
+        for authority in authorities
+    )
 
 
 def _is_hash(value):
@@ -261,6 +351,7 @@ def _result(
     state=None,
     attempt=None,
     authority_hash=None,
+    authority_mode=None,
     eligible_mode=None,
 ):
     state = state or {}
@@ -271,12 +362,19 @@ def _result(
         "reason_codes": list(reasons),
         "next_attempt_id": attempt,
         "authority_receipt_hash": authority_hash,
+        "authority_mode": authority_mode,
         "auto_attempts_used": state.get("auto_attempts_used", 0),
         "escalated_attempts_used": state.get("escalated_attempts_used", 0),
         "history_head_hash": state.get("history_head_hash"),
         "repair_chain_digest": canonical_hash(chain) if isinstance(chain, dict) else None,
         "would_consume_auto_repair_budget": eligible_mode in {"AutoRepair", "ExtendRound3"},
         "would_consume_escalated_authority": eligible_mode == "EscalatedRepair",
+        "would_consume_campaign_authority": authority_mode == "repair_campaign",
+        "campaign_id": state.get("campaign_id"),
+        "campaign_profile": state.get("campaign_profile"),
+        "campaign_attempts_used": state.get("campaign_attempts_used", 0),
+        "campaign_consecutive_no_progress": state.get("campaign_consecutive_no_progress"),
+        "campaign_no_progress_limit": state.get("campaign_no_progress_limit"),
         "manual_implementation_required": False,
         "requires_trusted_orchestrator_promotion": decision == "MechanicallyEligible",
         "policy_digest": policy_digest(policy),
@@ -297,6 +395,49 @@ def _validate_chain(chain):
     return errors
 
 
+def _is_normalized_relative_path(value, *, prefix=False):
+    if not isinstance(value, str) or not value or "\\" in value:
+        return False
+    if value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        return False
+    if prefix != value.endswith("/"):
+        return False
+    candidate = value[:-1] if prefix else value
+    parts = candidate.split("/")
+    return all(part not in {"", ".", ".."} for part in parts)
+
+
+def _validate_scope_manifest(scope):
+    if not isinstance(scope, dict):
+        return ["INVALID_CAMPAIGN_SCOPE_MANIFEST"]
+    if set(scope) != {"allowed_exact_files", "allowed_path_prefixes"}:
+        return ["INVALID_CAMPAIGN_SCOPE_FIELDS"]
+    exact = scope.get("allowed_exact_files")
+    prefixes = scope.get("allowed_path_prefixes")
+    errors = []
+    for name, value, is_prefix in (
+        ("EXACT_FILES", exact, False),
+        ("PATH_PREFIXES", prefixes, True),
+    ):
+        if (
+            not isinstance(value, list)
+            or any(not isinstance(item, str) for item in value)
+            or len(value) != len(set(value))
+            or value != sorted(value)
+            or any(not _is_normalized_relative_path(item, prefix=is_prefix) for item in value)
+        ):
+            errors.append(f"INVALID_CAMPAIGN_{name}")
+    if isinstance(exact, list) and isinstance(prefixes, list) and not exact and not prefixes:
+        errors.append("EMPTY_CAMPAIGN_SCOPE")
+    return errors
+
+
+def _file_in_scope(path, scope):
+    return path in scope["allowed_exact_files"] or any(
+        path.startswith(prefix) for prefix in scope["allowed_path_prefixes"]
+    )
+
+
 def _validate_safety(safety, repair):
     if not isinstance(safety, dict):
         return ["INVALID_SAFETY_INPUT"]
@@ -308,6 +449,17 @@ def _validate_safety(safety, repair):
         if safety.get(name) is not False:
             errors.append(f"REQUIRED_FALSE_{name.upper()}")
     return errors
+
+
+def _validate_campaign_safety(safety, campaign_policy):
+    flags = campaign_policy["hard_stop_flags"]
+    if not isinstance(safety, dict) or set(safety) != set(flags):
+        return ["INVALID_CAMPAIGN_SAFETY_FIELDS"]
+    return [
+        f"CAMPAIGN_HARD_STOP_{name.upper()}"
+        for name in flags
+        if safety.get(name) is not False
+    ]
 
 
 def _validate_review(review, chain, expected_subject_id, expected_subject_hash, digest):
@@ -415,10 +567,10 @@ def _effective_authorized_attempt_ids(authority, repair):
     return value if isinstance(value, list) else []
 
 
-def _validate_authority(authority, chain, repair):
+def _validate_authority_source(authority):
     errors = []
     if not isinstance(authority, dict):
-        return ["INVALID_AUTHORITY_RECEIPT"], []
+        return ["INVALID_AUTHORITY_RECEIPT"]
     if not isinstance(authority.get("authority_id"), str) or not authority["authority_id"]:
         errors.append("INVALID_AUTHORITY_ID")
     if authority.get("source_kind") != "user_message":
@@ -427,6 +579,17 @@ def _validate_authority(authority, chain, repair):
         errors.append("INVALID_AUTHORITY_SOURCE_REF")
     if not _is_hash(authority.get("source_text_sha256")):
         errors.append("INVALID_AUTHORITY_SOURCE_HASH")
+    if not isinstance(authority.get("target"), str) or not authority["target"].strip():
+        errors.append("AUTHORITY_TARGET_MISSING")
+    return errors
+
+
+def _validate_single_authority(authority, chain, repair):
+    errors = _validate_authority_source(authority)
+    if not isinstance(authority, dict):
+        return errors, []
+    if authority.get("authority_mode") not in {None, "single_attempt"}:
+        errors.append("INVALID_SINGLE_AUTHORITY_MODE")
     bindings = {
         "repair_chain_digest": canonical_hash(chain),
         "closure_contract_hash": chain["closure_contract_hash"],
@@ -450,11 +613,171 @@ def _validate_authority(authority, chain, repair):
             expected = list(range(numbers[0], numbers[0] + len(numbers)))
             if numbers != expected or authority.get("next_attempt_id_at_issue") != effective[0]:
                 errors.append("NONCONTIGUOUS_AUTHORIZED_ATTEMPTS")
-    if not isinstance(authority.get("target"), str) or not authority["target"].strip():
-        errors.append("AUTHORITY_TARGET_MISSING")
     if not _is_hash(authority.get("receipt_hash")) or authority.get("receipt_hash") != receipt_hash(authority):
         errors.append("INVALID_AUTHORITY_RECEIPT_HASH")
     return errors, effective
+
+
+def _validate_campaign_authority(authority, ledger, chain, repair):
+    errors = _validate_authority_source(authority)
+    if not isinstance(authority, dict):
+        return errors
+    campaign = ledger.get("repair_campaign")
+    if not isinstance(campaign, dict):
+        return errors + ["REPAIR_CAMPAIGN_REQUIRED"]
+    if authority.get("authority_mode") != "repair_campaign":
+        errors.append("INVALID_CAMPAIGN_AUTHORITY_MODE")
+    scope = authority.get("allowed_scope")
+    errors.extend(_validate_scope_manifest(scope))
+    if isinstance(scope, dict) and authority.get("allowed_scope_hash") != canonical_hash(scope):
+        errors.append("CAMPAIGN_ALLOWED_SCOPE_HASH_MISMATCH")
+    bindings = {
+        "campaign_id": campaign.get("campaign_id"),
+        "task_id": ledger.get("current_task_id"),
+        "acceptance_contract_hash": campaign.get("acceptance_contract_hash"),
+        "profile": campaign.get("profile"),
+    }
+    for name, expected in bindings.items():
+        if authority.get(name) != expected:
+            errors.append(f"CAMPAIGN_AUTHORITY_BINDING_{name.upper()}")
+    for name in ("activation_chain_digest", "activation_history_head_hash"):
+        if not _is_hash(authority.get(name)):
+            errors.append(f"INVALID_CAMPAIGN_{name.upper()}")
+    if (
+        not isinstance(authority.get("profile"), str)
+        or authority["profile"] not in CAMPAIGN_PROFILES
+    ):
+        errors.append("INVALID_CAMPAIGN_PROFILE")
+    allowed_files = chain.get("allowed_files")
+    if (
+        not isinstance(allowed_files, list)
+        or not allowed_files
+        or any(not isinstance(item, str) for item in allowed_files)
+        or len(allowed_files) != len(set(allowed_files))
+        or allowed_files != sorted(allowed_files)
+        or any(not _is_normalized_relative_path(item) for item in allowed_files)
+    ):
+        errors.append("INVALID_CAMPAIGN_CHAIN_ALLOWED_FILES")
+    elif chain.get("allowed_files_hash") != canonical_hash(allowed_files):
+        errors.append("CAMPAIGN_CHAIN_ALLOWED_FILES_HASH_MISMATCH")
+    elif isinstance(scope, dict) and not errors:
+        if any(not _file_in_scope(path, scope) for path in allowed_files):
+            errors.append("CAMPAIGN_SCOPE_OUTSIDE_AUTHORITY")
+    if not _is_hash(authority.get("receipt_hash")) or authority.get("receipt_hash") != receipt_hash(authority):
+        errors.append("INVALID_AUTHORITY_RECEIPT_HASH")
+    return errors
+
+
+def _validate_campaign_state(campaign, campaign_authorities, repair):
+    if campaign is None:
+        return [], {}
+    if not isinstance(campaign, dict):
+        return ["INVALID_REPAIR_CAMPAIGN"], {}
+    expected_fields = {
+        "campaign_id",
+        "acceptance_contract_hash",
+        "profile",
+        "authority_receipt_hash",
+        "state",
+        "safety",
+    }
+    errors = []
+    if set(campaign) != expected_fields:
+        errors.append("INVALID_REPAIR_CAMPAIGN_FIELDS")
+    if not isinstance(campaign.get("campaign_id"), str) or not campaign["campaign_id"]:
+        errors.append("INVALID_CAMPAIGN_ID")
+    if not _is_hash(campaign.get("acceptance_contract_hash")):
+        errors.append("INVALID_CAMPAIGN_ACCEPTANCE_CONTRACT_HASH")
+    profile = campaign.get("profile")
+    if not isinstance(profile, str) or profile not in CAMPAIGN_PROFILES:
+        errors.append("INVALID_CAMPAIGN_PROFILE")
+    authority_hash = campaign.get("authority_receipt_hash")
+    if not _is_hash(authority_hash) or authority_hash not in campaign_authorities:
+        errors.append("CAMPAIGN_AUTHORITY_RECEIPT_NOT_FOUND")
+    errors.extend(_validate_campaign_safety(campaign.get("safety"), repair["campaign"]))
+
+    state = campaign.get("state")
+    if not isinstance(state, dict):
+        return errors + ["INVALID_CAMPAIGN_STATE_RECEIPT"], {}
+    expected_state_fields = {
+        "schema_version",
+        "campaign_id",
+        "authority_receipt_hash",
+        "attempt_count",
+        "consecutive_no_progress",
+        "history_head_hash",
+        "latest_outcome",
+        "latest_review_receipt_hash",
+        "safety_hash",
+        "source_ref",
+        "source_text_sha256",
+        "receipt_hash",
+    }
+    if set(state) != expected_state_fields:
+        errors.append("INVALID_CAMPAIGN_STATE_FIELDS")
+    if state.get("schema_version") != CAMPAIGN_STATE_SCHEMA:
+        errors.append("INVALID_CAMPAIGN_STATE_SCHEMA")
+    if state.get("campaign_id") != campaign.get("campaign_id"):
+        errors.append("CAMPAIGN_STATE_ID_MISMATCH")
+    if state.get("authority_receipt_hash") != authority_hash:
+        errors.append("CAMPAIGN_STATE_AUTHORITY_MISMATCH")
+    if state.get("safety_hash") != canonical_hash(campaign.get("safety")):
+        errors.append("CAMPAIGN_STATE_SAFETY_MISMATCH")
+    attempt_count = state.get("attempt_count")
+    streak = state.get("consecutive_no_progress")
+    if not isinstance(attempt_count, int) or isinstance(attempt_count, bool) or attempt_count < 0:
+        errors.append("INVALID_CAMPAIGN_ATTEMPT_COUNT")
+    if (
+        not isinstance(streak, int)
+        or isinstance(streak, bool)
+        or streak < 0
+        or isinstance(attempt_count, int)
+        and streak > attempt_count
+    ):
+        errors.append("INVALID_CAMPAIGN_NO_PROGRESS_STREAK")
+    if not _is_hash(state.get("history_head_hash")):
+        errors.append("INVALID_CAMPAIGN_HISTORY_HEAD")
+    outcome = state.get("latest_outcome")
+    if not isinstance(outcome, str) or outcome not in CAMPAIGN_OUTCOMES:
+        errors.append("INVALID_CAMPAIGN_LATEST_OUTCOME")
+    latest_review = state.get("latest_review_receipt_hash")
+    if attempt_count == 0:
+        if streak != 0 or outcome != "NotStarted" or latest_review is not None:
+            errors.append("INVALID_CAMPAIGN_INITIAL_STATE")
+    else:
+        if outcome == "NotStarted" or not _is_hash(latest_review):
+            errors.append("INVALID_CAMPAIGN_PROGRESS_STATE")
+        if outcome == "MeasurableProgress" and streak != 0:
+            errors.append("CAMPAIGN_PROGRESS_DID_NOT_RESET_STREAK")
+        if outcome == "NoProgress" and (not isinstance(streak, int) or streak < 1):
+            errors.append("CAMPAIGN_NO_PROGRESS_STREAK_NOT_INCREMENTED")
+    if not isinstance(state.get("source_ref"), str) or not EVIDENCE_REF_PATTERN.fullmatch(state["source_ref"]):
+        errors.append("INVALID_CAMPAIGN_STATE_SOURCE_REF")
+    if not _is_hash(state.get("source_text_sha256")):
+        errors.append("INVALID_CAMPAIGN_STATE_SOURCE_HASH")
+    if not _is_hash(state.get("receipt_hash")) or state.get("receipt_hash") != receipt_hash(state):
+        errors.append("INVALID_CAMPAIGN_STATE_RECEIPT_HASH")
+    limit = (
+        repair["campaign"]["profiles"][profile]["max_consecutive_no_progress"]
+        if isinstance(profile, str) and profile in CAMPAIGN_PROFILES
+        else None
+    )
+    return errors, {
+        "campaign_id": campaign.get("campaign_id"),
+        "campaign_profile": profile,
+        "campaign_acceptance_contract_hash": campaign.get(
+            "acceptance_contract_hash"
+        ),
+        "campaign_authority_hash": authority_hash,
+        "campaign_state_receipt_hash": state.get("receipt_hash"),
+        "campaign_history_head_hash": state.get("history_head_hash"),
+        "campaign_latest_review_receipt_hash": state.get(
+            "latest_review_receipt_hash"
+        ),
+        "campaign_attempts_used": attempt_count if isinstance(attempt_count, int) else 0,
+        "campaign_consecutive_no_progress": streak if isinstance(streak, int) else None,
+        "campaign_no_progress_limit": limit,
+    }
 
 
 def _validate_history(ledger, chain, policy):
@@ -471,18 +794,57 @@ def _validate_history(ledger, chain, policy):
         return ["INVALID_AUTHORITY_RECORDS"], {}
     authority_by_hash = {}
     authority_attempts = {}
+    authority_modes = {}
+    campaign_authorities = {}
     authority_ids = set()
     for authority in authorities:
-        authority_errors, effective = _validate_authority(authority, chain, repair)
+        authority_mode = (
+            authority.get("authority_mode")
+            if isinstance(authority, dict)
+            else None
+        )
+        if authority_mode == "repair_campaign":
+            authority_errors = _validate_campaign_authority(
+                authority,
+                ledger,
+                chain,
+                repair,
+            )
+            effective = []
+        else:
+            authority_errors, effective = _validate_single_authority(
+                authority,
+                chain,
+                repair,
+            )
         errors.extend(authority_errors)
         if isinstance(authority, dict):
             authority_id = authority.get("authority_id")
-            if authority_id in authority_ids:
-                errors.append("DUPLICATE_AUTHORITY_ID")
-            authority_ids.add(authority_id)
-            authority_by_hash[authority.get("receipt_hash")] = authority
-            for attempt_id in effective:
-                authority_attempts.setdefault(attempt_id, []).append(authority.get("receipt_hash"))
+            authority_hash = authority.get("receipt_hash")
+            if isinstance(authority_id, str):
+                if authority_id in authority_ids:
+                    errors.append("DUPLICATE_AUTHORITY_ID")
+                authority_ids.add(authority_id)
+            if _is_hash(authority_hash):
+                authority_by_hash[authority_hash] = authority
+                authority_modes[authority_hash] = (
+                    "repair_campaign"
+                    if authority_mode == "repair_campaign"
+                    else "single_attempt"
+                )
+                if authority_mode == "repair_campaign":
+                    campaign_authorities[authority_hash] = authority
+                for attempt_id in effective:
+                    authority_attempts.setdefault(attempt_id, []).append(
+                        authority_hash
+                    )
+
+    campaign_errors, campaign_state = _validate_campaign_state(
+        ledger.get("repair_campaign"),
+        campaign_authorities,
+        repair,
+    )
+    errors.extend(campaign_errors)
 
     attempts = ledger.get("attempts")
     if not isinstance(attempts, list):
@@ -493,6 +855,7 @@ def _validate_history(ledger, chain, policy):
     used_authority_hashes = []
     auto_used = 0
     escalated_used = 0
+    attempt_records = []
     escalated_started = False
     seen_attempts = set()
     seen_receipts = {previous_hash}
@@ -505,9 +868,10 @@ def _validate_history(ledger, chain, policy):
         mode = attempt.get("mode")
         if previous_review.get("decision") != "Needs Fix":
             errors.append("ATTEMPT_AFTER_NON_REPAIRABLE_REVIEW")
-        if attempt_id in seen_attempts:
-            errors.append("DUPLICATE_ATTEMPT_ID")
-        seen_attempts.add(attempt_id)
+        if isinstance(attempt_id, str):
+            if attempt_id in seen_attempts:
+                errors.append("DUPLICATE_ATTEMPT_ID")
+            seen_attempts.add(attempt_id)
         if mode == "AutoRepair" and not escalated_started:
             auto_used += 1
             expected_id = f"AR-{auto_used}"
@@ -528,7 +892,14 @@ def _validate_history(ledger, chain, policy):
             if auto_used == repair["base_auto_rounds"] and not _progress_reasons(previous_review, chain):
                 errors.append("ESCALATION_HISTORY_WHILE_AR3_ALLOWED")
             authority_hash = attempt.get("authority_receipt_hash")
-            if authority_hash not in authority_by_hash or authority_hash not in authority_attempts.get(attempt_id, []):
+            if not _is_hash(authority_hash) or authority_hash not in authority_by_hash:
+                errors.append("ATTEMPT_AUTHORITY_NOT_BOUND")
+            elif authority_modes.get(authority_hash) == "repair_campaign":
+                if authority_hash != campaign_state.get("campaign_authority_hash"):
+                    errors.append("ATTEMPT_CAMPAIGN_AUTHORITY_NOT_ACTIVE")
+                else:
+                    used_authority_hashes.append(authority_hash)
+            elif authority_hash not in authority_attempts.get(attempt_id, []):
                 errors.append("ATTEMPT_AUTHORITY_NOT_BOUND")
             else:
                 used_authority_hashes.append(authority_hash)
@@ -554,14 +925,25 @@ def _validate_history(ledger, chain, policy):
         attempt_receipt = attempt.get("receipt_hash")
         if not _is_hash(attempt_receipt) or attempt_receipt != receipt_hash(attempt):
             errors.append("INVALID_ATTEMPT_RECEIPT_HASH")
-        if attempt_receipt in seen_receipts:
-            errors.append("DUPLICATE_RECEIPT_HASH")
-        seen_receipts.add(attempt_receipt)
+        if _is_hash(attempt_receipt):
+            if attempt_receipt in seen_receipts:
+                errors.append("DUPLICATE_RECEIPT_HASH")
+            seen_receipts.add(attempt_receipt)
         previous_hash = attempt_receipt
         if isinstance(review, dict):
             previous_review = review
             if _is_hash(review.get("receipt_hash")):
                 review_receipt_hashes.append(review["receipt_hash"])
+        attempt_records.append(
+            {
+                "attempt_receipt_hash": (
+                    attempt_receipt if _is_hash(attempt_receipt) else None
+                ),
+                "review_receipt_hash": (
+                    review.get("receipt_hash") if isinstance(review, dict) else None
+                ),
+            }
+        )
 
     anchor = ledger.get("history_anchor")
     if not isinstance(anchor, dict):
@@ -578,14 +960,68 @@ def _validate_history(ledger, chain, policy):
 
     state = {
         "chain": chain,
+        "current_task_id": ledger.get("current_task_id"),
         "auto_attempts_used": auto_used,
         "escalated_attempts_used": escalated_used,
         "history_head_hash": previous_hash,
         "latest_review": previous_review,
         "authority_attempts": authority_attempts,
+        "authority_modes": authority_modes,
+        "campaign_authority_hashes": list(campaign_authorities),
         "review_receipt_hashes": review_receipt_hashes,
         "used_authority_hashes": used_authority_hashes,
     }
+    state.update(campaign_state)
+    campaign_attempt_records = []
+    active_campaign_hash = state.get("campaign_authority_hash")
+    active_campaign_authority = (
+        campaign_authorities.get(active_campaign_hash)
+        if _is_hash(active_campaign_hash)
+        else None
+    )
+    if isinstance(active_campaign_authority, dict):
+        activation_chain = active_campaign_authority.get(
+            "activation_chain_digest"
+        )
+        if activation_chain == canonical_hash(chain):
+            activation_head = active_campaign_authority.get(
+                "activation_history_head_hash"
+            )
+            if activation_head == trigger.get("receipt_hash"):
+                campaign_attempt_records = attempt_records
+            else:
+                activation_index = next(
+                    (
+                        index
+                        for index, record in enumerate(attempt_records)
+                        if record["attempt_receipt_hash"] == activation_head
+                    ),
+                    None,
+                )
+                if activation_index is None:
+                    errors.append(
+                        "CAMPAIGN_ACTIVATION_HISTORY_HEAD_NOT_FOUND"
+                    )
+                else:
+                    campaign_attempt_records = attempt_records[
+                        activation_index + 1 :
+                    ]
+        else:
+            campaign_attempt_records = attempt_records
+    if len(campaign_attempt_records) > state.get("campaign_attempts_used", 0):
+        errors.append("CAMPAIGN_HISTORY_COUNT_BELOW_CURRENT_CHAIN")
+    if campaign_attempt_records:
+        latest_campaign_attempt = campaign_attempt_records[-1]
+        if (
+            state.get("campaign_history_head_hash")
+            != latest_campaign_attempt["attempt_receipt_hash"]
+        ):
+            errors.append("CAMPAIGN_STATE_HISTORY_HEAD_STALE")
+        if (
+            state.get("campaign_latest_review_receipt_hash")
+            != latest_campaign_attempt["review_receipt_hash"]
+        ):
+            errors.append("CAMPAIGN_STATE_LATEST_REVIEW_STALE")
     return errors, state
 
 
@@ -627,11 +1063,45 @@ def _validate_trusted_context(context, state):
         verified_authorities = []
     elif not set(state["used_authority_hashes"]).issubset(set(verified_authorities)):
         errors.append("TRUSTED_CONTEXT_USED_AUTHORITY_MISSING")
+    expected_campaign_state = context.get(
+        "expected_campaign_state_receipt_hash"
+    )
+    if state.get("campaign_id") is not None:
+        expected_task_id = context.get("expected_task_id")
+        if not isinstance(expected_task_id, str) or not expected_task_id:
+            errors.append("TRUSTED_CONTEXT_CAMPAIGN_TASK_MISSING")
+        elif expected_task_id != state.get("current_task_id"):
+            errors.append("TRUSTED_CONTEXT_CAMPAIGN_TASK_MISMATCH")
+        expected_acceptance_contract = context.get(
+            "expected_acceptance_contract_hash"
+        )
+        if not _is_hash(expected_acceptance_contract):
+            errors.append(
+                "TRUSTED_CONTEXT_CAMPAIGN_ACCEPTANCE_CONTRACT_MISSING"
+            )
+        elif expected_acceptance_contract != state.get(
+            "campaign_acceptance_contract_hash"
+        ):
+            errors.append(
+                "TRUSTED_CONTEXT_CAMPAIGN_ACCEPTANCE_CONTRACT_MISMATCH"
+            )
+        if not _is_hash(expected_campaign_state):
+            errors.append("TRUSTED_CONTEXT_CAMPAIGN_STATE_MISSING")
+            expected_campaign_state = None
+        elif expected_campaign_state != state.get("campaign_state_receipt_hash"):
+            errors.append("TRUSTED_CONTEXT_CAMPAIGN_STATE_MISMATCH")
+    elif (
+        expected_campaign_state is not None
+        or context.get("expected_task_id") is not None
+        or context.get("expected_acceptance_contract_hash") is not None
+    ):
+        errors.append("TRUSTED_CONTEXT_UNEXPECTED_CAMPAIGN_STATE")
     if not _is_hash(context.get("attestation_hash")) or context.get("attestation_hash") != attestation_hash(context):
         errors.append("TRUSTED_CONTEXT_ATTESTATION_HASH_INVALID")
     return errors, {
         "verified_review_receipt_hashes": verified_reviews,
         "verified_authority_receipt_hashes": verified_authorities,
+        "expected_campaign_state_receipt_hash": expected_campaign_state,
     }
 
 
@@ -654,7 +1124,10 @@ def _auto_decision(policy, state):
 
 
 def evaluate(ledger, policy, trusted_context=None):
-    policy_errors = validate_policy(policy)
+    policy_errors = validate_policy(
+        policy,
+        allow_legacy_single=not _ledger_uses_campaign(ledger),
+    )
     if policy_errors:
         return _result("Blocked", policy_errors, policy)
     if not isinstance(ledger, dict):
@@ -680,6 +1153,25 @@ def evaluate(ledger, policy, trusted_context=None):
     trusted_errors, trusted = _validate_trusted_context(trusted_context, state)
     if trusted_errors:
         return _result("Blocked", trusted_errors, policy, state)
+    latest_review_decision = state["latest_review"]["decision"]
+    if latest_review_decision == "Passed":
+        return _result("Stop", ["REPAIR_ALREADY_PASSED"], policy, state)
+    if latest_review_decision == "Blocked":
+        return _result("Blocked", ["LATEST_REVIEW_BLOCKED"], policy, state)
+    if (
+        state.get("campaign_id") is not None
+        and state.get("campaign_consecutive_no_progress")
+        >= state.get("campaign_no_progress_limit")
+    ):
+        return _result(
+            "Stop",
+            [
+                "CAMPAIGN_NO_PROGRESS_LIMIT_REACHED",
+                "USER_DECISION_REQUIRED",
+            ],
+            policy,
+            state,
+        )
 
     decision, reasons, attempt = _auto_decision(policy, state)
     if requested == "AutoRepair":
@@ -707,7 +1199,10 @@ def evaluate(ledger, policy, trusted_context=None):
         return _result("Stop", reasons, policy, state)
 
     next_attempt = f"ER-{state['escalated_attempts_used'] + 1}"
-    candidates = state["authority_attempts"].get(next_attempt, [])
+    single_candidates = state["authority_attempts"].get(next_attempt, [])
+    campaign_hash = state.get("campaign_authority_hash")
+    campaign_candidates = [campaign_hash] if campaign_hash else []
+    candidates = [*single_candidates, *campaign_candidates]
     if candidates and not any(
         item in trusted["verified_authority_receipt_hashes"] for item in candidates
     ):
@@ -731,17 +1226,29 @@ def evaluate(ledger, policy, trusted_context=None):
             state,
         )
     authority_hash = matching[-1]
-    return _result(
-        "MechanicallyEligible",
-        [
+    authority_mode = state["authority_modes"].get(authority_hash)
+    if authority_mode == "repair_campaign":
+        eligibility_reasons = [
+            "TASK_BOUND_REPAIR_CAMPAIGN_AUTHORITY_ATTESTED",
+            "CAMPAIGN_SCOPE_VERIFIED",
+            "CAMPAIGN_NO_PROGRESS_BUDGET_AVAILABLE",
+            "PRIOR_ATTEMPTS_INDEPENDENTLY_REVIEWED",
+            "TRUSTED_CONTEXT_VERIFIED",
+        ]
+    else:
+        eligibility_reasons = [
             "CHAIN_BOUND_USER_AUTHORITY_ATTESTED",
             "PRIOR_ATTEMPTS_INDEPENDENTLY_REVIEWED",
             "TRUSTED_CONTEXT_VERIFIED",
-        ],
+        ]
+    return _result(
+        "MechanicallyEligible",
+        eligibility_reasons,
         policy,
         state,
         next_attempt,
         authority_hash,
+        authority_mode,
         "EscalatedRepair",
     )
 
@@ -762,6 +1269,14 @@ def _emit_human(result):
     print(f"eligible_mode={result['eligible_mode'] or 'none'}")
     print("reason_codes=" + ",".join(result["reason_codes"]))
     print(f"next_attempt_id={result['next_attempt_id'] or 'none'}")
+    print(f"authority_mode={result['authority_mode'] or 'none'}")
+    if result["campaign_id"]:
+        print(
+            "campaign="
+            f"{result['campaign_id']} profile={result['campaign_profile']} "
+            f"no_progress={result['campaign_consecutive_no_progress']}/"
+            f"{result['campaign_no_progress_limit']}"
+        )
     print(f"policy_digest={result['policy_digest']}")
     print("只读判定不会修改 TASK、代码、Git 或外部系统；MechanicallyEligible 仍须由持有真实上游证据的 Orchestrator 提升为 Allowed。")
 
@@ -777,7 +1292,9 @@ def _requested_format(argv):
 
 def main(argv=None):
     output_format = _requested_format(argv)
-    parser = ReadOnlyParser(description="只读判定 receipt-backed AutoRepair / EscalatedRepair 边界。")
+    parser = ReadOnlyParser(
+        description="只读判定 receipt-backed AutoRepair / EscalatedRepair / RepairCampaign 边界。"
+    )
     default_policy = pathlib.Path(__file__).resolve().parents[1] / "references" / "CORE.md"
     parser.add_argument("target", nargs="?", help="repair ledger JSON；使用 - 从 stdin 读取")
     parser.add_argument("--policy", default=str(default_policy))
@@ -787,16 +1304,17 @@ def main(argv=None):
     try:
         args = parser.parse_args(argv)
         policy = load_policy(args.policy)
-        policy_errors = validate_policy(policy)
-        if policy_errors:
-            result = _result("Blocked", policy_errors, policy)
-        elif args.policy_digest:
-            print(
-                json.dumps({"policy_digest": policy_digest(policy)}, ensure_ascii=False, sort_keys=True)
-                if args.format == "json"
-                else policy_digest(policy)
-            )
-            return 0
+        if args.policy_digest:
+            policy_errors = validate_policy(policy, allow_legacy_single=True)
+            if policy_errors:
+                result = _result("Blocked", policy_errors, policy)
+            else:
+                print(
+                    json.dumps({"policy_digest": policy_digest(policy)}, ensure_ascii=False, sort_keys=True)
+                    if args.format == "json"
+                    else policy_digest(policy)
+                )
+                return 0
         elif not args.target:
             raise InvocationError("target is required unless --policy-digest is used")
         else:

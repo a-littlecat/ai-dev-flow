@@ -33,7 +33,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.policy = policy_from(REFERENCES / "CORE.md")
 
     def test_version_and_contract_identity_are_independent(self):
-        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.2")
+        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.8.3")
         for path in (
             ROOT / "README.md",
             ROOT / "README.en.md",
@@ -43,7 +43,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         ):
             with self.subTest(path=path.name):
                 text = read(path)
-                self.assertIn("0.8.2", text)
+                self.assertIn("0.8.3", text)
                 self.assertIn("adf/v0.7.0", text)
         self.assertNotIn("adf/v0.8.0", read(REFERENCES / "TASK_TEMPLATE.md"))
 
@@ -107,6 +107,27 @@ class V08SlimRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(self.policy["review"]["missing_authority_or_capability"], "Blocked")
 
+    def test_reviewer_selection_is_native_first_and_never_auto_crosses_harnesses(self):
+        selection = self.policy["reviewer_selection"]
+        self.assertEqual(selection["default"], "same_harness_native_isolated")
+        self.assertEqual(selection["cross_harness"], "explicit_user_authority_only")
+        self.assertEqual(selection["native_unavailable"], "Blocked")
+        self.assertEqual(selection["same_context_self_review"], "Pending")
+        workflow = read(REFERENCES / "WORKFLOW.md")
+        agents_compat = read(REFERENCES / "AGENTS_COMPAT.md")
+        for text in (self.skill, self.core, workflow, agents_compat):
+            with self.subTest(source=text[:40]):
+                self.assertIn("不得自动", text)
+                self.assertIn("Harness", text)
+        self.assertIn("Kimi 原生 `Agent`", self.core)
+        self.assertIn("只有用户明确指定外部 Reviewer 来源时", workflow)
+        self.assertIn("native-unavailable=`Blocked`", read(
+            ROOT
+            / "docs"
+            / "plans"
+            / "REPAIR-CAMPAIGN-001-continuous-repair-authority.md"
+        ))
+
     def test_repair_policy_has_autonomous_and_user_authorized_boundaries(self):
         repair = self.policy["repair"]
         self.assertEqual(repair["repair_round_definition"], "patch_to_next_independent_review")
@@ -124,6 +145,21 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.assertEqual(repair["post_stop"]["default_authorized_attempts"], 1)
         self.assertEqual(repair["record_only_finding"]["default_severity"], ["P2", "P3"])
         self.assertIn("authorized_attempt_ids", repair["post_stop"]["authority_must_bind"])
+        campaign = repair["campaign"]
+        self.assertEqual(
+            campaign["profiles"]["core_product"]["max_consecutive_no_progress"],
+            4,
+        )
+        self.assertEqual(
+            campaign["profiles"]["harness"]["max_consecutive_no_progress"],
+            5,
+        )
+        self.assertFalse(campaign["task_change_resets_streak"])
+        self.assertFalse(campaign["model_change_resets_streak"])
+        self.assertFalse(campaign["chain_change_resets_streak"])
+        self.assertIn("p0_finding", campaign["hard_stop_flags"])
+        self.assertIn("test_oracle_weakened", campaign["hard_stop_flags"])
+        self.assertTrue(campaign["delivery_authority_separate"])
         self.assertEqual(repair["mechanical_decisions"], ["MechanicallyEligible", "Stop", "Blocked"])
         self.assertTrue(repair["promotion_requires_trusted_orchestrator"])
 
@@ -140,6 +176,14 @@ class V08SlimRuntimeTests(unittest.TestCase):
             "机械判定 `AutoRepairAllowed / ExtendRound3 / Stop / EscalatedRepairAllowed / Blocked`",
             plan,
         )
+        campaign_plan = read(
+            ROOT
+            / "docs"
+            / "plans"
+            / "REPAIR-CAMPAIGN-001-continuous-repair-authority.md"
+        )
+        self.assertIn("只读 gate 仍只返回 `MechanicallyEligible`", campaign_plan)
+        self.assertIn("由持有当前对话、harness 或只读项目证据的 Orchestrator 提升", campaign_plan)
 
     def test_new_task_and_migration_contracts_are_small_and_compatible(self):
         template = read(REFERENCES / "TASK_TEMPLATE.md")

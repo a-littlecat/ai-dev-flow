@@ -1,6 +1,6 @@
 # Tracked / Controlled TASK 模板
 
-> Skill 包 `0.8.2` 开发线中，其他 Tracked 与全部 Controlled 任务使用本完整模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK；符合单会话条件的 Tracked 可改用 `TASK_TEMPLATE_BRIEF.md`。`adf/v0.7.0` Contract schema 保持兼容，不随 Skill 包版本变化。
+> Skill 包 `0.8.3` 开发线中，其他 Tracked 与全部 Controlled 任务使用本完整模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK；符合单会话条件的 Tracked 可改用 `TASK_TEMPLATE_BRIEF.md`。`adf/v0.7.0` Contract schema 保持兼容，不随 Skill 包版本变化。
 
 ```markdown
 # <TASK-ID>：<任务标题>
@@ -55,6 +55,8 @@
 - Trusted context：<由 harness/当前对话/只读项目快照独立确认的 expected head/count 与 Review/authority receipt hashes>
 - 第 3 轮 progress：<写入 AR-2 独立 Review 收据的 closure/blocking/severity/evidence before/after>
 - Escalated authority：<用户消息来源、chain/scope/target、默认一次或显式 attempt IDs、receipt_hash>
+- Campaign authority（可选）：<campaign_id、TASK、acceptance_contract_hash、profile、外层 scope manifest、authority receipt_hash>
+- Campaign state（可选）：<attempt_count、consecutive_no_progress、latest_outcome、history head、hard-stop snapshot hash、state receipt_hash、trusted attestation>
 - 非计数动作：<review/UA/诊断/测试重跑/收据同步/记录纠错>
 - 机械判定：<MechanicallyEligible|Stop|Blocked>；eligible_mode：<AutoRepair|ExtendRound3|EscalatedRepair>
 - Orchestrator 提升：<持有真实上游证据后记录 *Allowed；否则 Blocked>
@@ -78,7 +80,8 @@
 - Reviewer 只写 review 状态与 findings，不修改业务代码。
 - Repairer 只处理冻结 finding ID，并追加验证结果。
 - 同一 finding / closure contract 的新 TASK 继承原 `repair_chain_id` 和计数；更换 TASK 或模型不重置。
-- `Stop` 后用户可明确授权有界 `EscalatedRepair`；授权默认只消费一次，失败回到 `Stop`，不要求用户必须亲自写代码。
-- `repair_gate.py` 把 ledger 视为不可信，只验证其与独立 trusted context 的结构/连续性；最终 Allowed 必须由持有真实上游证据的 Orchestrator 提升。
+- `Stop` 后用户可授权默认一次的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内的 `RepairCampaignAuthority`；后者按核心产品 4 次、Harness 5 次连续无进展阈值执行。
+- campaign 不因换 TASK、模型、chain 或 finding 改名清零；P0、安全、数据、越界、不可逆、外部副作用、oracle 放宽、未授权依赖或缺证据立即停止。
+- `repair_gate.py` 把 ledger 和 campaign state 视为不可信，只验证其与独立 trusted context 的结构/连续性；最终 Allowed 必须由持有真实上游证据的 Orchestrator 提升。
 - TASK 先更新，TASK_BOARD 后同步；不得用看板反向覆盖 TASK。
 - 旧 TASK 保持原格式，不为统一模板而批量迁移。
