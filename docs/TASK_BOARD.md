@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-28
-> - 当前模式：`DASHBOARD-BE-001` 正在独立 Worktree 实施
-> - 当前阶段：BE-001 `In Progress / Review Pending / UA3 Pending / Uncommitted / Unmerged`
+> - 当前模式：`DASHBOARD-BE-001` 实现候选已进入独立 Review
+> - 当前阶段：BE-001 `Review / Review Pending / UA3 Pending / Uncommitted / Unmerged`
 > - 当前方案：`docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md`
 
 ## 当前授权边界
@@ -138,7 +138,7 @@ REL-002 Closed / main@0422887
 | REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
 | REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Not Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
 | DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Accepted | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed `371383f` / children Ready | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
-| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | In Progress | 高 | 高 | DASHBOARD-001 Accepted/Committed；实施 base `c5bbf3a` | Pending / implementation review 尚未开始 | UA3 Pending | `codex/dashboard-be-001` / 独立 Worktree / Uncommitted / Unmerged | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
+| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Review | 高 | 高 | DASHBOARD-001 Accepted/Committed；实施 base `c5bbf3a` | Pending / implementation review pending | UA3 Pending | `codex/dashboard-be-001` / 独立 Worktree / Uncommitted / Unmerged | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
 | DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Ready | 高 | 高 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA3 Pending | 独立 Worktree / 可与 FE-001 候选并行 / 未授权实施 | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
 | DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Ready | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA4 Pending | 独立 Worktree / 可与 BE-002 候选并行 / 未授权实施 | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
 | DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Ready | 高 | 高 | BE-001、BE-002、FE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA6 Pending | 串行集成 Worktree / 未授权实施 | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
@@ -156,7 +156,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-在 `D:\open-source\ai-dev-flow-wt\dashboard-be-001` 实施 BE-001，完成验证后进入独立 Review；本轮没有 BE-002、FE-001 或 INTEGRATE-001 execution authority。
+冻结 `D:\open-source\ai-dev-flow-wt\dashboard-be-001` 的实现候选并执行独立只读 Review；本轮没有 BE-002、FE-001 或 INTEGRATE-001 execution authority。
 
 ## 停止条件
 

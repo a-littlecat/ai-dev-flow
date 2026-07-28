@@ -6,7 +6,7 @@
 - `task_id`: `DASHBOARD-BE-001`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `In Progress`
+- `lifecycle`: `Review`
 - `review_status`: `Pending`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
@@ -155,12 +155,12 @@
 ## Outcome
 
 - Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=uncommitted-worktree
-- 修改文件：实现候选将在独立 Worktree 中严格限制于 BE-001 allowlist；当前提交只记录合法执行状态入口。
-- 验证证据：执行入口、精确 base、独立 Worktree 和 allowlist 已只读核对；代码验证将在实现候选形成后运行。
-- Review findings：implementation review 尚未开始；规划 Review Passed 不代替代码 Review。
+- 修改文件：实现候选已在独立 Worktree 形成，范围严格限制于 BE-001 allowlist；代码仍未提交。
+- 验证证据：实现候选已冻结，完整自动验证与独立 Review 收据将在后续 Accepted 提交中保留。
+- Review findings：implementation review pending；规划 Review Passed 不代替代码 Review。
 - UA 动作与结果：UA3 Pending；用户尚未查看实现证据。
 - 隔离位置：Worktree `D:\open-source\ai-dev-flow-wt\dashboard-be-001`；branch `codex/dashboard-be-001`。
 - 回滚方式：实现尚未提交；如需停止只保留当前治理提交，不执行删除、reset 或历史改写。
-- 状态边界：In Progress / Review Pending / UA3 Pending / Uncommitted / Unmerged；未 Accepted、未交付、未 Closed。
-- 剩余风险：单字节 byte oracle 尚未由代码与测试实际验证；实现仍需严格限于 allowlist。
-- 下一步：在独立 Worktree 实施 BE-001，完成验证后推进到 Review。
+- 状态边界：Review / Review Pending / UA3 Pending / Uncommitted / Unmerged；未 Accepted、未交付、未 Closed。
+- 剩余风险：代码 Review 和 UA3 尚未产生最终结论；实现必须继续保持精确 allowlist。
+- 下一步：冻结当前实现候选并执行独立只读 Review。
