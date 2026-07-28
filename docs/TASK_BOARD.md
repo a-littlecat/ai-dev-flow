@@ -1,9 +1,9 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-27
-> - 当前模式：`REPAIR-CAMPAIGN-001` Accepted
-> - 当前阶段：UCR-1 原生 Reviewer 路由与统一计数已通过当前 Codex Harness 自身的隔离复审和用户 UA2；Review Passed / UA2 Passed / Accepted / Committed / Merged / Released `v0.8.3` / Local Sync Verified / Not Closed
-> - 当前方案：`docs/plans/REPAIR-CAMPAIGN-001-continuous-repair-authority.md`
+> - 快照日期：2026-07-28
+> - 当前模式：`DASHBOARD` 实施任务 Review Passed / 规划提交待执行
+> - 当前阶段：四份实施 TASK 已 Ready，`P0/P1/P2/P3=0/0/0/0`；下一步精确提交六份规划文件，成功后新开对话执行 BE-001
+> - 当前方案：`docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md`
 
 ## 当前授权边界
 
@@ -39,6 +39,18 @@
 
 用户在确认任务分支已推送、本机 Skill 已同步、但尚未 merge / tag / Release 后明确回复“同步并发版”。该指令授权把当前任务分支合并到 `main`、推送 `main`、创建并推送 annotated tag `v0.8.3`、创建正式非 draft/非 prerelease GitHub Release，并按正式发布源复核现有本机 Skill；不授权删除分支、历史改写、其他项目/服务同步或 `Closed`。
 
+用户于 2026-07-28 明确要求建立本地任务关系仪表盘任务：本地使用，以观察完整任务关系为首要目标；前端只冻结总体产品要求和风格推荐，具体实施交给 Kimi；后端必须写清楚。本轮 authority 只允许创建 `DASHBOARD-001` 并同步本看板，不授权前端/后端实现、增加依赖、创建后续实施 TASK、commit、merge、push、release、外部同步或 `Closed`。
+
+用户随后要求“审核 DASHBOARD-001”。该指令授权当前 Codex Harness 执行隔离、只读 Review 并把 findings / Review 状态写回 TASK 与看板；不授权修复 findings、进入 UA2、Accepted、实现、commit、merge、push、release 或 `Closed`。
+
+用户在收到 5 个 P1、1 个 P2 和“Kimi 只读是前端运行时边界，不限制 Kimi 承担后端开发”的说明后明确回复“授权”。该指令仅授权 `DASHBOARD-001` Repair Round 1：修订冻结 findings、验证、隔离只读复审和 TASK/看板收据同步；不授权实施、创建后续 TASK、UA2、Accepted、commit、merge、push、release 或 `Closed`。
+
+用户在最终 Review Passed 和后续开发顺序说明后明确回复“确认，并创建文档”。该指令授权记录 `DASHBOARD-001` UA2 Passed / Accepted，并创建 `DASHBOARD-BE-001`、`DASHBOARD-BE-002`、`DASHBOARD-FE-001`、`DASHBOARD-INTEGRATE-001` 四份 Draft TASK；不授权执行任务、增加依赖、创建 Worktree、Review 子任务、commit、merge、push、release 或 `Closed`。
+
+用户随后明确要求“审核四份 DASHBOARD 实施任务，如有问题进行修复，直至通过可执行的程度。然后新开对话框执行 BE-001，审核并通过达到可验收程度”。该指令授权四份 TASK 的隔离 Review、有限 repair 和收据同步；规划通过后只授权在新对话执行 `DASHBOARD-BE-001`，并停在 `Review Passed / UA3 Pending`，不代替用户验收。
+
+用户进一步明确“规划文件我授权你可以提交”。该指令仅授权精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成后续 Worktree 可引用的 Git baseline；不授权 push、merge、release、删除、历史改写或代码提交。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -52,6 +64,13 @@
 - 在独立 Worktree 实现 `REPAIR-CAMPAIGN-001` 的 campaign policy、4 / 5 次连续无进展阈值、硬停止和兼容测试。
 - 精确提交并推送 `REPAIR-CAMPAIGN-001` 当前任务分支，同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本，并写回校验收据。
 - 将已验收任务分支合并并推送到 `main`，创建并推送 `v0.8.3` annotated tag 与正式 GitHub Release，并按发布源复核现有本机 Skill。
+- 创建 `DASHBOARD-001`，冻结本地关系图优先产品要求、Kimi 前端交接边界和详细只读后端合同，并同步本看板。
+- 对 `DASHBOARD-001` 执行隔离、只读 Review，并同步 Review 收据与状态。
+- 仅在 `docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md` 和 `docs/TASK_BOARD.md` 内修订 `P1-001～005`、`P2-006`、Kimi 角色歧义，运行验证并执行隔离只读复审。
+- 写回 `DASHBOARD-001` 的用户 UA2 确认与 Accepted 状态，创建四份后续 Draft TASK 文档并同步本看板。
+- 审核并有限修复四份 DASHBOARD 实施 TASK，复审通过后将合同推进到 Ready。
+- 精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成规划 Git baseline。
+- 在规划 baseline 形成后，新开对话并在独立 Worktree 实施 `DASHBOARD-BE-001`，运行验证和独立 Review/repair，停在可供用户 UA3 的状态。
 
 本轮不允许：
 
@@ -60,6 +79,10 @@
 - 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
 - 不删除其他分支、tag 或 Release，不强制删除未合并分支，不改写已提交历史，不执行额外版本发布或同步未确认的本机目录。
 - 不在 `REPAIR-CAMPAIGN-001` 中删除分支、改写历史、创建不存在的安装目录、同步其他项目/服务或记录 Closed。
+- 不在 `DASHBOARD-001` 规划阶段实现前端/后端、增加依赖、创建项目级 `PRODUCT.md` / `DESIGN.md`、自动写回 TASK、自动启动并行 agent 或创建后续实施 TASK。
+- 不把本轮 repair authority 扩大为前端/后端实施、创建后续 TASK、进入 UA2、记录 Accepted、commit、merge、push、release 或 `Closed`。
+- 不把“确认，并创建文档”扩大为执行四份 Draft TASK、创建/切换 Worktree、安装依赖、启动服务、独立 Review、commit、merge、push、release 或 `Closed`。
+- 不把本轮新增授权扩大为执行 BE-002、FE-001 或 INTEGRATE-001，也不替代用户 UA3，不执行 push、merge、release、删除、历史改写或 `Closed`。
 
 ## 真相源与状态规则
 
@@ -114,6 +137,11 @@ REL-002 Closed / main@0422887
 | SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
 | REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
 | REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Not Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
+| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Accepted | 高 | 高 | 当前 `main@fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / children Ready / Uncommitted | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
+| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Ready | 高 | 高 | DASHBOARD-001 Accepted；规划 baseline commit 待形成 | Passed / 无 P0-P3 | UA3 Pending | 条件授权：baseline commit 后新对话 + 独立 Worktree；未实施 | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
+| DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Ready | 高 | 高 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA3 Pending | 独立 Worktree / 可与 FE-001 候选并行 / 未授权实施 | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
+| DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Ready | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA4 Pending | 独立 Worktree / 可与 BE-002 候选并行 / 未授权实施 | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
+| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Ready | 高 | 高 | BE-001、BE-002、FE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA6 Pending | 串行集成 Worktree / 未授权实施 | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -128,7 +156,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-无自动后续动作；仅在用户另行授权后记录 `REPAIR-CAMPAIGN-001` Closed，并在确认完全合并后安全删除任务分支。
+精确提交父 TASK、四份 Ready 实施 TASK 与本看板，共六份规划文件；baseline commit 成功后，新开对话在独立 Worktree 执行 `DASHBOARD-BE-001`。后续顺序保持 `BE-001 → (BE-002 ∥ FE-001) → INTEGRATE-001`，但本轮没有后三项 execution authority。
 
 ## 停止条件
 
@@ -140,4 +168,6 @@ REL-002 Closed / main@0422887
 - campaign streak 可被换 chain/TASK/模型清零，4 / 5 阈值未按 profile 执行，或 P0、安全、数据、越界、不可逆、oracle 放宽等硬停止被延迟。
 - 任一模型成为核心依赖，或模型更换重置额度/repair 计数。
 - 需要自动调度器、数据库、遥测或计费系统才能证明收益。
+- `DASHBOARD-001` 把 Snapshot、TASK_BOARD 或浏览器提升为事实源，提供写接口，自动启动 agent/Worktree，或把“并行候选”显示为已授权并行。
+- Kimi 前端绕过只读 API 自行读取/修改 TASK 或 Git，或后端为配合具体布局而合并 Review、UA、Accepted、delivery、Closed 等正交状态。
 - 目标分支未完全合并、当前工作区不干净、远端出现未核对的同名分支，或清理动作需要强制删除、历史改写、额外发布或未确认路径同步。
