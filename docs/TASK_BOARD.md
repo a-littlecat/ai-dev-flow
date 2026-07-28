@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-28
-> - 当前模式：`DASHBOARD` 实施任务 Review Passed / 规划提交待执行
-> - 当前阶段：四份实施 TASK 已 Ready，`P0/P1/P2/P3=0/0/0/0`；下一步精确提交六份规划文件，成功后新开对话执行 BE-001
+> - 当前模式：`DASHBOARD-BE-001` 执行入口已就绪
+> - 当前阶段：四份实施 TASK 已 Ready，`P0/P1/P2/P3=0/0/0/0`；六文件规划 baseline `371383f` 已提交，下一步新开对话执行 BE-001
 > - 当前方案：`docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md`
 
 ## 当前授权边界
@@ -137,8 +137,8 @@ REL-002 Closed / main@0422887
 | SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
 | REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
 | REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Not Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
-| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Accepted | 高 | 高 | 当前 `main@fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / children Ready / Uncommitted | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
-| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Ready | 高 | 高 | DASHBOARD-001 Accepted；规划 baseline commit 待形成 | Passed / 无 P0-P3 | UA3 Pending | 条件授权：baseline commit 后新对话 + 独立 Worktree；未实施 | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
+| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Accepted | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed `371383f` / children Ready | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
+| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Ready | 高 | 高 | DASHBOARD-001 Accepted/Committed；规划 baseline `371383f` | Passed / 无 P0-P3 | UA3 Pending | 条件授权：新对话 + 独立 Worktree；未实施 | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
 | DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Ready | 高 | 高 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA3 Pending | 独立 Worktree / 可与 FE-001 候选并行 / 未授权实施 | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
 | DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Ready | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA4 Pending | 独立 Worktree / 可与 BE-002 候选并行 / 未授权实施 | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
 | DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Ready | 高 | 高 | BE-001、BE-002、FE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA6 Pending | 串行集成 Worktree / 未授权实施 | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
@@ -156,7 +156,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-精确提交父 TASK、四份 Ready 实施 TASK 与本看板，共六份规划文件；baseline commit 成功后，新开对话在独立 Worktree 执行 `DASHBOARD-BE-001`。后续顺序保持 `BE-001 → (BE-002 ∥ FE-001) → INTEGRATE-001`，但本轮没有后三项 execution authority。
+新开对话，从包含规划提交收据的最新 `main` HEAD 冻结实际 base，在独立 Worktree 执行 `DASHBOARD-BE-001` 并停在 `Review Passed / UA3 Pending`。后续顺序保持 `BE-001 → (BE-002 ∥ FE-001) → INTEGRATE-001`，但本轮没有后三项 execution authority。
 
 ## 停止条件
 

@@ -13,7 +13,7 @@
 - `ua_evidence`: `#dashboard-001-ua2-2026-07-28`
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `None`
 
@@ -942,11 +942,11 @@ edges = sorted(edges)
 
 ## Outcome
 
-- Base / Diff：`fb16bc50f02023aad4a51acd8bf495231fe65f63` 到当前工作区；仅规划文档。
+- Base / Diff：`fb16bc50f02023aad4a51acd8bf495231fe65f63` 到六文件规划 baseline `371383f0d93048fa2a31c1ca1306a7e1421650ff`；仅规划文档。
 - 修改文件：本 TASK、`docs/TASK_BOARD.md`，以及新建的 `DASHBOARD-BE-001`、`DASHBOARD-BE-002`、`DASHBOARD-FE-001`、`DASHBOARD-INTEGRATE-001` 四份 TASK 文档。
 - 验证证据：最终 Ready 状态写回后，本 TASK targeted workflow lint 为 `errors/violations/warnings=0/0/2`，四份子 TASK 各为 `0/0/1`；project lint 为 `19/0/28`，19 个 error 均来自既有 Legacy TASK；TASK_BOARD 无 board diagnostics，DASHBOARD 文件无 error；四份 Scheduling 均为 13/13 字段且无 dangling TASK reference；ai-dev-flow 完整单元测试 `81/81 Passed`；`git diff --check` 通过。
 - Review findings：规划 Review 为 `Passed`；四份实施 TASK 最终独立 Review 为 `Passed`，`P0/P1/P2/P3=0/0/0/0`，4 个实施合同 P1 全部 Closed。
 - UA 动作与结果：`UA2 Passed / User Confirmed`；用户确认产品方向和任务拆分。
-- 状态边界：当前为 `Accepted / Review Passed / UA2 Passed / Uncommitted` 规划；四份子任务均为 `Ready / Review Passed / Uncommitted / Unmerged`，均未实施、未 UA、未 Accepted、未 release、未 Closed。工作区原有两个 `__pycache__/` 未跟踪目录不属于本 TASK，本轮不修改或清理。
-- 剩余风险：整仓 19 个 Legacy parse error 为既有历史问题，当前未修复；BE-001 只有在六文件规划 commit 成功后才可开始。
-- 下一步：精确提交六份规划文件；成功后按条件化 authority 新开对话并在独立 Worktree 执行 BE-001，其他三项仍无 execution authority。
+- 状态边界：当前为 `Accepted / Review Passed / UA2 Passed / Committed` 规划；四份子任务均为 `Ready / Review Passed / Uncommitted / Unmerged`，均未实施、未 UA、未 Accepted、未 release、未 Closed。工作区原有两个 `__pycache__/` 未跟踪目录不属于本 TASK，本轮不修改或清理。
+- 剩余风险：整仓 19 个 Legacy parse error 为既有历史问题，当前未修复；BE-001 实施后仍需独立 Review 和用户 UA3。
+- 下一步：在新对话和独立 Worktree 执行 BE-001，停在 `Review Passed / UA3 Pending`；其他三项仍无 execution authority。

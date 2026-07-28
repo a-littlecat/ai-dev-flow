@@ -86,8 +86,8 @@
 
 ## 依赖与授权
 
-- 前置依赖：`DASHBOARD-001` 已 `Review Passed / UA2 Passed / Accepted`；当前 Accepted 规划尚未 commit，执行前必须重新冻结可引用的 Git baseline。
-- Base commit：规划基线为 `fb16bc50f02023aad4a51acd8bf495231fe65f63`；实施 base 在取得 execution authority 后填写。
+- 前置依赖：`DASHBOARD-001` 已 `Review Passed / UA2 Passed / Accepted / Committed`；六文件规划 baseline 已形成。
+- Base commit：规划内容 baseline 为 `371383f0d93048fa2a31c1ca1306a7e1421650ff`；新对话必须从包含本提交收据的最新 `main` HEAD 冻结实际实施 base。
 - 条件化 execution authority：用户已明确要求在四份实施 TASK 复审通过、Ready 写回并形成六文件规划 Git baseline 后，新开对话执行本 TASK，允许在本 TASK 精确 allowlist 内实现、验证，并执行隔离 Review/有限 repair，直到 `Review Passed / UA3 Pending`。
 - 执行前置：本轮实施 TASK Review 必须为 Passed、本 TASK lifecycle 必须为 Ready、六文件规划必须已 commit；任一条件未满足都不得创建 Worktree 或开始代码。
 - 未授权动作：新增第三方依赖、实现 diff 越出 allowlist、代码 commit、代替用户 UA3、记录 Accepted、merge、push、release、外部同步、删除和 Closed。
@@ -150,11 +150,11 @@
 - 冻结输入：本 TASK SHA256 `01BE65CB3751704DA4E946D66C004AD9AEEAF3F403ACDA1D5589378FE771EB48`。
 - 结论：`Passed`；`DASHBOARD-TASKS-P1-004` Closed，原 `P1-001/002/003` 无回归，无新增 finding；整体 `P0/P1/P2/P3=0/0/0/0`。
 - Reviewer 确认：公开 Reader、schema/validator/fixtures、单字节 NUL/LF oracle、精确 allowlist、执行前置和停止点足以进入 Ready。
-- 状态边界：`Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged`；规划 baseline commit 尚未形成，因此还不能创建实现 Worktree。
+- 状态边界：`Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged`；规划 baseline 已形成，允许按条件化 authority 在新对话创建实现 Worktree。
 
 ## Outcome
 
-- Base / Diff：`base=fb16bc50f02023aad4a51acd8bf495231fe65f63`；当前仅新增任务文档，implementation diff 尚不存在。
+- Base / Diff：规划 baseline `371383f0d93048fa2a31c1ca1306a7e1421650ff`；implementation diff 尚不存在，实际实施 base 由新对话从最新 `main` HEAD 冻结。
 - 修改文件：`docs/tasks/DASHBOARD-BE-001.md` 和 TASK_BOARD 投影；代码文件尚未创建。
 - 验证证据：任务文档 targeted lint 为 `errors/violations/warnings=0/0/1`，唯一 warning 是文件尚未形成 Git transition history；Scheduling 为 13/13 字段、引用均存在；TASK_BOARD 无 drift/missing/orphan/parse；链接、范围、whitespace 与敏感值检查通过。
 - Review findings：最终独立 Review `Passed`，四份实施 TASK 合计 `P0/P1/P2/P3=0/0/0/0`；本 TASK 无开放 finding。
@@ -162,5 +162,5 @@
 - 隔离位置：待 execution authority 后创建独立 Worktree。
 - 回滚方式：未实施；当前仅可删除本次新建 Draft 文档，但删除仍需用户明确授权。
 - 状态边界：Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged；未实施、未 Accepted、未交付、未 Closed。
-- 剩余风险：Accepted 规划尚未形成 commit baseline；单字节 byte oracle 尚未由代码与测试实际验证。
-- 下一步：六文件规划 commit 成功后，由已授权的新对话创建独立 Worktree 并实施到 `Review Passed / UA3 Pending`。
+- 剩余风险：单字节 byte oracle 尚未由代码与测试实际验证；实现仍需严格限于 allowlist。
+- 下一步：由已授权的新对话创建独立 Worktree 并实施到 `Review Passed / UA3 Pending`。
