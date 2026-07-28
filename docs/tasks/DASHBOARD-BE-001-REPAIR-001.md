@@ -14,7 +14,7 @@
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
 
 ## Scheduling
@@ -187,15 +187,24 @@
 - 合并策略：先把本分支合入 `codex/dashboard-be-002` 形成组合树，复验后再合并到本地 `main`。
 - 权限边界：不包含 push、release、外部同步、删除分支/Worktree 或 Closed。
 
+## 提交与合并结果 2026-07-28
+
+- 生命周期提交：`2e4e2a5` 保存 `In Progress`，`edb8c2b` 保存 `Review`，功能提交 `21e8816b8a1d2e9b2eb90fef322da1361dd93a77` 保存已审查实现和 `Accepted / Committed`。
+- 组合合并：repair 分支通过 no-ff merge 纳入 `codex/dashboard-be-002`，组合提交为 `64312291d9579f3f712e120f5dbd9b0fb3b0995f`。
+- main 合并：本地 `main` 从 `760b40442bcc96f711f12433a2c5d017d118d85c` 使用 `git merge --ff-only codex/dashboard-be-002` 快进到组合提交。
+- 合并前组合复验：Dashboard `130/130 Passed`、Reader/治理 `85/85 Passed`，共享 TASK_BOARD 冲突只保留两条 Accepted 真值行。
+- 权限边界：未 push、未 release、未删除分支/Worktree、未 Closed。
+
 ## Outcome
 
-- Base / Diff：base=760b40442bcc96f711f12433a2c5d017d118d85c;diff=working-tree
+- Base / Diff：base=760b40442bcc96f711f12433a2c5d017d118d85c;diff=64312291d9579f3f712e120f5dbd9b0fb3b0995f
+- 合并目标与事实证据：本地 `main`；feature=`21e8816b8a1d2e9b2eb90fef322da1361dd93a77`；combined/main=`64312291d9579f3f712e120f5dbd9b0fb3b0995f`；repair no-ff 合入 BE-002 后由 main ff-only 合并。
 - 修改文件：`core/**`、`tests/be001/**`、dashboard contract schema、公共 Reader 与定向测试、本 TASK 和 TASK_BOARD；没有新增依赖。
 - 验证证据：Python 3.12 组合 dashboard 回归 `130/130 Passed`；Skill/Reader 回归 `85/85 Passed`；六份 Campaign ER-1 30 样本结果的 nearest-rank 与 SHA256 已由 Engineer 和独立 Reviewer 分别复算，2 秒/1 秒/250ms/10MiB 门禁连续双跑 GREEN。
 - Review findings：Campaign ER-1 独立 Review `Passed`，`P0/P1/P2/P3=0/0/1/0`；三个目标 finding Closed，唯一 P2 已作为纯记录纠错随 receipt 写回。
 - UA 动作与结果：用户明确回复“验收通过”；`UA3 Passed / User Confirmed / Accepted`。
-- 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-be-001-repair-001`，branch `codex/dashboard-be-001-repair-001`；组合副本位于本机临时目录。
+- 隔离位置：实现来源为 `D:\open-source\ai-dev-flow-wt\dashboard-be-001-repair-001` 和 branch `codex/dashboard-be-001-repair-001`；已通过组合提交合并到本地 `main`。
 - 回滚方式：本功能提交及独立分支作为恢复点；未经用户授权不删除、reset、revert 或改写历史。
-- 状态边界：`Accepted / Passed / Campaign ER-1 / UA3 Passed / User Confirmed / Committed / Unmerged / Not Pushed / Not Released / Not Closed`。
+- 状态边界：`Accepted / Passed / Campaign ER-1 / UA3 Passed / User Confirmed / Committed / Merged / Not Pushed / Not Released / Not Closed`。
 - 剩余风险：stable-save run2 有一个 `5187.3041 ms` 最大样本；冻结 nearest-rank p95 为 `840.7838 ms` 并通过门禁，但这不代表最大延迟低于 1 秒；该风险已在 UA3 前披露并由用户接受。
-- 下一步：按用户授权与 `DASHBOARD-BE-002` 形成组合提交并合并到本地 `main`；push、release 与 Closed 继续保持未授权。
+- 下一步：没有自动后续动作；push、release、删除分支/Worktree 与 Closed 继续保持未授权。
