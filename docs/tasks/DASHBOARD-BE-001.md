@@ -14,8 +14,8 @@
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -221,15 +221,25 @@
 - Windows 交付修正：在允许的 `dashboard/contracts/**` 内新增局部 `.gitattributes`，固定 `events.sse` 为 `text eol=lf`；wire bytes 保持 312 bytes、无 CR、结尾精确双 LF。
 - 状态边界：`Accepted / Review Passed / UA3 Passed / Committed / Unmerged`；用户已授权后续合并，但尚未 push、release 或 Closed。
 
+## DASHBOARD-BE-001 提交与合并 2026-07-28
+
+- 用户授权：用户在 UA3 Passed 后明确要求“提交并合并”，并在发现原历史流转缺口后明确授权本地未 push 历史重建。
+- 功能提交：`cc922d4492c50d8fecaa1c29e51eac6de41b03a9`（`feat(dashboard): add accepted backend core`），其祖先依次保存 `Ready → In Progress → Review → Accepted` 合法流转。
+- 合并方式：本地 `main` 从基线 `c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958` 使用 `git merge --ff-only codex/dashboard-be-001` 合并到功能提交；本交付收据作为后续治理提交记录 Merged 事实。
+- 恢复证据：旧提交仍由 `backup/dashboard-be-001-main-7f65f3b`、`backup/dashboard-be-001-feature-bed4d78` 保留；未删除分支或 Worktree。
+- 交付状态：`Accepted / Review Passed / UA3 Passed / Committed / Merged / Not Pushed / Not Closed`。
+- 权限边界：本次授权不包含 push、release、Closed 或执行 BE-002、FE-001、INTEGRATE-001。
+
 ## Outcome
 
-- Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958..codex/dashboard-be-001
+- Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958..main
 - 修改文件：新增 `dashboard/backend/pyproject.toml`、`dashboard/backend/src/ai_dev_flow_dashboard/__init__.py`、`dashboard/backend/src/ai_dev_flow_dashboard/core/**`、`dashboard/backend/tests/be001/**`、`dashboard/contracts/**`；同步本 TASK 与 TASK_BOARD 投影。未修改 `skills/ai-dev-flow/**`、其他 TASK、前端或发布文件。
 - 验证证据：dashboard backend 定向测试 `74/74 Passed`；schema/8 JSON fixtures/SSE transcript 两轮各 `11/11 Passed`，合同集合 `files=10`、两次清单摘要均为 `a82d612330d88fb43454720b400118b5ccd3d06ef0ff62e2b6ef089ffac218c8`；ai-dev-flow 完整回归 `81/81 Passed`；Review baseline target lint `0/0/1`，UA3 写回后 target lint `0/0/2`；Review baseline project lint `19/0/27`，UA3 写回后 project lint `19/0/28`，19 个 error 均为任务范围外既有 Legacy diagnostics；diff-scope `changed=35/outside=0/staged=0`，`git diff --check` 与 32 个非 SSE 新文件扩展 whitespace 检查通过，SSE 双 LF 由 byte oracle 保留并验证。
 - Review findings：A3 最终独立只读复审 `Passed`，`P0/P1/P2/P3=0/0/0/0`；`P1-001` 至 `P1-009` 全部 Closed，`DASHBOARD-001-P2-006` 回归通过；Reviewer workspace writes=None。
 - UA 动作与结果：用户已查看任务说明与验收范围并明确回复“验收通过”；`UA3 Passed / User Confirmed`。
-- 隔离位置：Worktree `D:\open-source\ai-dev-flow-wt\dashboard-be-001`；branch `codex/dashboard-be-001`。
-- 回滚方式：旧提交均由只读 backup refs 保留；未经用户明确授权不删除备份、不 reset 或再次改写历史。
-- 状态边界：`Accepted / Review Passed / UA3 Passed / Committed / Unmerged`；未 merge、未 push、未 release、未 Closed。
-- 剩余风险：实现尚未合并到本地 `main`；Windows 文件共享租约已通过真实 OS 对抗测试，非 Windows 会按合同 fail-closed；BE-001 不包含 Git/watcher/HTTP/SSE server/frontend。
-- 下一步：按用户授权将 `codex/dashboard-be-001` fast-forward 合并到本地 `main`，再写入 Merged 交付收据；不自动执行后续任务。
+- 合并目标与事实证据：本地 `main` 已通过 fast-forward 合并功能提交 `cc922d4492c50d8fecaa1c29e51eac6de41b03a9`；merge authority 来自用户“提交并合并”及后续历史重建授权。
+- 隔离位置：实现来源 Worktree `D:\open-source\ai-dev-flow-wt\dashboard-be-001`、branch `codex/dashboard-be-001`；已合并到本地 `main`。
+- 回滚方式：旧提交均由 backup refs 保留；未经用户明确授权不删除备份、不 reset、revert 或再次改写历史。
+- 状态边界：`Accepted / Review Passed / UA3 Passed / Committed / Merged / Not Pushed / Not Closed`。
+- 剩余风险：当前交付只存在于本地 Git，尚未 push；Windows 文件共享租约已通过真实 OS 对抗测试，非 Windows 会按合同 fail-closed；BE-001 不包含 Git/watcher/HTTP/SSE server/frontend。
+- 下一步：本任务没有自动后续动作；等待用户另行授权下一项任务、push 或 Closed。
