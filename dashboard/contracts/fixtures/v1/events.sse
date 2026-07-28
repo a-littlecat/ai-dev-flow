@@ -1,0 +1,5 @@
+retry: 2000
+event: snapshot
+id: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+data: {"changed_task_ids":["DASHBOARD-BE-001"],"reset_required":true,"revision":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","schema_version":"ai-dev-flow/dashboard-event/v1","state":"fresh"}
+

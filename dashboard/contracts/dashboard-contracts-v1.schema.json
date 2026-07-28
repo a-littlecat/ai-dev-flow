@@ -1,0 +1,688 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai-dev-flow/dashboard-contracts/v1",
+  "oneOf": [
+    {"$ref": "#/$defs/DashboardSnapshot"},
+    {"$ref": "#/$defs/TaskDetail"},
+    {"$ref": "#/$defs/Health"},
+    {"$ref": "#/$defs/ErrorEnvelope"},
+    {"$ref": "#/$defs/SnapshotEvent"}
+  ],
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "[0-9a-f]{64}"
+    },
+    "NullableString": {
+      "type": ["string", "null"]
+    },
+    "StringArray": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_path", "heading", "field", "line", "raw_value", "source_type"],
+      "properties": {
+        "source_path": {"type": "string"},
+        "heading": {"$ref": "#/$defs/NullableString"},
+        "field": {"$ref": "#/$defs/NullableString"},
+        "line": {"type": "integer", "minimum": 0},
+        "raw_value": {"$ref": "#/$defs/NullableString"},
+        "source_type": {
+          "type": "string",
+          "enum": ["canonical", "legacy_inferred", "derived", "git", "default"]
+        }
+      }
+    },
+    "Diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnostic_id", "code", "severity", "message", "task_ids", "provenance"],
+      "properties": {
+        "diagnostic_id": {"$ref": "#/$defs/Sha256"},
+        "code": {"type": "string", "minLength": 1},
+        "severity": {"type": "string", "enum": ["error", "violation", "warning", "info"]},
+        "message": {"type": "string"},
+        "task_ids": {"$ref": "#/$defs/StringArray"},
+        "provenance": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Provenance"}
+        }
+      }
+    },
+    "WorktreeSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "head", "branch", "detached", "locked", "prunable", "dirty_state", "dirty_paths", "diagnostic_ids"],
+      "properties": {
+        "root": {"type": "string"},
+        "head": {"$ref": "#/$defs/NullableString"},
+        "branch": {"$ref": "#/$defs/NullableString"},
+        "detached": {"type": "boolean"},
+        "locked": {"type": "boolean"},
+        "prunable": {"type": "boolean"},
+        "dirty_state": {"type": "string", "enum": ["clean", "dirty", "unknown"]},
+        "dirty_paths": {"$ref": "#/$defs/StringArray"},
+        "diagnostic_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sha256"}
+        }
+      }
+    },
+    "ProjectSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "branch", "head", "dirty", "git_state", "worktrees"],
+      "properties": {
+        "root": {"type": "string"},
+        "branch": {"$ref": "#/$defs/NullableString"},
+        "head": {"$ref": "#/$defs/NullableString"},
+        "dirty": {"type": ["boolean", "null"]},
+        "git_state": {"type": "string", "enum": ["ok", "degraded", "unavailable"]},
+        "worktrees": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/WorktreeSnapshot"}
+        }
+      }
+    },
+    "StaleSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_path", "current_digest", "last_good_digest", "diagnostic_ids"],
+      "properties": {
+        "source_path": {"type": "string"},
+        "current_digest": {"$ref": "#/$defs/Sha256"},
+        "last_good_digest": {
+          "type": ["string", "null"],
+          "pattern": "[0-9a-f]{64}"
+        },
+        "diagnostic_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sha256"}
+        }
+      }
+    },
+    "TaskNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id", "title", "source_path", "task_type", "task_class", "lifecycle",
+        "review_status", "ua_level", "ua_status", "acceptance_authority",
+        "commit_status", "merge_status", "merge_authority", "close_authority",
+        "unsupported_axes", "scheduling_state", "priority", "risk_flags",
+        "write_scope", "module_locks", "parallel_intent", "worktree_requirement",
+        "branch_hint", "freshness", "diagnostic_ids", "provenance"
+      ],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*"},
+        "title": {"type": "string"},
+        "source_path": {"type": "string"},
+        "task_type": {
+          "type": ["string", "null"],
+          "enum": ["document", "plan", "code", "review", "repair", "test", null]
+        },
+        "task_class": {"type": ["string", "null"], "enum": ["A", "B", "C", "D", null]},
+        "lifecycle": {
+          "type": ["string", "null"],
+          "enum": ["Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled", null]
+        },
+        "review_status": {
+          "type": ["string", "null"],
+          "enum": ["Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge", null]
+        },
+        "ua_level": {
+          "type": ["string", "null"],
+          "enum": ["UA0", "UA1", "UA2", "UA3", "UA4", "UA5", "UA6", "UA7", "TBD", null]
+        },
+        "ua_status": {
+          "type": ["string", "null"],
+          "enum": ["Not Required", "Pending", "Passed", "Failed", "Deferred", "TBD", null]
+        },
+        "acceptance_authority": {
+          "type": ["string", "null"],
+          "enum": ["None", "User Confirmed", "Designated Acceptor Confirmed", null]
+        },
+        "commit_status": {
+          "type": ["string", "null"],
+          "enum": ["Not Applicable", "Uncommitted", "Committed", null]
+        },
+        "merge_status": {
+          "type": ["string", "null"],
+          "enum": ["Not Applicable", "Unmerged", "Merged", "Deferred", null]
+        },
+        "merge_authority": {
+          "type": ["string", "null"],
+          "enum": ["None", "User Authorized", "Denied", null]
+        },
+        "close_authority": {
+          "type": ["string", "null"],
+          "enum": ["None", "User Authorized", "Rule Authorized", "Denied", null]
+        },
+        "unsupported_axes": {"$ref": "#/$defs/StringArray"},
+        "scheduling_state": {
+          "type": "string",
+          "enum": ["canonical", "legacy_inferred", "absent", "invalid"]
+        },
+        "priority": {"type": ["string", "null"], "enum": ["high", "medium", "low", "TBD", null]},
+        "risk_flags": {"$ref": "#/$defs/StringArray"},
+        "write_scope": {"$ref": "#/$defs/StringArray"},
+        "module_locks": {"$ref": "#/$defs/StringArray"},
+        "parallel_intent": {
+          "type": ["string", "null"],
+          "enum": ["serial", "consider", "unknown", null]
+        },
+        "worktree_requirement": {
+          "type": ["string", "null"],
+          "enum": ["required", "optional", "forbidden", "unknown", null]
+        },
+        "branch_hint": {"$ref": "#/$defs/NullableString"},
+        "freshness": {"type": "string", "enum": ["fresh", "stale", "partial"]},
+        "diagnostic_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sha256"}
+        },
+        "provenance": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Provenance"}
+        }
+      }
+    },
+    "DependencyCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axis", "operator", "expected", "actual", "evaluation"],
+      "properties": {
+        "axis": {
+          "type": "string",
+          "enum": ["lifecycle", "review_status", "ua_status", "acceptance_authority", "commit_status", "merge_status", "merge_authority", "close_authority"]
+        },
+        "operator": {"const": "eq"},
+        "expected": {"type": "string"},
+        "actual": {"$ref": "#/$defs/NullableString"},
+        "evaluation": {"type": "string", "enum": ["satisfied", "unsatisfied", "unknown"]}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "axis": {"const": "lifecycle"},
+            "expected": {"type": "string", "enum": ["Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled"]},
+            "actual": {"type": ["string", "null"], "enum": ["Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "review_status"},
+            "expected": {"type": "string", "enum": ["Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge"]},
+            "actual": {"type": ["string", "null"], "enum": ["Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "ua_status"},
+            "expected": {"type": "string", "enum": ["Not Required", "Pending", "Passed", "Failed", "Deferred", "TBD"]},
+            "actual": {"type": ["string", "null"], "enum": ["Not Required", "Pending", "Passed", "Failed", "Deferred", "TBD", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "acceptance_authority"},
+            "expected": {"type": "string", "enum": ["None", "User Confirmed", "Designated Acceptor Confirmed"]},
+            "actual": {"type": ["string", "null"], "enum": ["None", "User Confirmed", "Designated Acceptor Confirmed", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "commit_status"},
+            "expected": {"type": "string", "enum": ["Not Applicable", "Uncommitted", "Committed"]},
+            "actual": {"type": ["string", "null"], "enum": ["Not Applicable", "Uncommitted", "Committed", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "merge_status"},
+            "expected": {"type": "string", "enum": ["Not Applicable", "Unmerged", "Merged", "Deferred"]},
+            "actual": {"type": ["string", "null"], "enum": ["Not Applicable", "Unmerged", "Merged", "Deferred", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "merge_authority"},
+            "expected": {"type": "string", "enum": ["None", "User Authorized", "Denied"]},
+            "actual": {"type": ["string", "null"], "enum": ["None", "User Authorized", "Denied", null]}
+          }
+        },
+        {
+          "properties": {
+            "axis": {"const": "close_authority"},
+            "expected": {"type": "string", "enum": ["None", "User Authorized", "Rule Authorized", "Denied"]},
+            "actual": {"type": ["string", "null"], "enum": ["None", "User Authorized", "Rule Authorized", "Denied", null]}
+          }
+        }
+      ]
+    },
+    "RelationshipEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edge_id", "type", "source_task_id", "target_task_id", "condition", "storage_direction", "display_direction", "directional", "origin", "provenance"],
+      "properties": {
+        "edge_id": {"$ref": "#/$defs/Sha256"},
+        "type": {"type": "string", "enum": ["depends_on", "parent", "replaces", "discovered_from", "conflicts_with"]},
+        "source_task_id": {"type": "string"},
+        "target_task_id": {"type": "string"},
+        "condition": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/DependencyCondition"}
+          ]
+        },
+        "storage_direction": {
+          "type": "string",
+          "enum": ["dependent_to_prerequisite", "child_to_parent", "replacement_to_replaced", "discovered_to_origin", "symmetric"]
+        },
+        "display_direction": {
+          "type": "string",
+          "enum": ["prerequisite_to_dependent", "parent_to_child", "replaced_to_replacement", "origin_to_discovered", "symmetric"]
+        },
+        "directional": {"type": "boolean"},
+        "origin": {"type": "string", "enum": ["canonical", "legacy_inferred", "derived"]},
+        "provenance": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Provenance"}
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "type": {"const": "depends_on"},
+            "condition": {"$ref": "#/$defs/DependencyCondition"},
+            "storage_direction": {"const": "dependent_to_prerequisite"},
+            "display_direction": {"const": "prerequisite_to_dependent"},
+            "directional": {"const": true}
+          }
+        },
+        {
+          "properties": {
+            "type": {"const": "parent"},
+            "condition": {"const": null},
+            "storage_direction": {"const": "child_to_parent"},
+            "display_direction": {"const": "parent_to_child"},
+            "directional": {"const": true}
+          }
+        },
+        {
+          "properties": {
+            "type": {"const": "replaces"},
+            "condition": {"const": null},
+            "storage_direction": {"const": "replacement_to_replaced"},
+            "display_direction": {"const": "replaced_to_replacement"},
+            "directional": {"const": true}
+          }
+        },
+        {
+          "properties": {
+            "type": {"const": "discovered_from"},
+            "condition": {"const": null},
+            "storage_direction": {"const": "discovered_to_origin"},
+            "display_direction": {"const": "origin_to_discovered"},
+            "directional": {"const": true}
+          }
+        },
+        {
+          "properties": {
+            "type": {"const": "conflicts_with"},
+            "condition": {"const": null},
+            "storage_direction": {"const": "symmetric"},
+            "display_direction": {"const": "symmetric"},
+            "directional": {"const": false}
+          }
+        }
+      ]
+    },
+    "ActionRecommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_id", "task_id", "action_kind", "eligibility", "reason_codes", "blocking_task_ids", "blocking_condition_ids", "related_diagnostic_ids", "required_authority", "authority_state", "evidence"],
+      "properties": {
+        "action_id": {"$ref": "#/$defs/Sha256"},
+        "task_id": {"type": "string"},
+        "action_kind": {"type": "string", "enum": ["plan", "execute", "continue", "review", "repair", "user_decision", "commit", "merge", "release", "close", "none"]},
+        "eligibility": {"type": "string", "enum": ["actionable", "blocked", "needs_authority", "unknown", "not_applicable"]},
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["CONTRACT_STATE_INVALID", "TERMINAL_STATE", "REPAIR_AUTHORITY_UNSUPPORTED", "PLANNING_DECISION_REQUIRED", "DEPENDENCY_STATE_UNKNOWN", "DEPENDENCY_UNSATISFIED", "EXECUTION_AUTHORITY_UNSUPPORTED", "CONTINUE_AUTHORITY_UNSUPPORTED", "REVIEW_AUTHORITY_UNSUPPORTED", "USER_DECISION_PENDING", "ACCEPTANCE_RECORD_PENDING", "COMMIT_AUTHORITY_UNSUPPORTED", "MERGE_AUTHORITY_PRESENT", "MERGE_AUTHORITY_DENIED", "MERGE_AUTHORITY_REQUIRED", "RELEASE_AXIS_UNSUPPORTED", "CLOSE_AUTHORITY_PRESENT", "CLOSE_AUTHORITY_DENIED", "CLOSE_AUTHORITY_REQUIRED", "STATE_COMBINATION_UNMAPPED"]
+          }
+        },
+        "blocking_task_ids": {"$ref": "#/$defs/StringArray"},
+        "blocking_condition_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sha256"}
+        },
+        "related_diagnostic_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sha256"}
+        },
+        "required_authority": {"type": "string", "enum": ["none", "execution", "review", "repair", "commit", "merge", "release", "close", "user_decision"]},
+        "authority_state": {"type": "string", "enum": ["not_required", "present", "missing", "denied", "unsupported", "unknown"]},
+        "evidence": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Provenance"}
+        }
+      }
+    },
+    "ParallelAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessment_id", "left_task_id", "right_task_id", "result", "reason_codes", "hard_conflicts", "projection_conflicts", "worktree_evidence", "requires_user_confirmation"],
+      "properties": {
+        "assessment_id": {"$ref": "#/$defs/Sha256"},
+        "left_task_id": {"type": "string"},
+        "right_task_id": {"type": "string"},
+        "result": {"type": "string", "enum": ["candidate", "must_serial", "unknown"]},
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["DEPENDENCY_PATH_PRESENT", "EXPLICIT_CONFLICT", "WRITE_SCOPE_OVERLAP", "MODULE_LOCK_OVERLAP", "SHARED_HIGH_RISK_SURFACE", "HIGH_RISK_SERIAL", "UA_LEVEL_SERIAL", "WORKTREE_EVIDENCE_UNKNOWN", "WORKTREE_SHARED", "DIRTY_OWNERSHIP_UNKNOWN", "PROJECTION_ONLY_CONFLICT", "ALL_CHECKS_PASSED"]
+          }
+        },
+        "hard_conflicts": {"$ref": "#/$defs/StringArray"},
+        "projection_conflicts": {"$ref": "#/$defs/StringArray"},
+        "worktree_evidence": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/WorktreeSnapshot"}
+        },
+        "requires_user_confirmation": {"const": true}
+      }
+    },
+    "LifecycleCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled"],
+      "properties": {
+        "Draft": {"type": "integer", "minimum": 0},
+        "Ready": {"type": "integer", "minimum": 0},
+        "In Progress": {"type": "integer", "minimum": 0},
+        "Blocked": {"type": "integer", "minimum": 0},
+        "Review": {"type": "integer", "minimum": 0},
+        "Needs Fix": {"type": "integer", "minimum": 0},
+        "Accepted": {"type": "integer", "minimum": 0},
+        "Closed": {"type": "integer", "minimum": 0},
+        "Deferred": {"type": "integer", "minimum": 0},
+        "Cancelled": {"type": "integer", "minimum": 0}
+      }
+    },
+    "ActionCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plan", "execute", "continue", "review", "repair", "user_decision", "commit", "merge", "release", "close", "none"],
+      "properties": {
+        "plan": {"type": "integer", "minimum": 0},
+        "execute": {"type": "integer", "minimum": 0},
+        "continue": {"type": "integer", "minimum": 0},
+        "review": {"type": "integer", "minimum": 0},
+        "repair": {"type": "integer", "minimum": 0},
+        "user_decision": {"type": "integer", "minimum": 0},
+        "commit": {"type": "integer", "minimum": 0},
+        "merge": {"type": "integer", "minimum": 0},
+        "release": {"type": "integer", "minimum": 0},
+        "close": {"type": "integer", "minimum": 0},
+        "none": {"type": "integer", "minimum": 0}
+      }
+    },
+    "SeverityCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "violation", "warning", "info"],
+      "properties": {
+        "error": {"type": "integer", "minimum": 0},
+        "violation": {"type": "integer", "minimum": 0},
+        "warning": {"type": "integer", "minimum": 0},
+        "info": {"type": "integer", "minimum": 0}
+      }
+    },
+    "RelationCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["depends_on", "parent", "replaces", "discovered_from", "conflicts_with"],
+      "properties": {
+        "depends_on": {"type": "integer", "minimum": 0},
+        "parent": {"type": "integer", "minimum": 0},
+        "replaces": {"type": "integer", "minimum": 0},
+        "discovered_from": {"type": "integer", "minimum": 0},
+        "conflicts_with": {"type": "integer", "minimum": 0}
+      }
+    },
+    "Summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_total", "edge_total", "action_total", "counts_by_lifecycle", "counts_by_action", "counts_by_severity", "counts_by_relation"],
+      "properties": {
+        "task_total": {"type": "integer", "minimum": 0},
+        "edge_total": {"type": "integer", "minimum": 0},
+        "action_total": {"type": "integer", "minimum": 0},
+        "counts_by_lifecycle": {"$ref": "#/$defs/LifecycleCounts"},
+        "counts_by_action": {"$ref": "#/$defs/ActionCounts"},
+        "counts_by_severity": {"$ref": "#/$defs/SeverityCounts"},
+        "counts_by_relation": {"$ref": "#/$defs/RelationCounts"}
+      }
+    },
+    "Capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported_scheduling_schema", "supported_actions", "unsupported_actions", "unsupported_axes", "authority_sources"],
+      "properties": {
+        "supported_scheduling_schema": {"$ref": "#/$defs/StringArray"},
+        "supported_actions": {"$ref": "#/$defs/StringArray"},
+        "unsupported_actions": {"$ref": "#/$defs/StringArray"},
+        "unsupported_axes": {"$ref": "#/$defs/StringArray"},
+        "authority_sources": {"$ref": "#/$defs/StringArray"}
+      }
+    },
+    "DashboardSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "revision", "generated_at", "state", "project", "tasks", "edges", "actions", "parallel_assessments", "diagnostics", "stale_sources", "summary", "capabilities", "disclaimer"],
+      "properties": {
+        "schema_version": {"const": "ai-dev-flow/dashboard-snapshot/v1"},
+        "revision": {"$ref": "#/$defs/Sha256"},
+        "generated_at": {"type": "string", "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z"},
+        "state": {"type": "string", "enum": ["fresh", "stale", "partial"]},
+        "project": {"$ref": "#/$defs/ProjectSnapshot"},
+        "tasks": {"type": "array", "items": {"$ref": "#/$defs/TaskNode"}},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/RelationshipEdge"}},
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/ActionRecommendation"}},
+        "parallel_assessments": {"type": "array", "items": {"$ref": "#/$defs/ParallelAssessment"}},
+        "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/Diagnostic"}},
+        "stale_sources": {"type": "array", "items": {"$ref": "#/$defs/StaleSource"}},
+        "summary": {"$ref": "#/$defs/Summary"},
+        "capabilities": {"$ref": "#/$defs/Capabilities"},
+        "disclaimer": {"const": "本快照是只读派生视图；自动验证、Review、UA、Accepted、commit、merge、release、delivery 与 Closed 相互独立，任何建议均不构成执行或交付授权。"}
+      }
+    },
+    "TaskDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "revision", "task", "edges", "actions", "parallel_assessments", "diagnostics"],
+      "properties": {
+        "schema_version": {"const": "ai-dev-flow/dashboard-task-detail/v1"},
+        "revision": {"$ref": "#/$defs/Sha256"},
+        "task": {"$ref": "#/$defs/TaskNode"},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/RelationshipEdge"}},
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/ActionRecommendation"}},
+        "parallel_assessments": {"type": "array", "items": {"$ref": "#/$defs/ParallelAssessment"}},
+        "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/Diagnostic"}}
+      }
+    },
+    "Health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "server_state", "watcher_state", "last_refresh_at", "snapshot_state", "revision", "diagnostic_counts"],
+      "properties": {
+        "schema_version": {"const": "ai-dev-flow/dashboard-health/v1"},
+        "server_state": {"type": "string", "enum": ["starting", "ready", "degraded"]},
+        "watcher_state": {"type": "string", "enum": ["starting", "ready", "failed"]},
+        "last_refresh_at": {"$ref": "#/$defs/NullableString"},
+        "snapshot_state": {"type": ["string", "null"], "enum": ["fresh", "stale", "partial", null]},
+        "revision": {"type": ["string", "null"], "pattern": "[0-9a-f]{64}"},
+        "diagnostic_counts": {"$ref": "#/$defs/SeverityCounts"}
+      }
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "error", "revision"],
+      "properties": {
+        "schema_version": {"const": "ai-dev-flow/dashboard-error/v1"},
+        "error": {"$ref": "#/$defs/ErrorInner"},
+        "revision": {"type": ["string", "null"], "pattern": "[0-9a-f]{64}"}
+      }
+    },
+    "ErrorInner": {
+      "oneOf": [
+        {"$ref": "#/$defs/InvalidTaskIdError"},
+        {"$ref": "#/$defs/HostNotAllowedError"},
+        {"$ref": "#/$defs/TaskNotFoundError"},
+        {"$ref": "#/$defs/RouteNotFoundError"},
+        {"$ref": "#/$defs/MethodNotAllowedError"},
+        {"$ref": "#/$defs/SnapshotUnavailableError"},
+        {"$ref": "#/$defs/InternalError"}
+      ]
+    },
+    "InvalidTaskIdError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "INVALID_TASK_ID"},
+        "message": {"const": "任务 ID 形状非法"},
+        "details": {"$ref": "#/$defs/TaskIdDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "HostNotAllowedError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "HOST_NOT_ALLOWED"},
+        "message": {"const": "Host 不允许"},
+        "details": {"$ref": "#/$defs/HostDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "TaskNotFoundError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "TASK_NOT_FOUND"},
+        "message": {"const": "任务不存在"},
+        "details": {"$ref": "#/$defs/TaskIdDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "RouteNotFoundError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "ROUTE_NOT_FOUND"},
+        "message": {"const": "路由不存在"},
+        "details": {"$ref": "#/$defs/PathDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "MethodNotAllowedError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "METHOD_NOT_ALLOWED"},
+        "message": {"const": "方法不允许"},
+        "details": {"$ref": "#/$defs/MethodDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "SnapshotUnavailableError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "SNAPSHOT_UNAVAILABLE"},
+        "message": {"const": "快照尚不可用"},
+        "details": {"$ref": "#/$defs/ServerStateDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "InternalError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "details", "provenance"],
+      "properties": {
+        "code": {"const": "INTERNAL_ERROR"},
+        "message": {"const": "内部错误"},
+        "details": {"$ref": "#/$defs/IncidentDetails"},
+        "provenance": {"type": "array", "items": {"$ref": "#/$defs/Provenance"}}
+      }
+    },
+    "TaskIdDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id"],
+      "properties": {"task_id": {"type": "string"}}
+    },
+    "HostDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host"],
+      "properties": {"host": {"type": "string"}}
+    },
+    "PathDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {"path": {"type": "string"}}
+    },
+    "MethodDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "allow"],
+      "properties": {
+        "method": {"type": "string"},
+        "allow": {
+          "type": "array",
+          "items": {"const": "GET"},
+          "minItems": 1
+        }
+      }
+    },
+    "ServerStateDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_state"],
+      "properties": {"server_state": {"type": "string", "enum": ["starting", "degraded"]}}
+    },
+    "IncidentDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["incident_id"],
+      "properties": {"incident_id": {"type": "string"}}
+    },
+    "SnapshotEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "revision", "state", "changed_task_ids", "reset_required"],
+      "properties": {
+        "schema_version": {"const": "ai-dev-flow/dashboard-event/v1"},
+        "revision": {"$ref": "#/$defs/Sha256"},
+        "state": {"type": "string", "enum": ["fresh", "stale", "partial"]},
+        "changed_task_ids": {"$ref": "#/$defs/StringArray"},
+        "reset_required": {"type": "boolean"}
+      }
+    }
+  }
+}

@@ -6,13 +6,14 @@
 - `task_id`: `DASHBOARD-BE-001`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Review`
-- `review_status`: `Pending`
+- `lifecycle`: `Accepted`
+- `review_status`: `Passed`
 - `ua_level`: `UA3`
-- `ua_status`: `Pending`
-- `acceptance_authority`: `None`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/DASHBOARD-BE-001.md#dashboard-be-001-ua3-2026-07-28`
+- `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `None`
 
@@ -152,15 +153,83 @@
 - Reviewer 确认：公开 Reader、schema/validator/fixtures、单字节 NUL/LF oracle、精确 allowlist、执行前置和停止点足以进入 Ready。
 - 状态边界：`Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged`；规划 baseline 已形成，允许按条件化 authority 在新对话创建实现 Worktree。
 
+## 实现 Review 与 Repair Round 1（2026-07-28）
+
+- 独立 Review 输入与结论：与写入上下文隔离的只读 Reviewer 完成本轮代码、schema/fixtures 和 byte oracle 检查；`workspace writes=None`，结论 `Needs Fix`，`P0/P1/P2/P3=0/4/0/0`。
+- `repair_chain_id`: `DASHBOARD-BE-001-RC-001`
+- `attempt_id`: `DASHBOARD-BE-001-RC-001-A1`
+- `finding_ids`: `DASHBOARD-BE-001-P1-001;DASHBOARD-BE-001-P1-002;DASHBOARD-BE-001-P1-003;DASHBOARD-BE-001-P1-004`
+- `closure_contract_hash`: `B2358B9B69CD86D01A980AEE49B9F35F1ED3D573FAD1815A075C92CBD0C433BC`
+- `allowed_files_hash`: `3283B4FE4B48DE449FE8041D6D58F38722E2AD2BDF7C5EEA9D635F333C062173`
+- RED：`P1-001` 显式 `parallel_intent=serial` 仍可能得到 candidate；`P1-002` schema 可接受 axis/value、edge type/direction/condition 混装且 SSE 未绑定 id/revision；`P1-003` 有 Core error 的前置 TASK 仍可满足依赖并升级动作；`P1-004` 定向测试硬编码旧 lifecycle，真实运行 `51` 项中失败 `1`，原收据失真。
+- 修复：三值并行意图在其他候选检查前 fail-closed；8 个 dependency axis 与 5 种 edge shape 使用 schema `oneOf` 判别约束；SSE 只接受精确 event 字段并要求 `id == data.revision`；关系引擎接收目标 diagnostics，使 Core parse/state-guard/相关轴 error 或缺 provenance 的条件为 unknown；Gateway 集成测试改为与同一冻结窗口的公开 facade 报告对照。
+- GREEN：修复后 dashboard backend 定向测试实际 `55/55 Passed`；新增 9 种双边意图组合、8 轴 expected/actual、5 edge shape、SSE 缺失/额外字段与 revision mismatch、target guard/axis conflict/missing provenance 负向用例均通过；ai-dev-flow 完整回归 `81/81 Passed`；schema/SSE 测试两轮各 `10/10 Passed`，合同集合 `files=10`、digest `9722b70bd5c26491a79d424a184fc4784df41c55f75191f2a2c7031436db9c28`。
+- SIGNAL：target lint `errors/violations/warnings=0/0/1`，唯一 warning 为未提交 diff 无法由 Git 历史证明 lifecycle 流转；project lint `19/0/27`，19 个 error 均来自本任务范围外的既有 Legacy TASK，本任务相关只有上述 transition warning 与 TASK_BOARD legacy warning；diff-scope `outside=0`；标准 `git diff --check` 通过，32 个非 SSE 新文件的扩展 whitespace 检查为 `issues=0`，`events.sse` 因 wire contract 固定双 LF 由 byte oracle 单独验证；前两次无输出超时不计 Review 轮次或 finding。
+- 当前处置：保持 `Review Pending / UA3 Pending / Uncommitted / Unmerged`；4 个 finding 已形成修复候选，但只能由下一次独立只读复审判定 Closed，不自批、不提交。
+
+## 实现 Repair Round 2（2026-07-28）
+
+- A1 独立复审：只读 Reviewer 确认 `DASHBOARD-BE-001-P1-001` 至 `P1-004` 全部 Closed，同时稳定新增 `P1-005` 至 `P1-009`；结论 `Needs Fix`，`P0/P1/P2/P3=0/5/0/0`，`workspace writes=None`，未发现这 5 项之外的其他 P0/P1。
+- `repair_chain_id`: `DASHBOARD-BE-001-RC-001`
+- `attempt_id`: `DASHBOARD-BE-001-RC-001-A2`
+- `finding_ids`: `DASHBOARD-BE-001-P1-005;DASHBOARD-BE-001-P1-006;DASHBOARD-BE-001-P1-007;DASHBOARD-BE-001-P1-008;DASHBOARD-BE-001-P1-009`
+- `closure_contract_hash`: `292AC1F59818B53D4CD53B67392A21942C7BAAE66DFBB2AEA7A30B43E7F2FEC7`
+- `allowed_files_hash`: `A9FC14423CFCE450B846BD23244687499E73F678B517013881B9B0840FF705A6`
+- RED：`P1-005` 缺失/legacy/unsupported Scheduling 仍可能升级动作且字段错误阻断范围不准；`P1-006` ParallelEngine 不消费 blocking diagnostics；`P1-007` dependency cycle 未回灌到指向错误 target 的下游条件；`P1-008` A→B→A 可混合 Reader B 与 Scheduling A；`P1-009` wire schema 非法暴露 Reader 内部 `Not Recorded` sentinel。
+- 修复：动作引擎把 absent/legacy 的 Ready/In Progress 固定为 unknown，把 structural invalid/unsupported schema 固定为整体 unknown，只让 `depends_on` 字段错误阻断依赖动作而不扩大 branch/path/lock/risk 单字段错误；并行引擎显式接收 diagnostics，Core parse/state-guard、unsupported schema、并行相关轴错误或无法解析的 diagnostic ID 均不得 candidate；关系环诊断生成后计算 cycle 及下游闭包并二次把相关 dependency condition 置为 unknown；冻结输入在 Reader 前、Reader 后和发布前核对 file set、size、mtime_ns、ctime_ns、file identity 与 SHA256，Gateway 同时核对 report source set，A→B→A 反例在 Scheduling parse 前拒绝；领域适配把 `Not Recorded` 映射为 wire `null`，schema 删除该枚举。
+- GREEN：dashboard backend 定向测试实际 `67/67 Passed`；新增 action 字段边界、真实 parser unsupported schema、TaskNode blocking diagnostic、A↔B 与 C→A、Reader window ABA、wire sentinel 正反例均通过；ai-dev-flow 完整回归 `81/81 Passed`；schema/SSE 测试两轮各 `11/11 Passed`，合同集合 `files=10`、digest `0242c53017ca11f405494266cc68c5930019dc19bae1dde61a7f3457ead60907`。
+- SIGNAL：target lint `errors/violations/warnings=0/0/1`，唯一 warning 为未提交 diff 无法由 Git 历史证明 lifecycle 流转；project lint `19/0/27`，19 个 error 均来自本任务范围外的既有 Legacy TASK，本任务相关只有上述 transition warning 与 TASK_BOARD legacy warning；diff-scope `outside=0`；标准 `git diff --check` 通过，32 个非 SSE 新文件扩展 whitespace 检查 `issues=0`，`events.sse` 的合同双 LF 继续由 byte oracle 验证。
+- 当前处置：保持 `Review Pending / UA3 Pending / Uncommitted / Unmerged`；A2 只形成修复候选，`P1-005` 至 `P1-009` 是否 Closed 由下一次隔离只读独立复审判定，不自批、不提交。
+
+## 实现 Repair Round 3（2026-07-28）
+
+- A2 独立复审：只读 Reviewer 确认 `DASHBOARD-BE-001-P1-005`、`P1-007`、`P1-009` Closed，旧 `P1-001` 至 `P1-004` 继续 Closed；`P1-006` 与 `P1-008` Open，结论 `Needs Fix`，`P0/P1/P2/P3=0/2/0/0`，`workspace writes=None`。
+- 授权：用户明确授权在原精确 allowlist 和同一 repair chain 内实施一次有限 A3；这是基础 AutoRepair 两轮后的用户授权修复，不扩大任务、文件或交付权限。
+- `repair_chain_id`: `DASHBOARD-BE-001-RC-001`
+- `attempt_id`: `DASHBOARD-BE-001-RC-001-A3`
+- `finding_ids`: `DASHBOARD-BE-001-P1-006;DASHBOARD-BE-001-P1-008`
+- `closure_contract_hash`: `C7E9B0F71E30F554720BED48DBB1D6CB2002B9C6FA9DBB76E20E8717DEE311C0`
+- `allowed_files_hash`: `B39800110CB376119E9715380E1841134083CCB60F5F482EA496C02984F7337D`
+- RED：`P1-006` 未覆盖 `task_type`、`task_class` 等实际并行输入的非法/冲突 diagnostic，Accepted-contract owner 的必需轴也未 diagnostic-aware fail-closed；`P1-008` 仅凭 metadata、hash 和 file identity 无法拒绝对抗性 A→B→A。
+- 修复：并行引擎把参与判断及 Accepted-contract exception 的 Core/Scheduling 轴纳入 diagnostic-aware 阻断，`task_type`/`task_class` 非法和 owner `commit_status` 冲突均为 unknown，同时保留 `REPLACES_CYCLE` 非相关轴不阻断；冻结输入在 Windows 用标准库 `ctypes` 为完整 TASK 集合获取 `CreateFileW` 只读租约，只共享 READ，不共享 WRITE/DELETE，并在读取冻结 bytes 前完成租约和二次集合核对，持有到公开 Reader、Scheduling、关系/动作/并行、最终校验与返回发布完成，异常路径释放；非 Windows 明确 fail-closed，原 metadata/hash/identity 仅保留为纵深校验。
+- GREEN：dashboard backend 定向测试实际 `74/74 Passed`；新增 task type/class diagnostic、Accepted owner conflict、`REPLACES_CYCLE` 防过度阻断、未租约 Gateway、非 Windows fail-closed 和真实 Windows 写/mtime/rename/replace/delete/预存可写句柄/并发只读/释放后写入反例；ai-dev-flow 完整回归 `81/81 Passed`；schema/SSE 测试两轮各 `11/11 Passed`，合同集合 `files=10`，两次清单摘要均为 `a82d612330d88fb43454720b400118b5ccd3d06ef0ff62e2b6ef089ffac218c8`。
+- SIGNAL：target lint `errors/violations/warnings=0/0/1`；project lint `19/0/27`，与 A2 基线一致，19 个 error 均来自本任务范围外的既有 Legacy TASK，本任务相关仍只有 transition warning 与 TASK_BOARD legacy warning；diff-scope `changed=35`、`outside=0`、`staged=0`；`git diff --check` 通过，32 个非 SSE 新文件扩展 whitespace 检查 `issues=0`，`events.sse` 无 CR 并保留合同双 LF。
+- 当前处置：保持 `Review Pending / UA3 Pending / Uncommitted / Unmerged`；A3 只形成修复候选，`P1-006` 与 `P1-008` 是否 Closed 由下一次隔离只读独立复审判定，不自批、不提交。
+
+## 实现 Repair Round 3 最终独立复审（2026-07-28）
+
+- Reviewer：与写入上下文隔离的独立只读 Reviewer；`workspace writes=None`；审查前后内容 manifest 均为 `0f792d47aa663ba239957d25a3dd8d328e1c753e3d5501e43ba4db2dc0830fad`。
+- 结论：`Passed`，`P0/P1/P2/P3=0/0/0/0`；`DASHBOARD-BE-001-P1-006`、`DASHBOARD-BE-001-P1-008` Closed，`P1-001` 至 `P1-005`、`P1-007`、`P1-009` 继续 Closed，`DASHBOARD-001-P2-006` 回归通过。
+- P1-006 关闭证据：19 个并行相关轴 fail-closed；Accepted-contract owner 的 13 个关键轴 conflict 均不能使用 exception；仅有 `REPLACES_CYCLE` 时仍保持 candidate。
+- P1-008 关闭证据：Windows 64-bit `CreateFileW` ABI、全量 TASK handle 先于 bytes、预存可写 handle 拒绝租约、部分获取失败释放已持有 handle、写入/rename/replace/delete/A→B 写入均被阻断、mtime 变更由发布前纵深校验拒绝、新增 TASK 被拒绝、并发只读成功、释放后恢复写入、非 Windows fail-closed；租约覆盖 Reader、Scheduling、关系、动作、并行、最终校验与结果构造。
+- Reviewer 验证：`unittest discover 74/74`、backend pytest `74/74`、ai-dev-flow `81/81`、schema/fixtures/SSE `11/11 × 2`，合同 digest `a82d612330d88fb43454720b400118b5ccd3d06ef0ff62e2b6ef089ffac218c8`；target lint `0/0/1`；project lint `19/0/27` 且仅为范围外既有 CONTRACT-001～006 Legacy diagnostics；diff-check、whitespace、scope、无 pycache、`staged=0` 均通过。
+- 状态边界：推进到 `Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged`；独立 Review 不代替用户 UA3，不授权 commit、stage、merge、push、Accepted 或 Closed。
+
+## DASHBOARD-BE-001 UA3 2026-07-28
+
+- 用户反馈：用户明确回复“验收通过”。
+- 验收范围：确认 BE-001 后端核心的功能边界、保守 fail-closed 行为、共享 wire contract、自动验证与最终独立 Review 证据。
+- 验收结果：`UA3 Passed / User Confirmed`；据此将 lifecycle 推进为 `Accepted`。
+- 写回复核：target lint `errors/violations/warnings=0/0/2`，仅保留未提交 transition 与 Markdown 无法证明用户身份两项预期 warning；project lint `19/0/28`，19 个 error 仍全部来自范围外既有 CONTRACT-001～006 Legacy 文档；diff-scope `changed=35/outside=0/staged=0`，`git diff --check` 通过。
+- 权限边界：本次用户反馈只构成 UA3 与 Acceptance authority，不授权 commit、stage、merge、push、release、Closed 或执行 BE-002、FE-001、INTEGRATE-001。
+
+## DASHBOARD-BE-001 合法提交历史重建 2026-07-28
+
+- 用户授权：用户在发现原本地提交缺少 lifecycle 中间历史后，明确授权重建尚未 push 的 BE-001 提交历史。
+- 恢复点：旧 main merge `7f65f3b27afa449b48c518c09d1e0ae71c3c405c` 与旧 feature `bed4d78297c95782d04d692f1db7108490da8353` 已分别保存在 `backup/dashboard-be-001-main-7f65f3b`、`backup/dashboard-be-001-feature-bed4d78`。
+- 合法流转：`Ready → In Progress` 提交为 `00f8ac54e7ef7b05d5ab76c5cfd2baf480b91ac9`；`In Progress → Review` 提交为 `6c09982a83112d6dbaf362019820b83e91d87e74`；本提交保存 `Review → Accepted`、最终 Review/UA3 收据和已审查实现树。
+- Windows 交付修正：在允许的 `dashboard/contracts/**` 内新增局部 `.gitattributes`，固定 `events.sse` 为 `text eol=lf`；wire bytes 保持 312 bytes、无 CR、结尾精确双 LF。
+- 状态边界：`Accepted / Review Passed / UA3 Passed / Committed / Unmerged`；用户已授权后续合并，但尚未 push、release 或 Closed。
+
 ## Outcome
 
-- Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=uncommitted-worktree
-- 修改文件：实现候选已在独立 Worktree 形成，范围严格限制于 BE-001 allowlist；代码仍未提交。
-- 验证证据：实现候选已冻结，完整自动验证与独立 Review 收据将在后续 Accepted 提交中保留。
-- Review findings：implementation review pending；规划 Review Passed 不代替代码 Review。
-- UA 动作与结果：UA3 Pending；用户尚未查看实现证据。
+- Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958..codex/dashboard-be-001
+- 修改文件：新增 `dashboard/backend/pyproject.toml`、`dashboard/backend/src/ai_dev_flow_dashboard/__init__.py`、`dashboard/backend/src/ai_dev_flow_dashboard/core/**`、`dashboard/backend/tests/be001/**`、`dashboard/contracts/**`；同步本 TASK 与 TASK_BOARD 投影。未修改 `skills/ai-dev-flow/**`、其他 TASK、前端或发布文件。
+- 验证证据：dashboard backend 定向测试 `74/74 Passed`；schema/8 JSON fixtures/SSE transcript 两轮各 `11/11 Passed`，合同集合 `files=10`、两次清单摘要均为 `a82d612330d88fb43454720b400118b5ccd3d06ef0ff62e2b6ef089ffac218c8`；ai-dev-flow 完整回归 `81/81 Passed`；Review baseline target lint `0/0/1`，UA3 写回后 target lint `0/0/2`；Review baseline project lint `19/0/27`，UA3 写回后 project lint `19/0/28`，19 个 error 均为任务范围外既有 Legacy diagnostics；diff-scope `changed=35/outside=0/staged=0`，`git diff --check` 与 32 个非 SSE 新文件扩展 whitespace 检查通过，SSE 双 LF 由 byte oracle 保留并验证。
+- Review findings：A3 最终独立只读复审 `Passed`，`P0/P1/P2/P3=0/0/0/0`；`P1-001` 至 `P1-009` 全部 Closed，`DASHBOARD-001-P2-006` 回归通过；Reviewer workspace writes=None。
+- UA 动作与结果：用户已查看任务说明与验收范围并明确回复“验收通过”；`UA3 Passed / User Confirmed`。
 - 隔离位置：Worktree `D:\open-source\ai-dev-flow-wt\dashboard-be-001`；branch `codex/dashboard-be-001`。
-- 回滚方式：实现尚未提交；如需停止只保留当前治理提交，不执行删除、reset 或历史改写。
-- 状态边界：Review / Review Pending / UA3 Pending / Uncommitted / Unmerged；未 Accepted、未交付、未 Closed。
-- 剩余风险：代码 Review 和 UA3 尚未产生最终结论；实现必须继续保持精确 allowlist。
-- 下一步：冻结当前实现候选并执行独立只读 Review。
+- 回滚方式：旧提交均由只读 backup refs 保留；未经用户明确授权不删除备份、不 reset 或再次改写历史。
+- 状态边界：`Accepted / Review Passed / UA3 Passed / Committed / Unmerged`；未 merge、未 push、未 release、未 Closed。
+- 剩余风险：实现尚未合并到本地 `main`；Windows 文件共享租约已通过真实 OS 对抗测试，非 Windows 会按合同 fail-closed；BE-001 不包含 Git/watcher/HTTP/SSE server/frontend。
+- 下一步：按用户授权将 `codex/dashboard-be-001` fast-forward 合并到本地 `main`，再写入 Merged 交付收据；不自动执行后续任务。
