@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import replace
 from typing import Iterable
 
@@ -248,48 +248,84 @@ class RelationshipEngine:
         code: str,
     ) -> list[Diagnostic]:
         relevant = [edge for edge in edges if edge.type == relation]
+        if not relevant:
+            return []
         adjacency: dict[str, list[str]] = defaultdict(list)
-        edge_map: dict[tuple[str, str], RelationshipEdge] = {}
         for edge in relevant:
             adjacency[edge.source_task_id].append(edge.target_task_id)
-            edge_map[(edge.source_task_id, edge.target_task_id)] = edge
         for targets in adjacency.values():
             targets.sort()
 
-        index = 0
-        stack: list[str] = []
-        indices: dict[str, int] = {}
-        lowlinks: dict[str, int] = {}
-        on_stack: set[str] = set()
-        components: list[tuple[str, ...]] = []
-
-        def strongconnect(node: str) -> None:
-            nonlocal index
-            indices[node] = index
-            lowlinks[node] = index
-            index += 1
-            stack.append(node)
-            on_stack.add(node)
+        nodes = {
+            edge.source_task_id
+            for edge in relevant
+        } | {
+            edge.target_task_id
+            for edge in relevant
+        }
+        indegree = {node: 0 for node in nodes}
+        for targets in adjacency.values():
+            for target in targets:
+                indegree[target] += 1
+        ready = deque(node for node, degree in indegree.items() if degree == 0)
+        visited = 0
+        while ready:
+            node = ready.popleft()
+            visited += 1
             for target in adjacency.get(node, ()):
-                if target not in indices:
-                    strongconnect(target)
-                    lowlinks[node] = min(lowlinks[node], lowlinks[target])
-                elif target in on_stack:
-                    lowlinks[node] = min(lowlinks[node], indices[target])
-            if lowlinks[node] == indices[node]:
-                component: list[str] = []
-                while True:
-                    member = stack.pop()
-                    on_stack.remove(member)
-                    component.append(member)
-                    if member == node:
-                        break
-                components.append(tuple(sorted(component)))
+                indegree[target] -= 1
+                if indegree[target] == 0:
+                    ready.append(target)
+        if visited == len(nodes):
+            # Most project graphs are DAGs.  Avoid the more expensive SCC pass
+            # unless Kahn's linear proof shows that a cycle actually exists.
+            return []
 
-        nodes = sorted({edge.source_task_id for edge in relevant} | {edge.target_task_id for edge in relevant})
-        for node in nodes:
-            if node not in indices:
-                strongconnect(node)
+        # Use an iterative Kosaraju pass for cyclic graphs.  The supported
+        # 1000-TASK contract must not depend on Python's recursion limit.
+        finish_order: list[str] = []
+        visited: set[str] = set()
+        for start in sorted(nodes):
+            if start in visited:
+                continue
+            visited.add(start)
+            frames: list[tuple[str, int]] = [(start, 0)]
+            while frames:
+                node, offset = frames[-1]
+                targets = adjacency.get(node, ())
+                if offset < len(targets):
+                    target = targets[offset]
+                    frames[-1] = (node, offset + 1)
+                    if target not in visited:
+                        visited.add(target)
+                        frames.append((target, 0))
+                    continue
+                finish_order.append(node)
+                frames.pop()
+
+        reverse_adjacency: dict[str, list[str]] = defaultdict(list)
+        for source, targets in adjacency.items():
+            for target in targets:
+                reverse_adjacency[target].append(source)
+        for sources in reverse_adjacency.values():
+            sources.sort()
+
+        components: list[tuple[str, ...]] = []
+        assigned: set[str] = set()
+        for start in reversed(finish_order):
+            if start in assigned:
+                continue
+            assigned.add(start)
+            component: list[str] = []
+            pending = [start]
+            while pending:
+                node = pending.pop()
+                component.append(node)
+                for source in reversed(reverse_adjacency.get(node, ())):
+                    if source not in assigned:
+                        assigned.add(source)
+                        pending.append(source)
+            components.append(tuple(sorted(component)))
 
         result: list[Diagnostic] = []
         for component in sorted(components):

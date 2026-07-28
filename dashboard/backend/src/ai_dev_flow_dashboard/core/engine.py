@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
-from typing import Mapping
+from typing import Iterable, Iterator, Mapping
 
 from .actions import ActionEngine
 from .contract_gateway import ContractGateway
@@ -18,6 +20,7 @@ from .models import (
     UNSUPPORTED_AXES,
     WorktreeSnapshot,
 )
+from .ownership import resolve_dirty_ownership
 from .parallel import ParallelEngine
 from .relationships import RelationshipEngine
 from .scheduling import SchedulingParser
@@ -39,20 +42,59 @@ class DashboardCore:
         self,
         *,
         worktrees: Mapping[str, WorktreeSnapshot] | None = None,
+        worktree_candidates: Iterable[WorktreeSnapshot] | None = None,
     ) -> CoreResult:
+        with self.lease_inspect(
+            worktrees=worktrees,
+            worktree_candidates=worktree_candidates,
+        ) as result:
+            return result
+
+    @contextmanager
+    def lease_inspect(
+        self,
+        *,
+        worktrees: Mapping[str, WorktreeSnapshot] | None = None,
+        worktree_candidates: Iterable[WorktreeSnapshot] | None = None,
+    ) -> Iterator[CoreResult]:
+        """Keep the frozen source lease active while a caller finalizes a candidate."""
+
         with self.loader.lease(self.project_root) as frozen:
-            return self._inspect_frozen(frozen, worktrees)
+            yield self._inspect_frozen(
+                frozen,
+                worktrees,
+                tuple(worktree_candidates or ()),
+            )
 
     def _inspect_frozen(
         self,
         frozen: FrozenProjectInput,
         worktrees: Mapping[str, WorktreeSnapshot] | None,
+        worktree_candidates: tuple[WorktreeSnapshot, ...] = (),
     ) -> CoreResult:
-        self.loader.verify_unchanged(frozen)
+        result, _ = self._inspect_frozen_with_profiles(
+            frozen,
+            worktrees,
+            worktree_candidates,
+        )
+        return result
+
+    def _inspect_frozen_with_profiles(
+        self,
+        frozen: FrozenProjectInput,
+        worktrees: Mapping[str, WorktreeSnapshot] | None,
+        worktree_candidates: tuple[WorktreeSnapshot, ...] = (),
+        *,
+        defer_parallel: bool = False,
+    ) -> tuple[CoreResult, dict[str, SchedulingProfile]]:
         gateway_report = self.gateway.inspect(frozen)
-        self.loader.verify_unchanged(frozen)
-        known_task_ids = {contract.task_id for contract in gateway_report.contracts if contract.task_id}
+        known_task_ids = frozenset(
+            contract.task_id
+            for contract in gateway_report.contracts
+            if contract.task_id
+        )
         frozen_by_source = frozen.by_source_path()
+        self.scheduling.begin_inspection()
         profiles: dict[str, SchedulingProfile] = {}
         scheduling_diagnostics: list[Diagnostic] = []
         for contract in gateway_report.contracts:
@@ -65,6 +107,8 @@ class DashboardCore:
 
         diagnostics = tuple(gateway_report.diagnostics) + tuple(scheduling_diagnostics)
         tasks = self._nodes(gateway_report.contracts, profiles, diagnostics)
+        if worktrees is None and worktree_candidates:
+            worktrees = self._map_worktree_candidates(tasks, worktree_candidates)
         edges, relationship_diagnostics = self.relationships.build(tasks, profiles, diagnostics)
         diagnostics = tuple(
             sorted(
@@ -74,8 +118,22 @@ class DashboardCore:
         )
         tasks = self._replace_diagnostic_ids(tasks, diagnostics)
         actions = self.actions.recommend(tasks, edges, diagnostics)
-        parallel = self.parallel.assess(tasks, profiles, edges, worktrees, diagnostics)
-        self.loader.verify_unchanged(frozen)
+        parallel = ()
+        if not defer_parallel:
+            resolved_worktrees = resolve_dirty_ownership(tasks, profiles, worktrees)
+            parallel, parallel_diagnostics = self.parallel.assess_with_diagnostics(
+                tasks,
+                profiles,
+                edges,
+                resolved_worktrees,
+                diagnostics,
+            )
+            diagnostics = tuple(
+                sorted(
+                    diagnostics + parallel_diagnostics,
+                    key=lambda item: (item.severity, item.code, item.diagnostic_id),
+                )
+            )
         return CoreResult(
             frozen.manifest_sha256,
             tasks,
@@ -84,7 +142,90 @@ class DashboardCore:
             parallel,
             diagnostics,
             gateway_report.projections,
+        ), profiles
+
+    @contextmanager
+    def lease_inspect_deferred(
+        self,
+    ) -> Iterator[tuple[CoreResult, dict[str, SchedulingProfile]]]:
+        """Parse frozen sources while Git evidence is collected independently."""
+
+        with self.lease_frozen() as frozen:
+            yield self.inspect_frozen_deferred(frozen)
+
+    @contextmanager
+    def lease_frozen(self) -> Iterator[FrozenProjectInput]:
+        """Expose an active immutable input only to candidate orchestration."""
+
+        with self.loader.lease(self.project_root) as frozen:
+            yield frozen
+
+    def inspect_frozen_deferred(
+        self,
+        frozen: FrozenProjectInput,
+    ) -> tuple[CoreResult, dict[str, SchedulingProfile]]:
+        if frozen.project_root != self.project_root:
+            raise ValueError("frozen input belongs to a different project root")
+        if not getattr(frozen.lease_guard, "active", False):
+            raise ValueError("frozen input lease is not active")
+        return self._inspect_frozen_with_profiles(
+            frozen,
+            None,
+            (),
+            defer_parallel=True,
         )
+
+    def complete_parallel(
+        self,
+        result: CoreResult,
+        profiles: dict[str, SchedulingProfile],
+        worktree_candidates: Iterable[WorktreeSnapshot],
+    ) -> CoreResult:
+        mapping = self._map_worktree_candidates(
+            result.tasks,
+            tuple(worktree_candidates),
+        )
+        resolved = resolve_dirty_ownership(result.tasks, profiles, mapping)
+        parallel, parallel_diagnostics = self.parallel.assess_with_diagnostics(
+            result.tasks,
+            profiles,
+            result.edges,
+            resolved,
+            result.diagnostics,
+        )
+        diagnostics = tuple(
+            sorted(
+                result.diagnostics + parallel_diagnostics,
+                key=lambda item: (item.severity, item.code, item.diagnostic_id),
+            )
+        )
+        return replace(
+            result,
+            parallel_assessments=parallel,
+            diagnostics=diagnostics,
+        )
+
+    @staticmethod
+    def _map_worktree_candidates(
+        tasks: tuple[TaskNode, ...],
+        candidates: tuple[WorktreeSnapshot, ...],
+    ) -> dict[str, WorktreeSnapshot]:
+        by_branch: dict[str, list[WorktreeSnapshot]] = defaultdict(list)
+        for worktree in candidates:
+            if worktree.branch:
+                by_branch[worktree.branch].append(worktree)
+        result: dict[str, WorktreeSnapshot] = {}
+        for task in tasks:
+            if not task.branch_hint:
+                continue
+            matches = by_branch.get(f"refs/heads/{task.branch_hint}", ())
+            if len(matches) != 1:
+                continue
+            candidate = matches[0]
+            if candidate.detached or candidate.locked or candidate.prunable:
+                continue
+            result[task.task_id] = candidate
+        return result
 
     @staticmethod
     def _nodes(

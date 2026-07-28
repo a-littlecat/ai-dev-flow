@@ -22,6 +22,34 @@ ACTION_ORDER = {
     "close": 10,
 }
 
+EVIDENCE_FIELDS_BY_REASON = {
+    "CONTRACT_STATE_INVALID": (),
+    "TERMINAL_STATE": ("lifecycle",),
+    "REPAIR_AUTHORITY_UNSUPPORTED": ("lifecycle", "review_status"),
+    "PLANNING_DECISION_REQUIRED": ("lifecycle",),
+    "DEPENDENCY_STATE_UNKNOWN": ("lifecycle", "depends_on"),
+    "DEPENDENCY_UNSATISFIED": ("lifecycle", "depends_on"),
+    "EXECUTION_AUTHORITY_UNSUPPORTED": ("lifecycle",),
+    "CONTINUE_AUTHORITY_UNSUPPORTED": ("lifecycle",),
+    "REVIEW_AUTHORITY_UNSUPPORTED": ("lifecycle", "review_status"),
+    "USER_DECISION_PENDING": ("lifecycle", "review_status", "ua_status"),
+    "ACCEPTANCE_RECORD_PENDING": (
+        "lifecycle",
+        "review_status",
+        "ua_status",
+        "acceptance_authority",
+    ),
+    "COMMIT_AUTHORITY_UNSUPPORTED": ("lifecycle", "commit_status"),
+    "MERGE_AUTHORITY_PRESENT": ("merge_status", "merge_authority"),
+    "MERGE_AUTHORITY_DENIED": ("merge_status", "merge_authority"),
+    "MERGE_AUTHORITY_REQUIRED": ("merge_status", "merge_authority"),
+    "RELEASE_AXIS_UNSUPPORTED": ("merge_status",),
+    "CLOSE_AUTHORITY_PRESENT": ("merge_status", "close_authority"),
+    "CLOSE_AUTHORITY_DENIED": ("merge_status", "close_authority"),
+    "CLOSE_AUTHORITY_REQUIRED": ("merge_status", "close_authority"),
+    "STATE_COMBINATION_UNMAPPED": ("lifecycle", "review_status", "ua_status"),
+}
+
 
 class ActionEngine:
     def recommend(
@@ -353,6 +381,7 @@ class ActionEngine:
         blocking_conditions: tuple[str, ...] = (),
         related: tuple[str, ...] = (),
     ) -> ActionRecommendation:
+        evidence_fields = EVIDENCE_FIELDS_BY_REASON[reason]
         return ActionRecommendation(
             stable_text_id(task.task_id, action_kind),
             task.task_id,
@@ -364,5 +393,9 @@ class ActionEngine:
             related,
             required_authority,
             authority_state,
-            task.provenance,
+            tuple(
+                item
+                for item in task.provenance
+                if item.field in evidence_fields
+            ),
         )
