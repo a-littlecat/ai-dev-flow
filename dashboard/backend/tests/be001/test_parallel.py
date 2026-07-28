@@ -208,6 +208,56 @@ class ParallelEngineTests(unittest.TestCase):
         self.assertEqual("unknown", dirty.result)
         self.assertIn("DIRTY_OWNERSHIP_UNKNOWN", dirty.reason_codes)
 
+    def test_uniquely_owned_dirty_worktree_can_remain_a_candidate(self):
+        left = task("LEFT", write_scope=("file:a",))
+        right = task("RIGHT", write_scope=("file:b",))
+        item = self.engine.assess(
+            (left, right),
+            {
+                "LEFT": profile(scopes=("file:a",)),
+                "RIGHT": profile(scopes=("file:b",)),
+            },
+            (),
+            {
+                "LEFT": worktree(
+                    "LEFT",
+                    dirty_state="dirty",
+                    dirty_paths=("a",),
+                    dirty_ownership="owned_by_task",
+                ),
+                "RIGHT": worktree("RIGHT"),
+            },
+        )[0]
+        self.assertEqual("candidate", item.result)
+        self.assertIn("ALL_CHECKS_PASSED", item.reason_codes)
+
+    def test_unowned_or_inconsistent_dirty_evidence_fails_closed(self):
+        for dirty_state, ownership in (
+            ("dirty", "unowned"),
+            ("dirty", "unknown"),
+            ("clean", "owned_by_task"),
+        ):
+            with self.subTest(dirty_state=dirty_state, ownership=ownership):
+                item = self.engine.assess(
+                    (task("LEFT"), task("RIGHT")),
+                    {
+                        "LEFT": profile(scopes=("file:a",)),
+                        "RIGHT": profile(scopes=("file:b",)),
+                    },
+                    (),
+                    {
+                        "LEFT": worktree(
+                            "LEFT",
+                            dirty_state=dirty_state,
+                            dirty_paths=("a",) if dirty_state == "dirty" else (),
+                            dirty_ownership=ownership,
+                        ),
+                        "RIGHT": worktree("RIGHT"),
+                    },
+                )[0]
+                self.assertEqual("unknown", item.result)
+                self.assertIn("DIRTY_OWNERSHIP_UNKNOWN", item.reason_codes)
+
     def test_invalid_parallel_input_field_is_unknown_not_candidate(self):
         left = task("LEFT")
         right = task("RIGHT")
@@ -331,6 +381,25 @@ class ParallelEngineTests(unittest.TestCase):
         )[0]
         self.assertEqual("must_serial", item.result)
         self.assertIn("WORKTREE_SHARED", item.hard_conflicts)
+
+    def test_large_pair_set_is_bounded_and_reports_truncation(self):
+        tasks = tuple(task(f"TASK-{index:03d}") for index in range(100))
+        profiles = {
+            item.task_id: profile(scopes=(f"file:src/{item.task_id}.py",))
+            for item in tasks
+        }
+        assessments, diagnostics = self.engine.assess_with_diagnostics(
+            tasks,
+            profiles,
+            (),
+            {},
+        )
+        self.assertEqual(256, len(assessments))
+        self.assertEqual(
+            ["PARALLEL_ASSESSMENT_TRUNCATED"],
+            [item.code for item in diagnostics],
+        )
+        self.assertTrue(all(item.result == "unknown" for item in assessments))
 
     def _consumer_fixture(
         self,

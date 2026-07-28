@@ -104,6 +104,8 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
             root = Path(directory)
             task_dir = root / "docs" / "tasks"
             task_dir.mkdir(parents=True)
+            board = root / "docs" / "TASK_BOARD.md"
+            board.write_text("| task |\n", encoding="utf-8", newline="\n")
             path = task_dir / "TEST-001.md"
             original = "# TEST-001：test\n"
             alternate = "# TEST-001：best\n"
@@ -115,6 +117,7 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
             loader = FrozenInputLoader()
             with loader.lease(root) as frozen:
                 self.assertTrue(frozen.lease_guard.active)
+                self.assertIsNotNone(frozen.board)
                 self.assertEqual(original, path.read_text(encoding="utf-8"))
                 with self.assertRaises(OSError):
                     path.write_text(alternate, encoding="utf-8", newline="\n")
@@ -141,6 +144,8 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
                     os.replace(replacement, path)
                 with self.assertRaises(OSError):
                     path.unlink()
+                with self.assertRaises(OSError):
+                    board.write_text("| changed |\n", encoding="utf-8", newline="\n")
                 loader.verify_unchanged(frozen)
             self.assertFalse(frozen.lease_guard.active)
             path.write_text(alternate, encoding="utf-8", newline="\n")

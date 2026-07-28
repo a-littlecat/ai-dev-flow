@@ -1,6 +1,10 @@
 """Public read-only facade for Workflow Contract inspection."""
 
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
+import hashlib
+import os
 import pathlib
 import re
 import subprocess
@@ -13,6 +17,115 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 import _workflow_contract as reader
 import _task_board as task_board
+
+
+# The private parser asks for the same normalized source path once per field and
+# diagnostic.  Cache that pure lookup inside this public facade so large project
+# inspection preserves identical provenance without repeated Win32 realpath I/O.
+_original_source_path = reader._source_path
+
+
+@lru_cache(maxsize=8192)
+def _cached_source_path(path):
+    target = pathlib.Path(path)
+    if target.is_absolute():
+        parts = target.parts
+        for index in range(len(parts) - 1):
+            if parts[index:index + 2] == ("docs", "tasks") and index > 0:
+                return pathlib.PurePosixPath(*parts[index:]).as_posix()
+    return _original_source_path(target)
+
+
+reader._source_path = _cached_source_path
+
+
+@lru_cache(maxsize=4096)
+def _cached_reader_inspect(text, source_path, validate_filename):
+    """Reuse immutable Reader reports only when path and complete text match."""
+
+    return reader.inspect_text(
+        text,
+        pathlib.Path(source_path),
+        validate_filename=validate_filename,
+    )
+
+
+@lru_cache(maxsize=4096)
+def _cached_contract_validation(contract, source_file, source_sha256):
+    """Cache pure validation by immutable report and complete frozen content."""
+
+    del source_sha256
+    return tuple(
+        _validate(
+            contract,
+            require_commit=True,
+            source_file=pathlib.Path(source_file),
+        )
+    )
+
+
+@lru_cache(maxsize=4096)
+def _cached_board_projection(contract, source_file, project_root):
+    return _expected_board_projection(
+        contract,
+        pathlib.Path(source_file),
+        pathlib.Path(project_root),
+    )
+
+
+@lru_cache(maxsize=64)
+def _cached_board_diagnostics(project_root, projections, known_task_ids, board_sha256):
+    del board_sha256
+    return tuple(
+        _board_diagnostics(
+            pathlib.Path(project_root),
+            projections,
+            known_task_ids,
+        )
+    )
+
+
+_original_board_path_value = task_board._path_value
+_project_task_paths = frozenset()
+
+
+def _fast_board_path_value(raw, board_path, project_root, header):
+    value = raw.strip()
+    if header == "备注":
+        match = re.fullmatch(r"任务文件：\s*(.+)", value)
+        if not match:
+            return None
+        value = match.group(1).strip()
+    link = re.fullmatch(r"\[[^\]]+\]\(([^)]+)\)", value)
+    if not link:
+        return _original_board_path_value(
+            raw,
+            board_path,
+            project_root,
+            header,
+        )
+    normalized = link.group(1).strip().replace("\\", "/")
+    relative = pathlib.PurePosixPath(normalized)
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+        or ":" in relative.parts[0]
+    ):
+        return None
+    candidate = pathlib.Path(board_path).parent.joinpath(*relative.parts)
+    if candidate in _project_task_paths:
+        return candidate.relative_to(project_root).as_posix()
+    return _original_board_path_value(
+        raw,
+        board_path,
+        project_root,
+        header,
+    )
+
+
+task_board._path_value = _fast_board_path_value
+_transition_cache = {}
 
 
 DISCLAIMER = "lint 通过只代表 Contract 结构和当前可确定规则通过，不代表 Review、用户验收、merge、release 或任务关闭已经完成。"
@@ -55,7 +168,31 @@ def _field_line(contract, field):
 
 def _diag(contract, code, field, message):
     related = tuple(item for item in contract.provenance if item.field == field)
-    return reader._diagnostic(code, pathlib.Path(contract.source_path), _field_line(contract, field), message, related=related)
+    line = _field_line(contract, field)
+    severity = (
+        "error"
+        if code.startswith("E_")
+        else "violation"
+        if code.startswith("V_")
+        else "warning"
+    )
+    suggestion = {
+        "E_PARSE": "请使用精确 Markdown grammar，并删除重复或未知结构。",
+        "E_UNKNOWN_VALUE": "请改为规范枚举或显式 Legacy 别名中的值。",
+        "E_TASK_ID_CONFLICT": "请统一文件名、H1 与 Contract/TASK task_id。",
+        "E_LEGACY_CONFLICT": "请统一该 Legacy 语义轴的所有来源值。",
+        "W_LEGACY_INFERRED": "无需迁移；请确认显式 Legacy 映射符合预期。",
+    }.get(code, "请按 Workflow Contract 规范修正该输入。")
+    return reader.Diagnostic(
+        code,
+        severity,
+        contract.source_path,
+        line,
+        1 if line else 0,
+        message,
+        suggestion,
+        related,
+    )
 
 
 def _section_values(contract, names):
@@ -228,7 +365,7 @@ def _expected_board_projection(contract, source_file, project_root):
         ("ua_level", values.get("ua_level") or ""),
         ("acceptance", f"{values.get('ua_status')} / {values.get('acceptance_authority')}"),
         ("delivery", f"commit={values.get('commit_status')};merge={values.get('merge_status')};merge_authority={values.get('merge_authority')}"),
-        ("task_path", source_file.resolve().relative_to(project_root.resolve()).as_posix()),
+        ("task_path", source_file.relative_to(project_root).as_posix()),
     )
     provenance = list(contract.provenance)
     provenance.append(reader.Provenance("title", contract.source_path, "H1", 1, contract.title or "", "canonical"))
@@ -330,35 +467,7 @@ def _transition_code(before, after, verifiable=True):
     return "V_ILLEGAL_TRANSITION"
 
 
-def _git_transition_diagnostic(contract, source_file):
-    try:
-        root_result = subprocess.run(["git", "-C", str(source_file.parent), "rev-parse", "--show-toplevel"], text=True, encoding="utf-8", capture_output=True, check=True)
-        root = pathlib.Path(root_result.stdout.strip())
-        relative = source_file.resolve().relative_to(root.resolve()).as_posix()
-        status = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout
-        if status.strip():
-            raise ValueError("dirty or untracked")
-        subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True)
-        commit = subprocess.run(["git", "-C", str(root), "log", "-n", "1", "--format=%H", "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout.strip()
-        if not commit:
-            raise ValueError("no path history")
-        names = subprocess.run(["git", "-C", str(root), "show", "--format=", "--name-status", commit, "--", relative], text=True, encoding="utf-8", capture_output=True, check=True).stdout
-        if any(line.startswith(("R", "C")) for line in names.splitlines()):
-            raise ValueError("rename history")
-        current = subprocess.run(["git", "-C", str(root), "show", f"{commit}:{relative}"], text=True, encoding="utf-8", capture_output=True, check=True).stdout
-        previous = subprocess.run(["git", "-C", str(root), "show", f"{commit}^:{relative}"], text=True, encoding="utf-8", capture_output=True, check=True).stdout
-        before_report = reader.inspect_text(previous, source_file, validate_filename=False)
-        after_report = reader.inspect_text(current, source_file, validate_filename=False)
-        if any(item.severity == "error" for item in before_report.diagnostics + after_report.diagnostics):
-            raise ValueError("history parse conflict")
-        before = before_report.get("lifecycle")
-        historical_after = after_report.get("lifecycle")
-        after = contract.get("lifecycle")
-        if historical_after != after:
-            raise ValueError("working tree differs from HEAD blob")
-        code = _transition_code(before, after, True)
-    except (OSError, ValueError, subprocess.SubprocessError):
-        code = "W_TRANSITION_UNVERIFIABLE"
+def _transition_diagnostic(contract, code):
     if code == "V_ILLEGAL_TRANSITION":
         return _diag(contract, code, "lifecycle", "Git 历史证明 lifecycle 发生非法流转")
     if code == "W_TRANSITION_UNVERIFIABLE":
@@ -366,42 +475,395 @@ def _git_transition_diagnostic(contract, source_file):
     return None
 
 
+def _path_chunks(paths, *, limit=200, character_limit=12000):
+    chunks = []
+    current = []
+    characters = 0
+    for path in paths:
+        cost = len(path) + 1
+        if current and (len(current) >= limit or characters + cost > character_limit):
+            chunks.append(tuple(current))
+            current = []
+            characters = 0
+        current.append(path)
+        characters += cost
+    if current:
+        chunks.append(tuple(current))
+    return tuple(chunks)
+
+
+GIT_TRANSITION_TIMEOUT_SECONDS = 5.0
+
+
+def _run_git_text(root, arguments, *, input_text=None):
+    return subprocess.run(
+        ["git", "-C", str(root), *arguments],
+        input=input_text,
+        text=True,
+        encoding="utf-8",
+        errors="strict",
+        capture_output=True,
+        check=True,
+        timeout=GIT_TRANSITION_TIMEOUT_SECONDS,
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+    ).stdout
+
+
+def _history_commits(root, relatives):
+    commits = {}
+    ambiguous = set()
+    for chunk in _path_chunks(relatives):
+        output = _run_git_text(
+            root,
+            [
+                "log",
+                "--format=format:%x00COMMIT%x00%H%x00",
+                "--name-status",
+                "-z",
+                "--",
+                *chunk,
+            ],
+        )
+        wanted = set(chunk)
+        fields = output.split("\0")
+        current = None
+        index = 0
+        while index < len(fields):
+            token = fields[index].lstrip("\n")
+            if not token:
+                index += 1
+                continue
+            if token == "COMMIT":
+                if index + 1 >= len(fields):
+                    raise ValueError("truncated history commit")
+                current = fields[index + 1].strip()
+                if not re.fullmatch(r"[0-9a-f]{40}", current or ""):
+                    raise ValueError("invalid history commit")
+                index += 2
+                continue
+            if current is None or index + 1 >= len(fields):
+                raise ValueError("history status precedes commit")
+            status = token
+            if status.startswith(("R", "C")):
+                if index + 2 >= len(fields):
+                    raise ValueError("truncated rename history")
+                paths = (fields[index + 1], fields[index + 2])
+                for relative in paths:
+                    if relative in wanted and relative not in commits:
+                        ambiguous.add(relative)
+                index += 3
+                continue
+            relative = fields[index + 1]
+            if (
+                relative in wanted
+                and relative not in commits
+                and relative not in ambiguous
+            ):
+                commits[relative] = current
+            index += 2
+    for relative in ambiguous:
+        commits.pop(relative, None)
+    return commits
+
+
+def _history_commit(root, relative):
+    output = _run_git_text(
+        root,
+        ["log", "-n", "1", "--format=format:%H%x00", "--name-status", "-z", "--", relative],
+    )
+    fields = output.split("\0")
+    commit = fields[0].strip()
+    if not commit:
+        raise ValueError("no path history")
+    if any(field.startswith(("R", "C")) for field in fields[1:] if field):
+        raise ValueError("rename history")
+    return commit
+
+
+def _cat_file_batch(root, queries):
+    if not queries:
+        return {}
+    encoded_queries = tuple(query.encode("utf-8") for query in queries)
+    result = subprocess.run(
+        ["git", "-C", str(root), "cat-file", "--batch"],
+        input=b"".join(query + b"\n" for query in encoded_queries),
+        capture_output=True,
+        check=True,
+        timeout=GIT_TRANSITION_TIMEOUT_SECONDS,
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+    )
+    output = result.stdout
+    offset = 0
+    blobs = {}
+    for query, encoded_query in zip(queries, encoded_queries):
+        line_end = output.find(b"\n", offset)
+        if line_end < 0:
+            raise ValueError("truncated cat-file header")
+        header = output[offset:line_end]
+        offset = line_end + 1
+        if header == encoded_query + b" missing":
+            blobs[query] = None
+            continue
+        parts = header.rsplit(b" ", 2)
+        if len(parts) != 3 or parts[1] != b"blob":
+            raise ValueError("unexpected cat-file object")
+        size = int(parts[2])
+        end = offset + size
+        if end >= len(output) or output[end:end + 1] != b"\n":
+            raise ValueError("truncated cat-file blob")
+        blobs[query] = output[offset:end]
+        offset = end + 1
+    if output[offset:]:
+        raise ValueError("unexpected cat-file output")
+    return blobs
+
+
+def _git_transition_diagnostics(contracts, source_files):
+    pairs = tuple(zip(contracts, source_files))
+    if not pairs:
+        return {}
+    unavailable = {
+        source_file: _transition_diagnostic(contract, "W_TRANSITION_UNVERIFIABLE")
+        for contract, source_file in pairs
+    }
+    try:
+        root_output = _run_git_text(
+            source_files[0].parent,
+            ["rev-parse", "--show-toplevel", "HEAD", "HEAD^"],
+        )
+        root_lines = root_output.splitlines()
+        if len(root_lines) < 3 or not re.fullmatch(r"[0-9a-f]{40}", root_lines[1].strip()):
+            raise ValueError("invalid repository revision")
+        root = pathlib.Path(root_lines[0].strip()).resolve()
+        head = root_lines[1].strip()
+        by_relative = {}
+        for contract, source_file in pairs:
+            relative = source_file.relative_to(root).as_posix()
+            by_relative[relative] = (contract, source_file)
+
+        dirty_paths = set()
+        tracked_paths = set()
+        relatives = tuple(sorted(by_relative))
+        for chunk in _path_chunks(relatives):
+            status = _run_git_text(root, ["status", "--porcelain=v1", "-z", "--", *chunk])
+            for field in status.split("\0"):
+                if not field:
+                    continue
+                dirty_paths.add(field[3:] if len(field) > 3 and field[2] == " " else field)
+            tracked = _run_git_text(root, ["ls-files", "-z", "--", *chunk])
+            tracked_paths.update(field for field in tracked.split("\0") if field)
+
+        eligible = tuple(
+            relative
+            for relative in relatives
+            if relative in tracked_paths and relative not in dirty_paths
+        )
+        cached = {}
+        uncached = []
+        for relative in eligible:
+            contract, source_file = by_relative[relative]
+            key = (contract, str(source_file), head)
+            if key in _transition_cache:
+                cached[relative] = _transition_cache[key]
+            else:
+                uncached.append(relative)
+        commits = _history_commits(root, tuple(uncached)) if uncached else {}
+
+        queries = []
+        for relative in sorted(commits):
+            commit = commits[relative]
+            queries.extend((f"{commit}:{relative}", f"{commit}^:{relative}"))
+        blobs = _cat_file_batch(root, tuple(queries))
+    except (OSError, UnicodeError, ValueError, subprocess.SubprocessError):
+        return unavailable
+
+    diagnostics = dict(unavailable)
+    for relative, diagnostic in cached.items():
+        diagnostics[by_relative[relative][1]] = diagnostic
+    for relative, commit in commits.items():
+        contract, source_file = by_relative[relative]
+        try:
+            current = blobs[f"{commit}:{relative}"]
+            previous = blobs[f"{commit}^:{relative}"]
+            if current is None or previous is None:
+                raise ValueError("missing historical blob")
+            before_report = _cached_reader_inspect(
+                previous.decode("utf-8"),
+                str(source_file),
+                False,
+            )
+            after_report = _cached_reader_inspect(
+                current.decode("utf-8"),
+                str(source_file),
+                False,
+            )
+            if any(
+                item.severity == "error"
+                for item in before_report.diagnostics + after_report.diagnostics
+            ):
+                raise ValueError("history parse conflict")
+            before = before_report.get("lifecycle")
+            historical_after = after_report.get("lifecycle")
+            after = contract.get("lifecycle")
+            if historical_after != after:
+                raise ValueError("working tree differs from HEAD blob")
+            code = _transition_code(before, after, True)
+        except (UnicodeError, ValueError):
+            code = "W_TRANSITION_UNVERIFIABLE"
+        diagnostic = _transition_diagnostic(contract, code)
+        diagnostics[source_file] = diagnostic
+        if len(_transition_cache) >= 4096:
+            _transition_cache.pop(next(iter(_transition_cache)))
+        _transition_cache[(contract, str(source_file), head)] = diagnostic
+    return diagnostics
+
+
+def _git_transition_diagnostic(contract, source_file):
+    return _git_transition_diagnostics((contract,), (source_file,)).get(source_file)
+
+
 class WorkflowContract:
     @staticmethod
-    def inspect(target):
+    def inspect(target, *, frozen_task_texts=None):
+        global _project_task_paths
         path = pathlib.Path(target)
         if path.is_file() and path.suffix.lower() == ".md":
+            path = path.resolve()
             paths = (path,)
+            _project_task_paths = frozenset()
             validate_filename = True
             project_target = False
         elif path.is_dir() and (path / "docs" / "tasks").is_dir():
-            task_dir = path / "docs" / "tasks"
-            paths = tuple(sorted(task_dir.glob("*.md"), key=lambda item: item.as_posix())) if task_dir.is_dir() else ()
+            path = path.resolve()
+            task_dir = (path / "docs" / "tasks").resolve()
+            if not task_dir.is_relative_to(path):
+                diagnostic = reader._diagnostic(
+                    "E_PARSE",
+                    task_dir,
+                    0,
+                    "docs/tasks 必须位于项目根内",
+                )
+                return WorkflowReport(
+                    (),
+                    (diagnostic,),
+                    "not_evaluated",
+                    _summary((diagnostic,)),
+                )
+            paths = tuple(
+                sorted(
+                    (
+                        item.resolve()
+                        if getattr(item.lstat(), "st_file_attributes", 0) & 0x400
+                        else item.absolute()
+                        for item in task_dir.glob("*.md")
+                    ),
+                    key=lambda item: item.as_posix(),
+                )
+            )
+            if any(not item.is_relative_to(task_dir) for item in paths):
+                diagnostic = reader._diagnostic(
+                    "E_PARSE",
+                    task_dir,
+                    0,
+                    "TASK path 必须位于 docs/tasks 内",
+                )
+                return WorkflowReport(
+                    (),
+                    (diagnostic,),
+                    "not_evaluated",
+                    _summary((diagnostic,)),
+                )
+            _project_task_paths = frozenset(paths)
             validate_filename = True
             project_target = True
         else:
             diagnostic = reader._diagnostic("E_PARSE", path, 0, "target 必须是单个 Markdown TASK 或含 docs/tasks 的项目根")
             return WorkflowReport((), (diagnostic,), "not_evaluated", _summary((diagnostic,)))
-        contracts = tuple(reader.inspect_task(item, validate_filename=validate_filename) for item in paths)
+        frozen = {
+            pathlib.Path(key).absolute(): value
+            for key, value in (frozen_task_texts or {}).items()
+        }
+        frozen_sha256 = {
+            item: hashlib.sha256(text.encode("utf-8")).digest()
+            for item, text in frozen.items()
+        }
+        contracts = tuple(
+            _cached_reader_inspect(
+                frozen[item].removeprefix("\ufeff"),
+                str(item),
+                validate_filename,
+            )
+            if item in frozen
+            else reader.inspect_task(item, validate_filename=validate_filename)
+            for item in paths
+        )
         diagnostics = []
         projections = []
         seen_ids = {}
-        for contract, source_file in zip(contracts, paths):
-            diagnostics.extend(_validate(contract, require_commit=True, source_file=source_file))
-            transition = _git_transition_diagnostic(contract, source_file)
+        with ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="workflow-transition-read",
+        ) as executor:
+            transitions_future = executor.submit(
+                _git_transition_diagnostics,
+                contracts,
+                paths,
+            )
+            for contract, source_file in zip(contracts, paths):
+                if source_file in frozen_sha256:
+                    diagnostics.extend(
+                        _cached_contract_validation(
+                            contract,
+                            str(source_file),
+                            frozen_sha256[source_file],
+                        )
+                    )
+                else:
+                    diagnostics.extend(
+                        _validate(
+                            contract,
+                            require_commit=True,
+                            source_file=source_file,
+                        )
+                    )
+                task_id = contract.get("task_id")
+                if task_id and task_id in seen_ids:
+                    diagnostics.append(_diag(contract, "E_TASK_ID_CONFLICT", "task_id", "项目中 task_id 重复"))
+                elif task_id:
+                    seen_ids[task_id] = contract.source_path
+                if project_target:
+                    projection = (
+                        _cached_board_projection(
+                            contract,
+                            str(source_file),
+                            str(path),
+                        )
+                        if source_file in frozen_sha256
+                        else _expected_board_projection(contract, source_file, path)
+                    )
+                    if projection is not None:
+                        projections.append(projection)
+            if project_target:
+                board_path = path / "docs" / "TASK_BOARD.md"
+                if frozen and board_path.is_file():
+                    board_sha256 = hashlib.sha256(board_path.read_bytes()).digest()
+                    diagnostics.extend(
+                        _cached_board_diagnostics(
+                            str(path),
+                            tuple(projections),
+                            tuple(seen_ids),
+                            board_sha256,
+                        )
+                    )
+                else:
+                    diagnostics.extend(
+                        _board_diagnostics(path, projections, tuple(seen_ids))
+                    )
+            transitions = transitions_future.result()
+        for source_file in paths:
+            transition = transitions.get(source_file)
             if transition is not None:
                 diagnostics.append(transition)
-            task_id = contract.get("task_id")
-            if task_id and task_id in seen_ids:
-                diagnostics.append(_diag(contract, "E_TASK_ID_CONFLICT", "task_id", "项目中 task_id 重复"))
-            elif task_id:
-                seen_ids[task_id] = contract.source_path
-            if project_target:
-                projection = _expected_board_projection(contract, source_file, path)
-                if projection is not None:
-                    projections.append(projection)
-        if project_target:
-            diagnostics.extend(_board_diagnostics(path, projections, tuple(seen_ids)))
         if path.is_dir() and (path / "docs" / "PROJECT_OVERLAY.md").exists():
             diagnostics.append(reader._diagnostic("W_PROJECT_OVERLAY_UNEVALUATED", path / "docs" / "PROJECT_OVERLAY.md", 1, "发现 Project Overlay，但 CONTRACT-007 前不求值"))
         diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))

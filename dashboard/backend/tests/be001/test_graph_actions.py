@@ -95,6 +95,37 @@ class RelationshipEngineTests(unittest.TestCase):
             [item.diagnostic_id for item in again],
         )
 
+    def test_thousand_node_dependency_and_replace_cycles_are_iterative(self):
+        count = 1000
+        nodes = tuple(task(f"TASK-{index:04d}") for index in range(count))
+        for relation, code in (
+            ("depends_on", "DEPENDENCY_CYCLE"),
+            ("replaces", "REPLACES_CYCLE"),
+        ):
+            profiles = {}
+            for index, node in enumerate(nodes):
+                target_id = nodes[(index + 1) % count].task_id
+                if relation == "depends_on":
+                    profiles[node.task_id] = profile(
+                        dependencies=(
+                            DependencySpec(
+                                target_id,
+                                "lifecycle",
+                                "Ready",
+                                provenance("depends_on", target_id),
+                            ),
+                        )
+                    )
+                else:
+                    profiles[node.task_id] = profile(
+                        values={"replaces": (target_id,)},
+                    )
+            with self.subTest(relation=relation):
+                edges, diagnostics = self.engine.build(nodes, profiles)
+                self.assertEqual(count, len(edges))
+                cycle = next(item for item in diagnostics if item.code == code)
+                self.assertEqual(count, len(cycle.task_ids))
+
     def test_conflicts_are_symmetric_and_deduplicated(self):
         a = task("A")
         b = task("B")
@@ -117,6 +148,18 @@ class ActionEngineTests(unittest.TestCase):
 
     def recommendation(self, node, diagnostics=()):
         return self.actions.recommend((node,), (), diagnostics)
+
+    def test_action_evidence_only_contains_fields_used_by_the_decision(self):
+        current = task(
+            "TASK",
+            provenance=(
+                provenance("task_id", "TASK"),
+                provenance("lifecycle", "Ready"),
+                provenance("write_scope", "file:src/a.py"),
+            ),
+        )
+        item = self.actions.recommend((current,), (), ())[0]
+        self.assertEqual(("lifecycle",), tuple(value.field for value in item.evidence))
 
     def test_action_matrix_primary_branches(self):
         cases = (

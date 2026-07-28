@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from itertools import combinations
+from itertools import combinations, islice
 from typing import Mapping
 
 from .canonical import stable_text_id
@@ -43,6 +43,7 @@ SERIAL_RISKS = {
     "release",
 }
 EXCEPTION_RISKS = {"public_api", "security", "shared_component", "core_execution_path"}
+MAX_PARALLEL_ASSESSMENTS = 256
 
 
 class ParallelEngine:
@@ -54,6 +55,23 @@ class ParallelEngine:
         worktrees: Mapping[str, WorktreeSnapshot] | None = None,
         diagnostics: tuple[Diagnostic, ...] = (),
     ) -> tuple[ParallelAssessment, ...]:
+        assessments, _ = self.assess_with_diagnostics(
+            tasks,
+            profiles,
+            edges,
+            worktrees,
+            diagnostics,
+        )
+        return assessments
+
+    def assess_with_diagnostics(
+        self,
+        tasks: tuple[TaskNode, ...],
+        profiles: dict[str, SchedulingProfile],
+        edges: tuple[RelationshipEdge, ...],
+        worktrees: Mapping[str, WorktreeSnapshot] | None = None,
+        diagnostics: tuple[Diagnostic, ...] = (),
+    ) -> tuple[tuple[ParallelAssessment, ...], tuple[Diagnostic, ...]]:
         worktree_map = dict(worktrees or {})
         by_id = {task.task_id: task for task in tasks}
         diagnostic_by_id = {item.diagnostic_id: item for item in diagnostics}
@@ -64,9 +82,31 @@ class ParallelEngine:
                 dependency_graph[edge.source_task_id].add(edge.target_task_id)
             elif edge.type == "conflicts_with":
                 explicit_conflicts.add(frozenset((edge.source_task_id, edge.target_task_id)))
+        dependency_reachability = {
+            task.task_id: self._reachable_nodes(task.task_id, dependency_graph)
+            for task in tasks
+        }
+        profile_known = {
+            task.task_id: (
+                profiles.get(task.task_id) is not None
+                and profiles[task.task_id].state
+                not in {"absent", "invalid", "legacy_inferred"}
+                and self._parallel_fields_known(profiles[task.task_id])
+                and not self._parallel_input_blocked(task, diagnostic_by_id)
+            )
+            for task in tasks
+        }
+        lock_sets = {
+            task.task_id: frozenset(task.module_locks)
+            for task in tasks
+        }
 
         result: list[ParallelAssessment] = []
-        for left, right in combinations(tasks, 2):
+        pair_count = len(tasks) * (len(tasks) - 1) // 2
+        for left, right in islice(
+            combinations(tasks, 2),
+            MAX_PARALLEL_ASSESSMENTS,
+        ):
             reasons: list[str] = []
             hard: list[str] = []
             projection: list[str] = []
@@ -74,14 +114,8 @@ class ParallelEngine:
             left_profile = profiles.get(left.task_id)
             right_profile = profiles.get(right.task_id)
             if (
-                left_profile is None
-                or right_profile is None
-                or left_profile.state in {"absent", "invalid", "legacy_inferred"}
-                or right_profile.state in {"absent", "invalid", "legacy_inferred"}
-                or not self._parallel_fields_known(left_profile)
-                or not self._parallel_fields_known(right_profile)
-                or self._parallel_input_blocked(left, diagnostic_by_id)
-                or self._parallel_input_blocked(right, diagnostic_by_id)
+                not profile_known[left.task_id]
+                or not profile_known[right.task_id]
             ):
                 state = "unknown"
             elif (
@@ -99,8 +133,9 @@ class ParallelEngine:
                 or right_profile.get("parallel_intent") != "consider"
             ):
                 state = "unknown"
-            elif self._reachable(left.task_id, right.task_id, dependency_graph) or self._reachable(
-                right.task_id, left.task_id, dependency_graph
+            elif (
+                right.task_id in dependency_reachability[left.task_id]
+                or left.task_id in dependency_reachability[right.task_id]
             ):
                 state = "must_serial"
                 hard.append("DEPENDENCY_PATH_PRESENT")
@@ -124,9 +159,7 @@ class ParallelEngine:
                         state = "must_serial"
                         hard.append("WRITE_SCOPE_OVERLAP")
                 if state == "candidate":
-                    left_locks = set(left.module_locks)
-                    right_locks = set(right.module_locks)
-                    if left_locks & right_locks:
+                    if lock_sets[left.task_id] & lock_sets[right.task_id]:
                         state = "must_serial"
                         hard.append("MODULE_LOCK_OVERLAP")
 
@@ -171,11 +204,27 @@ class ParallelEngine:
                         or item.locked
                         or item.prunable
                         or item.dirty_state == "unknown"
+                        or item.diagnostic_ids
                         for item in evidence
                     ):
                         state = "unknown"
                         reasons.append("WORKTREE_EVIDENCE_UNKNOWN")
-                    elif any(item.dirty_state != "clean" for item in evidence):
+                    elif (
+                        evidence[0].branch != f"refs/heads/{left.branch_hint}"
+                        or evidence[1].branch != f"refs/heads/{right.branch_hint}"
+                    ):
+                        state = "unknown"
+                        reasons.append("WORKTREE_EVIDENCE_UNKNOWN")
+                    elif any(
+                        not (
+                            (item.dirty_state == "clean" and item.dirty_ownership == "clean")
+                            or (
+                                item.dirty_state == "dirty"
+                                and item.dirty_ownership == "owned_by_task"
+                            )
+                        )
+                        for item in evidence
+                    ):
                         state = "unknown"
                         reasons.append("DIRTY_OWNERSHIP_UNKNOWN")
 
@@ -205,7 +254,23 @@ class ParallelEngine:
                     True,
                 )
             )
-        return tuple(sorted(result, key=lambda item: (item.left_task_id, item.right_task_id)))
+        selected = tuple(result)
+        if pair_count <= MAX_PARALLEL_ASSESSMENTS:
+            return selected, ()
+        message = (
+            f"Parallel assessments truncated: total={pair_count};"
+            f"published={MAX_PARALLEL_ASSESSMENTS};"
+            "selection=lexicographic_pair_order"
+        )
+        diagnostic = Diagnostic(
+            stable_text_id("diagnostic", "PARALLEL_ASSESSMENT_TRUNCATED", message),
+            "PARALLEL_ASSESSMENT_TRUNCATED",
+            "warning",
+            message,
+            (),
+            (),
+        )
+        return selected, (diagnostic,)
 
     @staticmethod
     def _parallel_fields_known(profile: SchedulingProfile) -> bool:
@@ -272,19 +337,23 @@ class ParallelEngine:
         return False
 
     @staticmethod
-    def _reachable(source: str, target: str, graph: Mapping[str, set[str]]) -> bool:
+    def _reachable_nodes(
+        source: str,
+        graph: Mapping[str, set[str]],
+    ) -> frozenset[str]:
         pending = deque([source])
         visited: set[str] = set()
+        reachable: set[str] = set()
         while pending:
             current = pending.popleft()
             if current in visited:
                 continue
             visited.add(current)
             for neighbor in graph.get(current, ()):
-                if neighbor == target:
-                    return True
+                reachable.add(neighbor)
                 pending.append(neighbor)
-        return False
+        reachable.discard(source)
+        return frozenset(reachable)
 
     def _risk_result(
         self,

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import dataclass, field as dataclass_field, fields, is_dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -31,11 +32,27 @@ UNSUPPORTED_AXES = (
 )
 
 
+@lru_cache(maxsize=None)
+def _wire_field_names(value_type: type) -> tuple[str, ...]:
+    """Cache the immutable wire shape once for each frozen domain type."""
+
+    return tuple(
+        field.name
+        for field in fields(value_type)
+        if field.metadata.get("wire", True)
+    )
+
+
 def primitive(value: Any) -> Any:
     """Convert frozen domain values into JSON-compatible primitives."""
 
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
     if is_dataclass(value):
-        return {key: primitive(item) for key, item in asdict(value).items()}
+        return {
+            name: primitive(getattr(value, name))
+            for name in _wire_field_names(type(value))
+        }
     if isinstance(value, Mapping):
         return {str(key): primitive(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
@@ -84,6 +101,7 @@ class FrozenProjectInput:
     tasks: tuple[FrozenTaskInput, ...]
     manifest_sha256: str
     lease_guard: Any = None
+    board: FrozenTaskInput | None = None
 
     def by_source_path(self) -> dict[str, FrozenTaskInput]:
         return {item.source_path: item for item in self.tasks}
@@ -223,6 +241,10 @@ class WorktreeSnapshot:
     dirty_state: str
     dirty_paths: tuple[str, ...]
     diagnostic_ids: tuple[str, ...]
+    dirty_ownership: str = dataclass_field(
+        default="unknown",
+        metadata={"wire": False},
+    )
 
 
 @dataclass(frozen=True)

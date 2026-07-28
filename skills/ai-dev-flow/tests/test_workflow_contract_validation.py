@@ -69,6 +69,134 @@ class WorkflowContractValidationTests(unittest.TestCase):
         self.assertIn("W_TRANSITION_UNVERIFIABLE", [d.code for d in report.diagnostics])
         self.assertEqual(report.summary.exit_code, 0)
 
+    def test_git_unavailable_is_detected_once_for_a_project(self):
+        source = FIXTURES / "valid" / "task-a-document.md"
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            for index in range(6):
+                task_id = f"TASK-BATCH-{index:03d}"
+                (task_dir / f"{task_id}.md").write_text(
+                    source.read_text(encoding="utf-8").replace("FIX-VALID-A", task_id),
+                    encoding="utf-8",
+                )
+            with mock.patch.object(
+                self.api.subprocess,
+                "run",
+                side_effect=FileNotFoundError("git unavailable"),
+            ) as git_run:
+                report = self.api.WorkflowContract.inspect(root)
+        self.assertEqual(1, git_run.call_count)
+        self.assertEqual(
+            6,
+            sum(item.code == "W_TRANSITION_UNVERIFIABLE" for item in report.diagnostics),
+        )
+
+    def test_git_transition_timeout_and_invalid_utf8_fail_closed(self):
+        source = FIXTURES / "valid" / "task-a-document.md"
+        for failure in (
+            __import__("subprocess").TimeoutExpired(["git"], 5),
+            UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+        ):
+            with self.subTest(failure=type(failure).__name__):
+                with tempfile.TemporaryDirectory() as td:
+                    target = pathlib.Path(td) / "TASK-GIT-BOUNDARY.md"
+                    target.write_text(
+                        source.read_text(encoding="utf-8").replace(
+                            "FIX-VALID-A",
+                            "TASK-GIT-BOUNDARY",
+                        ),
+                        encoding="utf-8",
+                    )
+                    with mock.patch.object(
+                        self.api.subprocess,
+                        "run",
+                        side_effect=failure,
+                    ):
+                        report = self.api.WorkflowContract.inspect(target)
+                self.assertIn(
+                    "W_TRANSITION_UNVERIFIABLE",
+                    [item.code for item in report.diagnostics],
+                )
+                self.assertEqual(0, report.summary.exit_code)
+
+    def test_git_transition_subprocesses_are_bounded_and_strict_utf8(self):
+        completed = mock.Mock(stdout="")
+        with mock.patch.object(
+            self.api.subprocess,
+            "run",
+            return_value=completed,
+        ) as run:
+            self.api._run_git_text(pathlib.Path("D:/repo"), ["status"])
+        kwargs = run.call_args.kwargs
+        self.assertEqual(self.api.GIT_TRANSITION_TIMEOUT_SECONDS, kwargs["timeout"])
+        self.assertEqual("utf-8", kwargs["encoding"])
+        self.assertEqual("strict", kwargs["errors"])
+
+        binary = mock.Mock(stdout=b"query missing\n")
+        with mock.patch.object(
+            self.api.subprocess,
+            "run",
+            return_value=binary,
+        ) as run:
+            self.assertEqual(
+                {"query": None},
+                self.api._cat_file_batch(pathlib.Path("D:/repo"), ("query",)),
+            )
+        self.assertEqual(
+            self.api.GIT_TRANSITION_TIMEOUT_SECONDS,
+            run.call_args.kwargs["timeout"],
+        )
+
+    def test_frozen_reader_cache_reuses_unchanged_text_and_invalidates_changed_text(self):
+        source = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            paths = tuple(task_dir / f"TASK-CACHE-{index:03d}.md" for index in range(2))
+            frozen = {}
+            for index, path in enumerate(paths):
+                text = source.replace("FIX-VALID-A", f"TASK-CACHE-{index:03d}")
+                path.write_text(text, encoding="utf-8")
+                frozen[path.absolute()] = text
+            self.api._cached_reader_inspect.cache_clear()
+            original = self.api.reader.inspect_text
+            with mock.patch.object(
+                self.api.reader,
+                "inspect_text",
+                wraps=original,
+            ) as inspect_text, mock.patch.object(
+                self.api.subprocess,
+                "run",
+                side_effect=FileNotFoundError("git unavailable"),
+            ):
+                first = self.api.WorkflowContract.inspect(
+                    root,
+                    frozen_task_texts=frozen,
+                )
+                first_calls = inspect_text.call_count
+                second = self.api.WorkflowContract.inspect(
+                    root,
+                    frozen_task_texts=frozen,
+                )
+                self.assertEqual(first_calls, inspect_text.call_count)
+                changed = dict(frozen)
+                changed[paths[0].absolute()] = changed[paths[0].absolute()].replace(
+                    "`Review`",
+                    "`In Progress`",
+                )
+                third = self.api.WorkflowContract.inspect(
+                    root,
+                    frozen_task_texts=changed,
+                )
+            self.api._cached_reader_inspect.cache_clear()
+        self.assertEqual(2, first_calls)
+        self.assertEqual(first.contracts, second.contracts)
+        self.assertEqual(first_calls + 1, inspect_text.call_count)
+        self.assertNotEqual(first.contracts, third.contracts)
+
     def test_chinese_path_read_only_and_board_not_evaluated(self):
         source = FIXTURES / "valid" / "task-a-document.md"
         before = (hashlib.sha256(source.read_bytes()).hexdigest(), source.stat().st_mtime_ns)

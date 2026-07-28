@@ -6,15 +6,16 @@
 - `task_id`: `DASHBOARD-BE-001-REPAIR-001`
 - `task_type`: `repair`
 - `task_class`: `D`
-- `lifecycle`: `Review`
-- `review_status`: `Pending`
+- `lifecycle`: `Accepted`
+- `review_status`: `Passed`
 - `ua_level`: `UA3`
-- `ua_status`: `Pending`
-- `acceptance_authority`: `None`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/DASHBOARD-BE-001-REPAIR-001.md#dashboard-be-001-repair-001-ua3-2026-07-28`
+- `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -46,7 +47,9 @@
 - Base commit：`760b40442bcc96f711f12433a2c5d017d118d85c`
 - 已有 authority：用户在收到两个阻塞项、所需修复范围和未授权边界后明确回复“授权”；允许创建本修复 TASK/Worktree，在精确 allowlist 内诊断、实现、验证，并执行隔离只读 Review 和最多两轮有限 AutoRepair，直到 `Review Passed / UA3 Pending`。
 - 新增 authority：用户在获知公共 Reader 热点、所需精确文件范围和原权限缺口后明确回复“授权，继续修复然后独立审核直至能验收状态”；允许把 `workflow_contract.py` 及三份定向测试纳入 A1，并在原 BE-001 core/schema/tests 与原 BE-002 已授权实现边界内完成组合验证和独立审核。
-- 未授权动作：新增第三方依赖、越界修改、commit、merge、push、release、外部同步、代替用户 UA3、记录 Accepted、删除 Worktree/分支或 Closed。
+- 验收 authority：用户查看组合修复、验证、独立 Review 与尾延迟风险说明后明确回复“验收通过”；允许记录本修复 TASK `UA3 Passed / Accepted`。
+- 提交与合并 authority：用户在 Accepted 写回后明确回复“提交并合并”；允许提交本任务实现，并与 `DASHBOARD-BE-002` 组合后合并到本地 `main`。
+- 当前未授权动作：新增第三方依赖、越界修改、push、release、外部同步、删除 Worktree/分支或 Closed。
 - 执行位置：修复位于 `D:\open-source\ai-dev-flow-wt\dashboard-be-001-repair-001`，BE-002 原授权实现位于 `D:\open-source\ai-dev-flow-wt\dashboard-be-002`；组合验证在临时只读副本执行。
 
 ## 路由与风险
@@ -159,14 +162,40 @@
 - ER-1 实际 chain：新增必要的 BE-2 internal fingerprint 文件仍为 campaign outer scope 子集；`allowed_files_hash=e67379512aaf6c1633e7961c97502a5859f3aee16c1eedc9744d522aee3af799`；`repair_chain_digest=27767f31a0b4c5293fba3c143c2c46cb3fa8a9f92ce7379ef43eff8a095ee9d1`。历史 attempt count 不重置。
 - Candidate progress：三个冻结 RED 均有直接 GREEN oracle，未发现 GREEN→RED、严重度上升、外部副作用或 hard-stop；Campaign `attempt_count=1`、`consecutive_no_progress=0/4` 的最终写回仍等待独立只读 Review receipt。
 
+## Campaign ER-1 独立 Review（2026-07-28）
+
+- Decision：`Passed`；`P0/P1/P2/P3=0/0/1/0`；允许进入 `UA3` 可验收建议。
+- Target closure：`DASHBOARD-BE-A1-P1-007`、`DASHBOARD-BE-A2-P1-001`、`DASHBOARD-BE-A2-P2-002` 全部 Closed；独立 Reviewer 额外验证 1100 节点 DAG、depends_on/replaces 环、compiled cache 命中/淘汰和 Git internal/watch/public ownership 边界，均为 GREEN。
+- 唯一新 finding `DASHBOARD-BE-ER1-P2-001`：当前 Outcome 仍写旧回归计数 `128/128`；本次随 Review receipt 更正为 `130/130`。Reviewer 判定为 `record_only_correction`，不消耗新 repair round，也无需再次独立 Review。
+- Review receipt：`C:\Users\92336\AppData\Local\Temp\dashboard-be-002-campaign-er1-independent-review.final.txt`；SHA256 `A2BA0E8E2239952F7BE31DB6FBAD4488228E682C8E78E7BCA331FC7EDC972AC2`。
+- 输入不可变：审核结束时 repair manifest 仍为 `CFBB10234F273BF8473245C966A17A9B620E8709D544648A162B1644DA4CBF44`，BE2 manifest 仍为 `F05A73E415D0382E595CE42C398E3EB7CE045A1B59B878BAC9A25F3FE24F54E0`；Reviewer 未修改输入，两个 Worktree 均无 `__pycache__`。
+- Campaign state：`attempt_count=1`、`meaningful_progress=true`、`consecutive_no_progress=0/4`、hard-stop flags 全 false。
+- Review 边界：`Review Passed` 只允许邀请 UA3，不等于 `UA Passed / Accepted / commit / merge / push / release / Closed`。
+
+## DASHBOARD-BE-001-REPAIR-001 UA3 2026-07-28
+
+- 用户反馈：用户在查看 BE-002 与依赖修复的组合验证、独立 Review 和尾延迟风险说明后明确回复“验收通过”。
+- 验收范围：确认核心快照性能、dirty ownership、canonical wire、1000+ 节点环诊断、有界 schema cache，以及 BE-002 组合回归和性能证据。
+- 验收结果：`UA3 Passed / User Confirmed`；据此将 lifecycle 推进为 `Accepted`。
+- 已知风险：用户在验收说明中已获知 stable-save run2 存在一个 `5187.3041 ms` 最大样本；冻结 nearest-rank p95 为 `840.7838 ms` 并通过门禁。
+- 权限边界：本次用户反馈只构成 UA3 与 Acceptance authority，不授权 commit、stage、merge、push、release、删除 Worktree/分支或 Closed。
+
+## 提交与合并授权 2026-07-28
+
+- 用户授权：用户在 `UA3 Passed / Accepted` 写回后明确回复“提交并合并”。
+- 提交策略：先由独立生命周期提交保存 `In Progress` 与 `Review`，本功能提交保存已审查实现树和 `Accepted / Committed / Unmerged` 状态。
+- 合并策略：先把本分支合入 `codex/dashboard-be-002` 形成组合树，复验后再合并到本地 `main`。
+- 权限边界：不包含 push、release、外部同步、删除分支/Worktree 或 Closed。
+
 ## Outcome
 
 - Base / Diff：base=760b40442bcc96f711f12433a2c5d017d118d85c;diff=working-tree
 - 修改文件：`core/**`、`tests/be001/**`、dashboard contract schema、公共 Reader 与定向测试、本 TASK 和 TASK_BOARD；没有新增依赖。
-- 验证证据：组合 dashboard 回归 `130/130 Passed`；Skill/Reader 回归 `85/85 Passed`；六份 Campaign ER-1 30 样本收据和四项性能门禁均已形成。
-- Review findings：Campaign ER-1 修复候选已形成，等待隔离只读 Reviewer 给出最终结论。
-- UA 动作与结果：`UA3 Pending`。
-- 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-be-001-repair-001`，branch `codex/dashboard-be-001-repair-001`。
-- 回滚方式：实现尚未 commit；保留独立 Worktree。
-- 状态边界：`Review / Pending / Campaign ER-1 / UA3 Pending / Uncommitted / Unmerged / Not Pushed / Not Released / Not Closed`。
-- 下一步：完成 Campaign ER-1 独立只读 Review；通过后邀请 UA3。
+- 验证证据：Python 3.12 组合 dashboard 回归 `130/130 Passed`；Skill/Reader 回归 `85/85 Passed`；六份 Campaign ER-1 30 样本结果的 nearest-rank 与 SHA256 已由 Engineer 和独立 Reviewer 分别复算，2 秒/1 秒/250ms/10MiB 门禁连续双跑 GREEN。
+- Review findings：Campaign ER-1 独立 Review `Passed`，`P0/P1/P2/P3=0/0/1/0`；三个目标 finding Closed，唯一 P2 已作为纯记录纠错随 receipt 写回。
+- UA 动作与结果：用户明确回复“验收通过”；`UA3 Passed / User Confirmed / Accepted`。
+- 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-be-001-repair-001`，branch `codex/dashboard-be-001-repair-001`；组合副本位于本机临时目录。
+- 回滚方式：本功能提交及独立分支作为恢复点；未经用户授权不删除、reset、revert 或改写历史。
+- 状态边界：`Accepted / Passed / Campaign ER-1 / UA3 Passed / User Confirmed / Committed / Unmerged / Not Pushed / Not Released / Not Closed`。
+- 剩余风险：stable-save run2 有一个 `5187.3041 ms` 最大样本；冻结 nearest-rank p95 为 `840.7838 ms` 并通过门禁，但这不代表最大延迟低于 1 秒；该风险已在 UA3 前披露并由用户接受。
+- 下一步：按用户授权与 `DASHBOARD-BE-002` 形成组合提交并合并到本地 `main`；push、release 与 Closed 继续保持未授权。

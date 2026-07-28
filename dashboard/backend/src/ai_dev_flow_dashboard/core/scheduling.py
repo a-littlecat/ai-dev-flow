@@ -129,12 +129,25 @@ def _canonical_scope(
     token: str,
     provenance: Provenance,
     project_root: Path,
+    prefix_cache: dict[tuple[str, ...], Path | None] | None = None,
 ) -> ScopeEntry | None:
     if ":" not in token:
         return None
     kind, raw_path = token.split(":", 1)
     if kind not in {"file", "dir"} or not raw_path:
         return None
+    canonical = canonical_repo_path(raw_path, project_root, prefix_cache)
+    if canonical is None:
+        return None
+    path, comparison_segments = canonical
+    return ScopeEntry(kind, path, comparison_segments, provenance)
+
+
+def canonical_repo_path(
+    raw_path: str,
+    project_root: Path | None = None,
+    prefix_cache: dict[tuple[str, ...], Path | None] | None = None,
+) -> tuple[str, tuple[str, ...]] | None:
     path = unicodedata.normalize("NFC", raw_path)
     if (
         "\\" in path
@@ -155,20 +168,127 @@ def _canonical_scope(
     ):
         return None
 
-    current = project_root.resolve()
-    for segment in segments:
-        candidate = current / segment
-        if candidate.exists() or candidate.is_symlink():
+    if project_root is not None:
+        resolved_root = project_root
+        current = resolved_root
+        for index, segment in enumerate(segments):
+            key = tuple(segments[: index + 1])
+            if prefix_cache is not None and key in prefix_cache:
+                cached = prefix_cache[key]
+                if cached is None:
+                    break
+                current = cached
+                continue
+            candidate = current / segment
+            if candidate.exists() or candidate.is_symlink():
+                try:
+                    resolved = candidate.resolve(strict=True)
+                except OSError:
+                    return None
+                if not resolved.is_relative_to(resolved_root):
+                    return None
+                current = resolved
+                if prefix_cache is not None:
+                    prefix_cache[key] = resolved
+            else:
+                if prefix_cache is not None:
+                    prefix_cache[key] = None
+                break
+    return "/".join(segments), tuple(item.casefold() for item in segments)
+
+
+def _scope_paths_from_text(text: str) -> tuple[str, ...]:
+    """Extract lexical scope paths for cache invalidation, without accepting them."""
+
+    lines = text.splitlines()
+    in_scheduling = False
+    for line in lines:
+        if line.startswith("## "):
+            in_scheduling = line == "## Scheduling"
+            continue
+        if not in_scheduling:
+            continue
+        match = FIELD_RE.fullmatch(line)
+        if match is None or match.group(1) != "write_scope":
+            continue
+        parts = _split_list(match.group(2))
+        if parts is None:
+            return ()
+        return tuple(
+            token.split(":", 1)[1]
+            for token in parts
+            if ":" in token
+        )
+    return ()
+
+
+def _scope_topology_key(
+    raw_paths: tuple[str, ...],
+    project_root: Path,
+    probe_cache: dict[str, tuple[Any, Path | None]],
+) -> tuple[Any, ...]:
+    """Fingerprint every existing prefix and the first missing prefix of each scope."""
+
+    signatures: list[Any] = []
+    for raw_path in raw_paths:
+        normalized = unicodedata.normalize("NFC", raw_path)
+        segments = normalized.split("/")
+        current = project_root
+        prefix: list[Any] = []
+        for segment in segments:
+            candidate = current / segment
+            cache_key = str(candidate.absolute()).casefold()
+            cached = probe_cache.get(cache_key)
+            if cached is not None:
+                entry, resolved = cached
+                prefix.append(entry)
+                if resolved is None:
+                    break
+                current = resolved
+                continue
+            try:
+                stat = candidate.lstat()
+            except FileNotFoundError:
+                entry = (segment.casefold(), "missing")
+                probe_cache[cache_key] = (entry, None)
+                prefix.append(entry)
+                break
+            except OSError as exc:
+                entry = (segment.casefold(), "error", type(exc).__name__)
+                probe_cache[cache_key] = (entry, None)
+                prefix.append(entry)
+                break
             try:
                 resolved = candidate.resolve(strict=True)
-            except OSError:
-                return None
-            if not resolved.is_relative_to(project_root.resolve()):
-                return None
+            except OSError as exc:
+                entry = (
+                    segment.casefold(),
+                    "unresolved",
+                    stat.st_dev,
+                    stat.st_ino,
+                    stat.st_mtime_ns,
+                    stat.st_ctime_ns,
+                    getattr(stat, "st_file_attributes", 0),
+                    type(exc).__name__,
+                )
+                probe_cache[cache_key] = (entry, None)
+                prefix.append(entry)
+                break
+            entry = (
+                segment.casefold(),
+                "present",
+                stat.st_dev,
+                stat.st_ino,
+                stat.st_mtime_ns,
+                stat.st_ctime_ns,
+                getattr(stat, "st_file_attributes", 0),
+                str(resolved).casefold(),
+            )
+            probe_cache[cache_key] = (entry, resolved)
+            prefix.append(entry)
             current = resolved
-        else:
-            break
-    return ScopeEntry(kind, "/".join(segments), tuple(item.casefold() for item in segments), provenance)
+        signatures.append((normalized, tuple(prefix)))
+    return tuple(signatures)
 
 
 class SchedulingParser:
@@ -176,8 +296,59 @@ class SchedulingParser:
 
     def __init__(self, project_root: str | Path):
         self.project_root = Path(project_root).resolve()
+        self._topology_probe_cache: dict[str, tuple[Any, Path | None]] = {}
+        self._canonical_prefix_cache: dict[tuple[str, ...], Path | None] = {}
+        self._scope_path_cache: dict[tuple[str, str], tuple[str, ...]] = {}
+        self._profile_cache: dict[
+            tuple[str, str, str, frozenset[str], tuple[Any, ...]],
+            SchedulingProfile,
+        ] = {}
+
+    def begin_inspection(self) -> None:
+        """Start a new filesystem topology generation for one frozen core read."""
+
+        self._topology_probe_cache = {}
+        self._canonical_prefix_cache = {}
 
     def parse(
+        self,
+        frozen: FrozenTaskInput,
+        task_id: str,
+        known_task_ids: Iterable[str],
+    ) -> SchedulingProfile:
+        known = (
+            known_task_ids
+            if isinstance(known_task_ids, frozenset)
+            else frozenset(known_task_ids)
+        )
+        scope_path_key = (frozen.source_path, frozen.sha256)
+        raw_scope_paths = self._scope_path_cache.get(scope_path_key)
+        if raw_scope_paths is None:
+            raw_scope_paths = _scope_paths_from_text(frozen.text)
+            if len(self._scope_path_cache) >= 4096:
+                self._scope_path_cache.pop(next(iter(self._scope_path_cache)))
+            self._scope_path_cache[scope_path_key] = raw_scope_paths
+        key = (
+            frozen.source_path,
+            frozen.sha256,
+            task_id,
+            known,
+            _scope_topology_key(
+                raw_scope_paths,
+                self.project_root,
+                self._topology_probe_cache,
+            ),
+        )
+        cached = self._profile_cache.get(key)
+        if cached is not None:
+            return cached
+        result = self._parse_uncached(frozen, task_id, known)
+        if len(self._profile_cache) >= 4096:
+            self._profile_cache.pop(next(iter(self._profile_cache)))
+        self._profile_cache[key] = result
+        return result
+
+    def _parse_uncached(
         self,
         frozen: FrozenTaskInput,
         task_id: str,
@@ -285,7 +456,11 @@ class SchedulingParser:
         values: dict[str, Any] = {}
         dependencies: tuple[DependencySpec, ...] = ()
         scopes: tuple[ScopeEntry, ...] = ()
-        known = set(known_task_ids)
+        known = (
+            known_task_ids
+            if isinstance(known_task_ids, (set, frozenset))
+            else set(known_task_ids)
+        )
         for field in SCHEDULING_FIELDS:
             raw, line = raw_fields[field]
             parsed, field_dependencies, field_scopes, field_diagnostics = self._parse_field(
@@ -403,7 +578,12 @@ class SchedulingParser:
 
         if field == "write_scope":
             for part in parts:
-                entry = _canonical_scope(part, provenance, self.project_root)
+                entry = _canonical_scope(
+                    part,
+                    provenance,
+                    self.project_root,
+                    self._canonical_prefix_cache,
+                )
                 if entry is None:
                     return invalid("SCHEDULING_PATH_INVALID", f"invalid Windows-safe repo path: {part}")
                 scopes.append(entry)
@@ -470,7 +650,12 @@ class SchedulingParser:
             if line.startswith("- 允许修改："):
                 for token in re.findall(r"(?:file|dir):[^`;,\s]+", line):
                     prov = _prov(frozen.source_path, "write_scope", line_number, token, "legacy_inferred")
-                    entry = _canonical_scope(token, prov, self.project_root)
+                    entry = _canonical_scope(
+                        token,
+                        prov,
+                        self.project_root,
+                        self._canonical_prefix_cache,
+                    )
                     if entry:
                         scopes.append(entry)
                         provenance.append(prov)

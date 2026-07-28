@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,6 +34,85 @@ class SchedulingParserTests(unittest.TestCase):
             profile.get("depends_on"),
         )
         self.assertEqual((), profile.diagnostics)
+
+    def test_profile_cache_requires_same_content_and_known_task_set(self):
+        text = scheduling_text()
+        first = self.parse(text)
+        self.assertIs(first, self.parse(text))
+        changed_text = self.parse(scheduling_text(priority="low"))
+        self.assertIsNot(first, changed_text)
+        changed_known = self.parser.parse(
+            frozen(text),
+            "TEST-001",
+            {"TEST-001", "OTHER-001"},
+        )
+        self.assertIsNot(first, changed_known)
+        self.assertTrue(
+            any(
+                item.code == "SCHEDULING_REFERENCE_DANGLING"
+                for item in changed_known.diagnostics
+            )
+        )
+
+    def test_profile_cache_invalidates_when_scope_reparse_topology_changes(self):
+        if os.name != "nt":
+            self.skipTest("junction topology oracle is Windows-specific")
+
+        def junction(link: Path, target: Path):
+            result = subprocess.run(
+                ["cmd", "/d", "/c", "mklink", "/J", str(link), str(target)],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+            )
+            if result.returncode != 0:
+                self.skipTest("Windows junction creation is unavailable")
+
+        text = scheduling_text(write_scope="dir:scope/path")
+        source = frozen(text)
+        with tempfile.TemporaryDirectory() as external_directory:
+            external = Path(external_directory)
+
+            first = self.parser.parse(source, "TEST-001", self.known)
+            self.assertEqual(1, len(first.write_scope))
+            junction(self.root / "scope", external)
+            self.parser.begin_inspection()
+            escaped = self.parser.parse(source, "TEST-001", self.known)
+            self.assertIsNot(first, escaped)
+            self.assertIsNone(escaped.get("write_scope"))
+            self.assertIn(
+                "SCHEDULING_PATH_INVALID",
+                [item.code for item in escaped.diagnostics],
+            )
+            (self.root / "scope").rmdir()
+
+            (self.root / "scope").mkdir()
+            self.parser.begin_inspection()
+            internal = self.parser.parse(source, "TEST-001", self.known)
+            self.assertEqual(1, len(internal.write_scope))
+            (self.root / "scope").rmdir()
+            junction(self.root / "scope", external)
+            self.parser.begin_inspection()
+            replaced = self.parser.parse(source, "TEST-001", self.known)
+            self.assertIsNot(internal, replaced)
+            self.assertIsNone(replaced.get("write_scope"))
+            (self.root / "scope").rmdir()
+
+            inside = self.root / "inside"
+            inside.mkdir()
+            junction(self.root / "scope", inside)
+            self.parser.begin_inspection()
+            internal_target = self.parser.parse(source, "TEST-001", self.known)
+            self.assertEqual(1, len(internal_target.write_scope))
+            (self.root / "scope").rmdir()
+            junction(self.root / "scope", external)
+            self.parser.begin_inspection()
+            retargeted = self.parser.parse(source, "TEST-001", self.known)
+            self.assertIsNot(internal_target, retargeted)
+            self.assertIsNone(retargeted.get("write_scope"))
+            (self.root / "scope").rmdir()
 
     def test_arbitrary_input_order_has_same_normalized_values(self):
         lines = scheduling_text().splitlines()

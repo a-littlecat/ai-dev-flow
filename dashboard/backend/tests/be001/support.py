@@ -153,6 +153,7 @@ def worktree(task_id: str, root: str | None = None, **overrides) -> WorktreeSnap
         "dirty_state": "clean",
         "dirty_paths": (),
         "diagnostic_ids": (),
+        "dirty_ownership": "clean",
     }
     values.update(overrides)
     return WorktreeSnapshot(**values)

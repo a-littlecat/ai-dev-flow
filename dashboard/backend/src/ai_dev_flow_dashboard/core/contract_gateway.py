@@ -24,13 +24,18 @@ class ContractGatewayError(RuntimeError):
 
 
 def _provenance(item: Any) -> Provenance:
+    source_type = str(getattr(item, "source_type", "canonical"))
     return Provenance(
         source_path=str(getattr(item, "path", "")),
         heading=getattr(item, "heading", None),
         field=getattr(item, "field", None),
         line=max(0, int(getattr(item, "line", 0) or 0)),
         raw_value=getattr(item, "raw_value", None),
-        source_type=str(getattr(item, "source_type", "canonical")),
+        source_type={
+            "filename": "derived",
+            "heading": "canonical",
+            "legacy": "legacy_inferred",
+        }.get(source_type, source_type),
     )
 
 
@@ -90,7 +95,13 @@ class ContractGateway:
         if not getattr(frozen.lease_guard, "active", False):
             raise ContractGatewayError("public Workflow Contract inspection requires an active input lease")
         module = self._load_public_module()
-        report = module.WorkflowContract.inspect(self.project_root)
+        report = module.WorkflowContract.inspect(
+            self.project_root,
+            frozen_task_texts={
+                item.path: item.text
+                for item in frozen.tasks
+            },
+        )
 
         raw_contracts = tuple(getattr(report, "contracts", ()))
         expected_sources = tuple(sorted(item.source_path for item in frozen.tasks))

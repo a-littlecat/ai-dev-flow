@@ -3,11 +3,15 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
 
 from be001.support import CONTRACTS_ROOT, task
+from ai_dev_flow_dashboard.core import schema_validator
 from ai_dev_flow_dashboard.core.canonical import canonical_bytes, canonical_sha256, snapshot_revision
-from ai_dev_flow_dashboard.core.models import primitive
+from ai_dev_flow_dashboard.core.models import WorktreeSnapshot, primitive
 from ai_dev_flow_dashboard.core.schema_validator import (
     ValidationError,
     validate_contract,
@@ -96,6 +100,90 @@ class SharedContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError) as caught:
             validate_contract(value)
         self.assertIn("additional property command", str(caught.exception))
+
+    def test_v1_worktree_wire_shape_remains_backward_compatible(self):
+        value = json.loads((self.fixture_root / "fresh.json").read_text(encoding="utf-8"))
+        worktree = {
+            "root": "D:/fixture-wt",
+            "head": "a" * 40,
+            "branch": "refs/heads/codex/test",
+            "detached": False,
+            "locked": False,
+            "prunable": False,
+            "dirty_state": "dirty",
+            "dirty_paths": ["src/file.py"],
+            "diagnostic_ids": [],
+        }
+        value["project"]["worktrees"] = [worktree]
+        validate_contract(value)
+        internal = WorktreeSnapshot(
+            root=worktree["root"],
+            head=worktree["head"],
+            branch=worktree["branch"],
+            detached=False,
+            locked=False,
+            prunable=False,
+            dirty_state="dirty",
+            dirty_paths=("src/file.py",),
+            diagnostic_ids=(),
+            dirty_ownership="owned_by_task",
+        )
+        self.assertEqual("owned_by_task", internal.dirty_ownership)
+        public = primitive(internal)
+        self.assertNotIn("dirty_ownership", public)
+        self.assertEqual(canonical_bytes(public), canonical_bytes(internal))
+        serialized = json.loads(canonical_bytes(internal))
+        self.assertNotIn("dirty_ownership", serialized)
+        compatible = copy.deepcopy(value)
+        compatible["project"]["worktrees"] = [serialized]
+        validate_contract(compatible)
+        incompatible = copy.deepcopy(value)
+        incompatible["project"]["worktrees"][0]["dirty_ownership"] = "owned_by_task"
+        with self.assertRaises(ValidationError):
+            validate_contract(incompatible)
+
+    def test_schema_cache_invalidates_on_same_size_same_mtime_content_change(self):
+        value = json.loads(
+            (self.fixture_root / "fresh.json").read_text(encoding="utf-8")
+        )
+        source = CONTRACTS_ROOT / "dashboard-contracts-v1.schema.json"
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / source.name
+            original = source.read_bytes()
+            target.write_bytes(original)
+            validate_contract(value, schema_path=target)
+            stat = target.stat()
+            changed = original.replace(b'"fresh"', b'"flesh"')
+            self.assertEqual(len(original), len(changed))
+            self.assertNotEqual(original, changed)
+            target.write_bytes(changed)
+            os.utime(target, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+            with self.assertRaises(ValidationError):
+                validate_contract(value, schema_path=target)
+
+    def test_compiled_schema_validator_cache_is_content_bounded(self):
+        source = CONTRACTS_ROOT / "dashboard-contracts-v1.schema.json"
+        original = json.loads(source.read_text(encoding="utf-8"))
+        schema_validator._load_schema_cached.cache_clear()
+        schema_validator._compiled_validator_cached.cache_clear()
+        self.addCleanup(schema_validator._load_schema_cached.cache_clear)
+        self.addCleanup(schema_validator._compiled_validator_cached.cache_clear)
+
+        for index in range(32):
+            candidate = copy.deepcopy(original)
+            candidate["description"] = f"cache-eviction-{index}"
+            content = json.dumps(
+                candidate,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            digest = hashlib.sha256(content).hexdigest()
+            schema_validator._compiled_validator_cached(digest, content)
+
+        info = schema_validator._compiled_validator_cached.cache_info()
+        self.assertEqual(8, info.maxsize)
+        self.assertEqual(8, info.currsize)
 
     def test_wire_schema_rejects_reader_not_recorded_sentinel(self):
         value = json.loads((self.fixture_root / "fresh.json").read_text(encoding="utf-8"))
