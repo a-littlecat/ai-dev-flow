@@ -6,8 +6,8 @@
 - `task_id`: `DASHBOARD-BE-001`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Ready`
-- `review_status`: `Passed`
+- `lifecycle`: `In Progress`
+- `review_status`: `Pending`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
@@ -154,13 +154,13 @@
 
 ## Outcome
 
-- Base / Diff：规划 baseline `371383f0d93048fa2a31c1ca1306a7e1421650ff`；implementation diff 尚不存在，实际实施 base 由新对话从最新 `main` HEAD 冻结。
-- 修改文件：`docs/tasks/DASHBOARD-BE-001.md` 和 TASK_BOARD 投影；代码文件尚未创建。
-- 验证证据：任务文档 targeted lint 为 `errors/violations/warnings=0/0/1`，唯一 warning 是文件尚未形成 Git transition history；Scheduling 为 13/13 字段、引用均存在；TASK_BOARD 无 drift/missing/orphan/parse；链接、范围、whitespace 与敏感值检查通过。
-- Review findings：最终独立 Review `Passed`，四份实施 TASK 合计 `P0/P1/P2/P3=0/0/0/0`；本 TASK 无开放 finding。
+- Base / Diff：base=c5bbf3a0d6178fc3a4ea83e3066df92b8f72e958;diff=uncommitted-worktree
+- 修改文件：实现候选将在独立 Worktree 中严格限制于 BE-001 allowlist；当前提交只记录合法执行状态入口。
+- 验证证据：执行入口、精确 base、独立 Worktree 和 allowlist 已只读核对；代码验证将在实现候选形成后运行。
+- Review findings：implementation review 尚未开始；规划 Review Passed 不代替代码 Review。
 - UA 动作与结果：UA3 Pending；用户尚未查看实现证据。
-- 隔离位置：待 execution authority 后创建独立 Worktree。
-- 回滚方式：未实施；当前仅可删除本次新建 Draft 文档，但删除仍需用户明确授权。
-- 状态边界：Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged；未实施、未 Accepted、未交付、未 Closed。
+- 隔离位置：Worktree `D:\open-source\ai-dev-flow-wt\dashboard-be-001`；branch `codex/dashboard-be-001`。
+- 回滚方式：实现尚未提交；如需停止只保留当前治理提交，不执行删除、reset 或历史改写。
+- 状态边界：In Progress / Review Pending / UA3 Pending / Uncommitted / Unmerged；未 Accepted、未交付、未 Closed。
 - 剩余风险：单字节 byte oracle 尚未由代码与测试实际验证；实现仍需严格限于 allowlist。
-- 下一步：由已授权的新对话创建独立 Worktree 并实施到 `Review Passed / UA3 Pending`。
+- 下一步：在独立 Worktree 实施 BE-001，完成验证后推进到 Review。
