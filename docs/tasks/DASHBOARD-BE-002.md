@@ -6,8 +6,8 @@
 - `task_id`: `DASHBOARD-BE-002`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Ready`
-- `review_status`: `Passed`
+- `lifecycle`: `In Progress`
+- `review_status`: `Pending`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
@@ -142,15 +142,23 @@
 - Reviewer 确认：Git、HTTP/SSE、安全、性能、只读边界、精确路径和停止条件足以进入 Ready。
 - 状态边界：`Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged`；没有 execution authority。
 
+## 实施启动（2026-07-28）
+
+- 用户授权：用户明确要求“执行 DASHBOARD-BE-002”，授权本 TASK 合同内代码实施、规定 Worktree/分支、自动验证、隔离 Review 和有限 repair。
+- 实施基线：`main@760b40442bcc96f711f12433a2c5d017d118d85c`。
+- 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-be-002`，branch `codex/dashboard-be-002`。
+- 冻结写范围：仅限 Git snapshot、snapshot coordinator、server、启动入口、`tests/be002`、本 TASK 和 TASK_BOARD 投影行。
+- 状态边界：`In Progress / Review Pending / UA3 Pending / Uncommitted / Unmerged`。
+
 ## Outcome
 
-- Base / Diff：`base=fb16bc50f02023aad4a51acd8bf495231fe65f63`；当前仅新增任务文档，implementation diff 尚不存在。
-- 修改文件：`docs/tasks/DASHBOARD-BE-002.md` 和 TASK_BOARD 投影；代码文件尚未创建。
-- 验证证据：任务文档 targeted lint 为 `errors/violations/warnings=0/0/1`，唯一 warning 是文件尚未形成 Git transition history；Scheduling 为 13/13 字段、引用均存在；TASK_BOARD 无 drift/missing/orphan/parse；链接、范围、whitespace 与敏感值检查通过。
-- Review findings：最终独立 Review `Passed`；`DASHBOARD-TASKS-P1-001/002` Closed，无开放 finding。
-- UA 动作与结果：UA3 Pending；用户尚未查看实现证据。
-- 隔离位置：待 execution authority 且 `DASHBOARD-BE-001` Accepted baseline 可引用后创建独立 Worktree。
-- 回滚方式：未实施；当前仅可删除本次新建 Draft 文档，但删除仍需用户明确授权。
-- 状态边界：Ready / Review Passed / UA3 Pending / Uncommitted / Unmerged；未实施、未 Accepted、未交付、未 Closed。
-- 剩余风险：依赖的共享 schema/fixtures 尚未实现；任何第三方 server/watcher 依赖均未获授权。
-- 下一步：等待 `DASHBOARD-BE-001` Accepted，并由用户另行授权 execution；本轮不得创建 Worktree 或执行代码。
+- Base / Diff：base=760b40442bcc96f711f12433a2c5d017d118d85c;diff=working-tree
+- 修改文件：计划在冻结 `git_snapshot/**`、`snapshot/**`、`server/**`、`__main__.py` 与 `tests/be002/**` 范围内实施。
+- 用户可见行为：待实现 loopback snapshot/task/health/SSE。
+- 验证证据：待运行完整回归、Git/HTTP/SSE/security oracle、三档 dataset、性能协议、lint 与 diff/scope 检查。
+- Review findings：`Pending`。
+- UA 动作与结果：`UA3 Pending`。
+- 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-be-002`，branch `codex/dashboard-be-002`。
+- 回滚方式：独立 Worktree，尚无业务提交。
+- 状态边界：`In Progress / Review Pending / UA3 Pending / Uncommitted / Unmerged / Not Pushed / Not Released / Not Closed`。
+- 下一步：完成冻结实现和验证后进入独立 Review。
