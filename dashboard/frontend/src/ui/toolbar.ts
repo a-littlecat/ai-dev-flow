@@ -23,6 +23,8 @@ const HIGHLIGHT_ENTRIES: { mode: Exclude<HighlightMode, "none">; text: string; h
   { mode: "decisions", text: "需要决定", hint: "高亮等待用户决定的节点" },
 ];
 
+const PAIR_DISCLOSURE_THRESHOLD = 12;
+
 export class Toolbar {
   readonly root: HTMLElement;
   private chipsRow: HTMLElement;
@@ -31,6 +33,8 @@ export class Toolbar {
   private filterToggle: HTMLButtonElement;
   private pairList: HTMLElement;
   private expanded = false;
+  /** null preserves the compact-list default; a user toggle overrides it. */
+  private pairExpanded: boolean | null = null;
   /** Structure key of the rendered filter panel; inputs persist across updates. */
   private filterStructureKey: string | null = null;
   private filterInputs = new Map<string, { input: HTMLInputElement; key: keyof FilterState; option: string }>();
@@ -232,9 +236,31 @@ export class Toolbar {
     if (!snapshot || snapshot.parallel_assessments.length === 0) {
       return;
     }
+    const counts = { candidate: 0, must_serial: 0, unknown: 0 };
+    for (const assessment of snapshot.parallel_assessments) {
+      counts[assessment.result] += 1;
+    }
+    const pairIsExpanded =
+      this.pairExpanded ?? snapshot.parallel_assessments.length <= PAIR_DISCLOSURE_THRESHOLD;
+    const header = el("div", "pair-list-header");
     const title = el("h3", "pair-list-title", "并行评估（候选 ≠ 授权，均需用户确认）");
-    this.pairList.append(title);
+    const toggle = el(
+      "button",
+      "pair-list-toggle",
+      `共 ${snapshot.parallel_assessments.length}：候选 ${counts.candidate} / 必须串行 ${counts.must_serial} / 未知 ${counts.unknown}，候选不等于授权 ${pairIsExpanded ? "▴" : "▾"}`,
+    );
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", String(pairIsExpanded));
+    toggle.setAttribute("aria-controls", "parallel-assessment-list");
+    toggle.addEventListener("click", () => {
+      this.pairExpanded = !pairIsExpanded;
+      this.renderPairList(this.store.get());
+    });
+    header.append(title, toggle);
+    this.pairList.append(header);
     const list = el("ul", "pair-list-items");
+    list.id = "parallel-assessment-list";
+    list.hidden = !pairIsExpanded;
     for (const assessment of snapshot.parallel_assessments) {
       const item = el("li", `pair-item pair-${assessment.result}`);
       const button = el(
