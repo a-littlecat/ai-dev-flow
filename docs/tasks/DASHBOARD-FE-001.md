@@ -6,14 +6,16 @@
 - `task_id`: `DASHBOARD-FE-001`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Review`
+- `lifecycle`: `Accepted`
 - `review_status`: `Passed`
 - `ua_level`: `UA4`
-- `ua_status`: `Pending`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/DASHBOARD-FE-001.md#dashboard-fe-001-ua4-2026-07-29`
+- `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -487,6 +489,14 @@
 - 验收结果：用户明确回复“好的，验收通过”；记录为 `UA4 Passed / User Confirmed`，据此将 lifecycle 推进为 `Accepted`。
 - 验收范围：关系图、搜索与筛选的可观察反馈、视觉舒适度、详情/视图操作及只读产品边界；独立 Review 的四个 P1 已全部 Closed，四个非阻断 P2 继续保留。
 - 权限边界：本次用户反馈只构成 UA4 与 Acceptance authority，不授权 commit、stage、merge、push、release、删除 Worktree/分支或 Closed。
+
+## 提交与合并授权 2026-07-29
+
+- 用户授权：用户在 `UA4 Passed / Accepted` 写回和“先提交合并、再进行集成任务”的顺序说明后，明确回复“提交合并”；授权精确提交 `DASHBOARD-FE-001` 并合并到本地 `main`。
+- 合并候选：43 个 `dashboard/frontend/**` 新文件 + 本 TASK + Board，共 45 文件；冻结 digest `93534f92bae0501c51da9dbb588f22a6f337e3c8437da75b9af3ff7099cc351e`。
+- 门禁证据：完整前端验证 fresh 通过（Vitest 81/81、Playwright 76/76、codegen/typecheck/lint/build 全部通过）；运行时依赖审计 0 漏洞；独立 merge enforcement Review `Passed`，`P0/P1/P2/P3=0/0/4/0`。
+- 提交策略：用独立提交保存 `In Progress`、`Review` 两个合法 lifecycle checkpoint，再由本功能提交保存已审查实现树和 `Accepted / Committed / Unmerged` 状态；随后对仍干净的 `main@fc34f11` 执行本地 `--no-ff` merge。
+- 权限边界：不包含 push、release、外部同步、删除分支/Worktree、启动 `DASHBOARD-INTEGRATE-001` 或 Closed。
 
 ## Outcome
 
