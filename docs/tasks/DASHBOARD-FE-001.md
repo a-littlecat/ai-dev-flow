@@ -6,8 +6,8 @@
 - `task_id`: `DASHBOARD-FE-001`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `In Progress`
-- `review_status`: `Pending`
+- `lifecycle`: `Review`
+- `review_status`: `Passed`
 - `ua_level`: `UA4`
 - `ua_status`: `Pending`
 - `close_authority`: `None`
