@@ -14,7 +14,7 @@
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
 
 ## Scheduling
@@ -79,7 +79,7 @@
 - `allowed_files_hash`: `9bc052f4390b1c937d529f3be050f1fef8b11e3be2d1ded8f0adbbad2b0b0408`
 - Hash 输入：UTF-8、LF、无尾随换行；完成合同按 `C1` 至 `C4` 英文 canonical 文本连接，allowed files 按路径升序连接。
 - 激活条件：依赖、authority、根因、Reviewer/Repairer 能力、成本边界和无外部副作用均已冻结；所有 hard-stop flags 为 false。
-- 状态边界：`Accepted / Review Passed / UA4 Passed / User Confirmed / Committed / Unmerged / Merge Authorized`。
+- 状态边界：`Accepted / Review Passed / UA4 Passed / User Confirmed / Committed / Merged local main / Not Pushed / Not Released / Not Closed`。
 
 ## 完成标准与验证
 
@@ -132,13 +132,21 @@
 - 合并目标：本地 `main`；使用保留独立修复任务边界的 `--no-ff` merge，并在合并检出上重新运行完整前端验证。
 - 权限边界：不包含 push、release、外部同步、删除 Worktree/分支或 Closed。
 
+## 提交与合并结果 2026-07-29
+
+- 功能提交：`3c8160f8041e3280e49f161fda4d7e2febdeb288`（`fix(dashboard): preserve graph space for large pair lists`）。
+- 合并提交：`2ac8b3b80a391e488e7b080b3f97e8ccadfe8000`（本地 `main`，`--no-ff`，父提交为 `dbbc5e7591a06bc4d381401882c42515a7e05873` 与 `3c8160f8041e3280e49f161fda4d7e2febdeb288`）。
+- 合并检出验证：`npm run verify` 已运行并通过；codegen、typecheck、ESLint、build 均通过，Vitest `81/81`、Chrome Playwright `79/79`。
+- 交付边界：未 push、未 release、未外部同步、未删除 Worktree/分支，任务未 Closed。
+
 ## Outcome
 
-- Base / Diff：base=dbbc5e7591a06bc4d381401882c42515a7e05873;diff=feature-commit-pending
+- Base / Diff：base=dbbc5e7591a06bc4d381401882c42515a7e05873;diff=3c8160f8041e3280e49f161fda4d7e2febdeb288
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-fe-001-repair-001` / `codex/dashboard-fe-001-repair-001`
 - 修改文件：`dashboard/frontend/src/ui/toolbar.ts`、`dashboard/frontend/src/styles.css`、`dashboard/frontend/tests/browser/real-scale.spec.ts`、本 TASK 与 TASK_BOARD 投影；未修改 package、contract、backend 或 Skill。
-- 验证证据：定向 RED `3/3 Failed` → GREEN `3/3 Passed`；完整 `npm run verify` GREEN（81 unit + 79 browser）；production dependency audit 0；scope 与 diff check GREEN。
+- 验证证据：定向 RED `3/3 Failed` → GREEN `3/3 Passed`；修复分支和合并后的本地 `main` 均完整运行 `npm run verify` 并 GREEN（各 81 unit + 79 browser）；production dependency audit 0；scope 与 diff check GREEN。
 - Review findings：独立只读 Review `Passed`，P0/P1/P2/P3=`0/0/1/0`；目标 P1 Closed；开放非阻断 `DASHBOARD-FE-REPAIR-RVW-P2-001` 为键盘展开后的焦点保持问题。
 - UA 动作与结果：用户明确回复“验收通过”；`UA4 Passed / User Confirmed / Accepted`。
-- 回滚方式：所有实现仅存在独立未提交 Worktree；未经用户授权不执行 reset、revert、删除或历史改写。
-- 状态边界：`Accepted / Review Passed / UA4 Passed / User Confirmed / Committed / Unmerged / Merge Authorized / Not Pushed / Not Released / Not Closed`。
+- 合并目标与事实证据：本地 `main`；feature=`3c8160f8041e3280e49f161fda4d7e2febdeb288`；merge=`2ac8b3b80a391e488e7b080b3f97e8ccadfe8000`；`--no-ff` 两父提交已核对。
+- 回滚方式：功能与合并均已有独立 Git 提交；如后续需要回退，应另行授权后使用可审计的 `git revert`，不执行 reset、删除或历史改写。
+- 状态边界：`Accepted / Review Passed / UA4 Passed / User Confirmed / Committed / Merged local main / Not Pushed / Not Released / Not Closed`。
