@@ -498,18 +498,25 @@
 - 提交策略：用独立提交保存 `In Progress`、`Review` 两个合法 lifecycle checkpoint，再由本功能提交保存已审查实现树和 `Accepted / Committed / Unmerged` 状态；随后对仍干净的 `main@fc34f11` 执行本地 `--no-ff` merge。
 - 权限边界：不包含 push、release、外部同步、删除分支/Worktree、启动 `DASHBOARD-INTEGRATE-001` 或 Closed。
 
+## 分支提交结果 2026-07-29
+
+- 生命周期检查点：`b1ea619` 保存 `In Progress`，`a1e8a60` 保存 `Review / Review Passed`，使 Git 历史可证明 `Ready → In Progress → Review → Accepted` 的合法流转。
+- 功能提交：`2ed2bb9`（`feat(dashboard): add accepted relationship frontend`）保存冻结的 45 文件候选和 `Accepted / Committed / Unmerged` 状态。
+- 提交后门禁：本 TASK targeted `workflow_lint` 退出码 0，`errors/violations/warnings=0/0/1`；唯一 warning 为 Markdown 无法证明用户身份，不是状态或流转违规。Board targeted lint 退出码 0，`0/0/1`。
+- 权限边界：本节只证明分支已提交；本地合并结果将在 `main` 合并后单独记录，不代表 push、release、Closed 或集成任务已启动。
+
 ## Outcome
 
 
-- Base / Diff：base=fc34f11d7a1079f1ba84d22adaf61d0b973136d4;diff=dashboard/frontend/**（43个非忽略新文件，Untracked/Uncommitted）+本TASK与TASK_BOARD投影行。
-- 修改文件：`dashboard/frontend/**`（实现，未提交；非忽略文件数 43，以 fresh 实测 `git ls-files --others --exclude-standard dashboard/frontend` 为准）、`docs/tasks/DASHBOARD-FE-001.md`、`docs/TASK_BOARD.md` 的 DASHBOARD-FE-001 投影行。
-- 验证证据：当前有效的代码验证为 UA4 Repair Round 3 修复后的 fresh 结果（2026-07-29 13:4x–13:5x UTC+8，Kimi 无管道执行并读真实退出码）：`npm run verify` 退出码 0（`codegen:check` 同步、`typecheck` 通过、`lint` 0 error、Vitest 6 文件 81/81、production build 通过、Playwright 7 spec 76/76）；`npm audit --audit-level=moderate`（只读，未 `audit fix`）退出码 1，仍为 10 项（3 moderate / 6 high / 1 critical）开发依赖链漏洞，运行时依赖 `ajv` 无漏洞；UA4 docs-only Repair Round 4 无代码变更，其 docs 验证为：TASK 与 Board targeted `workflow_lint` 均退出 0、`errors/violations/warnings=0/0/1`（唯一 warning 为 Uncommitted 无 Git transition history），tracked docs `git diff --check` 0 error，`git status --short` 确认实现文件无漂移；包含全部 untracked 文件的 whitespace/diff 范围检查 0 error。
+- Base / Diff：base=fc34f11d7a1079f1ba84d22adaf61d0b973136d4;diff=fc34f11..2ed2bb9
+- 修改文件：`dashboard/frontend/**`（43 个已提交新文件）、`docs/tasks/DASHBOARD-FE-001.md`、`docs/TASK_BOARD.md` 的 DASHBOARD-FE-001 投影行。
+- 验证证据：提交候选上的最新 fresh `npm run verify` 退出码 0（`codegen:check` 同步、`typecheck` 通过、`lint` 0 error、Vitest 6 文件 81/81、production build 通过、Playwright 7 spec 76/76）；`npm audit --omit=dev --audit-level=moderate` 退出码 0、运行时依赖 0 漏洞；完整 audit 仍有 10 项开发依赖链漏洞（3 moderate / 6 high / 1 critical），未执行 `audit fix`；提交后本 TASK 与 Board targeted `workflow_lint` 均退出 0、`errors/violations/warnings=0/0/1`。
 - 当前 Review 状态：最新完成的独立 Review 为「UA4 修复独立 Review Round 4」（Codex；冻结 45 files / 43 frontend，digest `42b150d496fdb0d766523b0854adfc3cba661509abde59cd54ca2ae4f0b21206`），结论 `Passed`，`P0/P1/P2/P3=0/0/4/0`；允许进入用户重新 UA4，但不等于 UA4 Passed 或 Accepted。
 - Review findings：`DASHBOARD-FE-UA4-RVW-004-P1-001`～`P1-004` 全部 Closed；非阻断 `DASHBOARD-FE-UA4-RVW-004-P2-001`（localStorage 类型归一化）与历史遗留开放 P2（`DASHBOARD-FE-RVW-001-P2-002`、`DASHBOARD-FE-RVW-001-P2-003`、`DASHBOARD-FE-RVW-003-P2-001`）继续如实开放。
 - 历史验证证据（均已被上文“验证证据”取代，仅保留审计轨迹）：初实施 62/62 单测、28/28 浏览器（截图 2026-07-29 00:28–00:29 UTC+8）；Repair Round 1 67/67、38/38（约 01:32–01:33 UTC+8）；Repair Round 2 73/73、45/45（01:5x–02:2x UTC+8，主控 02:56–02:58 UTC+8 复跑一致）；UA4 Repair Round 1 81/81、59/59（主控 12:47–12:55 UTC+8 fresh）；UA4 Repair Round 2 81/81、76/76（13:0x–13:2x UTC+8 fresh）；历史第三轮实现 Review `Passed`（冻结输入 `P0/P1/P2/P3=0/0/4/0`）与上述计数同属历史，不再代表当前文件数、验证或 Review 状态。
 - UA 动作与结果：用户在本机完成重新 UA4 并明确回复“好的，验收通过”；`UA4 Passed / User Confirmed / Accepted`。
 - 隔离位置：Worktree `D:/open-source/ai-dev-flow-wt/dashboard-fe-001`，分支 `codex/dashboard-fe-001`。
-- 回滚方式：实现全部为新文件且未提交，可删除 `dashboard/frontend/` 目录并还原两份文档写回；删除需用户明确授权。
-- 状态边界：`Accepted`（lifecycle）/ 实现 Review `Passed` / UA4 `Passed` / `User Confirmed` / `Uncommitted` / `Unmerged`；未 commit、未 merge、未 push、未 release、未交付、未 Closed。
+- 回滚方式：在未 push 前，可基于提交 `2ed2bb9` 创建反向提交；不使用覆盖历史或直接删除，任何实际回滚需用户另行授权。
+- 状态边界：`Accepted`（lifecycle）/ 实现 Review `Passed` / UA4 `Passed` / `User Confirmed` / `Committed` / `Unmerged`；未 merge、未 push、未 release、未交付、未 Closed。
 - 剩余风险：开放 P2 为 localStorage 偏好类型归一化（`DASHBOARD-FE-UA4-RVW-004-P2-001`）、组合错误序列可能丢失原始真实错误、部分非输入控件在普通更新时丢失键盘焦点、开发依赖链 10 项已知漏洞；真实后端联调未发生；自动测试不能替代用户对关系图易读性的判断（UA4 不可由自动测试替代）。
-- 下一步：本 TASK 已通过 Review 与 UA4 并进入 Accepted；如需 commit、merge、push、release、启动集成任务或 Closed，必须分别取得后续明确授权。
+- 下一步：按用户已授予的本地合并权限，将 `codex/dashboard-fe-001` 以 `--no-ff` 合并到干净的 `main@fc34f11` 并在合并后的 checkout 复验；不自动 push、release、启动集成任务或 Closed。
