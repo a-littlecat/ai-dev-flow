@@ -6,8 +6,8 @@
 - `task_id`: `DASHBOARD-INTEGRATE-001`
 - `task_type`: `test`
 - `task_class`: `D`
-- `lifecycle`: `Review`
-- `review_status`: `Pending`
+- `lifecycle`: `Accepted`
+- `review_status`: `Passed`
 - `ua_level`: `UA6`
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-INTEGRATE-001.md#dashboard-integrate-001-ua6-2026-07-30`
@@ -110,7 +110,7 @@
 - [x] 集成前后 Git status 一致，除当前 TASK allowlist 内预期 diff 外无写入。
 - [x] 机器检查 implementation diff 只命中 `dashboard/integration/**`、`dashboard/README.md` 和本任务收据；前置 Accepted artifact hash manifest 完全一致。
 - [x] 隔离、只读 Review 无开放 P0/P1。
-- [ ] 用户完成 UA6，确认新流程与典型旧流程均可用。
+- [x] 用户完成 UA6，确认新流程与典型旧流程均可用。
 - [x] `git diff --check` 通过，diff 只归属当前 TASK。
 
 ## 验收建议
@@ -120,7 +120,7 @@
 - 用户需要做什么：启动本地仪表盘，使用真实项目观察关系图和实时更新，再确认现有 workflow_lint/TASK 使用习惯未被破坏。
 - agent 已提供的证据：实施时必须包含构建、测试、benchmark、浏览器截图、可访问性、安全、Git 前后状态和独立 Review。
 - 不验收的风险：自动证据不能完全替代用户判断关系图是否直观，以及本机真实项目是否保持原工作习惯。
-- 是否允许关闭任务：否；当前已 `Review Passed`，但 UA6、Accepted、commit、merge、delivery 与 Closed 均未完成。
+- 是否允许关闭任务：否；当前已 `Review Passed / UA6 Passed / Accepted / Committed`，但 merge、delivery 与 Closed 均未完成。
 
 ## 四份实施 TASK 初始独立 Review（2026-07-28）
 
@@ -492,7 +492,7 @@
 
 - 用户已在真实集成页面完成可见性、聚焦上下游、并行关系“未知”等交互检查，并明确回复“验收通过”；随后再次确认 `DASHBOARD-INTEGRATE-001` 已完成并验收。本收据只把既有人工验收写回父任务，不重复要求用户验收。
 - UA 结论：`Passed`；验收主体：`User Confirmed`；范围：完整本地仪表盘主流程与本轮两项可见性 repair 合入后的最终页面。
-- 实现提交：`5131d03`（集成实现）与 `6df6a94`（最终 Accepted artifact 基线刷新）；当前分支尚未合入 `main`，因此 `merge_status` 继续为 `Unmerged`。
+- 实现提交：`5131d03`（集成实现）、`6df6a94`（最终 Accepted artifact 基线刷新）与 `35ab778`（最终门禁修复）；当前分支尚未合入 `main`，因此 `merge_status` 继续为 `Unmerged`。
 
 ## 最终基线独立 Review 修复候选（2026-07-30）
 
@@ -502,3 +502,10 @@
 - 定向验证：benchmark `10/10`；当前机器实测 `Balanced scheme / Battery Saver off / Balanced effective mode`，三个新增资格检查均通过；模拟 Battery Saver 开启或 Best Power Efficiency mode 时 profile 均确定失败。
 - 完整验证：首次运行的功能测试 `34/35`，唯一失败是 Python 在 Accepted backend 目录生成未跟踪 `__pycache__` 后被 Artifact Guard 正确拒绝，并非产品行为失败。将该轮生成缓存移出受保护目录、设置 `PYTHONDONTWRITEBYTECODE=1` 后重跑为集成 `35/35`，Artifact Guard 测试前后均为 `100/100`、changed/added/missing=`0/0/0`；workflow lint 为 `0 error / 0 violation / 2 expected authority/history warnings`。
 - 状态边界：等待当前完整候选重新独立 Review；在复审通过前不恢复 `review_status=Passed`，也不合并。
+
+## 最终基线独立 Review 收据（2026-07-30）
+
+- Reviewer：当前 Codex Harness 的隔离只读 Reviewer，session `019fb0b3-cefa-73f3-93bd-afa02ea7a9e4`；审查范围为 `main...35ab778` 完整差异。
+- 结论：`Passed`；`P0/P1/P2/P3=0/0/1/0`。Reviewer 确认 Windows power API/ctypes 布局、fail-closed 处理、Battery Saver 与 Best Power Efficiency 拒绝路径及完整 `main...HEAD` 差异均无其他明确可操作问题。
+- `DASHBOARD-INTEGRATE-FINAL-P2-001`：Reviewer 指出完成标准复选框和验收建议仍保留 UA6/commit 未完成的旧描述。本次按其建议做非业务、非 repair 计数的记录同步：UA6 复选框改为完成，当前态改为 `Review Passed / UA6 Passed / Accepted / Committed / Unmerged`；历史收据中的当时状态保持不变。
+- 状态边界：`Accepted / Review Passed / UA6 Passed / Committed / Unmerged`；允许按用户当前授权合入本地 `main`，但尚未 merge、push、release 或 Closed。
