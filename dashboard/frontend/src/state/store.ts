@@ -206,6 +206,10 @@ export class AppStore {
         taskId === null
           ? { status: "idle", taskId: null, data: null, error: null }
           : { status: "loading", taskId, data: null, error: null },
+      focus:
+        this.state.focus.taskId !== null && this.state.focus.taskId !== taskId
+          ? { mode: "all", taskId: null }
+          : this.state.focus,
       panelCollapsed: taskId === null ? this.state.panelCollapsed : false,
     });
   }

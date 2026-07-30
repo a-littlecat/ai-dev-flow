@@ -19,6 +19,8 @@
   --accent: #7db8ff;
   --accent-strong: #a9d1ff;
   --accent-soft: rgba(125, 184, 255, 0.12);
+  --selected-surface: #26384c;
+  --selected-glow: rgba(125, 184, 255, 0.5);
 
   /* status hues (desaturated, quiet) */
   --fresh: #7cc79e;
@@ -69,6 +71,8 @@
     --accent: #0f5cb0;
     --accent-strong: #0a4a90;
     --accent-soft: rgba(15, 92, 176, 0.08);
+    --selected-surface: #dcecff;
+    --selected-glow: rgba(15, 92, 176, 0.3);
 
     --fresh: #16724a;
     --stale: #8a5f0e;
@@ -544,13 +548,19 @@ button:hover {
 }
 
 .node-selected .node-frame {
-  stroke: var(--accent);
-  stroke-width: 2;
+  fill: var(--selected-surface);
+  stroke: var(--accent-strong);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px var(--selected-glow));
 }
 
 .node:focus-visible .node-frame {
   stroke: var(--focus-ring);
   stroke-width: 2;
+}
+
+.node-selected:focus-visible .node-frame {
+  stroke-width: 3;
 }
 
 /* A search match keeps full opacity and gets a bold accent frame; combined
@@ -561,7 +571,7 @@ button:hover {
 }
 
 .node-match.node-selected .node-frame {
-  stroke-width: 2.6;
+  stroke-width: 3.4;
 }
 
 .node-match-tag {
@@ -598,6 +608,21 @@ button:hover {
 .node-title {
   fill: var(--muted);
   font-size: 11.5px;
+}
+
+.node-selected .node-title {
+  fill: var(--text);
+}
+
+.node-selected .node-class {
+  fill: var(--accent-strong);
+  font-weight: 600;
+}
+
+.node-selected-tag {
+  fill: var(--accent-strong);
+  font-size: 10.5px;
+  font-weight: 700;
 }
 
 .node-lifecycle {
@@ -664,6 +689,24 @@ button:hover {
 }
 
 .edge-cycle .edge-label { fill: var(--error); font-weight: 700; }
+
+.edge-selected-context .edge-line {
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 2px var(--selected-glow));
+}
+
+.edge-selected-context .edge-label {
+  fill: var(--text);
+  font-weight: 700;
+}
+
+.edge-selection-dimmed {
+  opacity: 0.3;
+}
+
+.edge-dimmed.edge-selection-dimmed {
+  opacity: 0.15;
+}
 
 .marker-arrow { fill: var(--edge); }
 .marker-open { fill: var(--bg); stroke: var(--edge); stroke-width: 1.2; }
