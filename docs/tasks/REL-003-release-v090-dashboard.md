@@ -51,7 +51,7 @@
 - [x] Dashboard 集成、frontend、backend、ai-dev-flow 全量验证通过；workflow lint、quick_validate、版本残留、UTF-8、链接、敏感信息和 diff hygiene 检查通过。
 - [x] 隔离只读 Review 无开放 P0/P1，UA7 授权与发布边界写回。
 - [x] 已存在本机 Skill 目标的全部源文件 `Missing=0 / Changed=0`；目标专有文件不删除，未知目标不创建。
-- [ ] 本地/远端 `main` 一致，annotated tag `v0.9.0` 本地与远端 peeled commit 一致，GitHub Release 为正式发布。
+- [x] 本地/远端 `main` 一致，annotated tag `v0.9.0` 本地与远端 peeled commit 一致，GitHub Release 为正式发布。
 - [x] `git diff --check` 通过，diff 只归属当前 TASK。
 
 ## Outcome
@@ -66,9 +66,9 @@
 - Review findings：隔离只读 Review session `019fb0c6-0447-76a3-b675-b6b668be68cf` 为 `Passed`，P0/P1/P2/P3=`0/0/1/0`；唯一 P2 为 TASK_BOARD 顶部当前模式/下一动作过时，已按 Reviewer 建议同步为 REL-003 当前状态。
 - UA 动作与结果：UA7 Passed；用户在获知 `v0.9.0` 收口、本机 Skill 同步、push、tag 与正式 GitHub Release 的完整动作后明确回复“那进行吧”，记为 `User Confirmed`；不包含 `Closed` 或删除。
 - 合并目标与事实证据：发布分支通过 merge commit `0c4d8b2959141a12b36e5e7a41044e1cfb06ada6` 合入本地 `main`。
-- 状态边界：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Not Released / Not Closed`。
+- 状态边界：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.0 / Not Closed`。
 - 剩余风险：本机 Skill 目标清单须以执行时实盘存在路径为准；目标专有文件不得删除。全仓 Legacy lint 错误为发布前已存在债，本次不扩范围改写历史 CONTRACT TASK。
-- 下一步：推送 `main`，创建并推送 `v0.9.0` annotated tag，再创建正式 GitHub Release。
+- 下一步：无自动后续动作；分支/Worktree 删除和 `Closed` 仍需单独授权。
 
 <a id="rel-003-ua7-2026-07-30"></a>
 ## UA7 授权与验收（2026-07-30）
@@ -84,3 +84,10 @@
 - 同步结果：4 个入口均为 `VERSION=0.9.0`，92 个仓库跟踪源文件全部 `Missing=0 / Changed=0`，`CORE.md` SHA256 均为 `96769DE002BF9920E2899DAEEEA86C078F43103F4E7895FE3762EFAA7FBD1EEF`，4/4 Skill validator 通过。
 - 保留项：`.agents` 物理副本原有 3 个 `scripts/__pycache__/*.pyc`，因此 `.agents`、`.codex`、OpenCode 显示 `Extra=3`；cc-switch 为 `Extra=0`。这些目标专有缓存未删除，不参与源文件 parity。
 - 备份：`C:\Users\92336\.codex\visualizations\2026\07\29\019facae-d2e9-7c62-aa5d-b018c5096a51\skill-sync-backup-v0.9.0-20260730-1017`。
+
+## v0.9.0 正式发布收据（2026-07-30）
+
+- `main` 发布提交：本地与远端均为 `c2dcb94088de85072bc1bfd522a51fe94fe8803e`，push 为 fast-forward，未强推。
+- annotated tag：本地/远端 tag object 均为 `1c8b5f77ccc122ac64baa4aac04de0dec29d9706`；本地/远端 peeled target 均为 `c2dcb94088de85072bc1bfd522a51fe94fe8803e`。
+- GitHub Release：`ai-dev-flow v0.9.0`，`isDraft=false`、`isPrerelease=false`，发布时间 `2026-07-30T02:17:28Z`，URL：`https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.0`。
+- 发布边界：Release 已完成；当前收据提交会在 tag 之后推送到 `main`，不会移动或重写 `v0.9.0`。任务保持 `Accepted / Not Closed`，分支与 Worktree 保留。
