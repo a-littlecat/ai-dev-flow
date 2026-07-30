@@ -5,9 +5,7 @@
  * undocumented field, missing field or enum drift is rejected here instead of
  * being silently consumed.
  */
-import Ajv2020 from "ajv/dist/2020.js";
 import type { ErrorObject, ValidateFunction } from "ajv";
-import schemaJson from "../../../contracts/dashboard-contracts-v1.schema.json";
 import type {
   DashboardSnapshot,
   ErrorEnvelope,
@@ -15,26 +13,20 @@ import type {
   SnapshotEvent,
   TaskDetail,
 } from "../generated/contracts.types";
-
-const SCHEMA_ID = "ai-dev-flow/dashboard-contracts/v1";
-
-const ajv = new Ajv2020({ allErrors: true, strict: true });
-ajv.addSchema(schemaJson as object, SCHEMA_ID);
-
-function validator<T>(def: string): ValidateFunction<T> {
-  const fn = ajv.getSchema<T>(`${SCHEMA_ID}#/$defs/${def}`);
-  if (!fn) {
-    throw new Error(`contract schema is missing $defs.${def}`);
-  }
-  return fn;
-}
+import {
+  validateDashboardSnapshot,
+  validateErrorEnvelope,
+  validateHealth,
+  validateSnapshotEvent,
+  validateTaskDetail,
+} from "../generated/contracts.validators";
 
 const validators = {
-  DashboardSnapshot: validator<DashboardSnapshot>("DashboardSnapshot"),
-  TaskDetail: validator<TaskDetail>("TaskDetail"),
-  Health: validator<Health>("Health"),
-  ErrorEnvelope: validator<ErrorEnvelope>("ErrorEnvelope"),
-  SnapshotEvent: validator<SnapshotEvent>("SnapshotEvent"),
+  DashboardSnapshot: validateDashboardSnapshot as ValidateFunction<DashboardSnapshot>,
+  TaskDetail: validateTaskDetail as ValidateFunction<TaskDetail>,
+  Health: validateHealth as ValidateFunction<Health>,
+  ErrorEnvelope: validateErrorEnvelope as ValidateFunction<ErrorEnvelope>,
+  SnapshotEvent: validateSnapshotEvent as ValidateFunction<SnapshotEvent>,
 } as const;
 
 export type ContractKind = keyof typeof validators;

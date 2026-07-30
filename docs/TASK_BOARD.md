@@ -1,9 +1,9 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-30
-> - 当前模式：`REL-003` v0.9.0 发布收口
-> - 当前阶段：REL-003 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.0 / Not Closed`
-> - 当前方案：`docs/tasks/REL-003-release-v090-dashboard.md`
+> - 当前模式：`DASHBOARD-PORTABLE-REPAIR-003` 提交前门禁修复
+> - 当前阶段：PORTABLE-001 `Accepted / Review Passed / UA6 Passed / Committed / Unmerged`
+> - 当前方案：`docs/tasks/DASHBOARD-PORTABLE-REPAIR-003.md`
 
 ## 当前授权边界
 
@@ -52,6 +52,8 @@
 用户进一步明确“规划文件我授权你可以提交”。该指令仅授权精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成后续 Worktree 可引用的 Git baseline；不授权 push、merge、release、删除、历史改写或代码提交。
 
 用户在 `DASHBOARD-INTEGRATE-001` 完成真实页面 UA6、独立 Review、提交与本地合并后，明确要求继续执行已说明的收口方案。该指令授权 `REL-003` 将当前开发线收口为 `v0.9.0`，同步实盘确认已存在的本机 `ai-dev-flow` Skill，推送 `main` 与 annotated tag `v0.9.0`，并创建正式 GitHub Release；不授权删除分支/Worktree、强制推送、历史改写、创建未知本机目录或 `Closed`。
+
+`DASHBOARD-PORTABLE-001` 最终独立 Review 仅剩 `DASHBOARD-PORTABLE-RVW-P1-002` 开放。用户于 2026-07-30 在收到“创建 repair TASK、只修 `.pyc/__pycache__` 导入前校验缺口、补测试、完整验证并持续独立 Review 到无 P0/P1”的精确范围后回复“授权”。该指令授权 `DASHBOARD-PORTABLE-REPAIR-001` 的 scope-bound Repair Campaign；不授权新增依赖、改变只读/安全边界、UA6 代验收、Accepted、commit、merge、push、release、本机 Skill 同步或 `Closed`。
 
 本轮允许：
 
@@ -148,6 +150,10 @@ REL-002 Closed / main@0422887
 | DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Accepted | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged local main `acd0ddd` | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
 | DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Accepted | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | feature `5131d03` / gates `35ab778` / merge `4f60dd3` / Committed / Merged local main / Not Pushed / Not Released / Not Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
 | REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Accepted | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | tag target `c2dcb94` / Committed / Merged / Local Sync Verified / Released `v0.9.0` / Not Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
+| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Accepted | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged / release follow-up authorized | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
+| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -162,7 +168,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`REL-003` 已完成自动验证、独立 Review、UA7、本地合并、本机 Skill 同步、远端 push、annotated tag `v0.9.0` 与正式 GitHub Release。当前无自动后续动作；不删除分支/Worktree，不强推或写 `Closed`。
+`DASHBOARD-PORTABLE-001` 已由用户完成真实双项目 UA6 并明确确认验收通过，UA 状态保持 `Passed / User Confirmed`。提交前两个交付可靠性 P1 及后续 schema freeze finding 已由 `DASHBOARD-PORTABLE-REPAIR-003` 关闭，最终独立 Review `Passed / P0-P2=0/0/0`。下一步按用户授权提交并本地合并；README 重写、版本升级、本机 Skill 同步、`main` push、annotated tag 和正式 GitHub Release 由独立发布任务记录。不得删除分支/Worktree、强制推送、改写历史或写 `Closed`。
 
 ## 停止条件
 

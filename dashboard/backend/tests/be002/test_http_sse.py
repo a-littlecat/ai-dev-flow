@@ -3,11 +3,13 @@ from __future__ import annotations
 import http.client
 import json
 import socket
+import tempfile
 import unittest
 
 from be002 import support
 from ai_dev_flow_dashboard.core.schema_validator import validate_contract
 from ai_dev_flow_dashboard.server import create_local_server
+from pathlib import Path
 
 
 class ServerCase(unittest.TestCase):
@@ -81,6 +83,48 @@ class HttpContractTests(ServerCase):
         self.assertEqual(304, status)
         self.assertEqual(b"", body)
         self.assertEqual("0", headers["Content-Length"])
+
+    def test_optional_static_frontend_is_same_origin_and_read_only(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+        with tempfile.TemporaryDirectory() as directory:
+            static = Path(directory)
+            (static / "assets").mkdir()
+            (static / "index.html").write_text(
+                "<!doctype html><title>Dashboard</title>",
+                encoding="utf-8",
+            )
+            (static / "assets" / "app.js").write_text(
+                "export {};",
+                encoding="utf-8",
+            )
+            self.server = create_local_server(
+                self.coordinator,
+                port=0,
+                static_root=static,
+            )
+            self.thread = support.run_server(self.server)
+            self.port = self.server.server_port
+            status, headers, body = self.request("GET", "/")
+            self.assertEqual(200, status)
+            self.assertIn(b"Dashboard", body)
+            self.assertEqual("nosniff", headers["X-Content-Type-Options"])
+            self.assertNotIn("Access-Control-Allow-Origin", headers)
+            status, _, body = self.request("GET", "/assets/app.js")
+            self.assertEqual(200, status)
+            self.assertEqual(b"export {};", body)
+            (static / "assets" / "app.js").write_text(
+                "throw new Error('hot switch');",
+                encoding="utf-8",
+            )
+            status, _, body = self.request("GET", "/assets/app.js")
+            self.assertEqual(200, status)
+            self.assertEqual(b"export {};", body)
+            status, _, _ = self.request("GET", "/assets/%2e%2e/index.html")
+            self.assertEqual(404, status)
+            status, _, _ = self.request("POST", "/")
+            self.assertEqual(404, status)
 
     def test_task_detail_health_and_error_statuses_use_strict_envelopes(self):
         cases = (

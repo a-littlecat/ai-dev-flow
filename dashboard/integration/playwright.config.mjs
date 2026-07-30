@@ -27,7 +27,7 @@ export default {
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `"${python}" -B -X utf8 dashboard/integration/launcher.py --project-root "${projectRoot}" --no-open`,
+    command: `"${python}" -B -X utf8 dashboard/integration/launcher.py --project-root "${projectRoot}" --skill-root "${path.join(repoRoot, "skills", "ai-dev-flow")}" --backend-port 8765 --frontend-port 5173 --no-open`,
     cwd: repoRoot,
     url: "http://127.0.0.1:5173/api/v1/snapshot",
     reuseExistingServer: false,

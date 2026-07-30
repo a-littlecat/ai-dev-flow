@@ -14,6 +14,7 @@ from dashboard.integration.launcher import (
     LauncherError,
     _LOOPBACK_OPENER,
     _ready,
+    _resolve_ports,
     _stop,
     _validate_port,
     _wait_until_ready,
@@ -66,16 +67,25 @@ class LauncherContractTests(unittest.TestCase):
             backend_src,
             frontend_root,
             Path("node"),
+            REPO_ROOT / "skills" / "ai-dev-flow",
             18765,
             15173,
+            REPO_ROOT / ".test-runtime",
         )
         self.assertIn("--host", backend)
         self.assertEqual("127.0.0.1", backend[backend.index("--host") + 1])
         self.assertEqual("18765", backend[backend.index("--port") + 1])
+        self.assertEqual(
+            str(REPO_ROOT / "skills" / "ai-dev-flow"),
+            backend[backend.index("--skill-root") + 1],
+        )
         self.assertEqual("node", frontend[0])
         self.assertTrue(frontend[-1].endswith("vite.config.mjs"))
         self.assertEqual("18765", env["DASHBOARD_BACKEND_PORT"])
         self.assertEqual("15173", env["DASHBOARD_FRONTEND_PORT"])
+        self.assertTrue(
+            env["DASHBOARD_VITE_CACHE_DIR"].endswith(".test-runtime\\vite-cache")
+        )
         self.assertTrue(env["PYTHONPATH"].split(os.pathsep)[0].endswith("dashboard\\backend\\src"))
 
     def test_proxy_normalizes_only_the_loopback_target_host(self):
@@ -143,14 +153,201 @@ class LauncherContractTests(unittest.TestCase):
         backend.wait.assert_called_once_with(timeout=5)
 
     def test_invalid_ports_fail_closed(self):
-        for value in (-1, 0, 65536):
+        _validate_port("auto", 0)
+        for value in (-1, 65536):
             with self.subTest(value=value):
                 with self.assertRaises(LauncherError):
                     _validate_port("test", value)
 
+    def test_zero_ports_are_resolved_to_distinct_loopback_ports(self):
+        backend, frontend = _resolve_ports(0, 0)
+        self.assertGreater(backend, 0)
+        self.assertGreater(frontend, 0)
+        self.assertNotEqual(backend, frontend)
+
+    def test_auto_ports_retry_a_bounded_startup_collision(self):
+        args = argparse.Namespace(
+            project_root=str(REPO_ROOT),
+            skill_root=str(REPO_ROOT / "skills" / "ai-dev-flow"),
+            backend_port=0,
+            frontend_port=0,
+            no_open=True,
+            startup_timeout=1.0,
+        )
+        first_backend = mock.Mock()
+        first_frontend = mock.Mock()
+        second_backend = mock.Mock()
+        second_frontend = mock.Mock()
+        stop_requested = mock.Mock()
+        stop_requested.is_set.return_value = False
+        stop_requested.wait.return_value = True
+        collision = LauncherError("dashboard child process exited early with code 1")
+        with (
+            mock.patch(
+                "dashboard.integration.launcher._resolve_ports",
+                side_effect=((18765, 15173), (28765, 25173)),
+            ) as resolve_ports,
+            mock.patch("dashboard.integration.launcher._assert_port_available"),
+            mock.patch(
+                "dashboard.integration.launcher._resolve_runtime",
+                return_value=(
+                    Path("backend"),
+                    Path("frontend"),
+                    Path("node"),
+                    Path("skill"),
+                ),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.build_commands",
+                side_effect=(
+                    (["backend-1"], ["frontend-1"], {}),
+                    (["backend-2"], ["frontend-2"], {}),
+                ),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.subprocess.Popen",
+                side_effect=(
+                    first_backend,
+                    first_frontend,
+                    second_backend,
+                    second_frontend,
+                ),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.track_process_tree",
+                side_effect=lambda process: process,
+            ),
+            mock.patch(
+                "dashboard.integration.launcher._wait_until_ready",
+                side_effect=(collision, True),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher._stop",
+            ) as stop,
+            mock.patch(
+                "dashboard.integration.launcher.threading.Event",
+                return_value=stop_requested,
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.signal.signal",
+                return_value=mock.Mock(),
+            ),
+        ):
+            self.assertEqual(0, run(args))
+        self.assertEqual(2, resolve_ports.call_count)
+        self.assertEqual(
+            [
+                mock.call((first_backend, first_frontend)),
+                mock.call((second_backend, second_frontend)),
+            ],
+            stop.call_args_list,
+        )
+
+    def test_auto_port_availability_collision_reallocates_before_start(self):
+        args = argparse.Namespace(
+            project_root=str(REPO_ROOT),
+            skill_root=str(REPO_ROOT / "skills" / "ai-dev-flow"),
+            backend_port=0,
+            frontend_port=0,
+            no_open=True,
+            startup_timeout=1.0,
+        )
+        backend = mock.Mock()
+        frontend = mock.Mock()
+        stop_requested = mock.Mock()
+        stop_requested.is_set.return_value = False
+        stop_requested.wait.return_value = True
+        collision = LauncherError("loopback port 18765 is unavailable")
+        with (
+            mock.patch(
+                "dashboard.integration.launcher._resolve_ports",
+                side_effect=((18765, 15173), (28765, 25173)),
+            ) as resolve_ports,
+            mock.patch(
+                "dashboard.integration.launcher._assert_port_available",
+                side_effect=(collision, None, None),
+            ) as assert_port,
+            mock.patch(
+                "dashboard.integration.launcher._resolve_runtime",
+                return_value=(
+                    Path("backend"),
+                    Path("frontend"),
+                    Path("node"),
+                    Path("skill"),
+                ),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.build_commands",
+                return_value=(["backend"], ["frontend"], {}),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.subprocess.Popen",
+                side_effect=(backend, frontend),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.track_process_tree",
+                side_effect=lambda process: process,
+            ),
+            mock.patch(
+                "dashboard.integration.launcher._wait_until_ready",
+                return_value=True,
+            ),
+            mock.patch("dashboard.integration.launcher._stop") as stop,
+            mock.patch(
+                "dashboard.integration.launcher.threading.Event",
+                return_value=stop_requested,
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.signal.signal",
+                return_value=mock.Mock(),
+            ),
+        ):
+            self.assertEqual(0, run(args))
+        self.assertEqual(2, resolve_ports.call_count)
+        self.assertEqual(3, assert_port.call_count)
+        stop.assert_called_once_with((backend, frontend))
+
+    def test_explicit_port_availability_collision_does_not_change_ports(self):
+        args = argparse.Namespace(
+            project_root=str(REPO_ROOT),
+            skill_root=str(REPO_ROOT / "skills" / "ai-dev-flow"),
+            backend_port=18765,
+            frontend_port=15173,
+            no_open=True,
+            startup_timeout=1.0,
+        )
+        collision = LauncherError("loopback port 18765 is unavailable")
+        with (
+            mock.patch(
+                "dashboard.integration.launcher._resolve_ports",
+                return_value=(18765, 15173),
+            ) as resolve_ports,
+            mock.patch(
+                "dashboard.integration.launcher._assert_port_available",
+                side_effect=collision,
+            ),
+            mock.patch(
+                "dashboard.integration.launcher._resolve_runtime",
+                return_value=(
+                    Path("backend"),
+                    Path("frontend"),
+                    Path("node"),
+                    Path("skill"),
+                ),
+            ),
+            mock.patch(
+                "dashboard.integration.launcher.signal.signal",
+                return_value=mock.Mock(),
+            ),
+        ):
+            with self.assertRaisesRegex(LauncherError, "18765 is unavailable"):
+                run(args)
+        resolve_ports.assert_called_once_with(18765, 15173)
+
     def test_backend_is_stopped_when_frontend_process_cannot_start(self):
         args = argparse.Namespace(
             project_root=str(REPO_ROOT),
+            skill_root=str(REPO_ROOT / "skills" / "ai-dev-flow"),
             backend_port=18765,
             frontend_port=15173,
             no_open=True,
@@ -163,7 +360,12 @@ class LauncherContractTests(unittest.TestCase):
             mock.patch("dashboard.integration.launcher._assert_port_available"),
             mock.patch(
                 "dashboard.integration.launcher._resolve_runtime",
-                return_value=(Path("backend"), Path("frontend"), Path("node")),
+                return_value=(
+                    Path("backend"),
+                    Path("frontend"),
+                    Path("node"),
+                    Path("skill"),
+                ),
             ),
             mock.patch(
                 "dashboard.integration.launcher.build_commands",

@@ -1,6 +1,6 @@
 # ai-dev-flow
 
-`ai-dev-flow` v0.9.0 包含按风险启用的 Git-first AI 开发治理内核，以及仓库内只读本地任务关系 Dashboard。治理内核继续采用 v0.8 的精简路由：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
+`ai-dev-flow` v0.9.0 包含按风险启用的 Git-first AI 开发治理内核。当前待发布工作树还把只读本地任务关系 Dashboard 的必要运行时与已构建前端放入完整 Skill 包；治理内核继续采用 v0.8 的精简路由：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
 
 ## 一句话用法
 
@@ -100,12 +100,36 @@ lint 通过只代表可确定结构规则通过，不代表 Review、UA、merge�
 
 ## 本地 Dashboard
 
-仓库根目录的 `dashboard/` 提供只读本地关系图、下一动作、并行候选、需要决定项、任务详情与 SSE 实时更新。它不属于安装到 agent 的默认 Skill 运行时，也不会写 TASK、TASK_BOARD 或 Git；使用说明见仓库 `dashboard/README.md`。
+完整 Skill 安装包中的 `scripts/dashboard.py` 提供只读本地关系图、下一动作、并行候选、需要决定项、任务详情与 SSE 实时更新。目标项目只需是包含 `docs/tasks/` 的 Git 工作树，不需要复制或链接 Skill：
+
+```powershell
+py -3 -B -X utf8 "C:\Users\<user>\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
+  --project-root "D:\projects\CADCat"
+```
+
+入口脚本所在 Skill 是默认 `skill-root`。也可明确指定另一个安装目录：
+
+```powershell
+py -3 -B -X utf8 "<installed-skill>\scripts\dashboard.py" `
+  --project-root "D:\projects\CADCat" `
+  --skill-root "C:\Users\<user>\.agents\skills\ai-dev-flow" `
+  --port 0 `
+  --no-open
+```
+
+- Skill 查找顺序：显式 `--skill-root`、`AI_DEV_FLOW_SKILL_ROOT`、当前入口所在 Skill、常见 Harness 用户目录、最后才是项目内 `skills/ai-dev-flow` 兼容路径。
+- `--port 0` 是默认值，由操作系统原子分配可用 loopback 端口；显式端口被占用时只停止当前启动，不结束其他实例。
+- 每个进程使用由项目规范路径派生的项目 key，以及独立 instance ID、PID 和运行状态目录。干净停止只清理自己的实例目录。
+- 启动前严格检查 Skill `0.9.x` 和 Workflow Contract 的 `adf/v0.7.0` 声明；显式 Scheduling `scheduling_schema` 若畸形、重复或不兼容也会停止。为兼容历史 TASK，存在 Scheduling 区块但从未声明 `scheduling_schema` 时继续交给公共 Reader，以 `unknown` 表示缺失证据，不补写也不猜测。运行中 Reader、后端和静态前端保持启动快照，Skill 文件变化时控制台明确提示重启，不热切换。
+- 安装版运行时只需要 Python 3.11+、Git 和浏览器，不需要 Node.js、npm、Vite 或 ai-dev-flow 源码仓库。
+- 页面与 API 仍只绑定 `127.0.0.1`，只接受同源读取和 SSE；不会写 TASK、TASK_BOARD、Skill 或 Git，也不会创建/切换 Worktree 或授予治理 authority。
+
+完整的源码开发、构建与验证说明见仓库 `dashboard/README.md`。安装目录必须包含 `dashboard/runtime-manifest.json`；缺少该文件说明仍是旧版或不完整 Skill，启动会明确失败。
 
 ## 版本状态
 
 - 当前工作树 Skill 包：`0.9.0`。
 - 当前正式发布版本：`0.9.0`，于 2026-07-30 发布。
 - Contract schema：`adf/v0.7.0`，继续兼容。
-- 发布状态：annotated tag `v0.9.0` 与正式 GitHub Release 均已创建；Dashboard 代码保留在仓库中，本机 Skill 同步只复制 `skills/ai-dev-flow/`。
+- 发布状态：annotated tag `v0.9.0` 与正式 GitHub Release 均已创建；该正式包仍是仅仓库运行的 Dashboard。跨项目安装运行时属于 `DASHBOARD-PORTABLE-001` 待发布变更，未同步到本机 Skill，也未形成新 tag 或 Release。
 - v0.8 评估证据保存在 `evaluations/v0.8/`，冻结原型保存在 `prototypes/v0.8-lite/`，不应在日常使用中加载或改写。
