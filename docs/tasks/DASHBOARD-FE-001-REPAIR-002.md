@@ -12,9 +12,9 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-FE-001-REPAIR-002.md#dashboard-fe-001-repair-002-ua6-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
-- `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `commit_status`: `Committed`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 - `close_authority`: `None`
 
 ## Scheduling
@@ -91,9 +91,16 @@
 - 验收结果：用户明确回复“验收通过”；`UA6 Passed / User Confirmed / Accepted`。
 - 权限边界：本次确认只授权验收状态写回，不自动授权 commit、merge、push、release、外部同步或 Closed。
 
+## 提交与合并结果 2026-07-30
+
+- 功能提交：`048c5139c2fe1ec738e5ee4f933f029d397906f9`（`fix(dashboard): clarify selection focus visibility`）。
+- 合并提交：`acd0dddac8b56559b2b65c9a86e83e93f8f11cdb`（本地 `main`，`--no-ff`；父提交为 `9fe4c4453af1525a6a47adc856575a70c8437911` 与 `048c5139c2fe1ec738e5ee4f933f029d397906f9`）。
+- 合并检出验证：`npm run verify` 已运行并通过；codegen、typecheck、ESLint、production build 均通过，Vitest `82/82`、Chrome Playwright `83/83`。
+- 权限边界：用户明确授权“提交并合并”；本次不包含 push、release、外部同步、删除 Worktree/分支或 Closed。
+
 ## Outcome
 
-- Base / Diff：base=9fe4c4453af1525a6a47adc856575a70c8437911;diff=working-tree
+- Base / Diff：base=9fe4c4453af1525a6a47adc856575a70c8437911;diff=048c5139c2fe1ec738e5ee4f933f029d397906f9
 - 隔离位置：独立 Worktree `D:\open-source\ai-dev-flow-wt\dashboard-fe-001-repair-002`，分支 `codex/dashboard-fe-001-repair-002`。
 - 回滚方式：当前未提交；仅逆向应用本 TASK 的 8 文件工作区 diff（6 个前端文件、本 TASK、`docs/TASK_BOARD.md`），不影响 main、集成 Worktree 或其他已 Accepted artifact。
 - 修改文件：`styles.css` 增加深浅主题 selected surface/glow、3px 选中框、选中文字和直接/无关关系边层级；`graphView.ts` 组合搜索与 focus 语义，并保证主动选中节点及直接关系不继承 dimming；`store.ts` 在选择锚点变化时清除旧 focus；`graph.spec.ts`、`search.spec.ts`、`store.test.ts` 覆盖选中态、搜索 × 上下游、结构筛选和过期 focus；本 TASK 与看板记录受控状态。
@@ -101,6 +108,7 @@
 - 真实项目视觉证据：从 `DASHBOARD-INTEGRATE-001` Worktree 的真实只读快照加载 22 个任务；深色主题选择 `DASHBOARD-BE-002` 后，selected tag=`✓ 已选中`、描边=`3.4px`（搜索匹配叠加态）、直接规范关系边 `12`、退后规范关系边 `38`；`1440×900`、`1024×768`、`390×844` 均无页面横向溢出，390 宽度“定位”后节点完整可见；浏览器 error log=`0`。
 - Review findings：旧选中态 AR-3 Review `Passed`；新链 Review 1 至 Review 4 的 finding 均已关闭，最终 Review 5 `Passed`、P0/P1/P2/P3=`0/0/0/0`。五次新链审查环境均为 `approval=never / sandbox=read-only`，Workspace writes=`None`；Review 5 的测试复跑受只读沙箱进程限制，但 Orchestrator 的最终代码全量验证已通过。
 - UA 动作与结果：用户于 2026-07-30 在真实项目页面完成检查并明确回复“验收通过”；`UA6 Passed / Accepted`。
-- 状态边界：`Accepted / Uncommitted / Unmerged / Not Released / Not Closed`。
+- 合并目标与事实证据：本地 `main`；feature=`048c5139c2fe1ec738e5ee4f933f029d397906f9`；merge=`acd0dddac8b56559b2b65c9a86e83e93f8f11cdb`；`--no-ff` 两父提交已核对。
+- 状态边界：`Accepted / Review Passed / UA6 Passed / User Confirmed / Committed / Merged local main / Not Pushed / Not Released / Not Closed`。
 - 剩余风险：完整网络视图仍然是高密度总览；本任务只修复选中态定位，不重构关系图信息架构。`npm ci` 报告的依赖审计项来自既有锁文件，本 TASK 未新增、升级或修改依赖。
-- 下一步：如用户另行授权，可执行 commit 与本地 merge；push、release 和 Closed 仍需分别授权。
+- 下一步：push、release、外部同步、删除 Worktree/分支与 Closed 均需用户另行授权。
