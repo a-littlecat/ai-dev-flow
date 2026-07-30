@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-30
 > - 当前模式：`REL-004` v0.9.1 跨项目 Dashboard 发布
-> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Committed / Unmerged`
+> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Pending`
 > - 当前方案：`docs/tasks/REL-004-release-v091-portable-dashboard.md`
 
 ## 当前授权边界
@@ -154,7 +154,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
-| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / Unmerged / Not Released | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
+| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Pending / Not Released | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

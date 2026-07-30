@@ -13,7 +13,8 @@
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -58,7 +59,7 @@
 - [x] VERSION/CHANGELOG/模板/测试/runtime manifest 均为 `0.9.1`，Workflow Contract 仍为 `adf/v0.7.0`。
 - [x] backend、integration、frontend、Skill、bundle parity、workflow lint 与 diff 检查完成并形成准确证据。
 - [x] 独立只读 Review 无开放 P0/P1。
-- [ ] 发布候选已 commit 并合入本地 `main`。
+- [x] 发布候选已 commit 并合入本地 `main`。
 - [ ] 本机已存在 Skill 目标与仓库发行源相对 manifest 一致，且不删除目标特有文件。
 - [ ] `main`、annotated tag `v0.9.1` 和正式 GitHub Release 已推送/创建并复核。
 
@@ -74,4 +75,5 @@
 - 验证证据：发布候选提交 `0875bb39f051cc931792f9c414286ca8c1760667`，精确包含本 TASK 允许的 13 个发布文件。
 - Review findings：首轮只读 Review session `019fb2df-fd06-79d1-9856-47a445a79b98` 为 `Needs Fix / P0-P3=0/1/1/0`；`REL004-RVW-P1-001` 与 `REL004-RVW-P2-002` 均已修复。第二轮只读 Review session `019fb2ea-9ffa-7281-a006-943cb1022bb8` 为 `Passed / P0-P3=0/0/0/0`，无新增 finding。
 - UA 动作与结果：用户已观察两个真实项目页面并明确宣告验收通过，同时明确授权提交、合并、本机同步、push 与正式发版；记录 `UA7 Passed / User Confirmed`。
-- 当前状态：`Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Closed`。
+- 合并目标与事实证据：发布分支 `codex/rel-004-v091-portable-dashboard` 通过 merge commit `139864d5f2cc6e613d710c59a05d3aa691de9492` 合入本地 `main`。
+- 当前状态：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Not Released / Not Closed`。
