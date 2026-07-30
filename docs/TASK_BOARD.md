@@ -143,7 +143,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Accepted | 高 | 高 | BE-001 repair；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `3cc22ab` / Merged local `main` via `6431229` / Not Pushed / Not Closed | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
 | DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Accepted | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / feature `0/0/4/0`；post-merge repair `0/0/0/0` | UA4 Passed / User Confirmed | feature `2ed2bb9` / merge `3be0a2e` / repair `36d0795` / Committed / Merged local main / Not Pushed / Not Closed | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
 | DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Accepted | 高 | 高 | FE-001 Accepted/Committed/Merged/Review/UA；INTEGRATE-P1-001 | Passed / P0-P3=`0/0/1/0` | UA4 Passed / User Confirmed | feature `3c8160f` / merge `2ac8b3b` / Committed / Merged local main / Not Pushed / Not Closed | [DASHBOARD-FE-001-REPAIR-001](tasks/DASHBOARD-FE-001-REPAIR-001.md) |
-| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Ready | 高 | 高 | BE-001、BE-002、FE-001 Accepted/Committed/Review/UA | Passed / 无 P0-P3 | UA6 Pending | 串行集成 Worktree / 未授权实施 | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
+| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Review | 高 | 高 | FE-001 real-scale repair Accepted/Committed/Merged | Passed / ER-7 P0-P3=`0/0/0/0` | UA6 Pending | `codex/dashboard-integrate-001@9fe4c44` / Uncommitted / Unmerged / Not Delivered | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

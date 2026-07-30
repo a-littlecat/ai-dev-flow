@@ -1,0 +1,12 @@
+{
+  "schema_version": "ai-dev-flow/dashboard-artifact-manifest/v1",
+  "base_commit": "9fe4c4453af1525a6a47adc856575a70c8437911",
+  "algorithm": "sha256",
+  "roots": [
+    "dashboard/contracts",
+    "dashboard/backend",
+    "dashboard/frontend"
+  ],
+  "file_count": 100,
+  "root_digest": "830e6ebc359a41916e6b9d8a840f1f0799afd6698db270711f77e584feb9bdf5"
+}
