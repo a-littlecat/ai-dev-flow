@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-30
 > - 当前模式：`DASHBOARD-PORTABLE-REPAIR-003` 提交前门禁修复
-> - 当前阶段：REPAIR-003 `Accepted / Review Passed / UA6 Passed / Uncommitted`
+> - 当前阶段：PORTABLE-001 `Accepted / Review Passed / UA6 Passed / Committed / Unmerged`
 > - 当前方案：`docs/tasks/DASHBOARD-PORTABLE-REPAIR-003.md`
 
 ## 当前授权边界
@@ -150,10 +150,10 @@ REL-002 Closed / main@0422887
 | DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Accepted | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged local main `acd0ddd` | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
 | DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Accepted | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | feature `5131d03` / gates `35ab778` / merge `4f60dd3` / Committed / Merged local main / Not Pushed / Not Released / Not Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
 | REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Accepted | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | tag target `c2dcb94` / Committed / Merged / Local Sync Verified / Released `v0.9.0` / Not Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
-| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Accepted | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | Worktree `codex/dashboard-portable-001` / Uncommitted / Unmerged / release follow-up authorized | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | AR-1 Review Passed / Uncommitted | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | AR-4 Review Passed / Uncommitted | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
-| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | premerge gate passed / Uncommitted | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
+| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Accepted | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged / release follow-up authorized | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
+| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / Unmerged | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

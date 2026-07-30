@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## Scheduling
@@ -93,6 +93,7 @@
 ## Outcome
 
 - Base / Diff：base=51d4eaa30dfb7a88dc0a7bb035b31beccabab053;diff=base..working-tree-repair-review-1
+- 提交事实证据：功能提交 `47548134ad4168850f919f53a4bf5453dc818bde`（`feat(dashboard): support portable multi-project runtime`）。
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-portable-001`，分支 `codex/dashboard-portable-001`。
 - 回滚方式：放弃本 Worktree 未提交 diff；若未来形成提交，只通过新的逆向提交回滚，不改写历史。
 - 修改文件：Dashboard backend/runtime、integration launcher/build/tests、Skill 分发 bundle/入口与两份 README、本 TASK 和 TASK_BOARD；未修改 wire schema、治理 policy、依赖或本机安装 Skill。
@@ -101,6 +102,6 @@
 - 验证命令与结果：`python -m unittest` backend/integration/Skill 全量、`npm run verify`、`build_skill_runtime.py --check`、`quick_validate.py`、真实 CADCat/双项目脚本均已运行并通过。
 - Review findings：`DASHBOARD-PORTABLE-REPAIR-002` 已关闭生产 CSP 空白页、历史 Scheduling 兼容、候选制品索引、旧 dist 重新合法化和源码 launcher 端口竞态；提交前 `DASHBOARD-PORTABLE-REPAIR-003` 又关闭 Windows LF、schema 启动冻结与实时回退缺口。最终独立只读 Review session=`019fb2af-da14-7e20-b515-d1de3beb6663` 为 `Passed`，P0/P1/P2=`0/0/0`。
 - UA 动作与结果：先前真实 UA6 Failed 证据保留在上节；修复后 CADCat 与 ai-dev-flow 两个隔离安装版实例在 `127.0.0.1:5084` / `127.0.0.1:5082` 正常渲染。用户已实际观察并于 2026-07-30 明确宣告“验收通过”，记录为 `UA6 Passed / Accepted / User Confirmed`。
-- 状态边界：Accepted / Review Passed / UA6 Passed / Uncommitted / Unmerged / Not Released / Not Closed。
+- 状态边界：Accepted / Review Passed / UA6 Passed / Committed / Unmerged / Not Released / Not Closed。
 - 剩余风险：当前实现与提交前门禁已通过；发布、本机同步、push 与 Release 仍由独立发布任务记录，不从本任务 Acceptance 自动推导。
 - 下一步：按用户授权提交并本地合并；随后在独立发布任务中完成 README 重写、版本升级、本机同步、GitHub push/tag/Release。

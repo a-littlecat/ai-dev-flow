@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## Scheduling
@@ -104,6 +104,7 @@
 
 ## Outcome
 
+- 提交事实证据：随父任务形成提交 `47548134ad4168850f919f53a4bf5453dc818bde`。
 - Base / Diff：base=51d4eaa30dfb7a88dc0a7bb035b31beccabab053;diff=current-working-tree-ar4
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-portable-001` / `codex/dashboard-portable-001`。
 - 回滚方式：当前无提交；只逆向应用本 TASK 冻结 scope 的增量。删除、reset 或 Worktree 清理仍需用户另行授权。
@@ -112,6 +113,6 @@
 - 验证异常记录：首次把 frontend 与 integration 并行运行造成双方争用测试端口 5173，并使一项 Git 刷新时序断言未在窗口内完成；终止该测试专用 Vite 进程后，frontend 与 integration 分别串行重跑为 83/83、44/44，产品动态端口与隔离测试均通过。
 - Review findings：原 `DASHBOARD-PORTABLE-UA6-P1-001/002` Closed；AR-4 独立 Review `Passed`，P0/P1/P2/P3=`0/0/0/1`，没有开放 P0/P1/P2。唯一记录 P3 已按 Review 指定文字机械同步，无业务 patch。
 - UA 动作与结果：CADCat 与 ai-dev-flow 两个真实安装版实例已由用户观察；用户于 2026-07-30 明确宣告“验收通过”，本 repair 随父任务记录 `UA6 Passed / Accepted / User Confirmed`。
-- 状态边界：Accepted / Review Passed / UA6 Passed / Uncommitted / Unmerged / Not Released / Not Closed。
+- 状态边界：Accepted / Review Passed / UA6 Passed / Committed / Unmerged / Not Released / Not Closed。
 - 剩余风险：提交和合并前仍需对完整候选运行新鲜验证与独立只读 Review。
 - 下一步：随父任务完成提交前门禁并提交、本地合并；发布和本机同步由独立发布任务记录。

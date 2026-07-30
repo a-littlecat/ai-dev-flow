@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## Scheduling
@@ -69,11 +69,12 @@
 ## Outcome
 
 - Base / Diff：base=51d4eaa30dfb7a88dc0a7bb035b31beccabab053;diff=current-working-tree-premerge-repair
+- 提交事实证据：随父任务形成提交 `47548134ad4168850f919f53a4bf5453dc818bde`。
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-portable-001` / `codex/dashboard-portable-001`。
 - 回滚方式：当前无提交；只逆向应用本 TASK 冻结 scope 的增量，不删除 Worktree、不改写历史。
 - 修改文件：为生成 validator 增加 LF 属性；Snapshot Builder/Coordinator 共用启动时冻结 schema，磁盘漂移永久锁存并拒绝实时回退；同步候选 manifest、安装 runtime、回归测试与任务收据。
 - 验证证据：backend 144/144、integration 50/50、frontend unit 82/82 + Chrome 83/83、Skill 85/85、bundle build/check 35 files、artifact candidate consistent、Skill quick validate、四个 portable TASK lint 0 error/violation、`git diff --check` 通过。
 - Review findings：最终独立只读 Review session=`019fb2af-da14-7e20-b515-d1de3beb6663` 为 `Passed`，P0/P1/P2=`0/0/0`；此前 schema freeze、实时回退与 LF findings 全部关闭。
-- 当前状态：`Accepted / Review Passed / UA6 Passed / Uncommitted / Unmerged / Not Released / Not Closed`。
+- 当前状态：`Accepted / Review Passed / UA6 Passed / Committed / Unmerged / Not Released / Not Closed`。
 - UA 动作与结果：用户已经在父任务完成真实双项目验收并明确回复“验收通过”；本 TASK 继承该 `UA6 Passed / User Confirmed` 证据，只提供交付可靠性修复，不要求重复验收。
 - 下一步：随父任务提交和本地合并；发布与本机同步由独立发布任务记录。

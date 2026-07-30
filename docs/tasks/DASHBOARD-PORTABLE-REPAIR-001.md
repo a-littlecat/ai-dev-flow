@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## Scheduling
@@ -86,6 +86,8 @@
 - Orchestrator 提升：`RepairCampaignAuthority` 已由当前用户消息明确授予；仅提升本修复范围，不产生 delivery、Acceptance 或 Closed authority。
 
 ## Outcome
+
+- 提交事实证据：随父任务形成提交 `47548134ad4168850f919f53a4bf5453dc818bde`。
 
 - Base / Diff：base=51d4eaa30dfb7a88dc0a7bb035b31beccabab053;diff=working-tree-repair-review-1
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-portable-001` / `codex/dashboard-portable-001`。
