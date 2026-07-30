@@ -7,12 +7,13 @@
 - `task_type`: `test`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Pending`
 - `ua_level`: `UA6`
-- `ua_status`: `Pending`
-- `acceptance_authority`: `None`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/DASHBOARD-INTEGRATE-001.md#dashboard-integrate-001-ua6-2026-07-30`
+- `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `None`
 
@@ -486,3 +487,18 @@
 - 最终自动验证：Artifact Guard `100/100` 且 changed/added/missing 均为 `0`；集成 Python `34/34`；真实项目 Chrome 合同视口 `3/3`；frontend Vitest `82/82`、Chrome Playwright `83/83`、codegen/typecheck/ESLint/build 全部通过；backend `130/130`；ai-dev-flow `85/85`。
 - 环境说明：系统默认 `python` 指向不满足合同的 Python 3.10，首次运行因此出现 3 项启动环境失败；改用 `C:\Python313\python.exe` 后同一集成套件 `34/34`。冻结的 Python 3.12 双轮 benchmark 收据继续有效，本次基线更新只纳入已验收 frontend 修复，Artifact Guard 证明 contracts/backend 与冻结基线一致。
 - 状态边界：基线对齐和自动验证进行中；现有用户 UA6 事实待最终自动门禁与只读复审通过后写回 canonical 状态。
+
+## DASHBOARD-INTEGRATE-001 UA6 2026-07-30
+
+- 用户已在真实集成页面完成可见性、聚焦上下游、并行关系“未知”等交互检查，并明确回复“验收通过”；随后再次确认 `DASHBOARD-INTEGRATE-001` 已完成并验收。本收据只把既有人工验收写回父任务，不重复要求用户验收。
+- UA 结论：`Passed`；验收主体：`User Confirmed`；范围：完整本地仪表盘主流程与本轮两项可见性 repair 合入后的最终页面。
+- 实现提交：`5131d03`（集成实现）与 `6df6a94`（最终 Accepted artifact 基线刷新）；当前分支尚未合入 `main`，因此 `merge_status` 继续为 `Unmerged`。
+
+## 最终基线独立 Review 修复候选（2026-07-30）
+
+- Reviewer：原生 `codex exec review --base main`，session `019fb098-9d19-7630-833f-c536d759d431`，sandbox=`read-only`。
+- 结论：`Needs Fix`。基线刷新后旧 `Review Passed` 不能继续作为当前候选的 canonical 状态；父任务 UA6 和已存在的实现提交必须写回；benchmark 还必须拒绝活动的 Windows Battery Saver / Best Power Efficiency 模式。
+- 修复：canonical 状态已改为 `Review Pending / UA6 Passed / Committed / Unmerged`；environment report 读取系统 Battery Saver 标志与 effective power mode，冻结 reference profile 只接受 Battery Saver 关闭且 effective mode 为 Balanced。
+- 定向验证：benchmark `10/10`；当前机器实测 `Balanced scheme / Battery Saver off / Balanced effective mode`，三个新增资格检查均通过；模拟 Battery Saver 开启或 Best Power Efficiency mode 时 profile 均确定失败。
+- 完整验证：首次运行的功能测试 `34/35`，唯一失败是 Python 在 Accepted backend 目录生成未跟踪 `__pycache__` 后被 Artifact Guard 正确拒绝，并非产品行为失败。将该轮生成缓存移出受保护目录、设置 `PYTHONDONTWRITEBYTECODE=1` 后重跑为集成 `35/35`，Artifact Guard 测试前后均为 `100/100`、changed/added/missing=`0/0/0`；workflow lint 为 `0 error / 0 violation / 2 expected authority/history warnings`。
+- 状态边界：等待当前完整候选重新独立 Review；在复审通过前不恢复 `review_status=Passed`，也不合并。

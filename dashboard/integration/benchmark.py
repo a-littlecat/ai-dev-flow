@@ -20,6 +20,7 @@ import sys
 import tempfile
 import threading
 import time
+import uuid
 import winreg
 from datetime import datetime, timezone
 from pathlib import Path
@@ -231,6 +232,47 @@ def _powershell_value(script: str) -> str:
     return " ".join(line.strip() for line in result.stdout.splitlines() if line.strip())
 
 
+class _SystemPowerStatus(ctypes.Structure):
+    _fields_ = [
+        ("ac_line_status", ctypes.c_ubyte),
+        ("battery_flag", ctypes.c_ubyte),
+        ("battery_life_percent", ctypes.c_ubyte),
+        ("system_status_flag", ctypes.c_ubyte),
+        ("battery_life_time", ctypes.c_ulong),
+        ("battery_full_life_time", ctypes.c_ulong),
+    ]
+
+
+class _Guid(ctypes.Structure):
+    _fields_ = [
+        ("data1", ctypes.c_ulong),
+        ("data2", ctypes.c_ushort),
+        ("data3", ctypes.c_ushort),
+        ("data4", ctypes.c_ubyte * 8),
+    ]
+
+
+def _windows_power_state() -> dict[str, Any]:
+    """Read the active battery-saver flag and effective Windows power mode."""
+
+    status = _SystemPowerStatus()
+    if not ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status)):
+        raise ctypes.WinError()
+
+    mode = _Guid()
+    result = ctypes.WinDLL("powrprof.dll").PowerGetEffectiveOverlayScheme(
+        ctypes.byref(mode)
+    )
+    if result != 0:
+        raise ctypes.WinError(result)
+
+    return {
+        "ac_line_status": int(status.ac_line_status),
+        "battery_saver_active": bool(status.system_status_flag),
+        "effective_power_mode": str(uuid.UUID(bytes_le=bytes(mode))),
+    }
+
+
 def environment_report() -> dict[str, Any]:
     total_memory, _ = _memory_status()
     temporary_drive = Path(tempfile.gettempdir()).drive.rstrip(":")
@@ -251,6 +293,14 @@ def environment_report() -> dict[str, Any]:
         )
     except (OSError, subprocess.SubprocessError):
         power = "unknown"
+    try:
+        power_state = _windows_power_state()
+    except (AttributeError, OSError):
+        power_state = {
+            "ac_line_status": "unknown",
+            "battery_saver_active": "unknown",
+            "effective_power_mode": "unknown",
+        }
     try:
         defender = _powershell_value(
             "$s=Get-MpComputerStatus; "
@@ -339,6 +389,7 @@ def environment_report() -> dict[str, Any]:
         "python_executable": sys.executable,
         "git": _run(["git", "--version"]).stdout.strip(),
         "power_scheme": power or "unknown",
+        **power_state,
         "defender": defender or "unknown",
         "temporary_filesystem": filesystem or "unknown",
         "temporary_volume": f"{temporary_drive}:" if temporary_drive else "unknown",
@@ -362,6 +413,9 @@ def reference_profile_qualification(environment: dict[str, Any]) -> dict[str, An
         else (0, 0)
     )
     power = str(environment.get("power_scheme", "")).casefold()
+    effective_power_mode = str(
+        environment.get("effective_power_mode", "")
+    ).casefold()
     defender = str(environment.get("defender", "")).casefold()
     build_numbers = tuple(
         int(item)
@@ -393,6 +447,10 @@ def reference_profile_qualification(environment: dict[str, Any]) -> dict[str, An
             "381b4222-f694-41f0-9685-ff5bb260df2e" in power
             or "balanced" in power
             or "平衡" in power
+        ),
+        "battery_saver_off": environment.get("battery_saver_active") is False,
+        "balanced_effective_power_mode": (
+            effective_power_mode == "00000000-0000-0000-0000-000000000000"
         ),
         "defender_enabled": (
             "antivirusenabled=true" in defender

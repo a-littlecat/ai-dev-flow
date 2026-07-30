@@ -78,6 +78,10 @@ class IntegrationBenchmarkContractTests(unittest.TestCase):
             "python_major_minor": [3, 12],
             "git": "git version 2.50.1.windows.1",
             "power_scheme": "Balanced",
+            "battery_saver_active": False,
+            "effective_power_mode": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
             "defender": (
                 "AntivirusEnabled=True;RealTimeProtectionEnabled=True"
             ),
@@ -124,6 +128,10 @@ class IntegrationBenchmarkContractTests(unittest.TestCase):
             "power_scheme": (
                 "电源方案 GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (平衡)"
             ),
+            "battery_saver_active": False,
+            "effective_power_mode": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
             "defender": (
                 "AntivirusEnabled=True;RealTimeProtectionEnabled=True"
             ),
@@ -132,6 +140,41 @@ class IntegrationBenchmarkContractTests(unittest.TestCase):
         qualification = reference_profile_qualification(environment)
         self.assertTrue(qualification["checks"]["balanced_power"])
         self.assertTrue(qualification["passed"])
+
+    def test_reference_profile_rejects_active_energy_saving_modes(self):
+        environment = {
+            "os": "Windows-11-10.0.26200-SP0",
+            "os_build": "10.0.26200",
+            "architecture": "AMD64",
+            "logical_cpu_count": 16,
+            "ram_bytes": 32 * 1024**3,
+            "disk_media_type": "SSD",
+            "temporary_filesystem": "NTFS",
+            "python_major_minor": [3, 12],
+            "git": "git version 2.50.1.windows.1",
+            "power_scheme": "Balanced",
+            "battery_saver_active": True,
+            "effective_power_mode": (
+                "00000000-0000-0000-0000-000000000000"
+            ),
+            "defender": (
+                "AntivirusEnabled=True;RealTimeProtectionEnabled=True"
+            ),
+            "machine_classification": "physical",
+        }
+        qualification = reference_profile_qualification(environment)
+        self.assertFalse(qualification["checks"]["battery_saver_off"])
+        self.assertFalse(qualification["passed"])
+
+        environment["battery_saver_active"] = False
+        environment["effective_power_mode"] = (
+            "961cc777-2547-4f9d-8174-7d86181b8a7a"
+        )
+        qualification = reference_profile_qualification(environment)
+        self.assertFalse(
+            qualification["checks"]["balanced_effective_power_mode"]
+        )
+        self.assertFalse(qualification["passed"])
 
     def test_environment_classifies_exact_hp_manufacturer_as_physical(self):
         powershell_values = iter(
@@ -156,6 +199,16 @@ class IntegrationBenchmarkContractTests(unittest.TestCase):
             mock.patch(
                 "dashboard.integration.benchmark._registry_cpu",
                 return_value="CPU",
+            ),
+            mock.patch(
+                "dashboard.integration.benchmark._windows_power_state",
+                return_value={
+                    "ac_line_status": 1,
+                    "battery_saver_active": False,
+                    "effective_power_mode": (
+                        "00000000-0000-0000-0000-000000000000"
+                    ),
+                },
             ),
         ):
             run_command.return_value.stdout = "git version 2.50.1.windows.1"
