@@ -1,6 +1,6 @@
 # ai-dev-flow
 
-`ai-dev-flow` v0.8 是按风险启用的 Git-first AI 开发治理内核。它不再要求所有任务走完整流程：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
+`ai-dev-flow` v0.9.0 包含按风险启用的 Git-first AI 开发治理内核，以及仓库内只读本地任务关系 Dashboard。治理内核继续采用 v0.8 的精简路由：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
 
 ## 一句话用法
 
@@ -52,7 +52,7 @@
 - 现有 TASK：继续原格式，不批量迁移。
 - `references/TASK_TEMPLATE_COMPACT.md`：只供 v0.7 Writer/Reader 兼容。
 
-TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为正式发布的 `0.8.3`，Workflow Contract schema 仍为 `adf/v0.7.0`。
+TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为正式发布的 `0.9.0`，Workflow Contract schema 仍为 `adf/v0.7.0`。
 
 ## Reviewer 和 repair
 
@@ -98,10 +98,14 @@ python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-co
 
 lint 通过只代表可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
 
+## 本地 Dashboard
+
+仓库根目录的 `dashboard/` 提供只读本地关系图、下一动作、并行候选、需要决定项、任务详情与 SSE 实时更新。它不属于安装到 agent 的默认 Skill 运行时，也不会写 TASK、TASK_BOARD 或 Git；使用说明见仓库 `dashboard/README.md`。
+
 ## 版本状态
 
-- 当前工作树 Skill 包：`0.8.3`。
-- 当前正式发布版本：`0.8.3`，于 2026-07-27 发布。
+- 当前工作树 Skill 包：`0.9.0`。
+- 当前正式发布版本：`0.9.0`，于 2026-07-30 发布。
 - Contract schema：`adf/v0.7.0`，继续兼容。
-- 发布状态：annotated tag `v0.8.3` 与正式 GitHub Release 均已创建；`0.8.2` 未单独发布，其累计变更包含在 `v0.8.3` 中。
+- 发布状态：annotated tag `v0.9.0` 与正式 GitHub Release 均已创建；Dashboard 代码保留在仓库中，本机 Skill 同步只复制 `skills/ai-dev-flow/`。
 - v0.8 评估证据保存在 `evaluations/v0.8/`，冻结原型保存在 `prototypes/v0.8-lite/`，不应在日常使用中加载或改写。
