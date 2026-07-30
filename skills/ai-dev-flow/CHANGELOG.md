@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.1 - 2026-07-30
+
+> `ai-dev-flow v0.9.1` 是跨项目 Dashboard 的正式发布身份；Workflow Contract schema 继续为 `adf/v0.7.0`，Scheduling schema 继续为 `ai-dev-flow/scheduling/v1`。
+
+- Separate `project-root` from an external installed `skill-root`; ordinary Git projects no longer need a copied or linked Skill checkout.
+- Package the Dashboard backend, built frontend, contracts, and launcher inside the complete Skill distribution.
+- Add automatic loopback port selection, explicit port overrides, per-instance IDs, runtime directories, state files, caches, and independent cleanup.
+- Pin Skill and Contract inputs at startup, fail closed on incompatible Skill/Workflow/Scheduling versions, and request restart after runtime bundle changes without hot-mixing schemas.
+- Preserve loopback-only, no-write API, no project/Skill/Git mutation, no Worktree creation, and no governance authority boundaries.
+- Keep source-checkout launch compatibility while adding installed-Skill, two-project isolation, bundle parity, cleanup, schema-freeze, CSP, and Windows LF regressions.
+
+### Delivery facts
+
+- `DASHBOARD-PORTABLE-001` and repairs reached `Accepted / Review Passed / UA6 Passed / Committed / Merged`.
+- Final pre-merge Review session `019fb2af-da14-7e20-b515-d1de3beb6663` passed with P0/P1/P2=`0/0/0`.
+- The annotated tag, local Skill parity, remote push, and GitHub Release are separate delivery facts; their receipts are tracked in `docs/tasks/REL-004-release-v091-portable-dashboard.md`.
+
 ## 0.9.0 - 2026-07-30
 
 > `ai-dev-flow v0.9.0` 正式发布身份；对应 annotated tag `v0.9.0` 和正式 GitHub Release。Skill 包版本升级不改变 Workflow Contract schema，后者继续为 `adf/v0.7.0`。

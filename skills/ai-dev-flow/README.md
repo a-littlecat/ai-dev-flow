@@ -1,6 +1,6 @@
 # ai-dev-flow
 
-`ai-dev-flow` v0.9.0 包含按风险启用的 Git-first AI 开发治理内核。当前待发布工作树还把只读本地任务关系 Dashboard 的必要运行时与已构建前端放入完整 Skill 包；治理内核继续采用 v0.8 的精简路由：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
+`ai-dev-flow` v0.9.1 包含按风险启用的 Git-first AI 开发治理内核，并把只读本地任务关系 Dashboard 的必要运行时与已构建前端放入完整 Skill 包。治理内核继续采用 v0.8 的精简路由：小任务直接退出 Skill；需要跨会话留证或高风险控制时才启用 TASK、Reviewer 和修复上限。
 
 ## 一句话用法
 
@@ -52,7 +52,7 @@
 - 现有 TASK：继续原格式，不批量迁移。
 - `references/TASK_TEMPLATE_COMPACT.md`：只供 v0.7 Writer/Reader 兼容。
 
-TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前工作树 Skill 包版本为正式发布的 `0.9.0`，Workflow Contract schema 仍为 `adf/v0.7.0`。
+TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前 Skill 包版本为 `0.9.1`，Workflow Contract schema 仍为 `adf/v0.7.0`。
 
 ## Reviewer 和 repair
 
@@ -128,8 +128,8 @@ py -3 -B -X utf8 "<installed-skill>\scripts\dashboard.py" `
 
 ## 版本状态
 
-- 当前工作树 Skill 包：`0.9.0`。
-- 当前正式发布版本：`0.9.0`，于 2026-07-30 发布。
+- 当前 Skill 包身份：`0.9.1`。
 - Contract schema：`adf/v0.7.0`，继续兼容。
-- 发布状态：annotated tag `v0.9.0` 与正式 GitHub Release 均已创建；该正式包仍是仅仓库运行的 Dashboard。跨项目安装运行时属于 `DASHBOARD-PORTABLE-001` 待发布变更，未同步到本机 Skill，也未形成新 tag 或 Release。
+- 正式发布事实以同名 annotated tag 和 GitHub Release 为准，交付收据记录在 `docs/tasks/REL-004-release-v091-portable-dashboard.md`。
+- `0.9.1` 完整包包含跨项目 Dashboard 运行时，项目目录与 Skill 安装目录可以分离。
 - v0.8 评估证据保存在 `evaluations/v0.8/`，冻结原型保存在 `prototypes/v0.8-lite/`，不应在日常使用中加载或改写。

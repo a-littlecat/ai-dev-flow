@@ -121,7 +121,7 @@ payload、峰值 RSS 和本机环境。任一冻结门槛或参考环境检查�
 ## 已知限制
 
 - 需要保留启动窗口；没有系统服务或自动更新；
-- 当前正式 `v0.9.0` 发布包尚未包含该安装运行时；只有包含 `dashboard/runtime-manifest.json` 的后续完整 Skill 包可使用推荐入口；
+- `v0.9.0` 发布包不包含该安装运行时；`v0.9.1` 完整 Skill 包包含 `dashboard/runtime-manifest.json`，可使用推荐入口；
 - 自动测试不能替代 UA6：用户仍需用真实项目判断关系图是否直观，并回归原 TASK / TASK_BOARD / workflow_lint 使用习惯；
 - 仪表盘展示的是只读派生事实。自动验证、Review、UA、Accepted、commit、merge、release、delivery 和 Closed 始终相互独立；
 - 浏览器关闭不等于服务停止，必须回到启动窗口按 `Ctrl+C`。

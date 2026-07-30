@@ -33,7 +33,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         self.policy = policy_from(REFERENCES / "CORE.md")
 
     def test_version_and_contract_identity_are_independent(self):
-        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.9.0")
+        self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.9.1")
         for path in (
             ROOT / "README.md",
             ROOT / "README.en.md",
@@ -43,7 +43,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         ):
             with self.subTest(path=path.name):
                 text = read(path)
-                self.assertIn("0.9.0", text)
+                self.assertIn("0.9.1", text)
                 self.assertIn("adf/v0.7.0", text)
         self.assertNotIn("adf/v0.8.0", read(REFERENCES / "TASK_TEMPLATE.md"))
 
