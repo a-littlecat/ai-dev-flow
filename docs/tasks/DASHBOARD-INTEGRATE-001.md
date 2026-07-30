@@ -20,7 +20,7 @@
 
 - `scheduling_schema`: `ai-dev-flow/scheduling/v1`
 - `priority`: `high`
-- `depends_on`: `DASHBOARD-BE-001#commit_status=Committed;DASHBOARD-BE-001#lifecycle=Accepted;DASHBOARD-BE-001#review_status=Passed;DASHBOARD-BE-001#ua_status=Passed;DASHBOARD-BE-002#commit_status=Committed;DASHBOARD-BE-002#lifecycle=Accepted;DASHBOARD-BE-002#review_status=Passed;DASHBOARD-BE-002#ua_status=Passed;DASHBOARD-FE-001#commit_status=Committed;DASHBOARD-FE-001#lifecycle=Accepted;DASHBOARD-FE-001#review_status=Passed;DASHBOARD-FE-001#ua_status=Passed;DASHBOARD-FE-001-REPAIR-001#commit_status=Committed;DASHBOARD-FE-001-REPAIR-001#lifecycle=Accepted;DASHBOARD-FE-001-REPAIR-001#merge_status=Merged;DASHBOARD-FE-001-REPAIR-001#review_status=Passed;DASHBOARD-FE-001-REPAIR-001#ua_status=Passed`
+- `depends_on`: `DASHBOARD-BE-001#commit_status=Committed;DASHBOARD-BE-001#lifecycle=Accepted;DASHBOARD-BE-001#review_status=Passed;DASHBOARD-BE-001#ua_status=Passed;DASHBOARD-BE-002#commit_status=Committed;DASHBOARD-BE-002#lifecycle=Accepted;DASHBOARD-BE-002#review_status=Passed;DASHBOARD-BE-002#ua_status=Passed;DASHBOARD-FE-001#commit_status=Committed;DASHBOARD-FE-001#lifecycle=Accepted;DASHBOARD-FE-001#review_status=Passed;DASHBOARD-FE-001#ua_status=Passed;DASHBOARD-FE-001-REPAIR-001#commit_status=Committed;DASHBOARD-FE-001-REPAIR-001#lifecycle=Accepted;DASHBOARD-FE-001-REPAIR-001#merge_status=Merged;DASHBOARD-FE-001-REPAIR-001#review_status=Passed;DASHBOARD-FE-001-REPAIR-001#ua_status=Passed;DASHBOARD-FE-001-REPAIR-002#commit_status=Committed;DASHBOARD-FE-001-REPAIR-002#lifecycle=Accepted;DASHBOARD-FE-001-REPAIR-002#merge_status=Merged;DASHBOARD-FE-001-REPAIR-002#review_status=Passed;DASHBOARD-FE-001-REPAIR-002#ua_status=Passed`
 - `replaces`: `none`
 - `discovered_from`: `DASHBOARD-001`
 - `parent`: `DASHBOARD-001`
@@ -476,3 +476,13 @@
 ```
 
 - 最终状态边界：`Review / Review Passed / UA6 Pending / Uncommitted / Unmerged`；未 Accepted、未 commit、未 merge、未 push、未 release、未 Closed。下一步仅允许用户执行 UA6；后续状态与交付动作必须另行授权。
+
+## 最终发布基线对齐（2026-07-30）
+
+- 用户确认：用户指出完整仪表盘已经完成并验收，并明确要求继续执行集成收口、本机同步、远端推送和正式发版；该确认复用既有真实页面 UA6，不要求重复人工验收。
+- 基线更新：集成分支合入本地 `main@59fe6d6`，纳入已 Accepted / Committed / Merged 的 `DASHBOARD-FE-001-REPAIR-002`。
+- Artifact RED：旧 `base_commit=9fe4c44` 正确检测到 REPAIR-002 修改的 6 个 frontend 文件，证明 guard 没有静默放行基线漂移。
+- Artifact 候选：受保护的 contracts/backend/frontend 共 100 个文件；新 Accepted 基线 `59fe6d6` 的 canonical root digest 为 `25fd25e1eeac504521552b5218001018778460f546ae29d59902143082a41f65`。
+- 最终自动验证：Artifact Guard `100/100` 且 changed/added/missing 均为 `0`；集成 Python `34/34`；真实项目 Chrome 合同视口 `3/3`；frontend Vitest `82/82`、Chrome Playwright `83/83`、codegen/typecheck/ESLint/build 全部通过；backend `130/130`；ai-dev-flow `85/85`。
+- 环境说明：系统默认 `python` 指向不满足合同的 Python 3.10，首次运行因此出现 3 项启动环境失败；改用 `C:\Python313\python.exe` 后同一集成套件 `34/34`。冻结的 Python 3.12 双轮 benchmark 收据继续有效，本次基线更新只纳入已验收 frontend 修复，Artifact Guard 证明 contracts/backend 与冻结基线一致。
+- 状态边界：基线对齐和自动验证进行中；现有用户 UA6 事实待最终自动门禁与只读复审通过后写回 canonical 状态。
