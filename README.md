@@ -2,7 +2,9 @@
 
 [English](README.en.md)
 
-一个按风险启用的 AI 开发工作流。它用项目规则、Git/diff、确定性验证和必要的任务记录约束 agent，但不会让每个小改动都背上完整流程。
+一个按风险启用的 AI 开发工作流，并提供只读的本地任务关系仪表盘。它用项目规则、Git/diff、确定性验证和必要的任务记录约束 agent，但不会让每个小改动都背上完整流程。
+
+v0.9.0 在 v0.8 治理内核之上加入本地 Dashboard：从 TASK 与 Git 事实生成依赖关系、下一动作、并行候选、需要决定项和任务详情；它不会写 TASK、TASK_BOARD 或 Git。
 
 v0.8 的核心变化很直接：
 
@@ -72,7 +74,7 @@ v0.8 不建设自动调度器、数据库、遥测、计费、模型 Adapter，�
 - 新建 Tracked 按环境使用 `references/TASK_TEMPLATE_BRIEF.md` 或 `references/TASK_TEMPLATE.md`；Controlled 始终使用完整模板。
 - 旧 TASK 不批量迁移，原格式继续可读。
 - `TASK_TEMPLATE_COMPACT.md` 只为 v0.7 Writer/Reader 兼容保留。
-- 当前工作树 Skill 包版本是正式发布的 `0.8.3`，Workflow Contract schema 继续是 `adf/v0.7.0`。
+- 当前工作树 Skill 包版本是正式发布的 `0.9.0`，Workflow Contract schema 继续是 `adf/v0.7.0`。
 
 迁移说明见 `skills/ai-dev-flow/references/V0.8_MIGRATION.md`，用户最多需要 3 步。
 
@@ -103,12 +105,23 @@ python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
 
 lint 通过只说明可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
 
+## 本地任务关系仪表盘
+
+Dashboard 只读取当前项目的 TASK、TASK_BOARD 与 Git 状态，在 loopback 地址提供关系图、筛选、上下游聚焦、任务详情和实时更新。启动、停止、验证和环境要求见 [dashboard/README.md](dashboard/README.md)。
+
+```powershell
+py -3.13 dashboard/integration/launcher.py --project-root .
+```
+
+默认页面为 `http://127.0.0.1:5173/`。完整网络中“未知”表示证据不足，不会被猜成可并行或必须串行。
+
 ## 仓库结构
 
 ```text
 ai-dev-flow/
 ├── README.md
 ├── README.en.md
+├── dashboard/
 ├── docs/
 ├── evaluations/v0.8/
 └── skills/ai-dev-flow/
@@ -124,13 +137,13 @@ ai-dev-flow/
 ## 当前版本
 
 ```text
-0.8.3
+0.9.0
 ```
 
-- 当前工作树版本：`0.8.3`。
-- 当前正式发布版本：`0.8.3`。
+- 当前工作树版本：`0.9.0`。
+- 当前正式发布版本：`0.9.0`。
 - Workflow Contract：`adf/v0.7.0`，继续兼容。
-- 发布状态：`v0.8.3` 已于 2026-07-27 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.3)。
+- 发布状态：`v0.9.0` 于 2026-07-30 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.0)。
 - v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
 
 变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。

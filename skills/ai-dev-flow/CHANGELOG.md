@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.9.0 - 2026-07-30
+
+> `ai-dev-flow v0.9.0` 正式发布身份；对应 annotated tag `v0.9.0` 和正式 GitHub Release。Skill 包版本升级不改变 Workflow Contract schema，后者继续为 `adf/v0.7.0`。
+
+- Add a read-only local task relationship Dashboard built from TASK and Git facts, with deterministic dependency, scheduling, parallel-candidate, and decision views.
+- Add a strict versioned Dashboard contract shared by the Python backend and TypeScript frontend, with fresh, stale, partial, parse-error, cycle, degraded-Git, and unknown-parallel states.
+- Add a loopback-only local HTTP/SSE service, relationship-graph frontend, task detail panel, search and structural filters, upstream/downstream focus, responsive layouts, keyboard support, and non-color state cues.
+- Add Accepted-artifact integrity checks, real backend-to-frontend state matrices, process-tree cleanup, Windows reference-profile benchmarks, and three contract viewport checks.
+- Preserve unknown scheduling evidence as unknown instead of guessing; the Dashboard remains read-only and never writes TASK, TASK_BOARD, Git, or external services.
+- Harden Workflow Contract validation for repair-campaign authority and receipt chains added after v0.8.3.
+
+### Release receipt
+
+- `DASHBOARD-INTEGRATE-001` reached `Accepted / Review Passed / UA6 Passed / Committed / Merged` before release preparation.
+- Release verification, local Skill parity, tag, remote push, and GitHub Release evidence are recorded in `docs/tasks/REL-003-release-v090-dashboard.md`.
+
 ## 0.8.3 - 2026-07-27
 
 > Skill `0.8.3` 的正式发布身份；对应 annotated tag `v0.8.3` 和正式 GitHub Release，Workflow Contract schema 继续为 `adf/v0.7.0`。

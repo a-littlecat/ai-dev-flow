@@ -2,7 +2,9 @@
 
 [中文](README.md)
 
-A risk-activated workflow for AI-assisted software development. It uses project rules, Git/diff, deterministic validation, and task records when they add value without forcing the full process onto every small change.
+A risk-activated workflow for AI-assisted software development, with a read-only local task relationship Dashboard. It uses project rules, Git/diff, deterministic validation, and task records when they add value without forcing the full process onto every small change.
+
+v0.9.0 adds the local Dashboard on top of the v0.8 governance core. It derives dependencies, next actions, parallel candidates, decisions, and task details from TASK and Git facts without writing TASK, TASK_BOARD, or Git.
 
 The v0.8 behavior is simple:
 
@@ -72,7 +74,7 @@ v0.8 does not add a scheduler, database, telemetry, billing, or model adapter. I
 - New Tracked work uses `references/TASK_TEMPLATE_BRIEF.md` or `references/TASK_TEMPLATE.md` according to the runtime route; Controlled work always uses the full template.
 - Existing TASK files keep their format and are not batch-migrated.
 - `TASK_TEMPLATE_COMPACT.md` remains only for v0.7 Writer/Reader compatibility.
-- The working-tree Skill package is the formal `0.8.3` release; the Workflow Contract schema remains `adf/v0.7.0`.
+- The working-tree Skill package is the formal `0.9.0` release; the Workflow Contract schema remains `adf/v0.7.0`.
 
 See `skills/ai-dev-flow/references/V0.8_MIGRATION.md` for the migration guide.
 
@@ -103,12 +105,23 @@ python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
 
 A passing lint result does not imply Review, UA, merge, release, or task closure.
 
+## Local task relationship Dashboard
+
+The Dashboard reads TASK, TASK_BOARD, and Git state from the current project and exposes a relationship graph, filters, upstream/downstream focus, task details, and live updates on loopback only. See [dashboard/README.md](dashboard/README.md) for startup, shutdown, validation, and environment requirements.
+
+```powershell
+py -3.13 dashboard/integration/launcher.py --project-root .
+```
+
+The default page is `http://127.0.0.1:5173/`. An “unknown” relation means evidence is insufficient; it is never guessed to be parallel-safe or serial.
+
 ## Repository layout
 
 ```text
 ai-dev-flow/
 ├── README.md
 ├── README.en.md
+├── dashboard/
 ├── docs/
 ├── evaluations/v0.8/
 └── skills/ai-dev-flow/
@@ -124,13 +137,13 @@ See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
 ## Current version
 
 ```text
-0.8.3
+0.9.0
 ```
 
-- Current working-tree version: `0.8.3`.
-- Current formal release: `0.8.3`.
+- Current working-tree version: `0.9.0`.
+- Current formal release: `0.9.0`.
 - Workflow Contract: `adf/v0.7.0`, still compatible.
-- Release status: `v0.8.3` was formally published on 2026-07-27; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.8.3).
+- Release status: `v0.9.0` was formally published on 2026-07-30; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.0).
 - The historical v0.7.0 tag remains unchanged.
 
 See `skills/ai-dev-flow/CHANGELOG.md` for changes.
