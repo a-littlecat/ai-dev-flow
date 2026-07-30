@@ -394,6 +394,185 @@ class SnapshotBuilderTests(unittest.TestCase):
 
 
 class SnapshotCoordinatorTests(unittest.TestCase):
+    def test_coordinator_uses_builder_frozen_schema_identity_and_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project(root)
+            schema_path = root / "dashboard-contracts-v1.schema.json"
+            schema = json.loads(
+                (
+                    support.CONTRACTS_ROOT
+                    / "dashboard-contracts-v1.schema.json"
+                ).read_text(encoding="utf-8")
+            )
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            node = support.task("TEST-001", branch_hint="codex/test")
+            core = CachedDeferredCore(core_result(node, root=root))
+            builder = SnapshotBuilder(
+                root,
+                core=core,
+                git_collector=StaticGitCollector(git_collection(root)),
+                schema_path=schema_path,
+            )
+            frozen_digest = builder.startup_schema_digest
+
+            schema["$comment"] = "changed between builder and coordinator"
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            coordinator = SnapshotCoordinator(root, builder=builder)
+
+            self.assertEqual(frozen_digest, coordinator._startup_schema_digest)
+            with self.assertRaisesRegex(RuntimeError, "restart required"):
+                coordinator.refresh()
+            self.assertIsNone(coordinator.current())
+            self.assertEqual(0, core.inspect_calls)
+
+            valid = support.snapshot_with_task()
+            self.assertEqual(canonical_bytes(valid), builder.validated_payload(valid))
+
+    def test_schema_change_before_first_refresh_aborts_startup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project(root)
+            schema_path = root / "dashboard-contracts-v1.schema.json"
+            schema = json.loads(
+                (
+                    support.CONTRACTS_ROOT
+                    / "dashboard-contracts-v1.schema.json"
+                ).read_text(encoding="utf-8")
+            )
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            node = support.task("TEST-001", branch_hint="codex/test")
+            core = CachedDeferredCore(core_result(node, root=root))
+            builder = SnapshotBuilder(
+                root,
+                core=core,
+                git_collector=StaticGitCollector(git_collection(root)),
+                schema_path=schema_path,
+            )
+            coordinator = SnapshotCoordinator(root, builder=builder)
+
+            schema["$comment"] = "changed before first refresh"
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "restart required"):
+                coordinator.refresh()
+            self.assertIsNone(coordinator.current())
+            self.assertEqual(0, core.inspect_calls)
+
+    def test_schema_change_during_first_refresh_discards_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project(root)
+            schema_path = root / "dashboard-contracts-v1.schema.json"
+            schema = json.loads(
+                (
+                    support.CONTRACTS_ROOT
+                    / "dashboard-contracts-v1.schema.json"
+                ).read_text(encoding="utf-8")
+            )
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            node = support.task("TEST-001", branch_hint="codex/test")
+            core = CachedDeferredCore(core_result(node, root=root))
+            inner = SnapshotBuilder(
+                root,
+                core=core,
+                git_collector=StaticGitCollector(git_collection(root)),
+                schema_path=schema_path,
+            )
+
+            class MutatingBuilder:
+                changed_task_ids = staticmethod(SnapshotBuilder.changed_task_ids)
+                schema_digest = inner.schema_digest
+                schema_path = inner.schema_path
+
+                def build(self):
+                    result = inner.build()
+                    schema["$comment"] = "changed during first refresh"
+                    schema_path.write_text(
+                        json.dumps(schema, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                    return result
+
+            coordinator = SnapshotCoordinator(root, builder=MutatingBuilder())
+
+            with self.assertRaisesRegex(RuntimeError, "restart required"):
+                coordinator.refresh()
+            self.assertIsNone(coordinator.current())
+            self.assertEqual(1, core.inspect_calls)
+
+    def test_schema_change_after_startup_preserves_published_snapshot(self):
+        for mutation in ("changed", "invalid", "deleted"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                project(root)
+                schema_path = root / "dashboard-contracts-v1.schema.json"
+                schema = json.loads(
+                    (
+                        support.CONTRACTS_ROOT
+                        / "dashboard-contracts-v1.schema.json"
+                    ).read_text(encoding="utf-8")
+                )
+                schema_path.write_text(
+                    json.dumps(schema, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                node = support.task("TEST-001", branch_hint="codex/test")
+                core = CachedDeferredCore(core_result(node, root=root))
+                builder = SnapshotBuilder(
+                    root,
+                    core=core,
+                    git_collector=StaticGitCollector(git_collection(root)),
+                    schema_path=schema_path,
+                )
+                coordinator = SnapshotCoordinator(root, builder=builder)
+                first = coordinator.refresh()
+
+                if mutation == "changed":
+                    schema["$comment"] = "changed after startup"
+                    schema_path.write_text(
+                        json.dumps(schema, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                elif mutation == "invalid":
+                    schema_path.write_text("{", encoding="utf-8")
+                else:
+                    schema_path.unlink()
+                (root / "docs" / "TASK_BOARD.md").write_text(
+                    "| task |\n| changed |\n",
+                    encoding="utf-8",
+                )
+
+                second = coordinator.refresh()
+                coordinator.refresh_for_watcher()
+                schema_path.write_text(
+                    json.dumps(schema, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                restored = coordinator.refresh()
+                current = coordinator.current()
+
+                self.assertEqual(first, second)
+                self.assertEqual(first, restored)
+                self.assertEqual(first, current)
+                self.assertEqual(1, core.inspect_calls)
+                self.assertEqual(1, core.complete_calls)
+
     def test_publication_is_atomic_keeps_direct_predecessor_and_skips_same_revision(self):
         first = support.snapshot_with_task()
         second = support.changed_snapshot(first, lifecycle="In Progress")

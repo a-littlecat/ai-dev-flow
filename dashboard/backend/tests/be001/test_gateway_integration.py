@@ -45,6 +45,44 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
         with self.assertRaises(ContractGatewayError):
             ContractGateway(REPO_ROOT).inspect(frozen)
 
+    def test_gateway_reads_an_external_skill_without_a_project_local_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            (task_dir / "TEST-001.md").write_text(
+                "\n".join(
+                    (
+                        "# TEST-001：external",
+                        "",
+                        "## Workflow Contract",
+                        "",
+                        "- `schema_version`: `adf/v0.7.0`",
+                        "- `task_id`: `TEST-001`",
+                        "- `task_type`: `code`",
+                        "- `task_class`: `B`",
+                        "- `lifecycle`: `Ready`",
+                        "- `review_status`: `Pending`",
+                        "- `ua_level`: `UA3`",
+                        "- `ua_status`: `Pending`",
+                        "- `commit_status`: `Uncommitted`",
+                        "- `merge_status`: `Unmerged`",
+                        "",
+                    )
+                ),
+                encoding="utf-8",
+                newline="\n",
+            )
+            loader = FrozenInputLoader()
+            gateway = ContractGateway(
+                root,
+                REPO_ROOT / "skills" / "ai-dev-flow",
+            )
+            with loader.lease(root) as frozen:
+                report = gateway.inspect(frozen)
+            self.assertEqual(["TEST-001"], [item.task_id for item in report.contracts])
+            self.assertFalse((root / "skills").exists())
+
     def test_gateway_source_does_not_import_private_reader(self):
         source = (
             REPO_ROOT
@@ -219,6 +257,36 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
         node = DashboardCore._nodes((contract,), {}, ())[0]
         self.assertIsNone(node.commit_status)
         self.assertIsNone(node.merge_status)
+
+    def test_invalid_reader_identity_is_omitted_and_invalid_enums_stay_unknown(self):
+        invalid_identity = CoreContract(
+            "",
+            "legacy without canonical identity",
+            "docs/tasks/legacy.md",
+            (("task_id", None),),
+            (),
+            (),
+        )
+        invalid_enums = CoreContract(
+            "LEGACY-002",
+            "legacy enum values",
+            "docs/tasks/LEGACY-002.md",
+            (
+                ("task_id", "LEGACY-002"),
+                ("lifecycle", "Merged"),
+                ("ua_status", "Not Started"),
+            ),
+            (),
+            (),
+        )
+        nodes = DashboardCore._nodes(
+            (invalid_identity, invalid_enums),
+            {},
+            (),
+        )
+        self.assertEqual(["LEGACY-002"], [node.task_id for node in nodes])
+        self.assertIsNone(nodes[0].lifecycle)
+        self.assertIsNone(nodes[0].ua_status)
 
 
 if __name__ == "__main__":

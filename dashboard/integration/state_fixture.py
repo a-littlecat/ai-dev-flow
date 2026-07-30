@@ -21,6 +21,9 @@ def apply_scenario(project: Path, scenario: str) -> None:
     if scenario == "invalid-utf8":
         atomic_replace_bytes(task_one, b"\xff")
         return
+    if scenario == "invalid-board-utf8":
+        atomic_replace_bytes(board, b"\xff")
+        return
     if scenario == "valid":
         one = matrix_task("STACK-001")
         two = matrix_task("STACK-002")

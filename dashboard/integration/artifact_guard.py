@@ -158,9 +158,101 @@ def working_digest(repo_root: Path, paths: Iterable[str]) -> tuple[str, dict[str
     return hashlib.sha256(payload).hexdigest(), hashes, missing
 
 
+def canonical_working_hashes(
+    repo_root: Path,
+    paths: Iterable[str],
+) -> tuple[dict[str, str], list[str]]:
+    """Return Git clean-filtered blob identities, independent of checkout EOL."""
+
+    hashes: dict[str, str] = {}
+    missing: list[str] = []
+    for relative in sorted(paths):
+        path = repo_root / Path(relative)
+        if not path.is_file():
+            missing.append(relative)
+            continue
+        output = _git(
+            repo_root,
+            "hash-object",
+            f"--path={relative}",
+            str(path),
+            text=True,
+        )
+        assert isinstance(output, str)
+        hashes[relative] = output.strip()
+    return hashes, missing
+
+
+def index_blob_hashes(
+    repo_root: Path,
+    paths: Iterable[str],
+) -> tuple[dict[str, str], list[str]]:
+    """Return stage-0 Git index blobs and paths with unmerged index stages."""
+
+    requested = tuple(sorted(paths))
+    if not requested:
+        return {}, []
+    output = _git(
+        repo_root,
+        "ls-files",
+        "--stage",
+        "-z",
+        "--",
+        *requested,
+    )
+    assert isinstance(output, bytes)
+    hashes: dict[str, str] = {}
+    unmerged: set[str] = set()
+    for record in output.split(b"\0"):
+        if not record:
+            continue
+        metadata, raw_path = record.split(b"\t", 1)
+        _mode, digest, stage = metadata.decode("ascii").split()
+        relative = raw_path.decode("utf-8", errors="strict")
+        if stage != "0":
+            unmerged.add(relative)
+            continue
+        hashes[relative] = digest
+    return hashes, sorted(unmerged)
+
+
+def baseline_blob_hashes(
+    repo_root: Path,
+    base_commit: str,
+    paths: Iterable[str],
+) -> dict[str, str]:
+    """Return Git object identities for candidate paths present at the base."""
+
+    hashes: dict[str, str] = {}
+    for relative in sorted(paths):
+        output = _git(
+            repo_root,
+            "rev-parse",
+            f"{base_commit}:{relative}",
+            text=True,
+        )
+        assert isinstance(output, str)
+        hashes[relative] = output.strip()
+    return hashes
+
+
+def digest_from_hashes(hashes: dict[str, str]) -> str:
+    payload = bytearray()
+    for relative, digest in sorted(hashes.items()):
+        payload.extend(relative.encode("utf-8"))
+        payload.extend(b"\0")
+        payload.extend(digest.encode("ascii"))
+        payload.extend(b"\n")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def verify(repo_root: Path, manifest_path: Path) -> dict[str, object]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("schema_version") != "ai-dev-flow/dashboard-artifact-manifest/v1":
+    schema_version = manifest.get("schema_version")
+    if schema_version not in {
+        "ai-dev-flow/dashboard-artifact-manifest/v1",
+        "ai-dev-flow/dashboard-artifact-manifest/v2",
+    }:
         raise ValueError("unsupported artifact manifest schema")
     if manifest.get("algorithm") != "sha256":
         raise ValueError("unsupported artifact manifest algorithm")
@@ -185,19 +277,111 @@ def verify(repo_root: Path, manifest_path: Path) -> dict[str, object]:
         actual_hashes = dict(expected_hashes)
     expected_count = int(manifest["file_count"])
     recorded_root = str(manifest["root_digest"])
-    ok = (
-        len(paths) == expected_count
-        and expected_root == recorded_root
+    candidate_paths: list[str] = []
+    candidate_mismatches: list[str] = []
+    candidate_index_mismatches: list[str] = []
+    baseline_file_count = len(paths)
+    recorded_baseline_root = recorded_root
+    baseline_preserved = (
+        baseline_file_count == expected_count
+        and expected_root == recorded_baseline_root
+    )
+    accepted_ok = (
+        baseline_preserved
         and actual_root == recorded_root
         and not missing
         and not changed
         and not added
     )
+    candidate_consistent: bool | None = None
+    candidate_root: str | None = None
+    if schema_version == "ai-dev-flow/dashboard-artifact-manifest/v2":
+        candidate = manifest.get("candidate")
+        if not isinstance(candidate, dict) or not isinstance(candidate.get("files"), dict):
+            raise ValueError("v2 artifact manifest requires candidate.files")
+        if candidate.get("hash_algorithm") != "git-blob":
+            raise ValueError("v2 candidate hash_algorithm must be git-blob")
+        candidate_files = {
+            str(relative): str(digest)
+            for relative, digest in candidate["files"].items()
+        }
+        candidate_paths = sorted(candidate_files)
+        root_prefixes = tuple(root.rstrip("/") + "/" for root in roots)
+        if any(
+            not relative.startswith(root_prefixes)
+            or Path(relative).is_absolute()
+            or ".." in Path(relative).parts
+            for relative in candidate_paths
+        ):
+            raise ValueError("candidate path escapes protected roots")
+        candidate_actual_hashes, candidate_missing = canonical_working_hashes(
+            repo_root,
+            candidate_paths,
+        )
+        candidate_mismatches = sorted(
+            relative
+            for relative, expected_hash in candidate_files.items()
+            if candidate_actual_hashes.get(relative) != expected_hash
+        )
+        indexed_hashes, unmerged_paths = index_blob_hashes(
+            repo_root,
+            candidate_paths,
+        )
+        baseline_candidates = sorted(set(candidate_paths) & set(paths))
+        base_blob_hashes = baseline_blob_hashes(
+            repo_root,
+            base_commit,
+            baseline_candidates,
+        )
+        candidate_index_mismatches = sorted(
+            set(unmerged_paths)
+            | {
+                relative
+                for relative, candidate_hash in candidate_files.items()
+                if (
+                    relative in base_blob_hashes
+                    and indexed_hashes.get(relative)
+                    not in {base_blob_hashes[relative], candidate_hash}
+                )
+                or (
+                    relative not in base_blob_hashes
+                    and relative in indexed_hashes
+                    and indexed_hashes[relative] != candidate_hash
+                )
+            }
+        )
+        recorded_baseline_root = str(manifest["baseline_root_digest"])
+        baseline_preserved = (
+            baseline_file_count == expected_count
+            and expected_root == recorded_baseline_root
+        )
+        candidate_root = digest_from_hashes(candidate_files)
+        actual_change_set = set(changed) | set(added)
+        candidate_consistent = (
+            baseline_preserved
+            and int(candidate.get("file_count", -1)) == len(candidate_files)
+            and candidate_root == str(candidate.get("root_digest"))
+            and set(candidate_paths) == actual_change_set
+            and not missing
+            and not candidate_missing
+            and not candidate_mismatches
+            and not candidate_index_mismatches
+        )
+        accepted_ok = (
+            baseline_preserved
+            and not missing
+            and not changed
+            and not added
+        )
+    ok = accepted_ok
     return {
         "schema_version": "ai-dev-flow/dashboard-artifact-verification/v1",
         "ok": ok,
+        "accepted_ok": accepted_ok,
+        "baseline_preserved": baseline_preserved,
+        "candidate_consistent": candidate_consistent,
         "base_commit": base_commit,
-        "file_count": len(paths),
+        "file_count": len(current_paths),
         "expected_file_count": expected_count,
         "recorded_root_digest": recorded_root,
         "baseline_root_digest": expected_root,
@@ -205,6 +389,10 @@ def verify(repo_root: Path, manifest_path: Path) -> dict[str, object]:
         "missing": missing,
         "changed": changed,
         "added": added,
+        "candidate_paths": candidate_paths,
+        "candidate_root_digest": candidate_root,
+        "candidate_mismatches": candidate_mismatches,
+        "candidate_index_mismatches": candidate_index_mismatches,
     }
 
 

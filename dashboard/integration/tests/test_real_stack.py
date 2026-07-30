@@ -62,6 +62,8 @@ class RealStackTests(unittest.TestCase):
                 str(LAUNCHER),
                 "--project-root",
                 str(self.project),
+                "--skill-root",
+                str(REPO_ROOT / "skills" / "ai-dev-flow"),
                 "--backend-port",
                 str(self.backend_port),
                 "--frontend-port",

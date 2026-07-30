@@ -42,7 +42,9 @@ def run_state_matrix() -> None:
         )
     with tempfile.TemporaryDirectory(prefix="dashboard-state-matrix-") as directory:
         project = create_matrix_project(Path(directory) / "project", REPO_ROOT)
-        apply_scenario(project, "invalid-utf8")
+        # Keep TASK schema declarations readable so startup compatibility can
+        # fail closed, while still exercising the legacy first-snapshot partial state.
+        apply_scenario(project, "invalid-board-utf8")
         env = os.environ.copy()
         env.update(
             {

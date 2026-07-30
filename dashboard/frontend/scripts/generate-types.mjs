@@ -10,13 +10,17 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
+import standaloneCode from "ajv/dist/standalone/index.js";
 import { compile } from "json-schema-to-typescript";
 
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = path.resolve(frontendRoot, "../contracts/dashboard-contracts-v1.schema.json");
-const outPath = path.join(frontendRoot, "src/generated/contracts.types.ts");
+const typesOutPath = path.join(frontendRoot, "src/generated/contracts.types.ts");
+const validatorsOutPath = path.join(frontendRoot, "src/generated/contracts.validators.ts");
 
 const ROOT_TYPES = ["DashboardSnapshot", "TaskDetail", "Health", "ErrorEnvelope", "SnapshotEvent"];
+const SCHEMA_ID = "ai-dev-flow/dashboard-contracts/v1";
 
 const BANNER = `/* eslint-disable */
 /**
@@ -27,13 +31,55 @@ const BANNER = `/* eslint-disable */
  */
 `;
 
+const VALIDATORS_BANNER = `/* eslint-disable */
+// @ts-nocheck
+/**
+ * GENERATED FILE — DO NOT EDIT.
+ * Ajv standalone validators generated at build time from
+ * dashboard/contracts/dashboard-contracts-v1.schema.json.
+ * No runtime schema compilation or unsafe-eval is required.
+ * Regenerate with: npm run codegen
+ */
+`;
+
+async function assertCurrent(pathname, expected, label) {
+  let current = "";
+  try {
+    current = await readFile(pathname, "utf-8");
+  } catch {
+    current = "";
+  }
+  if (current !== expected) {
+    console.error(`${label} is out of date; run npm run codegen`);
+    process.exitCode = 1;
+    return false;
+  }
+  return true;
+}
+
+function browserEsmStandaloneCode(ajv, refs) {
+  const imports = [];
+  const code = standaloneCode(ajv, refs).replace(
+    /const (func[0-9]+) = require\("([^"]+)"\)\.default;/g,
+    (_match, name, modulePath) => {
+      const specifier = modulePath.endsWith(".js") ? modulePath : `${modulePath}.js`;
+      imports.push(`import ${name} from "${specifier}";`);
+      return "";
+    },
+  );
+  if (code.includes("require(")) {
+    throw new Error("standalone validator contains an unsupported CommonJS runtime import");
+  }
+  return `${imports.join("\n")}\n${code}`;
+}
+
 async function main() {
   const check = process.argv.includes("--check");
   const raw = await readFile(schemaPath, "utf-8");
   const schema = JSON.parse(raw);
 
   const seen = new Set();
-  let output = BANNER;
+  let typesOutput = BANNER;
   for (const name of ROOT_TYPES) {
     if (!schema.$defs || !schema.$defs[name]) {
       throw new Error(`schema is missing $defs.${name}; the wire contract changed`);
@@ -58,26 +104,47 @@ async function main() {
         continue;
       }
       seen.add(match[1]);
-      output += `\n${block.trim()}\n`;
+      typesOutput += `\n${block.trim()}\n`;
     }
   }
 
+  const ajv = new Ajv2020({
+    allErrors: true,
+    strict: true,
+    code: { source: true, esm: true },
+  });
+  ajv.addSchema(schema, SCHEMA_ID);
+  const validatorRefs = Object.fromEntries(
+    ROOT_TYPES.map((name) => [`validate${name}`, `${SCHEMA_ID}#/$defs/${name}`]),
+  );
+  const validatorsOutput =
+    `${VALIDATORS_BANNER}${browserEsmStandaloneCode(ajv, validatorRefs)}\n`;
+
   if (check) {
-    let current = "";
-    try {
-      current = await readFile(outPath, "utf-8");
-    } catch {
-      current = "";
-    }
-    if (current !== output) {
-      console.error("src/generated/contracts.types.ts is out of date; run npm run codegen");
+    const results = await Promise.all([
+      assertCurrent(
+        typesOutPath,
+        typesOutput,
+        "src/generated/contracts.types.ts",
+      ),
+      assertCurrent(
+        validatorsOutPath,
+        validatorsOutput,
+        "src/generated/contracts.validators.ts",
+      ),
+    ]);
+    if (results.includes(false)) {
       process.exit(1);
     }
-    console.log("generated types are in sync with the contract schema");
+    console.log("generated types and validators are in sync with the contract schema");
     return;
   }
-  await writeFile(outPath, output);
-  console.log(`wrote ${path.relative(frontendRoot, outPath)}`);
+  await Promise.all([
+    writeFile(typesOutPath, typesOutput),
+    writeFile(validatorsOutPath, validatorsOutput),
+  ]);
+  console.log(`wrote ${path.relative(frontendRoot, typesOutPath)}`);
+  console.log(`wrote ${path.relative(frontendRoot, validatorsOutPath)}`);
 }
 
 main().catch((error) => {
