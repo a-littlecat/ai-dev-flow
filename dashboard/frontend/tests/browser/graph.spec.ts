@@ -41,6 +41,61 @@ test.describe("relationship graph", () => {
     await shot(page, "graph/overview");
   });
 
+  test("selected task stays prominent in both themes, including keyboard focus", async ({ page }) => {
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await openGraph(page);
+      const svg = page.locator(".graph-svg");
+      await svg.focus();
+      await svg.press("ArrowRight");
+
+      const selected = node(page, "TASK-ALPHA");
+      const frame = selected.locator(".node-frame");
+      await expect(selected).toHaveClass(/node-selected/);
+      await expect(selected.locator(".node-selected-tag")).toHaveText("✓ 已选中");
+      await expect(frame).toHaveCSS("stroke-width", "3px");
+      await expect(selected.locator(".node-title")).toHaveCSS(
+        "fill",
+        scheme === "light" ? "rgb(28, 35, 43)" : "rgb(230, 234, 239)",
+      );
+
+      // Arrow navigation selects and focuses the SVG node through the real
+      // keyboard handler, so the test proves the :focus-visible combination.
+      await expect(selected).toBeFocused();
+      await expect.poll(() => selected.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
+      await expect(frame).toHaveCSS("stroke-width", "3px");
+
+      // ALPHA has three direct canonical relationships in the fixture. The
+      // other three remain visible and keep their type encoding, but recede so
+      // the selected task can be found in a dense graph.
+      await expect(page.locator(".edge-selected-context")).toHaveCount(3);
+      const backgroundEdges = page.locator(".edge-selection-dimmed");
+      await expect(backgroundEdges).toHaveCount(3);
+      await expect(backgroundEdges.first()).toHaveCSS("opacity", "0.3");
+      await expect(backgroundEdges.locator(".edge-line")).toHaveCount(3);
+      await shot(page, `graph/selected-context-${scheme}`);
+
+      await page.locator(".graph-svg").press("Escape");
+      await expect(page.locator(".node-selected-tag")).toHaveCount(0);
+      await expect(page.locator(".edge-selected-context")).toHaveCount(0);
+      await expect(page.locator(".edge-selection-dimmed")).toHaveCount(0);
+    }
+  });
+
+  test("explicit selection overrides active graph dimming", async ({ page }) => {
+    await openGraph(page);
+    await page.getByRole("button", { name: /下一动作（1）/ }).click();
+    await expect(node(page, "TASK-ALPHA")).toHaveClass(/node-dimmed/);
+
+    await node(page, "TASK-ALPHA").click();
+    const selected = node(page, "TASK-ALPHA");
+    await expect(selected).toHaveClass(/node-selected/);
+    await expect(selected).not.toHaveClass(/node-dimmed/);
+    await expect(selected).toHaveCSS("opacity", "1");
+    await expect(page.locator(".edge-selected-context")).toHaveCount(3);
+    await expect(page.locator(".edge-selected-context.edge-dimmed")).toHaveCount(0);
+  });
+
   test("state is encoded by text, dash pattern and marker, not colour alone", async ({ page }) => {
     await openGraph(page);
     // Dash patterns differ per relationship type; conflicts carry no arrow.
@@ -217,6 +272,12 @@ test.describe("relationship graph", () => {
     await expect(node(page, "TASK-ALPHA")).not.toHaveClass(/node-dimmed/);
     await expect(node(page, "TASK-GAMMA")).toHaveClass(/node-dimmed/);
     await expect(node(page, "TASK-DELTA")).toHaveClass(/node-dimmed/);
+    const selectionAndFocusDimmed = page.locator(".edge-dimmed.edge-selection-dimmed");
+    expect(await selectionAndFocusDimmed.count()).toBeGreaterThan(0);
+    await expect(selectionAndFocusDimmed.first()).toHaveCSS("opacity", "0.15");
+    const selectedEdgeInsideFocus = page.locator(".edge-selected-context:not(.edge-dimmed)");
+    expect(await selectedEdgeInsideFocus.count()).toBeGreaterThan(0);
+    await expect(selectedEdgeInsideFocus.first()).toHaveCSS("opacity", "1");
     await shot(page, "graph/focus-upstream");
 
     await page.locator(".graph-svg").press("Escape");

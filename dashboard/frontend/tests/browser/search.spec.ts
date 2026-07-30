@@ -86,19 +86,70 @@ test.describe("search feedback (UA4-001-P1-001)", () => {
     });
   }
 
-  test("search x upstream focus: the match outside the focus set is not dimmed", async ({ page }) => {
+  for (const focusCase of [
+    {
+      direction: "upstream",
+      buttonName: "只高亮选中节点的上游链",
+      banner: "聚焦上游：TASK-BETA",
+      selected: "TASK-BETA",
+      query: "beta",
+      context: ["TASK-ALPHA"],
+      dimmed: ["TASK-GAMMA", "TASK-DELTA", "TASK-EPSILON"],
+      lifecycle: null,
+    },
+    {
+      direction: "downstream",
+      buttonName: "只高亮选中节点的下游链",
+      banner: "聚焦下游：TASK-DELTA",
+      selected: "TASK-DELTA",
+      query: "delta",
+      context: ["TASK-GAMMA"],
+      dimmed: ["TASK-ALPHA", "TASK-BETA", "TASK-EPSILON"],
+      lifecycle: "Review",
+    },
+  ] as const) {
+    test(`search x ${focusCase.direction} focus keeps the full focus chain visible`, async ({ page }) => {
+      await openGraph(page);
+      if (focusCase.lifecycle !== null) {
+        await page.locator(".toolbar-filter-toggle").click();
+        await page.locator(`#filter-lifecycles-${focusCase.lifecycle}`).check();
+      }
+      const search = page.getByPlaceholder("搜索任务 ID / 标题…");
+      await search.fill(focusCase.query);
+      await node(page, focusCase.selected).click();
+      await page.getByRole("button", { name: focusCase.buttonName }).click();
+      await expect(page.locator(".focus-banner")).toContainText(focusCase.banner);
+
+      await expect(node(page, focusCase.selected)).toHaveClass(/node-match/);
+      await expect(node(page, focusCase.selected)).not.toHaveClass(/node-dimmed/);
+      for (const taskId of focusCase.context) {
+        await expect(node(page, taskId)).not.toHaveClass(/node-dimmed/);
+      }
+      for (const taskId of focusCase.dimmed) {
+        await expect(node(page, taskId)).toHaveClass(/node-dimmed/);
+      }
+      await shot(page, `search/${focusCase.direction}-focus-with-search`);
+    });
+  }
+
+  test("changing search clears a focus anchored to the previous selection", async ({ page }) => {
     await openGraph(page);
     await node(page, "TASK-BETA").click();
     await page.getByRole("button", { name: "只高亮选中节点的上游链" }).click();
     await expect(page.locator(".focus-banner")).toContainText("聚焦上游：TASK-BETA");
 
     const search = page.getByPlaceholder("搜索任务 ID / 标题…");
-    await search.click();
-    await page.keyboard.type("gamma");
-    // TASK-GAMMA is outside the upstream closure of TASK-BETA, yet the search
-    // match wins over the focus dimming.
+    await search.fill("gamma");
+    await expect(page.locator(".focus-banner")).toHaveCount(0);
     await expectGammaIsTheOnlyMatch(page);
-    await shot(page, "search/gamma-focus-upstream");
+
+    await search.fill("");
+    await node(page, "TASK-BETA").click();
+    await page.getByRole("button", { name: "只高亮选中节点的上游链" }).click();
+    await search.fill("zzzzz");
+    await expect(page.locator(".focus-banner")).toHaveCount(0);
+    await expect(page.locator(".graph-empty-text")).toHaveText("没有匹配「zzzzz」的任务");
+    await expect(page.locator(".node-dimmed")).toHaveCount(5);
   });
 
   test("zero results show the count, an in-graph empty state and clear the detail", async ({ page }) => {
