@@ -13,7 +13,8 @@
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -88,6 +89,7 @@
 ## Outcome
 
 - 提交事实证据：随父任务形成提交 `47548134ad4168850f919f53a4bf5453dc818bde`。
+- 合并目标与事实证据：随父任务通过 merge commit `17ab9be39da028ac08dab8ced267125498db0f56` 合入本地 `main`。
 
 - Base / Diff：base=51d4eaa30dfb7a88dc0a7bb035b31beccabab053;diff=working-tree-repair-review-1
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-portable-001` / `codex/dashboard-portable-001`。
