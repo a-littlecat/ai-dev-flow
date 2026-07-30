@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-30
 > - 当前模式：`REL-003` v0.9.0 发布收口
-> - 当前阶段：REL-003 `Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Closed`
+> - 当前阶段：REL-003 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Not Released / Not Closed`
 > - 当前方案：`docs/tasks/REL-003-release-v090-dashboard.md`
 
 ## 当前授权边界
@@ -147,7 +147,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Accepted | 高 | 高 | FE-001 Accepted/Committed/Merged/Review/UA；INTEGRATE-P1-001 | Passed / P0-P3=`0/0/1/0` | UA4 Passed / User Confirmed | feature `3c8160f` / merge `2ac8b3b` / Committed / Merged local main / Not Pushed / Not Closed | [DASHBOARD-FE-001-REPAIR-001](tasks/DASHBOARD-FE-001-REPAIR-001.md) |
 | DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Accepted | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged local main `acd0ddd` | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
 | DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Accepted | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | feature `5131d03` / gates `35ab778` / merge `4f60dd3` / Committed / Merged local main / Not Pushed / Not Released / Not Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
-| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Accepted | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | candidate `12a07fe` / Committed / Unmerged / Not Released / Not Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
+| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Accepted | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | candidate `12a07fe` / merge `0c4d8b2` / Committed / Merged / Local Sync Verified / Not Released / Not Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -162,7 +162,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`REL-003` 已完成自动验证、独立 Review 与 UA7。按用户当前明确授权，下一动作是将发布分支合入本地 `main`，同步已存在的本机 Skill，推送 `main`，创建并推送 annotated tag `v0.9.0`，再创建正式 GitHub Release；不删除分支/Worktree，不强推或写 `Closed`。
+`REL-003` 已完成自动验证、独立 Review、UA7、本地合并与本机 Skill 同步。按用户当前明确授权，下一动作是推送 `main`，创建并推送 annotated tag `v0.9.0`，再创建正式 GitHub Release；不删除分支/Worktree，不强推或写 `Closed`。
 
 ## 停止条件
 

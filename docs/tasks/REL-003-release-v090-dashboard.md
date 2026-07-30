@@ -14,7 +14,7 @@
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
 
 ## 目标与边界
@@ -50,7 +50,7 @@
 - [x] CHANGELOG 准确覆盖 Dashboard 只读关系图、确定性调度、实时本地 API/UI、集成门禁以及 v0.8.3 后的 Contract 校验修复。
 - [x] Dashboard 集成、frontend、backend、ai-dev-flow 全量验证通过；workflow lint、quick_validate、版本残留、UTF-8、链接、敏感信息和 diff hygiene 检查通过。
 - [x] 隔离只读 Review 无开放 P0/P1，UA7 授权与发布边界写回。
-- [ ] 已存在本机 Skill 目标的全部源文件 `Missing=0 / Changed=0`；目标专有文件不删除，未知目标不创建。
+- [x] 已存在本机 Skill 目标的全部源文件 `Missing=0 / Changed=0`；目标专有文件不删除，未知目标不创建。
 - [ ] 本地/远端 `main` 一致，annotated tag `v0.9.0` 本地与远端 peeled commit 一致，GitHub Release 为正式发布。
 - [x] `git diff --check` 通过，diff 只归属当前 TASK。
 
@@ -65,12 +65,22 @@
 - 验证证据：版本候选提交=`12a07fec2e2d1ba1b714dc7b8f25d71f9a90aa4d`；精确 11 文件，未包含产品代码、依赖或生成物。
 - Review findings：隔离只读 Review session `019fb0c6-0447-76a3-b675-b6b668be68cf` 为 `Passed`，P0/P1/P2/P3=`0/0/1/0`；唯一 P2 为 TASK_BOARD 顶部当前模式/下一动作过时，已按 Reviewer 建议同步为 REL-003 当前状态。
 - UA 动作与结果：UA7 Passed；用户在获知 `v0.9.0` 收口、本机 Skill 同步、push、tag 与正式 GitHub Release 的完整动作后明确回复“那进行吧”，记为 `User Confirmed`；不包含 `Closed` 或删除。
-- 状态边界：`Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Closed`。
+- 合并目标与事实证据：发布分支通过 merge commit `0c4d8b2959141a12b36e5e7a41044e1cfb06ada6` 合入本地 `main`。
+- 状态边界：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Not Released / Not Closed`。
 - 剩余风险：本机 Skill 目标清单须以执行时实盘存在路径为准；目标专有文件不得删除。全仓 Legacy lint 错误为发布前已存在债，本次不扩范围改写历史 CONTRACT TASK。
-- 下一步：按已授权顺序合入本地 `main`，同步已存在本机 Skill，再 push/tag/Release。
+- 下一步：推送 `main`，创建并推送 `v0.9.0` annotated tag，再创建正式 GitHub Release。
 
 <a id="rel-003-ua7-2026-07-30"></a>
 ## UA7 授权与验收（2026-07-30）
 
 - 用户已明确授权执行此前说明的完整收口方案：`v0.9.0` 发布身份、本机 Skill 同步、远端 `main` push、annotated tag 和正式 GitHub Release。
 - 自动验证与独立 Review 已先行通过；本次 UA7 只授权上述发布动作，不授权删除分支/Worktree、强制推送、历史改写或 `Closed`。
+
+## 本地合并与 Skill 同步收据（2026-07-30）
+
+- 本地合并：`codex/rel-003-v090-dashboard` 通过 `--no-ff` merge `0c4d8b2959141a12b36e5e7a41044e1cfb06ada6` 合入 `main`。
+- 合并后验证：Skill validator 通过；ai-dev-flow `85/85`；REL-003 lint=`0 error / 0 violation / 1 authority warning`；`VERSION=0.9.0`；仓库工作区在同步后保持无额外改动。
+- 实盘入口：`.agents`、`.codex`、OpenCode、cc-switch 共 4 个；其中 `.codex` 与 OpenCode 是指向 `.agents` 的 Junction，因此实际写入 2 份物理副本。
+- 同步结果：4 个入口均为 `VERSION=0.9.0`，92 个仓库跟踪源文件全部 `Missing=0 / Changed=0`，`CORE.md` SHA256 均为 `96769DE002BF9920E2899DAEEEA86C078F43103F4E7895FE3762EFAA7FBD1EEF`，4/4 Skill validator 通过。
+- 保留项：`.agents` 物理副本原有 3 个 `scripts/__pycache__/*.pyc`，因此 `.agents`、`.codex`、OpenCode 显示 `Extra=3`；cc-switch 为 `Extra=0`。这些目标专有缓存未删除，不参与源文件 parity。
+- 备份：`C:\Users\92336\.codex\visualizations\2026\07\29\019facae-d2e9-7c62-aa5d-b018c5096a51\skill-sync-backup-v0.9.0-20260730-1017`。
