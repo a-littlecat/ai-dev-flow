@@ -146,16 +146,17 @@
 
 ## Outcome
 
-- Base / Diff：base=9fe4c4453af1525a6a47adc856575a70c8437911;diff=working-tree
-- 修改文件：新增 `dashboard/integration/**` 的 artifact guard、loopback launcher、真实栈 Python/Chrome 测试、Windows bounded atomic replace 和冻结 benchmark runner；新增 `dashboard/README.md`；更新本 TASK 与 TASK_BOARD 投影。三个 Accepted artifact 目录没有 diff。
-- 验证证据：artifact guard `100/100`、working/root digest `65e0fae81347f40105ca0bd70900a63fbb06a663641ff0a9e02e39412535f3cf` 且 `added=[] / changed=[] / missing=[]`；Repair 后集成 Python `15/15`，Dashboard backend `130/130`、公共 Reader/治理 `85/85`、前端 unit `81/81`、build/typecheck/lint/codegen 与 Chrome `79/79` 全部通过；真实当前项目 Chrome 三合同视口 `3/3`、临时真实项目异常状态矩阵 `1/1` 通过，退出后 5173/8765 无监听残留。当前 Python 3.13 双跑仅为补充证据；冻结 Python 3.12 正式证据引用已 Accepted 的 BE repair 双跑，是否足以关闭本轮 `P1-002` 等待独立复审。
-- Review findings：规划阶段 `DASHBOARD-TASKS-P1-003` Closed；工程阻断 `DASHBOARD-INTEGRATE-P1-001` 已由 `DASHBOARD-FE-001-REPAIR-001` 的独立 Review 与 UA4 关闭；本轮集成实现独立 Review 待执行。
-- UA 动作与结果：UA6 Pending；自动验证已经完成，必须等待本轮实现独立 Review Passed 后才向用户发起。
+- Base / Diff：base=59fe6d6dcfdcf626ec76bf5e500ff1f5b371bc19;diff=2ae25e9bcba2aa27e6dc2868e855471e95f20c8e
+- 修改文件：新增只读本地 Dashboard 集成启动器、Accepted artifact guard、真实栈/浏览器状态矩阵、Windows reference benchmark、进程树清理和对应回归测试；补充本地启动与验证文档。
+- 验证证据：最终分支全量 frontend verify、backend `130/130`、ai-dev-flow `85/85`、集成 `35/35` 均通过；合并后集成再次 `35/35`，Artifact Guard 测试前后均为 `100/100` 且 changed/added/missing=`0/0/0`。
+- Review findings：最终隔离只读 Review session `019fb0b3-cefa-73f3-93bd-afa02ea7a9e4` 为 `Passed`，P0/P1/P2/P3=`0/0/1/0`；唯一 P2 为旧状态文字不一致，已按 Reviewer 建议机械同步。
+- UA 动作与结果：用户已在真实本地页面完成 UA6 并明确回复“验收通过”；`UA6 Passed / User Confirmed / Accepted`。
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-integrate-001`，分支 `codex/dashboard-integrate-001`。
-- 回滚方式：当前全部集成实现仍为未提交 diff；如用户明确要求放弃，可在精确确认文件清单后移除本任务新增文件并还原本 TASK 投影，当前未执行任何删除或历史改写。
-- 状态边界：In Progress / Review Pending / UA6 Pending / Uncommitted / Unmerged；未 Accepted、未交付、未发布、未 Closed。
-- 剩余风险：自动测试与截图不能代替用户判断真实关系图是否直观；本轮实现独立 Review 和用户 UA6 尚未完成。
-- 下一步：对冻结 implementation diff 执行隔离只读 Review；无开放 P0/P1 后转为 `Review Passed / UA6 Pending` 并提供实机验收步骤。
+- 合并目标与事实证据：本地 `main`；merge=`4f60dd3d8197f7e545b3668107d1a7772d66b6f7`；merge receipt=`1acd242`。
+- 回滚方式：通过新的逆向提交回滚 merge `4f60dd3`，不改写 Git 历史；当前未执行回滚。
+- 状态边界：`Accepted / Review Passed / UA6 Passed / User Confirmed / Committed / Merged local main / Not Pushed / Not Released / Not Closed`。
+- 剩余风险：本机没有冻结 profile 要求的 Python 3.11/3.12，因此本次未重新生成正式 benchmark；既有 Python 3.12 双轮性能收据继续有效，且 Artifact Guard 证明受保护实现与已验收基线一致。
+- 下一步：按用户当前授权执行 `v0.9.0` 发布收口、本机 Skill 同步、远端 push/tag/Release；不删除 Worktree/分支，不写 Closed。
 
 ## 实施启动收据（2026-07-29）
 
