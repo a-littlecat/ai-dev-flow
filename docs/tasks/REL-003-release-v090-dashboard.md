@@ -12,7 +12,7 @@
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
 - `close_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 
@@ -55,14 +55,15 @@
 
 ## Outcome
 
-- Base / Diff：base=1cee70e33e61e2f2cdc6be08c7ee7694dac36975;diff=working-tree
+- Base / Diff：base=1cee70e33e61e2f2cdc6be08c7ee7694dac36975;diff=12a07fec2e2d1ba1b714dc7b8f25d71f9a90aa4d
 - 修改文件：VERSION、CHANGELOG、根目录中英文 README、Skill README、两份 TASK 模板、v0.8 迁移说明、版本一致性测试、本 TASK 与 TASK_BOARD；未修改产品代码、Contract schema、policy 或依赖。
 - 验证证据：Skill validator `Skill is valid!`；ai-dev-flow `85/85`、backend `130/130`、integration `35/35`、frontend unit `82/82`、Chrome `83/83` 均通过，codegen/typecheck/ESLint/build 通过。
 - 验证证据：Artifact Guard 测试前后均为 `100/100` 且 changed/added/missing=`0/0/0`；当前任务 lint=`0 error / 0 violation / 2 expected warnings`；全仓 lint 的 2 个 Board drift 已修正，剩余 `19 errors / 0 violations / 32 warnings` 均来自既有 Legacy CONTRACT-001～006 解析债。
 - 验证证据：当前版本入口 `0.8.3` 残留为 0；10 个改动中的已跟踪文件全部严格 UTF-8；相对 Markdown 链接缺失 0；secret-shaped diff 命中 0；`git diff --check` 通过。
 - 验证证据：`npm ci` 未修改锁文件；npm audit 报告既有依赖树 `3 moderate / 6 high / 1 critical`，本任务不新增、升级或修复依赖。
+- 验证证据：版本候选提交=`12a07fec2e2d1ba1b714dc7b8f25d71f9a90aa4d`；精确 11 文件，未包含产品代码、依赖或生成物。
 - Review findings：Pending。
 - UA 动作与结果：UA7 Pending；用户已授权执行发布动作，但需先完成自动验证和独立 Review。
-- 状态边界：`Review / Review Pending / UA7 Pending / Uncommitted / Unmerged / Not Released / Not Closed`。
+- 状态边界：`Review / Review Pending / UA7 Pending / Committed / Unmerged / Not Released / Not Closed`。
 - 剩余风险：本机 Skill 目标清单须以执行时实盘存在路径为准；目标专有文件不得删除。全仓 Legacy lint 错误为发布前已存在债，本次不扩范围改写历史 CONTRACT TASK。
-- 下一步：提交版本候选并执行隔离只读 Review。
+- 下一步：执行隔离只读 Review。
