@@ -61,7 +61,7 @@
 - [x] 独立只读 Review 无开放 P0/P1。
 - [x] 发布候选已 commit 并合入本地 `main`。
 - [x] 本机已存在 Skill 目标与仓库发行源相对 manifest 一致，且不删除目标特有文件。
-- [ ] `main`、annotated tag `v0.9.1` 和正式 GitHub Release 已推送/创建并复核。
+- [x] `main`、annotated tag `v0.9.1` 和正式 GitHub Release 已推送/创建并复核。
 
 ## Outcome
 
@@ -76,7 +76,7 @@
 - Review findings：首轮只读 Review session `019fb2df-fd06-79d1-9856-47a445a79b98` 为 `Needs Fix / P0-P3=0/1/1/0`；`REL004-RVW-P1-001` 与 `REL004-RVW-P2-002` 均已修复。第二轮只读 Review session `019fb2ea-9ffa-7281-a006-943cb1022bb8` 为 `Passed / P0-P3=0/0/0/0`，无新增 finding。
 - UA 动作与结果：用户已观察两个真实项目页面并明确宣告验收通过，同时明确授权提交、合并、本机同步、push 与正式发版；记录 `UA7 Passed / User Confirmed`。
 - 合并目标与事实证据：发布分支 `codex/rel-004-v091-portable-dashboard` 通过 merge commit `139864d5f2cc6e613d710c59a05d3aa691de9492` 合入本地 `main`。
-- 当前状态：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Not Released / Not Closed`。
+- 当前状态：`Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.1 / Not Closed`。
 
 ## 本机 Skill 同步收据（2026-07-30）
 
@@ -85,3 +85,10 @@
 - parity：4 个入口均为 `VERSION=0.9.1`；相对源包 129 个非缓存文件全部 `Missing=0 / Changed=0 / Extra=0`。
 - 固定摘要：`dashboard/runtime-manifest.json` SHA256=`b601fb243014fff4e1d11e3cf78a3a793d40898402981e8156e02297f2709600`；`references/CORE.md` SHA256=`96769de002bf9920e2899daeeea86c078f43103f4e7895fe3762efaa7fbd1eef`。
 - 同步前备份：`C:\Users\92336\.codex\visualizations\2026\07\30\019fb109-200a-7a20-989b-e57e306fe230\skill-sync-backup-v0.9.1-20260730-2018`。
+
+## v0.9.1 正式发布收据（2026-07-30）
+
+- `main` 首次发布 push：本地与远端均为 `751dc843caab5d1553577fad93d5be48a571409d`，由 `51d4eaa` fast-forward 推送，未强推。
+- annotated tag：本地/远端 tag object 均为 `6f096ce2793ceec8ec6d6b511cbe423676897fd9`；本地/远端 peeled target 均为发布内容 merge commit `139864d5f2cc6e613d710c59a05d3aa691de9492`。
+- GitHub Release：`ai-dev-flow v0.9.1`，`isDraft=false`、`isPrerelease=false`，发布时间 `2026-07-30T12:17:53Z`，URL：`https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.1`。
+- 发布边界：本收据提交在 tag 之后推送到 `main`，不会移动或改写 `v0.9.1`；任务保持 `Accepted / Not Closed`，分支和 Worktree 保留。
