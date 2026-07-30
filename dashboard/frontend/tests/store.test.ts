@@ -276,6 +276,21 @@ describe("AppStore view state", () => {
     expect(store.get().highlight).toBe("none");
   });
 
+  it("clears a stale focus anchor when selection moves to another task", () => {
+    const store = new AppStore();
+    store.setSnapshot(twoTaskSnapshot(), null, null);
+    store.selectTask("TASK-A");
+    store.setFocus("upstream", "TASK-A");
+
+    store.selectTask("TASK-B");
+    expect(store.get().selectedTaskId).toBe("TASK-B");
+    expect(store.get().focus).toEqual({ mode: "all", taskId: null });
+
+    store.setFocus("downstream", "TASK-B");
+    store.selectTask("TASK-B");
+    expect(store.get().focus).toEqual({ mode: "downstream", taskId: "TASK-B" });
+  });
+
   it("resetViewState clears selection, focus and highlight (SSE reset semantics)", () => {
     const store = new AppStore();
     store.setSnapshot(twoTaskSnapshot(), null, null);

@@ -116,27 +116,46 @@ export class GraphView {
       state.focus.mode !== "all" && state.focus.taskId
         ? focusClosure(derived, state.focus.taskId, state.focus.mode)
         : null;
-    // A non-empty text search takes priority over highlight/focus dimming —
-    // but never over the structural filters: the single result set consumed by
-    // match badges, dimming, the toolbar count, the empty state and the
-    // detail reconciliation is `visible` (structure AND text, from
-    // filterTasks). Nodes outside it are always dimmed; nodes inside it are
-    // never dimmed, regardless of highlight/focus state.
     const searchText = state.filters.text.trim();
     const searchMatched = searchText !== "" ? visible : null;
-    const dimmed = (taskId: string): boolean =>
+    // Search matches and an explicitly requested focus chain are both direct
+    // user intent, so keep their union prominent. Structural filters still
+    // win: clearing only the text term gives the maximum node set that focus
+    // is allowed to reveal.
+    const structurallyVisible =
       searchMatched !== null
-        ? !searchMatched.has(taskId)
+        ? filterTasks(snapshot, derived, { ...state.filters, text: "" })
+        : visible;
+    const selectedTaskId = state.selectedTaskId;
+    const dimmed = (taskId: string): boolean => {
+      // Explicit selection is the strongest graph intent. Keeping the selected
+      // node prominent prevents search/highlight/focus opacity from hiding the
+      // very task whose detail is open.
+      if (taskId === selectedTaskId) {
+        return false;
+      }
+      return searchMatched !== null
+        ? !structurallyVisible.has(taskId) ||
+            (!searchMatched.has(taskId) && (focusSet === null || !focusSet.has(taskId)))
         : !visible.has(taskId) ||
-          (highlighted !== null && !highlighted.has(taskId)) ||
-          (focusSet !== null && !focusSet.has(taskId));
+            (highlighted !== null && !highlighted.has(taskId)) ||
+            (focusSet !== null && !focusSet.has(taskId));
+    };
 
     for (const edge of snapshot.edges) {
       // 关系类型筛选只隐藏不匹配的边，不改变节点可见性。
       if (state.filters.edgeTypes.length > 0 && !state.filters.edgeTypes.includes(edge.type)) {
         continue;
       }
-      this.renderEdge(edge, dimmed(edge.source_task_id) || dimmed(edge.target_task_id));
+      const selectedContext =
+        selectedTaskId !== null &&
+        (edge.source_task_id === selectedTaskId || edge.target_task_id === selectedTaskId);
+      this.renderEdge(
+        edge,
+        selectedContext ? false : dimmed(edge.source_task_id) || dimmed(edge.target_task_id),
+        selectedContext,
+        selectedTaskId !== null && !selectedContext,
+      );
     }
     for (const assessment of snapshot.parallel_assessments) {
       this.renderAssessment(assessment, state.highlight === "candidates");
@@ -197,7 +216,8 @@ export class GraphView {
     });
     group.dataset.taskId = task.task_id;
     const classes = ["node"];
-    if (state.selectedTaskId === task.task_id) {
+    const selected = state.selectedTaskId === task.task_id;
+    if (selected) {
       classes.push("node-selected");
     }
     if (searchMatch) {
@@ -216,6 +236,7 @@ export class GraphView {
       classes.push(`has-${worst}`);
     }
     group.setAttribute("class", classes.join(" "));
+    group.setAttribute("aria-pressed", String(selected));
 
     const action = derived.primaryActionByTask.get(task.task_id) ?? null;
     const diagnostics = derived.diagnosticsByTask.get(task.task_id) ?? [];
@@ -226,6 +247,7 @@ export class GraphView {
       diagnostics.length > 0 ? `诊断 ${diagnostics.length} 条` : "无诊断",
       task.freshness !== "fresh" ? FRESHNESS_LABEL[task.freshness] ?? task.freshness : "",
       searchMatch ? "搜索匹配" : "",
+      selected ? "当前选中" : "",
     ].filter(Boolean);
     group.setAttribute("aria-label", ariaParts.join("；"));
     const title = svgEl("title");
@@ -260,6 +282,9 @@ export class GraphView {
         : `下一步：${label(ACTION_KIND_LABEL, action.action_kind)} · ${label(ELIGIBILITY_LABEL, action.eligibility)}`
       : "下一步：无建议";
     group.append(svgText({ x: "12", y: "74", class: `node-action eligibility-${action?.eligibility ?? "none"}` }, actionText));
+    if (selected) {
+      group.append(svgText({ x: "12", y: "92", class: "node-selected-tag" }, "✓ 已选中"));
+    }
 
     if (diagnostics.length > 0 && worst) {
       const badge = svgEl("g", { class: `node-diag-badge severity-${worst}` });
@@ -292,7 +317,12 @@ export class GraphView {
     this.nodeElements.set(task.task_id, group);
   }
 
-  private renderEdge(edge: RelationshipEdge, dimmedOut: boolean): void {
+  private renderEdge(
+    edge: RelationshipEdge,
+    dimmedOut: boolean,
+    selectedContext: boolean,
+    selectionDimmed: boolean,
+  ): void {
     if (!this.layout) {
       return;
     }
@@ -309,6 +339,11 @@ export class GraphView {
     const classes = ["edge", `edge-${edge.type}`];
     if (dimmedOut) {
       classes.push("edge-dimmed");
+    }
+    if (selectedContext) {
+      classes.push("edge-selected-context");
+    } else if (selectionDimmed) {
+      classes.push("edge-selection-dimmed");
     }
     if (this.layout.cycleEdgeIds.has(edge.edge_id)) {
       classes.push("edge-cycle");
