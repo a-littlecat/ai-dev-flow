@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/DASHBOARD-PORTABLE-001.md#dashboard-portable-001-ua6-复验通过-2026-07-30`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## Scheduling
@@ -64,13 +64,14 @@
 
 ## Outcome
 
-- Base / Diff：base=34c79ea;diff=current-release-candidate
+- Base / Diff：base=34c79ea;diff=0875bb39f051cc931792f9c414286ca8c1760667
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\rel-004-v091-portable-dashboard` / `codex/rel-004-v091-portable-dashboard`。
 - 回滚方式：候选提交前逆向应用本 TASK scope；发布后只通过新提交和新版本修正，不移动 tag、不改写历史。
 - 修改文件：根目录中英文 README、Dashboard README、VERSION、CHANGELOG、Skill README、两份 TASK 模板、v0.8 迁移说明、版本一致性测试、runtime manifest、本 TASK 与 TASK_BOARD；未修改 Dashboard 功能代码、schema、policy、依赖或锁文件。
 - 验证证据：backend `144/144`、Skill `85/85`、frontend unit `82/82`、Playwright Chrome `83/83` 通过；typecheck、ESLint、production build、codegen 均通过。
 - 验证证据：runtime bundle build/check `35 files / ok=true`；REL-004 lint=`0 error / 0 violation / 2 expected warnings`；`git diff --check` 通过。
 - 验证证据：此前合并检出 integration `50/50` 通过；本发布候选全量运行中一次 HEAD watcher 时序断言未及时刷新、目标复跑通过，另一次 50 项功能执行完成后仅临时目录清理触发 `WinError 32`、对应真实状态矩阵目标复跑通过；测试临时目录已清理且无测试端口或进程残留。
+- 验证证据：发布候选提交 `0875bb39f051cc931792f9c414286ca8c1760667`，精确包含本 TASK 允许的 13 个发布文件。
 - Review findings：首轮只读 Review session `019fb2df-fd06-79d1-9856-47a445a79b98` 为 `Needs Fix / P0-P3=0/1/1/0`；`REL004-RVW-P1-001` 与 `REL004-RVW-P2-002` 均已修复。第二轮只读 Review session `019fb2ea-9ffa-7281-a006-943cb1022bb8` 为 `Passed / P0-P3=0/0/0/0`，无新增 finding。
 - UA 动作与结果：用户已观察两个真实项目页面并明确宣告验收通过，同时明确授权提交、合并、本机同步、push 与正式发版；记录 `UA7 Passed / User Confirmed`。
-- 当前状态：`Accepted / Review Passed / UA7 Passed / Uncommitted / Unmerged / Not Released / Not Closed`。
+- 当前状态：`Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Closed`。
