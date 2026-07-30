@@ -2,151 +2,121 @@
 
 [中文](README.md)
 
-A risk-activated workflow for AI-assisted software development, with a read-only local task relationship Dashboard. It uses project rules, Git/diff, deterministic validation, and task records when they add value without forcing the full process onto every small change.
+`ai-dev-flow` is a risk-activated governance Skill for AI-assisted development, with a read-only local task relationship Dashboard.
 
-v0.9.0 adds the local Dashboard on top of the v0.8 governance core. It derives dependencies, next actions, parallel candidates, decisions, and task details from TASK and Git facts without writing TASK, TASK_BOARD, or Git.
+It keeps small tasks lightweight while applying TASK records, independent Review, and authority gates to high-risk, cross-session, real-environment, and delivery work. The Dashboard turns TASK, TASK_BOARD, Git, and Worktree facts into an interactive view of next actions, dependencies, parallel candidates, and decisions.
 
-The v0.8 behavior is simple:
+## What is new in v0.9.1
 
-- low-risk work exits the Skill and proceeds with project rules and validation;
-- work that needs durable evidence uses a Tracked TASK;
-- high-risk, real-environment, or delivery work uses Controlled governance and mandatory review at enforcement points.
+- **Cross-project use**: project roots and Skill installations are separate. Projects no longer need a copied or linked Skill directory.
+- **Self-contained runtime**: the Skill package includes the backend, built frontend, and launcher. Normal use requires neither this source checkout nor Node.js.
+- **Multi-instance isolation**: ports are selected automatically by default. Every instance has its own ID, runtime directory, state, and cache; stopping one does not affect another.
+- **Pinned compatibility**: startup checks the Skill version, Workflow Contract schema, Scheduling schema, and supported Dashboard range. A Skill update requires a restart and never hot-mixes versions.
+- **Read-only live updates**: TASK, TASK_BOARD, Git dirty state, branch, HEAD, and Worktree changes refresh through SSE.
+- **Preserved safety boundary**: loopback only, no write API, no project/Skill/Git mutations, no Worktree creation, and no authority to accept, commit, merge, release, or close tasks.
 
-## Why v0.8
-
-Earlier releases could govern complex projects, but their default documentation and prompt surface became too large. With frontier models, that can consume context, add Reviewer calls, and interrupt users without improving the result.
-
-The v0.8 default runtime is only:
+## How it works
 
 ```text
-skills/ai-dev-flow/SKILL.md
-skills/ai-dev-flow/references/CORE.md
+Project root                     Installed Skill
+├─ docs/tasks/*.md              ├─ Workflow Contract Reader
+├─ docs/TASK_BOARD.md           ├─ schemas and governance rules
+└─ .git / Worktrees             └─ Dashboard runtime and frontend
+          │                                  │
+          └──────── read-only composition ───┘
+                           │
+                 http://127.0.0.1:<dynamic-port>
 ```
 
-All other guides remain available on demand.
-
-## Routing outcomes
-
-| Outcome | Use when | Default behavior |
-|---|---|---|
-| `DoNotUseSkill` | Low risk, one session, few files, complete deterministic validation | No TASK, Reviewer, or repair loop |
-| `Tracked` | Cross-session work, broader scope, or durable evidence is needed | TASK; read-only Reviewer only when risk flags trigger |
-| `Controlled` | Class D, high-risk, real-environment, delivery, or irreversible actions | Full TASK; mandatory independent Review at enforcement points |
-| `Blocked` | Input, authority, capability, or evidence is missing | Stop and report the minimum blocking information |
-
-The exact rules have one source: `references/CORE.md` → `POLICY_JSON`.
+TASK is the detailed source of truth and TASK_BOARD is a projection. Insufficient evidence remains `unknown`; the Dashboard never guesses that tasks are parallel-safe or strictly serial.
 
 ## Quick start
 
-Install `skills/ai-dev-flow/` in the agent's Skill directory, then ask:
+### Start from an installed Skill
 
-```text
-Use ai-dev-flow for this task. First route it to DoNotUseSkill, Tracked, Controlled, or Blocked.
-```
-
-A Skill-capable agent reads only `SKILL.md + CORE.md` by default. Projects without Skill support can merge the minimal rules from `references/AGENTS_COMPAT.md` into their existing `AGENTS.md`.
-
-## What remains core
-
-- User intent and project rules take precedence.
-- Git state, base commit, diff ownership, and rollback boundaries.
-- TASK as the source of truth for Tracked and Controlled work.
-- Validation evidence covering completion criteria.
-- Authority, real-environment, sensitive-data, and side-effect gates.
-- An isolated, read-only Reviewer when policy requires it.
-- Separate Review, UA, Accepted, commit, merge, release, and Closed states.
-
-## What leaves the default path
-
-These materials remain compatible but are no longer loaded by default:
-
-- the long prompt library;
-- Batch, Parallel Wave, and general Loop orchestration;
-- Memory, Project Constitution, and role declarations;
-- provider and harness branches;
-- universal Reviewer calls and unconditional repair loops.
-
-v0.8 does not add a scheduler, database, telemetry, billing, or model adapter. It never auto-merges, pushes, releases, deletes, or performs external synchronization.
-
-## TASK and v0.7 compatibility
-
-- Lite creates no TASK.
-- New Tracked work uses `references/TASK_TEMPLATE_BRIEF.md` or `references/TASK_TEMPLATE.md` according to the runtime route; Controlled work always uses the full template.
-- Existing TASK files keep their format and are not batch-migrated.
-- `TASK_TEMPLATE_COMPACT.md` remains only for v0.7 Writer/Reader compatibility.
-- The working-tree Skill package is the formal `0.9.0` release; the Workflow Contract schema remains `adf/v0.7.0`.
-
-See `skills/ai-dev-flow/references/V0.8_MIGRATION.md` for the migration guide.
-
-## Reviewer and repair boundaries
-
-- Tracked uses one isolated, read-only Reviewer only when deterministic risk flags trigger.
-- Controlled requires Review before acceptance recommendation, delivery, merge, and release.
-- Review defaults to the current harness's own native isolated read-only capability. Missing native capability stays Pending/Blocked and never auto-falls back across harnesses unless the user explicitly selects an external Reviewer.
-- `AutoRepair` starts with two rounds. A third round requires frozen-finding RED-to-GREEN progress, no regression, and increased evidence coverage.
-- Three is the autonomous loop maximum, not a permanent ban on AI repair. After `Stop`, explicit user authority may grant one bounded `EscalatedRepair` attempt or a task/acceptance/scope-bound `RepairCampaignAuthority`.
-- A campaign returns to user decision after four consecutive no-progress product attempts or five Harness attempts; P0, security, data, scope, irreversible, external-side-effect, and weakened-oracle hard stops apply immediately.
-- The chain follows its findings and closure contract, so changing TASKs or models does not reset history. Irreversible external side effects are never automatically retried.
-
-Use the read-only gate to evaluate a ledger:
+The supported baseline is Windows 11, Python 3.11+, Git 2.40+, and a modern browser. The project must be a Git repository with at least one `docs/tasks/*.md` TASK; keeping `docs/TASK_BOARD.md` is recommended. The installed runtime does not require Node.js.
 
 ```powershell
-python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
+py -3 -B -X utf8 `
+  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
+  --project-root "D:\projects\your-project"
 ```
 
-## Read-only checks
-
-The v0.7 standard-library Reader, `workflow_lint`, and TASK_BOARD drift checks remain available:
+The launcher discovers its Skill root and selects an available port. To be explicit:
 
 ```powershell
-python skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-001.md --format human
-python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
+py -3 -B -X utf8 `
+  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
+  --project-root "D:\projects\your-project" `
+  --skill-root "$env:USERPROFILE\.agents\skills\ai-dev-flow" `
+  --port 5084
 ```
 
-A passing lint result does not imply Review, UA, merge, release, or task closure.
+Open only the printed `127.0.0.1` URL. `Ctrl+C` stops that instance only.
 
-## Local task relationship Dashboard
+### Start from this repository
 
-The Dashboard reads TASK, TASK_BOARD, and Git state from the current project and exposes a relationship graph, filters, upstream/downstream focus, task details, and live updates on loopback only. See [dashboard/README.md](dashboard/README.md) for startup, shutdown, validation, and environment requirements.
+The source launcher additionally requires Node.js 22. Install the locked frontend dependencies before the first run in a clean checkout:
 
 ```powershell
-py -3.13 dashboard/integration/launcher.py --project-root .
+Set-Location dashboard/frontend
+npm ci
+Set-Location ../..
 ```
 
-The default page is `http://127.0.0.1:5173/`. An “unknown” relation means evidence is insufficient; it is never guessed to be parallel-safe or serial.
+```powershell
+py -3 -B -X utf8 dashboard/integration/launcher.py `
+  --project-root "D:\projects\your-project"
+```
 
-## Repository layout
+The source launcher remains compatible and also supports `--skill-root`, automatic ports, and isolated instances.
+
+## Install or update the Skill
+
+Copy `skills/ai-dev-flow/` into the harness Skill directory, for example:
 
 ```text
-ai-dev-flow/
-├── README.md
-├── README.en.md
-├── dashboard/
-├── docs/
-├── evaluations/v0.8/
-└── skills/ai-dev-flow/
-    ├── SKILL.md
-    ├── VERSION
-    ├── references/
-    ├── scripts/
-    └── tests/
+C:\Users\<user>\.agents\skills\ai-dev-flow
 ```
 
-See `skills/ai-dev-flow/README.md` for the detailed Chinese guide.
+The complete Skill directory already contains the Dashboard runtime. Target projects need no copy, junction, or symlink.
 
-## Current version
+## Governance routing
 
-```text
-0.9.0
+| Outcome | Use when | Default behavior |
+|---|---|---|
+| `DoNotUseSkill` | Low risk, one session, complete validation | No TASK or Reviewer |
+| `Tracked` | Cross-session, broader scope, or durable evidence | TASK; read-only Review when risk triggers |
+| `Controlled` | Class D, high-risk, real-environment, or delivery work | Full TASK; independent Review at enforcement points |
+| `Blocked` | Input, authority, capability, or evidence is missing | Stop and report the minimum blocker |
+
+The canonical policy lives only in `skills/ai-dev-flow/references/CORE.md` → `POLICY_JSON`.
+
+## Versions and compatibility
+
+- Skill: `0.9.1`
+- Dashboard-supported Skill series: `0.9.x`
+- Workflow Contract: `adf/v0.7.0`
+- Scheduling: `ai-dev-flow/scheduling/v1`
+- Supported environment: `Windows 11`, `Git 2.40+`, modern browser
+- Python: `3.11+`
+
+After a Skill update, running Dashboard instances keep their startup version and request a restart.
+
+## Development validation
+
+```powershell
+py -3 -B -X utf8 -m unittest discover -s dashboard/backend/tests -p "test_*.py"
+py -3 -B -X utf8 -m unittest discover -s dashboard/integration/tests -p "test_*.py"
+py -3 -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_*.py"
+py -3 -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format human
+
+cd dashboard/frontend
+npm ci
+npm run verify
 ```
 
-- Current working-tree version: `0.9.0`.
-- Current formal release: `0.9.0`.
-- Workflow Contract: `adf/v0.7.0`, still compatible.
-- Release status: `v0.9.0` was formally published on 2026-07-30; see the [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.0).
-- The historical v0.7.0 tag remains unchanged.
-
-See `skills/ai-dev-flow/CHANGELOG.md` for changes.
+See [Dashboard documentation](dashboard/README.md) and the [Skill guide](skills/ai-dev-flow/README.md) for details.
 
 ## License
 

@@ -1,9 +1,9 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-30
-> - 当前模式：`DASHBOARD-PORTABLE-REPAIR-003` 提交前门禁修复
-> - 当前阶段：PORTABLE-001 `Accepted / Review Passed / UA6 Passed / Committed / Merged`
-> - 当前方案：`docs/tasks/DASHBOARD-PORTABLE-REPAIR-003.md`
+> - 当前模式：`REL-004` v0.9.1 跨项目 Dashboard 发布
+> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Uncommitted`
+> - 当前方案：`docs/tasks/REL-004-release-v091-portable-dashboard.md`
 
 ## 当前授权边界
 
@@ -154,6 +154,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
+| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | release candidate accepted / Uncommitted | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -168,7 +169,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`DASHBOARD-PORTABLE-001` 已由用户完成真实双项目 UA6 并明确确认验收通过，UA 状态保持 `Passed / User Confirmed`。提交前两个交付可靠性 P1 及后续 schema freeze finding 已由 `DASHBOARD-PORTABLE-REPAIR-003` 关闭，最终独立 Review `Passed / P0-P2=0/0/0`。下一步按用户授权提交并本地合并；README 重写、版本升级、本机 Skill 同步、`main` push、annotated tag 和正式 GitHub Release 由独立发布任务记录。不得删除分支/Worktree、强制推送、改写历史或写 `Closed`。
+`DASHBOARD-PORTABLE-001` 已由用户完成真实双项目 UA6 并明确确认验收通过，UA 状态保持 `Passed / User Confirmed`；功能提交 `4754813` 已通过 merge commit `17ab9be` 合入本地 `main`。提交前两个交付可靠性 P1 及后续 schema freeze finding 已由 `DASHBOARD-PORTABLE-REPAIR-003` 关闭，最终独立 Review `Passed / P0-P2=0/0/0`。当前 `REL-004` 只是在 README、版本号和内置 runtime 变更后执行发布前自动回归与交付收据，不要求用户重新 UA，也不撤销既有验收。README 重写、版本升级、本机 Skill 同步、`main` push、annotated tag 和正式 GitHub Release 由该独立发布任务记录。不得删除分支/Worktree、强制推送、改写历史或写 `Closed`。
 
 ## 停止条件
 

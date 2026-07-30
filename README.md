@@ -2,151 +2,124 @@
 
 [English](README.en.md)
 
-一个按风险启用的 AI 开发工作流，并提供只读的本地任务关系仪表盘。它用项目规则、Git/diff、确定性验证和必要的任务记录约束 agent，但不会让每个小改动都背上完整流程。
+`ai-dev-flow` 是一个按风险启用的 AI 开发治理 Skill，并附带只读的本地任务关系 Dashboard。
 
-v0.9.0 在 v0.8 治理内核之上加入本地 Dashboard：从 TASK 与 Git 事实生成依赖关系、下一动作、并行候选、需要决定项和任务详情；它不会写 TASK、TASK_BOARD 或 Git。
+它解决两件事：
 
-v0.8 的核心变化很直接：
+1. 小任务不强行套完整流程；高风险、跨会话、真实环境和交付任务才启用 TASK、独立 Review 与权限门禁。
+2. 把项目中的 TASK、TASK_BOARD、Git 和 Worktree 事实变成可交互关系图，帮助判断下一步、上下游、并行候选和待决事项。
 
-- 低风险小任务：不用 Skill，直接做并验证；
-- 需要跨会话留证：用 Tracked TASK；
-- 高风险、真实环境或交付动作：用 Controlled，并在关键动作前强制独立 Review。
+## v0.9.1 新版特性
 
-## 为什么做 v0.8
+- **跨项目使用**：项目目录与 Skill 安装目录彻底分离，不再要求每个项目复制或链接 `skills/ai-dev-flow`。
+- **可独立运行**：Skill 包内含 Dashboard 后端、已构建前端和启动脚本；日常使用不需要保留本源码仓库，也不需要 Node.js。
+- **多实例隔离**：默认自动选择可用端口；每个项目有独立实例 ID、运行目录、状态和缓存，停止一个实例不会影响另一个。
+- **版本固定**：启动时检查 Skill 版本、Workflow Contract schema、Scheduling schema 和 Dashboard 支持范围；运行中检测到 Skill 更新会提示重启，不混用新旧规则。
+- **实时只读**：TASK、TASK_BOARD、Git dirty、分支、HEAD 和 Worktree 变化通过 SSE 自动刷新。
+- **安全边界不变**：仅监听 loopback，没有写 API，不修改项目、Skill 或 Git，不创建 Worktree，也不授予验收、提交、合并、发布或 Closed 权限。
 
-旧版能管理复杂项目，但默认文档、提示词和流程入口太多。对前沿模型而言，这可能增加上下文、额外 Reviewer 调用和用户打断，却不一定提高结果质量。
-
-v0.8 把默认运行时缩成两个文件：
+## 工作方式
 
 ```text
-skills/ai-dev-flow/SKILL.md
-skills/ai-dev-flow/references/CORE.md
+项目目录                         已安装 Skill
+├─ docs/tasks/*.md              ├─ Workflow Contract Reader
+├─ docs/TASK_BOARD.md           ├─ schema 与治理规则
+└─ .git / Worktree              └─ Dashboard 运行时与静态前端
+          │                                  │
+          └──────── 只读组合 ────────────────┘
+                           │
+                 http://127.0.0.1:<动态端口>
 ```
 
-其他指南继续保留，但只在当前动作确实需要时读取。
+TASK 是详细事实源，TASK_BOARD 是投影。Dashboard 只展示可由当前证据确定的结果；证据不足时保持 `unknown`，不会猜测任务可并行或必须串行。
 
-## 三档结果
+## 快速开始
 
-| 结果 | 什么时候用 | 默认行为 |
+### 从已安装 Skill 启动
+
+支持基线为 Windows 11、Python 3.11+、Git 2.40+ 和现代浏览器。项目必须是 Git 仓库，并至少包含一个 `docs/tasks/*.md` TASK；推荐同时维护 `docs/TASK_BOARD.md`。安装版不需要 Node.js。
+
+```powershell
+py -3 -B -X utf8 `
+  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
+  --project-root "D:\projects\your-project"
+```
+
+启动器会自动发现当前 Skill 根目录并选择可用端口。需要显式指定时：
+
+```powershell
+py -3 -B -X utf8 `
+  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
+  --project-root "D:\projects\your-project" `
+  --skill-root "$env:USERPROFILE\.agents\skills\ai-dev-flow" `
+  --port 5084
+```
+
+浏览器只访问输出中的 `127.0.0.1` 地址。按 `Ctrl+C` 只停止当前实例。
+
+### 从源码仓库启动
+
+源码入口额外需要 Node.js 22。首次在干净检出中运行前先安装锁定的前端依赖：
+
+```powershell
+Set-Location dashboard/frontend
+npm ci
+Set-Location ../..
+```
+
+```powershell
+py -3 -B -X utf8 dashboard/integration/launcher.py `
+  --project-root "D:\projects\your-project"
+```
+
+源码入口继续兼容，也支持 `--skill-root`、自动端口和实例隔离。
+
+## 安装或更新 Skill
+
+把仓库中的 `skills/ai-dev-flow/` 复制到 Harness 的 Skill 目录，例如：
+
+```text
+C:\Users\<user>\.agents\skills\ai-dev-flow
+```
+
+完整 Skill 目录已经包含 Dashboard 运行时。目标项目中无需再创建 Skill 副本、junction 或 symlink。
+
+## 治理路由
+
+| 结果 | 适用情况 | 默认行为 |
 |---|---|---|
-| `DoNotUseSkill` | 低风险、单会话、少量文件、验证完整 | 不建 TASK、不调用 Reviewer、不进 repair loop |
-| `Tracked` | 跨会话、范围较大或需要证据留存 | TASK；风险命中才调用只读 Reviewer |
-| `Controlled` | D 级、高风险、真实环境、交付或不可逆动作 | 完整 TASK；关键动作前强制独立 Review |
-| `Blocked` | 输入、权限、能力或证据不足 | 停止并说明最小阻塞信息 |
+| `DoNotUseSkill` | 低风险、单会话、验证完整 | 不建 TASK，不调用 Reviewer |
+| `Tracked` | 跨会话、范围较大或需要留证 | 使用 TASK；风险命中时只读 Review |
+| `Controlled` | D 级、高风险、真实环境或交付动作 | 完整 TASK；关键动作前独立 Review |
+| `Blocked` | 输入、权限、能力或证据不足 | 停止并报告最小阻塞信息 |
 
-准确规则只维护在 `references/CORE.md` 的 `POLICY_JSON` 中，避免多份文档各写一套。
+准确规则只维护在 `skills/ai-dev-flow/references/CORE.md` 的 `POLICY_JSON` 中。
 
-## 快速使用
+## 版本与兼容性
 
-把 `skills/ai-dev-flow/` 安装到 agent 的 Skill 目录，然后说：
+- Skill：`0.9.1`
+- Dashboard 支持的 Skill 系列：`0.9.x`
+- Workflow Contract：`adf/v0.7.0`
+- Scheduling：`ai-dev-flow/scheduling/v1`
+- 支持环境：`Windows 11`、`Git 2.40+`、现代浏览器
+- Python：`3.11+`
 
-```text
-请使用 ai-dev-flow 执行这个任务；先判断 DoNotUseSkill、Tracked、Controlled 或 Blocked。
-```
+升级 Skill 后，已经运行的 Dashboard 会保持启动时版本并提示重启。
 
-支持 Skill 的 agent 默认只读 `SKILL.md + CORE.md`。不支持 Skill 的项目可把 `references/AGENTS_COMPAT.md` 的最小规则合并进现有 `AGENTS.md`。
-
-## 保留的核心能力
-
-- 用户要求和项目规则优先；
-- Git 状态、base commit、diff 归属和回滚边界；
-- Tracked / Controlled 的 TASK 事实源；
-- 覆盖完成标准的验证证据；
-- 权限、真实环境、敏感数据和外部副作用门禁；
-- 隔离、只读的 Reviewer；
-- Review、UA、Accepted、commit、merge、release、Closed 分开记录。
-
-## 精简掉的默认成本
-
-以下内容没有删除，但退出默认运行路径：
-
-- 长提示词库；
-- Batch、Parallel Wave 和通用 Loop 编排；
-- Memory、Project Constitution 和角色声明；
-- provider / harness 分支；
-- 普遍 Reviewer 和无条件 repair loop。
-
-v0.8 不建设自动调度器、数据库、遥测、计费、模型 Adapter，也不自动 merge、push、release、删除或外部同步。
-
-## TASK 与 v0.7 兼容
-
-- Lite 不创建 TASK。
-- 新建 Tracked 按环境使用 `references/TASK_TEMPLATE_BRIEF.md` 或 `references/TASK_TEMPLATE.md`；Controlled 始终使用完整模板。
-- 旧 TASK 不批量迁移，原格式继续可读。
-- `TASK_TEMPLATE_COMPACT.md` 只为 v0.7 Writer/Reader 兼容保留。
-- 当前工作树 Skill 包版本是正式发布的 `0.9.0`，Workflow Contract schema 继续是 `adf/v0.7.0`。
-
-迁移说明见 `skills/ai-dev-flow/references/V0.8_MIGRATION.md`，用户最多需要 3 步。
-
-## Reviewer 与 repair 边界
-
-- Tracked 仅在确定性风险命中时调用一个隔离、只读 Reviewer。
-- Controlled 在验收建议、delivery、merge、release 前强制 Review。
-- Reviewer 默认使用当前 Harness 自身的原生只读隔离能力；原生能力缺失时保持 Pending/Blocked，不自动调用其他 Harness，除非用户明确指定。
-- `AutoRepair` 基础预算为 2 轮；只有冻结 finding 的 RED→GREEN、无回归且证据覆盖增加时才增加第 3 轮。
-- 3 是自主 repair loop 上限，不是 AI 永久禁修。达到 `Stop` 后，用户可授权默认一次的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内连续工作的 `RepairCampaignAuthority`。
-- campaign 在核心产品代码连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决；P0、安全、数据、越界、不可逆、外部副作用和 oracle 放宽等硬停止立即生效。
-- repair chain 绑定 finding 和 closure contract；换 TASK 或模型不重置。不可逆外部动作不得自动重试。
-
-可用只读判定器机械检查 ledger：
+## 开发验证
 
 ```powershell
-python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
+py -3 -B -X utf8 -m unittest discover -s dashboard/backend/tests -p "test_*.py"
+py -3 -B -X utf8 -m unittest discover -s dashboard/integration/tests -p "test_*.py"
+py -3 -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_*.py"
+py -3 -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format human
+
+cd dashboard/frontend
+npm ci
+npm run verify
 ```
 
-## 只读检查
-
-v0.7 的标准库 Reader、`workflow_lint` 和 TASK_BOARD drift 检查继续保留：
-
-```powershell
-python skills/ai-dev-flow/scripts/workflow_lint.py docs/tasks/TASK-001.md --format human
-python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
-```
-
-lint 通过只说明可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
-
-## 本地任务关系仪表盘
-
-Dashboard 只读取当前项目的 TASK、TASK_BOARD 与 Git 状态，在 loopback 地址提供关系图、筛选、上下游聚焦、任务详情和实时更新。启动、停止、验证和环境要求见 [dashboard/README.md](dashboard/README.md)。
-
-```powershell
-py -3.13 dashboard/integration/launcher.py --project-root .
-```
-
-默认页面为 `http://127.0.0.1:5173/`。完整网络中“未知”表示证据不足，不会被猜成可并行或必须串行。
-
-## 仓库结构
-
-```text
-ai-dev-flow/
-├── README.md
-├── README.en.md
-├── dashboard/
-├── docs/
-├── evaluations/v0.8/
-└── skills/ai-dev-flow/
-    ├── SKILL.md
-    ├── VERSION
-    ├── references/
-    ├── scripts/
-    └── tests/
-```
-
-详细手册见 `skills/ai-dev-flow/README.md`。
-
-## 当前版本
-
-```text
-0.9.0
-```
-
-- 当前工作树版本：`0.9.0`。
-- 当前正式发布版本：`0.9.0`。
-- Workflow Contract：`adf/v0.7.0`，继续兼容。
-- 发布状态：`v0.9.0` 于 2026-07-30 正式发布，见 [GitHub Release](https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.0)。
-- v0.7.0 历史 tag 保留，不因 v0.8 实现而改写。
-
-变更记录见 `skills/ai-dev-flow/CHANGELOG.md`。
+更多实现与测试说明见 [Dashboard 文档](dashboard/README.md) 和 [Skill 手册](skills/ai-dev-flow/README.md)。
 
 ## License
 
