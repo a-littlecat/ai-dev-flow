@@ -14,8 +14,8 @@
 - `acceptance_authority`: `User Confirmed`
 - `close_authority`: `None`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -509,3 +509,10 @@
 - 结论：`Passed`；`P0/P1/P2/P3=0/0/1/0`。Reviewer 确认 Windows power API/ctypes 布局、fail-closed 处理、Battery Saver 与 Best Power Efficiency 拒绝路径及完整 `main...HEAD` 差异均无其他明确可操作问题。
 - `DASHBOARD-INTEGRATE-FINAL-P2-001`：Reviewer 指出完成标准复选框和验收建议仍保留 UA6/commit 未完成的旧描述。本次按其建议做非业务、非 repair 计数的记录同步：UA6 复选框改为完成，当前态改为 `Review Passed / UA6 Passed / Accepted / Committed / Unmerged`；历史收据中的当时状态保持不变。
 - 状态边界：`Accepted / Review Passed / UA6 Passed / Committed / Unmerged`；允许按用户当前授权合入本地 `main`，但尚未 merge、push、release 或 Closed。
+
+## 本地 main 合并收据（2026-07-30）
+
+- 用户已明确授权“提交并合并”，并在后续继续授权完成本地同步、远端推送与发版。
+- 合并提交：`4f60dd3d8197f7e545b3668107d1a7772d66b6f7`，方式为 `--no-ff` 合入本地 `main`；未删除分支或 Worktree。
+- 合并后验证：集成 Python `35/35`；Artifact Guard 在测试前后均为 `100/100` 且 changed/added/missing=`0/0/0`。
+- 当前状态：`Accepted / Review Passed / UA6 Passed / Committed / Merged`；尚未 push、release 或 Closed。
