@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -51,13 +51,14 @@
 
 ## Outcome
 
-- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=working-tree
+- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=f2056794a3fa09c47067fd4cdb4fa734564c1829
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\goal-usage-001` / `codex/goal-usage-001`。
-- 回滚方式：当前未提交；只逆向应用本任务精确允许文件的 diff，不删除 Worktree、不 reset、不改写历史。
+- 回滚方式：对任务提交 `f205679` 使用普通 `git revert`；不删除 Worktree、不 reset、不改写历史。
 - 修改文件：`SKILL.md` 增加零成本按需入口；`CODEX_GOAL_USAGE.md` 定义三种预设、中文词表、authority、自动验收与 hard stop；README/CHANGELOG 对外说明；定向测试冻结零状态与权限边界；TASK/看板记录事实。
-- 验证证据：初始及 AR-1 后定向 Goal 规则均为 `6/6`、Skill 全套 unittest 均为 `91/91`；Skill quick validator `Skill is valid!`、默认运行时预算断言 `<=400`、Workflow Contract lint `0 errors / 0 violations / 1 uncommitted warning`、`git diff --check` 通过；七个变更文件与精确允许清单一致。
+- 验证证据：初始及 AR-1 后定向 Goal 规则均为 `6/6`、Skill 全套 unittest 均为 `91/91`；Skill quick validator `Skill is valid!`、默认运行时预算断言 `<=400`、Workflow Contract lint `0 errors / 0 violations / 1 transition-provenance warning`、`git diff --check` 通过；七个变更文件与精确允许清单一致。
 - Review findings：Round 1=`Needs Fix`，`GOAL-USAGE-RVW-P2-001` 指出 `auto_release` 与生产外部副作用硬停止冲突；`GOAL-USAGE-RVW-P2-002` 指出定向测试未冻结完整意图、安全排除、Designated Acceptor 和不完整发布信息边界。AR-1 限定显式发布 authority 的外部副作用边界并补充确定性断言；Round 2 独立只读 Review Passed，两个 P2 均 Closed，新增 P0/P1/P2/P3=`0/0/0/0`。
 - UA 动作与结果：UA2 Pending；用户需确认中文触发词和自动落地权限上限是否符合预期。
-- 状态边界：Uncommitted / Unmerged / Not Pushed / Not Released / Not Synced / Not Closed。
+- 交付证据：功能提交 `f205679` 已推送至 `origin/codex/goal-usage-001`；Draft PR=`https://github.com/a-littlecat/ai-dev-flow/pull/2`，GitHub 当前未报告 CI checks。
+- 状态边界：Committed / Unmerged / Pushed / Draft PR / No CI Checks Reported / Not Released / Not Synced / Not Closed。
 - 剩余风险：Goal 是 Codex 平台能力；其他 Harness 不得伪装或模拟同名能力。
-- 下一步：按 `auto_land` ceiling 形成精确 commit / push；目标 `main` 有用户未提交前端改动，不执行本地 merge，改走 PR/CI 并保持旧 Worktree 不删除。
+- 下一步：等待 UA2 确认中文触发词与自动落地权限上限；通过后将 PR 转为 Ready 并按可用门禁继续集成。目标 `main` 有用户未提交前端改动，不执行本地 merge，并保持旧 Worktree 不删除。

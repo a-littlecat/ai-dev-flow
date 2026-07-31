@@ -2,14 +2,14 @@
 
 > - 快照日期：2026-07-31
 > - 当前模式：`GOAL-USAGE-001` Codex Goal 自动落地预设与中文触发
-> - 当前阶段：GOAL-USAGE-001 `Review Passed / UA2 Pending / Uncommitted / Unmerged`
+> - 当前阶段：GOAL-USAGE-001 `Review Passed / UA2 Pending / Committed / Pushed / Draft PR #2 / Unmerged`
 > - 当前方案：`docs/tasks/GOAL-USAGE-001.md`
 
 ## 当前授权边界
 
 用户于 2026-07-31 在比较受控 Goal、交付 Goal、Goal 适配器和零状态组合后，明确确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求“触发词增加中文”。`GOAL-USAGE-001` 获准在独立 Worktree 内增加 `governed_goal / auto_land / auto_release` 中文预设、确定性测试和直接文档；Review Passed 后可精确提交并推送任务分支，在目标分支干净、无来源不明重叠改动且合并后验证 GREEN 时执行可归属集成。该授权不包含 tag、release、deploy、删除、数据迁移、密钥/权限修改、本机 Skill 同步、旧 Worktree 删除、强制推送、历史改写或 `Closed`。
 
-旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。
+旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。`GOAL-USAGE-001` 功能提交 `f205679` 已推送至任务分支并创建 Draft PR #2；GitHub 当前未报告 CI checks，UA2 仍待确认。
 
 用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
