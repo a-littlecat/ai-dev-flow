@@ -70,7 +70,7 @@
 - 验证证据：初始及 AR-1 后定向 Goal 规则均为 `6/6`、Skill 全套 unittest 均为 `91/91`；Skill quick validator `Skill is valid!`、默认运行时预算断言 `<=400`、Workflow Contract lint `0 errors / 0 violations / 1 transition-provenance warning`、`git diff --check` 通过；七个变更文件与精确允许清单一致。
 - Review findings：Round 1=`Needs Fix`，`GOAL-USAGE-RVW-P2-001` 指出 `auto_release` 与生产外部副作用硬停止冲突；`GOAL-USAGE-RVW-P2-002` 指出定向测试未冻结完整意图、安全排除、Designated Acceptor 和不完整发布信息边界。AR-1 限定显式发布 authority 的外部副作用边界并补充确定性断言；Round 2 独立只读 Review Passed，两个 P2 均 Closed，新增 P0/P1/P2/P3=`0/0/0/0`。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-31 明确回复“验收通过”，确认中文触发词和自动落地权限上限符合预期。
-- 交付证据：功能提交 `f205679`、交付记录 `bf3ce7c` 与验收记录 `7baff50` 已推送；PR #2 在 UA2 Passed 后转为 Ready，并于 2026-07-31 合并为 `main@58837d7`。GitHub 未报告 CI checks，合并依据为本任务本地验证、独立 Review Passed、UA2 Passed 与 GitHub `CLEAN / MERGEABLE` 门禁。
+- 合并目标与事实证据：目标=`main`；功能提交 `f205679`、交付记录 `bf3ce7c` 与验收记录 `7baff50` 已推送；PR #2 在 UA2 Passed 后转为 Ready，并于 2026-07-31 合并为 `main@58837d7`。GitHub 未报告 CI checks，合并依据为本任务本地验证、独立 Review Passed、UA2 Passed 与 GitHub `CLEAN / MERGEABLE` 门禁。
 - 状态边界：Accepted / Committed / Merged / Pushed / PR #2 Merged / No CI Checks Reported / Not Released / Not Synced / Not Closed。
 - 剩余风险：Goal 是 Codex 平台能力；其他 Harness 不得伪装或模拟同名能力。
 - 下一步：无需继续集成；保持旧 Worktree 与任务分支不删除。本任务未获 release、本机 Skill 同步或 `Closed` authority。
