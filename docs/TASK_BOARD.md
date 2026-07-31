@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-08-01
 > - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
-> - 当前阶段：`REL-005 Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released`
+> - 当前阶段：`REL-005 Closed / Review Passed / UA7 Passed / PR #9 Merged / Released v0.9.2 / Local Sync Verified`
 > - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
 
 ## 当前授权边界
@@ -147,10 +147,10 @@ REL-002 Closed / main@0422887
 | CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Closed | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | 已合并 / 已关闭 | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Closed | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | 已合并 / 已关闭 | [PLAN-001](tasks/PLAN-001.md) |
-| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Deferred | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | merge Deferred / 后继版本已采用 / 无剩余执行动作 | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Deferred | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | Not Applicable / 后继版本已采用 / 无剩余执行动作 | [LEAN-002](tasks/LEAN-002.md) |
+| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Cancelled | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | merge Deferred / 后继版本已采用 / 无剩余执行动作 | [LEAN-001](tasks/LEAN-001.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Cancelled | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | Not Applicable / 后继版本已采用 / 无剩余执行动作 | [LEAN-002](tasks/LEAN-002.md) |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
-| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Deferred | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Deferred（未补写验收） | Committed / Pushed `fcd3a3e` / Local Sync Verified / 无剩余执行动作 | [SYNC-001](tasks/SYNC-001.md) |
+| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Cancelled | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Deferred（未补写验收） | Committed / Pushed `fcd3a3e` / Local Sync Verified / 无剩余执行动作 | [SYNC-001](tasks/SYNC-001.md) |
 | REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Closed | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged main / Local Sync Verified / Closed | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
 | REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Closed | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
 | DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Closed | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed / Merged / Closed | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
@@ -172,7 +172,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 | WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
-| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Accepted | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | Committed `6ba3f63` / Unmerged / Not Released / Not Synced / Not Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
+| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Closed | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | PR #9 Merged `f50c7c7` / Released `v0.9.2` / Local Sync Verified / Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

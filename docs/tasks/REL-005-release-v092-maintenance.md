@@ -6,16 +6,16 @@
 - `task_id`: `REL-005`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA7`
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/REL-005-release-v092-maintenance.md#rel-005-ua7-2026-08-01`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -48,9 +48,9 @@
 - [x] 全仓 Workflow Contract lint 为 0 error / 0 violation；每个历史 TASK 的状态与 Git/Release/后继任务证据一致，不把未知状态伪写 Closed。
 - [x] frontend `npm audit` 与 `npm audit --omit=dev` 均为 0；codegen、typecheck、lint、unit、build、Playwright 全量通过。
 - [x] backend、integration、Skill 全量测试通过；runtime build/check、Artifact Guard candidate consistency 与 `git diff --check` 通过。
-- [ ] 实盘安装目标物理路径审计完成；只同步已存在的物理副本，所有入口 VERSION、相对文件和 SHA256 parity 一致。
-- [x] 发布候选完成独立只读 Review，P0/P1=0；`main`、annotated tag `v0.9.2`、正式 GitHub Release 和发布收据仍待实际交付后写回。
-- [ ] 发布与同步回执合并后，本 TASK Closed；交付分支/Worktree 仅在完全合并且干净后普通删除。
+- [x] 实盘安装目标物理路径审计完成；只同步已存在的物理副本，所有入口 VERSION、相对文件和 SHA256 parity 一致。
+- [x] 发布候选完成独立只读 Review，P0/P1=0；`main`、annotated tag `v0.9.2`、正式 GitHub Release 和发布收据均有远端证据。
+- [x] 发布与同步回执完成独立只读 Review；本 TASK 按用户明确授权写回 Closed，交付分支/Worktree 仅在回执合入且干净后普通删除。
 - [ ] `git diff --check` 通过，diff 可归属当前 TASK。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
@@ -61,6 +61,9 @@
 - `REL005-RVW-P2-003`：开发环境最低 Node 版本过宽。统一文档与 `package.json#engines` 为 Node.js 22.13+，并刷新 lockfile 与 Artifact Guard 候选摘要。
 - Review Round 2：`Needs Fix`，P0/P1/P2/P3=`0/0/1/0`；P1-001 与 P2-002 已关闭。P2-003 指出 `>=22.13.0` 会意外放行 ESLint 10.8.0 不支持的 Node 23，进一步收紧为 `^22.13.0 || >=24.0.0`，文档同步写明仅 22.x 或 24+。
 - Review Round 3：`Passed`，P0/P1/P2/P3=`0/0/0/0`；三个稳定 finding 全部关闭，冻结 staged diff SHA `afb7b4dfc359574bc8a01a81d30c2be699de625f`，审查前后无 unstaged 或写入。
+- Post-release check：合并后全仓 lint 识别到 LEAN-001、LEAN-002、SYNC-001 的 `Review -> Deferred` 为非法直跳（3 violations）。不移动已发布 tag，也不伪造中间态；从当前 `Deferred` 以前向合法的 `Deferred -> Cancelled` 修正完成收口，等待 closure receipt 独立 Review。
+- Closure Review Round 1：`Needs Fix`，P0/P1/P2/P3=`0/0/1/0`。`REL005-CLOSE-RVW-P2-001` 指出跨 Worktree 的原始 SHA256 会受 Windows CRLF/LF checkout 影响；修正 parity 收据，同时保留不受换行影响的内容一致性证据。
+- Closure Review Round 2：`Passed`，P0/P1/P2/P3=`0/0/0/0`；`REL005-CLOSE-RVW-P2-001` Closed，冻结 staged diff SHA `4e433fe2ff991381a7812a1f2b449656f5d53349`，允许写回 Closed。
 - Repair 范围未扩大：未修改 CADCat、公共 schema、核心 policy、Reader、linter、后端或前端业务源码。
 
 ## Outcome
@@ -76,6 +79,12 @@
 
 - UA 动作与结果：页面 UA5、性能/集成 UA6 和 Goal UA2 已分别由用户验收；用户在获知 ai-dev-flow 完整遗留清单、排除 CADCat 数据边界和推荐处理顺序后明确要求“完成剩余任务”，并明确授权提交、合并、v0.9.2 发布、本机 Skill 同步、关闭与清理。记录本发布收口为 `UA7 Passed / User Confirmed`。
 - 发布候选提交：`6ba3f635c011b4dce9dad5e423c1da9ee6789e08`（`release: prepare ai-dev-flow v0.9.2`）；精确包含本 TASK 的 50 个允许文件。
-- 状态边界：Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Synced / Not Closed。
-- 剩余风险：本机 Skill 尚未备份/同步；`v0.9.2` tag 与 GitHub Release 尚未创建。
-- 下一步：提交并通过 PR 合入 `main`，随后执行本机现存 Skill 同步、annotated tag、正式 GitHub Release 和最终 Closed 收据。
+- 合并目标与事实证据：发布候选通过 PR #9 合入 `main`，merge commit=`f50c7c7cf8afc1910bffd84c20fa56230a95d674`；本地与 `origin/main` 已一致。
+- v0.9.2 正式发布：annotated tag object=`b5e00d9cf3c62ed1e28e21c52d63d296c0b55134`，peeled target=`f50c7c7cf8afc1910bffd84c20fa56230a95d674`；GitHub Release=`https://github.com/a-littlecat/ai-dev-flow/releases/tag/v0.9.2`，`draft=false / prerelease=false`。
+- 本机 Skill 同步：物理目标 `C:\Users\92336\.agents\skills\ai-dev-flow`；`.codex` 与 OpenCode 为指向该物理目标的 Junction；`.cc-switch` 与 `.trae-cn` 不存在且未创建。三个现存入口均为 VERSION `0.9.2`、132 个非缓存文件、`Missing/Extra=0/0`；相对实际部署源 `D:\open-source\ai-dev-flow\skills\ai-dev-flow` 的原始字节 SHA256 `Changed=0`。
+- 跨 Worktree 换行边界：closure Worktree 与物理安装目标直接比较时有 23 个原始 SHA256 差异，全部仅为 Windows checkout 的 CRLF/LF 差异；统一 CRLF→LF 后 `Changed=0`。因此跨 Worktree parity 只声明换行规范化后的内容一致，不再把原始 SHA256 写成全局不变；runtime manifest 仍为 36/36 原始 SHA256 一致。
+- 同步备份：`C:\Users\92336\.codex-backups\ai-dev-flow\skill-sync-v0.9.2-20260801-035600`（同步前 VERSION `0.9.1`，135 个含缓存文件）；仅删除已备份且被新版替换的两个旧 hashed 静态资源。
+- 安装态验证边界：仓库源 Skill 全套 91/91 已通过；安装目录直接运行同一源仓库测试会因缺少仓库根 README/docs fixtures 出现 5 个路径错误，因此不作为安装包 oracle。安装态改用逐文件 SHA256 parity、runtime 36/36 manifest 与已安装 `workflow_lint.py` 验证。
+- 状态边界：Closed / Review Passed / UA7 Passed / Committed / Merged / Released v0.9.2 / Local Sync Verified；closure receipt 待 commit 与 PR merge。
+- 剩余风险：仅剩 closure receipt commit/PR merge 与已完全合并分支/Worktree 的普通清理；不涉及产品、Skill 或 CADCat 修改。
+- 下一步：提交并合入 closure receipt，确认 `main=origin/main` 后普通删除已合并分支/Worktree。
