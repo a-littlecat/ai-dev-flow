@@ -6,10 +6,12 @@
 - `task_id`: `WORKSPACE-CLEANUP-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Review`
+- `lifecycle`: `Accepted`
 - `review_status`: `Passed`
 - `ua_level`: `UA5`
-- `ua_status`: `Pending`
+- `ua_status`: `Passed`
+- `ua_evidence`: `docs/tasks/WORKSPACE-CLEANUP-001.md#workspace-cleanup-001-ua5-2026-08-01`
+- `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `None`
@@ -44,26 +46,35 @@
 - 完成标准：有效前端残留在最新主线上形成范围精确、验证通过、独立 Review Passed 的本地候选提交；其余冻结残留可恢复地清理，本地 `main` 快进且干净。
 - 验证命令或检查：frontend `npm run verify`、定向浏览器/单元测试、Workflow Contract lint、`git diff --check`、独立只读 Review、备份 hash/bundle、最终全 Worktree/branch 状态盘点。
 - [x] 八项旧改动完成三方迁移；已被新主线覆盖的 hunk 不重复引入，保留行为有明确回归测试。
-- [x] frontend `npm run verify` 全部通过，运行时/Skill 不发生变化。
-- [x] 独立只读 Review Passed，无开放 P0/P1/P2。
-- [x] 形成本地精确提交；状态保持 Unmerged / Not Pushed / Not Released / Not Closed。
+- [x] UA5 文案修复后 frontend `npm run verify` 全部通过，运行时/Skill 不发生变化。
+- [x] UA5 文案修复完成独立只读 Review Passed，无开放 P0/P1/P2。
+- [x] UA5 文案修复形成本地精确提交；状态保持 Unmerged / Not Pushed / Not Released / Not Closed。
 - [x] 所有清理对象均有可恢复备份；指定 Worktree/分支删除，本地 `main` 快进且干净。
-- [ ] `git diff --check` 通过，diff 可归属当前 TASK。
+- [x] `git diff --check` 通过，diff 可归属当前 TASK。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
 
 - Repair chain：Round 1；`WORKSPACE-CLEANUP-RVW-P2-001`（旧格式成功推断被误报为可能缺失，且漏掉真正的 `E_LEGACY_CONFLICT`）与 `WORKSPACE-CLEANUP-RVW-P2-002`（overlay 语义覆盖不足、title 空数组可假通过）；P0/P1/P2/P3=`0/0/2/0`；本轮只在原 allowlist 内修复并复审。
+- Repair chain：Round 2；`WORKSPACE-CLEANUP-UA5-P2-001`（顶部总错误为 90、提示只显示 89 条 ingestion error，未明确统计口径）；RED=`90 与 89 看似矛盾`；GREEN=`同一提示明确总错误数与其中 ingestion error 数`；SIGNAL=`CADCat 真实快照 + overlay 单元测试`；只修改原 allowlist 内提示、测试与任务记录。
+
+## 用户验收反馈 / 实机测试反馈
+
+<a id="workspace-cleanup-001-ua5-2026-08-01"></a>
+
+- 2026-08-01 UA5：用户在 CADCat 真实页面指出顶部显示“错误 90”，提示显示“89 条”，询问为何不一致；只读诊断确认第 90 条为 `E_BOARD_PARSE`，不属于可能导致 TASK 未纳入的 ingestion error。用户确认采用“总错误数 + 其中影响 TASK 解析的错误数”同屏表述；UA5 继续 Pending，不把修改授权写成验收通过。
+- 2026-08-01 UA5 复验：真实 CADCat 页面显示“当前共检测到 90 条错误，其中 89 条属于 TASK 解析或 Contract 不兼容错误……当前显示 14 个已解析任务”；用户随后明确回复“验收通过”。记录为 UA5 Passed / User Confirmed / Accepted；不扩展 push、PR、merge、release、tag、deploy 或 Closed 权限。
 
 ## Outcome
 
-- Base / Diff：base=dec2dd352deb49e31b5d69d204169863fac90ccd;diff=dec2dd352deb49e31b5d69d204169863fac90ccd..9ee319ed4584384bd8afce7dec8ec8ae53fbc2a9
+- Base / Diff：base=2530042b53f6dd7cd2a7d7821c3a9f09c51f4efd;diff=2530042b53f6dd7cd2a7d7821c3a9f09c51f4efd..782e04c
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\workspace-cleanup-001` / `codex/workspace-cleanup-001`。
 - 回滚方式：迁移候选提交前可用备份 patch 重新建立；提交后只使用普通 `git revert`；清理对象从 `C:\Users\92336\.codex-backups\ai-dev-flow\cleanup-20260801-002901` 恢复，不使用 reset 或历史改写。
 - 修改文件：保留 `overlays.ts` 的 TASK 解析缺口提示、新增 `overlays.test.ts`，并保留 `derive.test.ts` 的无关系任务网格回归与 `parallel-display.test.ts` 的关系标签显示语义回归；同步本 TASK 与看板。`graphView.ts`、`layout.ts`、`browser/graph.spec.ts`、`browser/real-scale.spec.ts` 的旧改动已由新主线等价或更完整覆盖，未重复引入。
-- 验证证据：初始定向 Vitest 3 文件 / 34 tests Passed；Round 1 修复后定向 Vitest 3 文件 / 38 tests Passed；修复后 frontend `npm run verify` Passed（codegen check、typecheck、ESLint、7 文件 / 91 unit tests、build、89/89 Playwright）；依赖审计仍报告既有 10 项（3 moderate、6 high、1 critical），本 TASK 未修改依赖或执行自动升级。
-- Review findings：Round 2 Passed，P0/P1/P2/P3=`0/0/0/0`；`WORKSPACE-CLEANUP-RVW-P2-001`、`WORKSPACE-CLEANUP-RVW-P2-002` Closed；staged diff SHA256 前后均为 `a9a33989f88491b6787cc29a9ddbeeead33aeed3de932084065eb92851fe058f`。
-- UA 动作与结果：UA5 Pending；本任务只形成本地候选，不以提交替代用户界面验收。
-- 状态边界：前端候选已本地提交 `9ee319ed4584384bd8afce7dec8ec8ae53fbc2a9`；本任务收据由当前记录提交固化；Unmerged / Not Pushed / Not Released / Not Closed。
+- 验证证据：UA5 repair 定向 overlays 6/6 Passed；提交前新鲜 frontend `npm run verify` Passed（codegen check、typecheck、ESLint、unit 91/91、build、Playwright 89/89）；Workflow Contract lint 0 errors / 0 violations；`git diff --check` Passed。依赖审计既有 10 项（3 moderate、6 high、1 critical），本 TASK 未修改依赖或执行自动升级。
+- Review findings：Round 3 Passed，`WORKSPACE-CLEANUP-UA5-P2-001` Closed，P0/P1/P2/P3=`0/0/0/0`；staged diff SHA256 前后均为 `da85bded2ff95b4f907e63724d318eb36bfaff85c37593a8dc01ae4d369f1d9b`。
+- UA 动作与结果：UA5 Passed；用户在真实 CADCat 页面复验 90 / 89 同屏统计口径后明确回复“验收通过”，acceptance authority=`User Confirmed`。
+- 状态边界：历史候选 `9ee319ed4584384bd8afce7dec8ec8ae53fbc2a9` 与 UA5 repair `782e04c` 已本地提交；本收据由当前记录提交固化；Unmerged / Not Pushed / Not Released / Not Closed。
 - 清理证据：恢复目录 `C:\Users\92336\.codex-backups\ai-dev-flow\cleanup-20260801-002901` 存在且 bundle verify Passed；Unattended 与 3 个 LEAN Worktree 均已删除；`codex/unattended-run-001` 与两个 `backup/dashboard-be-001-*` 本地分支已删除；本地 `main` 干净并快进至 `origin/main@dec2dd3`；当前只剩 `main` 与 `codex/workspace-cleanup-001` 两条本地分支。
-- 剩余风险：用户界面提示仍需 UA5；依赖审计既有 10 项不在本 TASK 授权范围内；候选仅在本机，尚未推送或合并。
-- 下一步：等待用户 UA5；如需进入主线，另行明确授权 push / PR / merge。
+- 验收服务：本地 45173/45174 端口及对应 Python/Node 进程已停止，未留下常驻验收服务。
+- 剩余风险：依赖审计既有 10 项不在本 TASK 授权范围内；候选仅在本机，尚未推送或合并。
+- 下一步：如需进入主线，另行明确授权 push / PR / merge；Closed 仍需单独授权。
