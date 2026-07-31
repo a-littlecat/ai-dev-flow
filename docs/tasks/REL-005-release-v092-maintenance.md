@@ -85,6 +85,7 @@
 - 跨 Worktree 换行边界：closure Worktree 与物理安装目标直接比较时有 23 个原始 SHA256 差异，全部仅为 Windows checkout 的 CRLF/LF 差异；统一 CRLF→LF 后 `Changed=0`。因此跨 Worktree parity 只声明换行规范化后的内容一致，不再把原始 SHA256 写成全局不变；runtime manifest 仍为 36/36 原始 SHA256 一致。
 - 同步备份：`C:\Users\92336\.codex-backups\ai-dev-flow\skill-sync-v0.9.2-20260801-035600`（同步前 VERSION `0.9.1`，135 个含缓存文件）；仅删除已备份且被新版替换的两个旧 hashed 静态资源。
 - 安装态验证边界：仓库源 Skill 全套 91/91 已通过；安装目录直接运行同一源仓库测试会因缺少仓库根 README/docs fixtures 出现 5 个路径错误，因此不作为安装包 oracle。安装态改用逐文件 SHA256 parity、runtime 36/36 manifest 与已安装 `workflow_lint.py` 验证。
-- 状态边界：Closed / Review Passed / UA7 Passed / Committed / Merged / Released v0.9.2 / Local Sync Verified；closure receipt 待 commit 与 PR merge。
-- 剩余风险：仅剩 closure receipt commit/PR merge 与已完全合并分支/Worktree 的普通清理；不涉及产品、Skill 或 CADCat 修改。
-- 下一步：提交并合入 closure receipt，确认 `main=origin/main` 后普通删除已合并分支/Worktree。
+- Closure receipt 交付：提交 `ac6d1f111f6a58c4e80b9d16f51a525ee2cad83e` 通过 PR #10 合入 `main`，merge commit=`b8d8fe75b08935874766020a1f0568011ccd43f8`；发布分支与关闭分支均确认是 `origin/main` 祖先后普通删除，专用 Worktree 在干净状态下移除。
+- 状态边界：Closed / Review Passed / UA7 Passed / Committed / Merged / Released v0.9.2 / Local Sync Verified / Branch Cleanup Verified。
+- 剩余风险：无已知未交付项；CADCat 项目任务数据按用户边界由 CADCat 项目会话另行处理。
+- 下一步：无。

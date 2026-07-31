@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-08-01
 > - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
-> - 当前阶段：`REL-005 Closed / Review Passed / UA7 Passed / PR #9 Merged / Released v0.9.2 / Local Sync Verified`
+> - 当前阶段：`REL-005 Closed / Review Passed / UA7 Passed / PR #9/#10 Merged / Released v0.9.2 / Local Sync Verified / Branch Cleanup Verified`
 > - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
 
 ## 当前授权边界
