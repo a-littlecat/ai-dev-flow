@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-31
 > - 当前模式：Dashboard 前端真实使用反馈修复
-> - 当前阶段：DASHBOARD-EDGE-LABEL-001 `Accepted / Uncommitted / Unmerged`
+> - 当前阶段：DASHBOARD-EDGE-LABEL-001 `Accepted / Review Passed / UA5 Passed / Committed 38f5940 / Unmerged`
 > - 当前方案：`docs/tasks/DASHBOARD-EDGE-LABEL-001.md`
 
 ## 当前授权边界

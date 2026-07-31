@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `user-message-2026-07-31-interface-fix-accepted`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 - `close_authority`: `None`
@@ -78,13 +78,13 @@
 
 ## Outcome
 
-- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=working-tree-campaign-candidate-1
+- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=38f5940e1baa6748f63800c2a5640e8ac6242ec7
 - 隔离位置：独立 Worktree `D:\open-source\ai-dev-flow-wt\dashboard-edge-label-001`，分支 `codex/dashboard-edge-label-001`；主仓库现有未提交前端改动未被吸收或覆盖。
-- 回滚方式：当前未提交；仅逆向应用本 TASK 允许清单内的工作区 diff，不删除 Worktree、不 reset、不改写历史。
+- 回滚方式：对候选提交 `38f5940` 使用普通 `git revert`；不删除 Worktree、不 reset、不改写历史。
 - 修改文件：`graphView.ts` 增加关系标签避碰、按需显示并行评估和动态边界变化后的自动适配；`layout.ts` 增加无方向关系网格；`toolbar.ts` 显示当前 TASK 数量与来源；四个测试文件冻结新显示语义、真实规模和碰撞 oracle；TASK/看板记录状态。
 - 验证证据：旧实现 1440x900 RED（“依赖·已满足”与 `TASK-BETA` 相交）；Round 5 高密度场景 RED（14 任务/91 标签中 47 个落出 SVG）；`CR-1` 定向浏览器回归 4/4 GREEN；`CR-2` 可访问性回归先 RED；Round 7 将 transform 变化加入 oracle 后复现焦点测试 RED，`CR-3` 后定向 1/1、重复 5/5 GREEN；最终完整 `npm run verify` 通过：codegen、typecheck、lint、84/84 unit、build、89/89 browser。真实 CADCat 候选页统计为 14 节点、3 列×5 行、0 图内未知标签、91 未知证据列表项、0 标签碰撞、0 标签越界，并显示 `显示 14 个 TASK（来源：docs/tasks/*.md）`。
 - Review findings：`EDGE-LABEL-OCCLUSION-P1-001` 自动证据已 GREEN；`EDGE-LABEL-RVW-P2-001/002/003/004/005/006/007/008/009` 均已关闭；Round 8 独立只读 Review Passed，无开放 P0～P3。
 - UA 动作与结果：UA5 Passed；用户于 2026-07-31 在本机验收地址 `http://127.0.0.1:35173/` 明确确认“界面修复验收通过”。该确认只授权记录验收结果，不推导 commit、merge、push、release 或 `Closed`。
-- 状态边界：Uncommitted / Unmerged / Not Released / Not Closed。
+- 状态边界：Committed / Unmerged / Not Pushed / Not Released / Not Closed。
 - 剩余风险：主仓库另有未提交的 Dashboard 界面修改，本任务不吸收、不覆盖。
 - 下一步：按已授权 Auto-Land Goal 形成精确提交；随后在独立集成 Worktree 与性能候选串行集成、重建 runtime 并完成合并后验证。
