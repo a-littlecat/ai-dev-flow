@@ -6,16 +6,16 @@
 - `task_id`: `DASHBOARD-EDGE-LABEL-001`
 - `task_type`: `repair`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA5`
 - `ua_status`: `Passed`
 - `ua_evidence`: `user-message-2026-07-31-interface-fix-accepted`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -85,6 +85,8 @@
 - 验证证据：旧实现 1440x900 RED（“依赖·已满足”与 `TASK-BETA` 相交）；Round 5 高密度场景 RED（14 任务/91 标签中 47 个落出 SVG）；`CR-1` 定向浏览器回归 4/4 GREEN；`CR-2` 可访问性回归先 RED；Round 7 将 transform 变化加入 oracle 后复现焦点测试 RED，`CR-3` 后定向 1/1、重复 5/5 GREEN；最终完整 `npm run verify` 通过：codegen、typecheck、lint、84/84 unit、build、89/89 browser。真实 CADCat 候选页统计为 14 节点、3 列×5 行、0 图内未知标签、91 未知证据列表项、0 标签碰撞、0 标签越界，并显示 `显示 14 个 TASK（来源：docs/tasks/*.md）`。
 - Review findings：`EDGE-LABEL-OCCLUSION-P1-001` 自动证据已 GREEN；`EDGE-LABEL-RVW-P2-001/002/003/004/005/006/007/008/009` 均已关闭；Round 8 独立只读 Review Passed，无开放 P0～P3。
 - UA 动作与结果：UA5 Passed；用户于 2026-07-31 在本机验收地址 `http://127.0.0.1:35173/` 明确确认“界面修复验收通过”。该确认只授权记录验收结果，不推导 commit、merge、push、release 或 `Closed`。
-- 状态边界：Accepted / Committed `38f5940e1baa6748f63800c2a5640e8ac6242ec7` / Pushed `origin/codex/dashboard-edge-label-001@07274f9` / Unmerged / Not Released / Not Closed。
+- 合并目标与事实证据：目标=`main`；功能提交 `38f5940e1baa6748f63800c2a5640e8ac6242ec7` 经集成 PR #5 合并，远端 `main@102297e2e27ac67b56b7cbccf291f410d6c41efc` 已验证包含该提交。
+- 本机同步证据：合并后主线 Skill 与物理安装目录 `C:\Users\92336\.agents\skills\ai-dev-flow` 的 132 个文件相对路径和 SHA256 完全一致（Missing/Extra/Changed=`0/0/0`）；回退备份位于 `C:\Users\92336\.agents\skills\_sync_backups\ai-dev-flow-20260731-233231`。
+- 状态边界：Closed / Committed / Merged / Pushed / PR #5 Merged / Local Sync Verified / Not Released。
 - 剩余风险：主仓库另有未提交的 Dashboard 界面修改，本任务不吸收、不覆盖。
-- 下一步：候选提交与推送已完成；正在独立集成 Worktree 与性能候选串行集成、重建 runtime 并完成合并后验证。
+- 下一步：无；任务已按用户明确授权关闭，未创建 tag、release 或 deploy。

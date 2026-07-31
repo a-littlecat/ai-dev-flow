@@ -6,16 +6,16 @@
 - `task_id`: `DASHBOARD-EDGE-PERF-INTEGRATE-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA6`
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-edge-perf-integrate-001-ua6-2026-07-31`
 - `acceptance_authority`: `Designated Acceptor Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -48,8 +48,8 @@
 - [x] runtime 生成文件集合与预期完全一致，source/build 后再次 `--check` 通过。
 - [x] 合并后 frontend、backend、integration、Skill、Contract lint、Artifact Guard candidate 全部 GREEN。
 - [x] 独立只读 Review Passed，无开放 P0/P1/P2。
-- [ ] 远端 `main` 包含集成提交；本机物理 Skill 同步并与主线 SHA256 一致。
-- [ ] 页面、性能、Goal 与本集成 TASK 写回 Closed；仅删除已确认完全合并的任务分支。
+- [x] 远端 `main` 包含集成提交；本机物理 Skill 同步并与主线 SHA256 一致。
+- [x] 页面、性能、Goal 与本集成 TASK 写回 Closed；仅删除已确认完全合并的任务分支。
 
 ## Outcome
 
@@ -67,7 +67,10 @@
 - 验证证据：frontend codegen/typecheck/lint/build + 84/84 unit + 89/89 browser；backend 174/174；integration 首轮以旧 20-path 断言 RED，更新为 27-path + digest 后 51/51；Skill 91/91；runtime build 与 `--check` 均 `file_count=36, ok=true`；Artifact Guard `baseline_preserved=true / candidate_consistent=true / mismatches=[]`；四个 TASK lint 0 errors / 0 violations；diff checks 通过。
 - 主工作区保护收据（2026-07-31）：保护对象为 `dashboard/frontend/src/ui/graph/graphView.ts`、`dashboard/frontend/src/ui/graph/layout.ts`、`dashboard/frontend/src/ui/overlays.ts`、`dashboard/frontend/tests/browser/graph.spec.ts`、`dashboard/frontend/tests/browser/real-scale.spec.ts`、`dashboard/frontend/tests/derive.test.ts`、`dashboard/frontend/tests/parallel-display.test.ts`、`dashboard/frontend/tests/overlays.test.ts`；执行前基线聚合 SHA256=`ECED3A9161E9A076FC5E218CF6B7C4A586E3057375C76AA875E81F5E7E5AABFB`，集成验证后复核聚合 SHA256 相同，结果 `8/8 unchanged`；主工作区仍为 `main@36aae03` 且上述 8 项保持用户未提交状态。
 - Review findings：Round 1 `Needs Fix` 的 `P2-001/P2-002/P3-003` 均为记录缺口；修正来源 TASK 陈旧状态、主工作区保护收据和 lint 对象表述后，Round 2 关闭全部 finding；Round 3 对保护路径笔误做最终只读复核，结论 `Review Passed`，`P0/P1/P2/P3=0/0/0/0`。
+- 关闭收据 Review：首轮发现 Board 阶段摘要和 GOAL 后续 authority 两项记录 P2；修正后独立只读复核 `Review Passed`，两项均 Closed，`P0/P1/P2/P3=0/0/0/0`。
 - UA 动作与结果：页面 UA5 与性能 UA6 已由用户确认；组合 runtime 的冻结生成/parity/全套测试、主工作区保护和独立 Review 判据全部满足，由 Designated Acceptor 记录组合 `UA6 Passed`。
-- 状态边界：Accepted / Review Passed / UA6 Passed / Committed `f3022f498cf46e55f8abca37743f1c769485edfa` / Unmerged / Not Synced / Not Closed。
-- 剩余风险：生成 bundle 的 hashed asset 名必须以实际构建输出为准；任何偏离冻结集合均停止。
-- 下一步：形成集成提交并执行已授权 push / PR / merge；远端合并后同步本机物理 Skill，再写回 Closed 并删除已完全合并分支。
+- 合并目标与事实证据：目标=`main`；集成提交 `f3022f498cf46e55f8abca37743f1c769485edfa` 与收据提交 `d496943b7dc0f45f0e92b86813afcd8ec19ff07c` 经 PR #5 于 2026-07-31 合并为 `main@102297e2e27ac67b56b7cbccf291f410d6c41efc`；GitHub 状态为 `CLEAN / MERGEABLE`，未报告 CI checks。
+- 本机同步证据：源=`origin/main@102297e2e27ac67b56b7cbccf291f410d6c41efc`；物理目标=`C:\Users\92336\.agents\skills\ai-dev-flow`；Junction 入口 `.codex` 与 `.config\opencode` 均解析到该物理目标；132 个文件 Missing/Extra/Changed=`0/0/0`，结构校验通过，源端 Skill 91/91、runtime 36/36、不依赖仓库布局的安装测试 76/76 与安装入口 `--help` 通过；备份=`C:\Users\92336\.agents\skills\_sync_backups\ai-dev-flow-20260731-233231`。直接在安装目录执行全套 discover 时，仓库上下文专用的 `test_compact_writer_routing.py` 因固定读取仓库 README/docs 产生 5 个 `FileNotFoundError`，不作为安装态 oracle；文件 SHA256 一致性与源端全套测试未受影响。
+- 状态边界：Closed / Review Passed / UA6 Passed / Committed / Merged via PR #5 / Local Sync Verified / Not Released。
+- 剩余风险：依赖锁文件的既有安全审计仍报告 10 项（3 moderate、6 high、1 critical）；本任务未获依赖升级授权，因此没有执行自动修复。非 Windows fallback 仍只有自动回归。
+- 下一步：无；任务已按用户明确授权关闭，分支仅在确认关闭收据也合并后删除。

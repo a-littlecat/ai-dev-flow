@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-31
-> - 当前模式：Dashboard 页面修复与空闲性能自动落地集成
-> - 当前阶段：EDGE-LABEL `Accepted / Committed / Pushed`；IDLE-PERF `Accepted / Committed / Pushed`；集成 `Verification Green / In Review`
+> - 当前模式：Dashboard 页面修复、空闲性能与 Goal 自动落地关闭收据
+> - 当前阶段：PR #5 已合并；本机 Skill 已同步并验证；EDGE-LABEL、IDLE-PERF、GOAL 与集成 TASK `Closed candidate`；关闭收据 `Review Passed / Uncommitted`
 > - 当前方案：`docs/tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md`
 
 ## 当前授权边界
@@ -167,10 +167,10 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 | REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
-| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Accepted | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Not Released / Not Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
-| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Accepted | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / Pushed / Integration in progress | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
-| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Accepted | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / Pushed / Integration in progress | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
-| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Accepted | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Committed `f3022f4` / Unmerged / Not Synced | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
+| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Closed | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Local Sync Verified / Not Released / Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
+| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
+| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
+| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -185,7 +185,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`DASHBOARD-EDGE-LABEL-001` 与 `DASHBOARD-IDLE-PERF-001` 已分别通过完整验证、独立 Review 和用户 UA，形成并推送精确候选提交。当前只允许在最新 `origin/main` 的独立 Worktree 串行集成两候选、解决 TASK_BOARD 投影冲突、重建 Skill runtime、运行合并后全量验证与独立只读 Review；门禁 GREEN 后可推送、创建 PR、合并、同步本机物理 Skill、写回 Closed 并删除完全合并的任务分支。不得创建 tag、release、deploy、强制推送、改写历史或覆盖主工作区用户改动。
+`DASHBOARD-EDGE-LABEL-001`、`DASHBOARD-IDLE-PERF-001` 与 `DASHBOARD-EDGE-PERF-INTEGRATE-001` 已通过 PR #5 合并到远端 `main@102297e`；本机物理 Skill 已完成备份、同步和 SHA256 parity。当前只允许完成本关闭收据的独立 Review、精确提交、push / PR / merge，并在关闭收据也成为远端 `main` 祖先后删除四个任务分支及临时关闭分支。不得创建 tag、release、deploy、强制推送、改写历史、删除旧 UnattendedRun Worktree 或覆盖主工作区用户改动。
 
 ## 停止条件
 
