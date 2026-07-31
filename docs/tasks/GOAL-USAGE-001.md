@@ -6,7 +6,7 @@
 - `task_id`: `GOAL-USAGE-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
 - `ua_status`: `Passed`
@@ -15,7 +15,7 @@
 - `commit_status`: `Committed`
 - `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -30,8 +30,9 @@
 
 - 前置依赖：`REPAIR-CAMPAIGN-001` 已发布；Codex Harness 原生 Goal 能力由平台提供，不成为 Skill 的内部实现。
 - Base commit：`36aae03e944c3b8b7d5ec52d1417190012d1a6d1`
-- 已有 authority：用户于 2026-07-31 确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求增加中文触发词；授权在本任务精确范围内实现、验证、独立 Review，并在所有门禁 GREEN 后形成 commit、推送任务分支及按安全条件执行可归属的集成动作。
-- 未授权动作：tag、release、deploy、删除、数据迁移、密钥/认证/授权修改、本机 Skill 同步、旧 Worktree 删除、强制推送、历史改写、`Closed`。
+- 已有 authority：用户于 2026-07-31 确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求增加中文触发词；授权在本任务精确范围内实现、验证、独立 Review，并在所有门禁 GREEN 后形成 commit、推送任务分支及按安全条件执行可归属的集成动作。用户随后明确启动本次自动落地目标，追加授权本机 Skill 同步、任务关闭和已完全合并任务分支删除。
+- 初始未授权、现已由后续指令覆盖的动作：本机 Skill 同步、`Closed` 写回、已完全合并的本任务分支删除。
+- 当前仍未授权动作：tag、release、deploy、数据迁移、密钥/认证/授权修改、旧 Worktree 删除、删除未完全合并分支、强制推送或历史改写。
 - 执行位置：`D:\open-source\ai-dev-flow-wt\goal-usage-001` / `codex/goal-usage-001`。
 
 ## 路由与风险
@@ -71,6 +72,7 @@
 - Review findings：Round 1=`Needs Fix`，`GOAL-USAGE-RVW-P2-001` 指出 `auto_release` 与生产外部副作用硬停止冲突；`GOAL-USAGE-RVW-P2-002` 指出定向测试未冻结完整意图、安全排除、Designated Acceptor 和不完整发布信息边界。AR-1 限定显式发布 authority 的外部副作用边界并补充确定性断言；Round 2 独立只读 Review Passed，两个 P2 均 Closed，新增 P0/P1/P2/P3=`0/0/0/0`。
 - UA 动作与结果：UA2 Passed；用户于 2026-07-31 明确回复“验收通过”，确认中文触发词和自动落地权限上限符合预期。
 - 合并目标与事实证据：目标=`main`；功能提交 `f205679`、交付记录 `bf3ce7c` 与验收记录 `7baff50` 已推送；PR #2 在 UA2 Passed 后转为 Ready，并于 2026-07-31 合并为 `main@58837d7`。GitHub 未报告 CI checks，合并依据为本任务本地验证、独立 Review Passed、UA2 Passed 与 GitHub `CLEAN / MERGEABLE` 门禁。
-- 状态边界：Accepted / Committed / Merged / Pushed / PR #2 Merged / No CI Checks Reported / Not Released / Not Synced / Not Closed。
+- 本机同步证据：GOAL-USAGE-001 的 Skill 内容已随 `origin/main@102297e2e27ac67b56b7cbccf291f410d6c41efc` 同步到物理安装目录；132 个文件相对路径与 SHA256 为 Missing/Extra/Changed=`0/0/0`，结构校验和源端全套 91/91 测试通过。
+- 状态边界：Closed / Committed / Merged / Pushed / PR #2 Merged / Local Sync Verified / Not Released。
 - 剩余风险：Goal 是 Codex 平台能力；其他 Harness 不得伪装或模拟同名能力。
-- 下一步：无需继续集成；保持旧 Worktree 与任务分支不删除。本任务未获 release、本机 Skill 同步或 `Closed` authority。
+- 下一步：无；用户于 2026-07-31 明确授权本机 Skill 同步、任务关闭和完全合并后分支删除；未授权 release、tag 或 deploy。

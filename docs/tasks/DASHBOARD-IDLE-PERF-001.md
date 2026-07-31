@@ -6,16 +6,16 @@
 - `task_id`: `DASHBOARD-IDLE-PERF-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA6`
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-idle-perf-001-ua6-2026-07-31`
 - `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## Scheduling
 
@@ -121,6 +121,8 @@
 - Review findings：Round 10 独立只读 Review（session `019fb4c6-2893-7051-a579-849a492ff839`）为 `Needs Fix`，无新 P0/P1，但新增 `P2-014/P2-015`：上一轮 stop 回归的 2 秒 barrier 可能先于 stop 超时自行释放，无法构成真实 RED→GREEN 保护；`ERROR_NOTIFY_ENUM_DIR` 后重新设防异常未上报，可能阻止上层切换 fallback。当前 stop 回归改为独立 stopper，必须在 barrier 未释放且 updater 仍阻塞时由第一次 stop 无异常收敛；目录通知溢出后的 `_rearm()` 与其他分支一致捕获异常并调用 `_fail()`，新增真实事件完成后注入溢出与 ResetEvent 失败的确定性回归，等待 Round 11 独立复核。
 - Review findings：Round 11 独立只读 Review（session `019fb4d3-4ea7-70e1-99e4-4032062383d7`）为 `Passed`，确认 `P2-014/P2-015` Closed，P2-011～013 与全部更早 P1/P2 保持关闭，无开放或新增 P0/P1/P2；22 个暂存文件与精确清单一致，源码与内置 Skill 运行时对应 blob 一致。
 - UA 动作与结果：`UA6 Passed`；用户于 2026-07-31 明确确认性能验收通过。
-- 状态边界：`Accepted / Committed 2963353a33e3717202b91ba6b0bebcbbc994d88a / Pushed origin/codex/dashboard-idle-perf-001@cfcf23c / Unmerged / Not Released / Not Closed`。
+- 合并目标与事实证据：目标=`main`；功能提交 `2963353a33e3717202b91ba6b0bebcbbc994d88a` 经集成 PR #5 合并，远端 `main@102297e2e27ac67b56b7cbccf291f410d6c41efc` 已验证包含该提交。
+- 本机同步证据：合并后主线 Skill 与物理安装目录 `C:\Users\92336\.agents\skills\ai-dev-flow` 的 132 个文件相对路径和 SHA256 完全一致（Missing/Extra/Changed=`0/0/0`）；Skill 结构有效，源端全套测试 91/91、runtime 36/36 校验通过，安装入口 `dashboard.py --help` 正常。
+- 状态边界：`Closed / Committed / Merged / Pushed / PR #5 Merged / Local Sync Verified / Not Released`。
 - 剩余风险：非 Windows fallback 仅有自动回归，未做真实非 Windows 性能采样。
-- 下一步：候选提交、推送和用户 UA6 确认已完成；正在独立集成 Worktree 与页面候选串行集成、重建 runtime 并完成合并后验证。
+- 下一步：无；任务已按用户明确授权关闭，未创建 tag、release 或 deploy。
