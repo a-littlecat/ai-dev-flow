@@ -13,6 +13,13 @@ import type { Diagnostic } from "../generated/contracts.types";
 import { el, clear } from "./dom";
 import { SEVERITY_ICON, SEVERITY_LABEL } from "./labels";
 
+const TASK_INGESTION_ERROR_CODES = new Set([
+  "E_PARSE",
+  "E_TASK_ID_CONFLICT",
+  "E_UNKNOWN_VALUE",
+  "E_LEGACY_CONFLICT",
+]);
+
 export class Overlays {
   /** Banner/strip container, mounted directly under the status bar. */
   readonly root: HTMLElement;
@@ -58,6 +65,21 @@ export class Overlays {
     }
 
     const snapshot = state.snapshot;
+    if (snapshot) {
+      const ingestionDiagnostics = snapshot.diagnostics.filter((diagnostic) =>
+        TASK_INGESTION_ERROR_CODES.has(diagnostic.code),
+      );
+      if (ingestionDiagnostics.length > 0) {
+        const notice = el(
+          "div",
+          "overlay-banner task-ingestion-notice",
+          `关系图当前显示 ${snapshot.summary.task_total} 个已解析任务；检测到 ${ingestionDiagnostics.length} 条 TASK 解析或 Contract 不兼容错误，部分任务可能未纳入。请展开底部“诊断”查看具体原因。`,
+        );
+        notice.setAttribute("role", "status");
+        this.root.append(notice);
+      }
+    }
+
     if (snapshot && snapshot.state !== "fresh") {
       const strip = el("div", `overlay-strip stale-strip-${snapshot.state}`);
       const reasons: string[] = [];
