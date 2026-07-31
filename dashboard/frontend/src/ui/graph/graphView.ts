@@ -43,8 +43,13 @@ export class GraphView {
   private edgeLayer: SVGGElement;
   private assessmentLayer: SVGGElement;
   private nodeLayer: SVGGElement;
+  private legendNote: HTMLElement;
   private layout: GraphLayout | null = null;
   private nodeElements = new Map<string, SVGGElement>();
+  private relationshipLabelRects: LayoutRect[] = [];
+  private renderedSnapshotRevision: string | null = null;
+  private renderedLayoutExtent: string | null = null;
+  private autoFitRequest = 0;
   private reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   private panState: { pointerId: number; startX: number; startY: number; origin: Viewport } | null = null;
 
@@ -85,6 +90,7 @@ export class GraphView {
     this.svg.append(defs, this.viewportGroup);
 
     const legend = buildLegend();
+    this.legendNote = legend.querySelector<HTMLElement>(".legend-note")!;
     this.root.append(this.svg, controls, legend);
     this.bindPointer();
     this.bindKeyboard();
@@ -93,14 +99,19 @@ export class GraphView {
   // ---- rendering -------------------------------------------------------
 
   update(state: AppState): void {
+    const focusedTaskIdBeforeRender = this.focusedTaskId();
     clear(this.edgeLayer);
     clear(this.assessmentLayer);
     clear(this.nodeLayer);
     this.nodeElements.clear();
+    this.relationshipLabelRects = [];
     const snapshot = state.snapshot;
     const derived = state.derived;
     if (!snapshot || !derived || snapshot.tasks.length === 0) {
       this.layout = null;
+      this.renderedSnapshotRevision = null;
+      this.renderedLayoutExtent = null;
+      this.legendNote.textContent = "图中关系均带文字/符号；候选不代表已授权执行。";
       this.renderEmptyHint(snapshot !== null);
       this.applyViewport(state.viewport);
       return;
@@ -157,9 +168,32 @@ export class GraphView {
         selectedTaskId !== null && !selectedContext,
       );
     }
+    let renderedAssessmentCount = 0;
     for (const assessment of snapshot.parallel_assessments) {
-      this.renderAssessment(assessment, state.highlight === "candidates");
+      // Unknown parallelism is evidence, not a structural graph relation.
+      // Rendering every unknown pair produces N*(N-1)/2 arcs and labels that
+      // obscure the task cards; the list and detail panel retain the evidence.
+      if (assessment.result === "unknown") {
+        continue;
+      }
+      const selectedContext =
+        selectedTaskId !== null &&
+        (assessment.left_task_id === selectedTaskId ||
+          assessment.right_task_id === selectedTaskId);
+      const candidateHighlight =
+        state.highlight === "candidates" && assessment.result === "candidate";
+      if (!selectedContext && !candidateHighlight) {
+        continue;
+      }
+      this.renderAssessment(assessment, selectedContext || candidateHighlight);
+      renderedAssessmentCount += 1;
     }
+    const hiddenAssessmentCount =
+      snapshot.parallel_assessments.length - renderedAssessmentCount;
+    this.legendNote.textContent =
+      hiddenAssessmentCount > 0
+        ? `关系图已收起 ${hiddenAssessmentCount} 条并行评估以避免遮挡；选择任务或点击“并行候选”查看候选 / 必须串行连线，“并行未知”仅在列表 / 详情中显示。候选不代表已授权执行。`
+        : "图中关系均带文字/符号；候选不代表已授权执行。";
     for (const task of snapshot.tasks) {
       const layoutNode = this.layout.nodes.get(task.task_id);
       if (!layoutNode) {
@@ -178,7 +212,17 @@ export class GraphView {
     if (searchMatched !== null && searchMatched.size === 0) {
       this.renderSearchEmptyHint(searchText);
     }
+    const layoutExtent = `${this.layout.width}:${this.layout.height}`;
+    const shouldRefit =
+      this.renderedSnapshotRevision === snapshot.revision &&
+      this.renderedLayoutExtent !== null &&
+      this.renderedLayoutExtent !== layoutExtent;
+    this.renderedSnapshotRevision = snapshot.revision;
+    this.renderedLayoutExtent = layoutExtent;
     this.applyViewport(state.viewport);
+    if (shouldRefit) {
+      this.scheduleContentFit(focusedTaskIdBeforeRender);
+    }
   }
 
   private renderSearchEmptyHint(searchText: string): void {
@@ -363,8 +407,20 @@ export class GraphView {
     group.append(pathEl);
 
     const labelText = edgeLabelText(edge);
+    const labelPlacement = placeGraphLabel(
+      path,
+      labelText,
+      this.layout,
+      this.relationshipLabelRects,
+    );
+    this.relationshipLabelRects.push(labelPlacement.rect);
     const labelNode = svgText(
-      { x: String(path.labelX), y: String(path.labelY), class: "edge-label", "text-anchor": "middle" },
+      {
+        x: String(labelPlacement.point.x),
+        y: String(labelPlacement.point.y),
+        class: "edge-label",
+        "text-anchor": "middle",
+      },
       labelText,
     );
     group.append(labelNode);
@@ -396,9 +452,21 @@ export class GraphView {
     const labelText = reasonCode
       ? `${resultText}·${PARALLEL_REASON_LABEL[reasonCode] ?? reasonCode}`
       : resultText;
+    const labelPlacement = placeGraphLabel(
+      path,
+      labelText,
+      this.layout,
+      this.relationshipLabelRects,
+    );
+    this.relationshipLabelRects.push(labelPlacement.rect);
     group.append(
       svgText(
-        { x: String(path.labelX), y: String(path.labelY), class: "assessment-label", "text-anchor": "middle" },
+        {
+          x: String(labelPlacement.point.x),
+          y: String(labelPlacement.point.y),
+          class: "assessment-label",
+          "text-anchor": "middle",
+        },
         labelText,
       ),
     );
@@ -416,6 +484,30 @@ export class GraphView {
       "transform",
       `translate(${viewport.x}, ${viewport.y}) scale(${viewport.k})`,
     );
+  }
+
+  private focusedTaskId(): string | null {
+    const activeElement = document.activeElement;
+    return activeElement instanceof Element && this.nodeLayer.contains(activeElement)
+      ? (activeElement.closest<SVGGElement>(".node")?.dataset.taskId ?? null)
+      : null;
+  }
+
+  private scheduleContentFit(focusedTaskIdBeforeRender: string | null): void {
+    const request = ++this.autoFitRequest;
+    requestAnimationFrame(() => {
+      if (request !== this.autoFitRequest) {
+        return;
+      }
+      const currentFocusedTaskId = this.focusedTaskId();
+      const focusedTaskId =
+        currentFocusedTaskId ??
+        (document.activeElement === document.body ? focusedTaskIdBeforeRender : null);
+      this.fitToContent(false);
+      if (focusedTaskId) {
+        this.nodeElements.get(focusedTaskId)?.focus();
+      }
+    });
   }
 
   private zoomBy(factor: number, center?: { x: number; y: number }): void {
@@ -659,6 +751,120 @@ interface EdgeGeometry {
   labelY: number;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface LayoutRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const EDGE_LABEL_HEIGHT = 14;
+const EDGE_LABEL_NODE_CLEARANCE = 4;
+
+/**
+ * Keep relationship labels out of every task-card rectangle. Long edges can
+ * cross an intermediate layer, so their geometric midpoint is not guaranteed
+ * to be free even when both endpoint gaps are clear.
+ */
+function placeGraphLabel(
+  path: EdgeGeometry,
+  text: string,
+  layout: GraphLayout,
+  occupiedLabels: LayoutRect[],
+): { point: Point; rect: LayoutRect } {
+  const textWidth = [...text].reduce(
+    (width, character) => width + ((character.codePointAt(0) ?? 0) <= 0xff ? 6.5 : 10.5),
+    8,
+  );
+  const nodes: LayoutRect[] = [...layout.nodes.values()].map((node) => ({
+    left: node.x - EDGE_LABEL_NODE_CLEARANCE,
+    top: node.y - EDGE_LABEL_NODE_CLEARANCE,
+    right: node.x + NODE_WIDTH + EDGE_LABEL_NODE_CLEARANCE,
+    bottom: node.y + NODE_HEIGHT + EDGE_LABEL_NODE_CLEARANCE,
+  }));
+  const horizontalOffsets = symmetricOffsets(18, NODE_WIDTH);
+  const verticalOffsets = symmetricOffsets(16, NODE_HEIGHT + EDGE_LABEL_HEIGHT);
+
+  for (const verticalOffset of verticalOffsets) {
+    for (const horizontalOffset of horizontalOffsets) {
+      const candidate = {
+        x: path.labelX + horizontalOffset,
+        y: path.labelY + verticalOffset,
+      };
+      const candidateRect = graphLabelRect(candidate, textWidth);
+      if (
+        candidateRect.left < 0 ||
+        candidateRect.top < 0 ||
+        candidateRect.right > layout.width ||
+        candidateRect.bottom > layout.height
+      ) {
+        continue;
+      }
+      if (
+        !nodes.some((nodeRect) => rectsIntersect(candidateRect, nodeRect)) &&
+        !occupiedLabels.some((labelRect) => rectsIntersect(candidateRect, labelRect))
+      ) {
+        return { point: candidate, rect: candidateRect };
+      }
+    }
+  }
+
+  // Dense or degenerate graphs (notably a one-node self-loop) can exhaust the
+  // in-bounds search. Extend the layout with a checked overflow lane rather
+  // than returning the original, known-unsafe midpoint.
+  const horizontalPadding = EDGE_LABEL_NODE_CLEARANCE * 2;
+  layout.width = Math.max(layout.width, textWidth + horizontalPadding);
+  const minimumX = textWidth / 2 + EDGE_LABEL_NODE_CLEARANCE;
+  const maximumX = layout.width - textWidth / 2 - EDGE_LABEL_NODE_CLEARANCE;
+  const nodeBottom = nodes.reduce(
+    (bottom, nodeRect) => Math.max(bottom, nodeRect.bottom),
+    0,
+  );
+  const fallbackPoint = {
+    x: clamp(path.labelX, minimumX, maximumX),
+    y: nodeBottom + EDGE_LABEL_HEIGHT + 2,
+  };
+  let fallbackRect = graphLabelRect(fallbackPoint, textWidth);
+  while (
+    nodes.some((nodeRect) => rectsIntersect(fallbackRect, nodeRect)) ||
+    occupiedLabels.some((labelRect) => rectsIntersect(fallbackRect, labelRect))
+  ) {
+    fallbackPoint.y += EDGE_LABEL_HEIGHT + EDGE_LABEL_NODE_CLEARANCE * 2;
+    fallbackRect = graphLabelRect(fallbackPoint, textWidth);
+  }
+  layout.height = Math.max(
+    layout.height,
+    fallbackRect.bottom + EDGE_LABEL_NODE_CLEARANCE,
+  );
+  return { point: fallbackPoint, rect: fallbackRect };
+}
+
+function graphLabelRect(point: Point, textWidth: number): LayoutRect {
+  return {
+    left: point.x - textWidth / 2,
+    top: point.y - EDGE_LABEL_HEIGHT - 2,
+    right: point.x + textWidth / 2,
+    bottom: point.y + 6,
+  };
+}
+
+function symmetricOffsets(step: number, maximum: number): number[] {
+  const offsets = [0];
+  for (let offset = step; offset <= maximum; offset += step) {
+    offsets.push(-offset, offset);
+  }
+  return offsets;
+}
+
+function rectsIntersect(a: LayoutRect, b: LayoutRect): boolean {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
 function edgePath(from: LayoutNode, to: LayoutNode, arc: boolean): EdgeGeometry {
   const x1 = from.x + NODE_WIDTH;
   const y1 = from.y + NODE_HEIGHT / 2;
@@ -747,11 +953,11 @@ function buildLegend(): HTMLElement {
     ["- - 替代（长虚线箭头）", "legend-line legend-replaces"],
     ["· · 派生（点线箭头）", "legend-line legend-discovered"],
     ["⋯ 冲突（点划线，无箭头）", "legend-line legend-conflict"],
-    ["～ 并行评估连线（候选 / 必须串行 / 未知，均有文字）", "legend-line legend-assessment"],
+    ["～ 并行评估连线（按选择显示候选 / 必须串行；未知见列表 / 详情）", "legend-line legend-assessment"],
   ];
   for (const [text, cls] of items) {
     legend.append(el("div", cls, text));
   }
-  legend.append(el("div", "legend-note", "所有状态均带文字/符号；候选不代表已授权执行。"));
+  legend.append(el("div", "legend-note", "图中关系均带文字/符号；候选不代表已授权执行。"));
   return legend;
 }

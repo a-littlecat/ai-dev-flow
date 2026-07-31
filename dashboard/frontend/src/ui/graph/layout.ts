@@ -15,6 +15,9 @@ export const NODE_WIDTH = 244;
 export const NODE_HEIGHT = 100;
 export const LAYER_GAP = 110;
 export const ROW_GAP = 30;
+const GRID_COLUMN_GAP = 64;
+const GRID_ROW_GAP = 48;
+const GRID_PADDING = 30;
 
 export interface LayoutNode {
   taskId: string;
@@ -61,9 +64,23 @@ export function layoutGraph(taskIds: string[], edges: RelationshipEdge[]): Graph
 
   const cycleEdgeIds = new Set<string>();
   const acyclic = breakCycles(nodes, layeringEdges, cycleEdgeIds);
-  assignLayers(nodes, acyclic);
-  orderLayers(nodes, acyclic);
-  position(nodes);
+  const connectedTaskIds = new Set(acyclic.flatMap((edge) => [edge.from, edge.to]));
+  const connectedNodes = selectNodes(nodes, (taskId) => connectedTaskIds.has(taskId));
+  const isolatedNodes = selectNodes(nodes, (taskId) => !connectedTaskIds.has(taskId));
+  const disconnectedGrid = connectedNodes.size === 0;
+  if (disconnectedGrid) {
+    positionDisconnectedGrid(nodes);
+  } else {
+    assignLayers(connectedNodes, acyclic);
+    orderLayers(connectedNodes, acyclic);
+    position(connectedNodes);
+    if (isolatedNodes.size > 0) {
+      const connectedBottom = Math.max(
+        ...[...connectedNodes.values()].map((node) => node.y + NODE_HEIGHT),
+      );
+      positionDisconnectedGrid(isolatedNodes, connectedBottom + GRID_ROW_GAP);
+    }
+  }
 
   let width = 0;
   let height = 0;
@@ -71,7 +88,12 @@ export function layoutGraph(taskIds: string[], edges: RelationshipEdge[]): Graph
     width = Math.max(width, node.x + NODE_WIDTH);
     height = Math.max(height, node.y + NODE_HEIGHT);
   }
-  return { nodes, cycleEdgeIds, width: width + LAYER_GAP, height: height + ROW_GAP };
+  return {
+    nodes,
+    cycleEdgeIds,
+    width: width + (disconnectedGrid ? GRID_PADDING : LAYER_GAP),
+    height: height + (disconnectedGrid ? GRID_PADDING : ROW_GAP),
+  };
 }
 
 function buildAdjacency(
@@ -179,6 +201,13 @@ function taskIdsSorted(nodes: Map<string, LayoutNode>): string[] {
   return [...nodes.keys()].sort((a, b) => a.localeCompare(b));
 }
 
+function selectNodes(
+  nodes: Map<string, LayoutNode>,
+  predicate: (taskId: string) => boolean,
+): Map<string, LayoutNode> {
+  return new Map([...nodes].filter(([taskId]) => predicate(taskId)));
+}
+
 /** Barycenter sweeps to reduce edge crossings. */
 function orderLayers(nodes: Map<string, LayoutNode>, edges: LayeringEdge[]): void {
   const layers = new Map<number, string[]>();
@@ -263,4 +292,25 @@ function position(nodes: Map<string, LayoutNode>): void {
     node.x = LAYER_GAP / 2 + node.layer * (NODE_WIDTH + LAYER_GAP);
     node.y = (layerOffset.get(node.layer) ?? 0) + node.order * (NODE_HEIGHT + ROW_GAP) + ROW_GAP / 2;
   }
+}
+
+/**
+ * With no directional structure there are no meaningful dependency layers.
+ * Use a compact reading grid instead of implying a long vertical chain.
+ */
+function positionDisconnectedGrid(nodes: Map<string, LayoutNode>, originY = GRID_PADDING): void {
+  const taskIds = taskIdsSorted(nodes);
+  const columns = Math.max(1, Math.ceil(Math.sqrt(taskIds.length / 1.8)));
+  taskIds.forEach((taskId, index) => {
+    const node = nodes.get(taskId);
+    if (!node) {
+      return;
+    }
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    node.layer = column;
+    node.order = row;
+    node.x = GRID_PADDING + column * (NODE_WIDTH + GRID_COLUMN_GAP);
+    node.y = originY + row * (NODE_HEIGHT + GRID_ROW_GAP);
+  });
 }

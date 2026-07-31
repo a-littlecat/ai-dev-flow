@@ -1,11 +1,13 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-30
-> - 当前模式：`REL-004` v0.9.1 跨项目 Dashboard 发布
-> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.1 / Not Closed`
-> - 当前方案：`docs/tasks/REL-004-release-v091-portable-dashboard.md`
+> - 快照日期：2026-07-31
+> - 当前模式：Dashboard 前端真实使用反馈修复
+> - 当前阶段：DASHBOARD-EDGE-LABEL-001 `Accepted / Uncommitted / Unmerged`
+> - 当前方案：`docs/tasks/DASHBOARD-EDGE-LABEL-001.md`
 
 ## 当前授权边界
+
+用户于 2026-07-31 明确回复“性能验收通过，并启动自动落地目标：提交、合并页面修复和性能优化，重建运行时后同步本机 Skill。并关闭任务，删除分支。”该授权覆盖 `DASHBOARD-EDGE-LABEL-001` 的精确提交、推送、集成、runtime 重建、本机 Skill 同步、Closed 写回和完全合并后分支删除；不包含 tag、release、deploy、强制推送、历史改写或覆盖主工作区用户改动。
 
 用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
@@ -55,6 +57,8 @@
 
 `DASHBOARD-PORTABLE-001` 最终独立 Review 仅剩 `DASHBOARD-PORTABLE-RVW-P1-002` 开放。用户于 2026-07-30 在收到“创建 repair TASK、只修 `.pyc/__pycache__` 导入前校验缺口、补测试、完整验证并持续独立 Review 到无 P0/P1”的精确范围后回复“授权”。该指令授权 `DASHBOARD-PORTABLE-REPAIR-001` 的 scope-bound Repair Campaign；不授权新增依赖、改变只读/安全边界、UA6 代验收、Accepted、commit、merge、push、release、本机 Skill 同步或 `Closed`。
 
+用户于 2026-07-31 提供 CADCat 实际页面截图，确认关系文字仍被任务卡片遮挡，并在收到根因和独立前端修复建议后明确回复“确认”。该指令授权 `DASHBOARD-EDGE-LABEL-001` 在独立 Worktree 内补充碰撞 oracle、修复关系文字几何布局、运行前端验证、启动本机验收页并执行隔离只读 Review；不授权吸收或覆盖主仓库未提交前端改动，也不授权 commit、merge、push、release、外部同步、Accepted 或 `Closed`。Round 3 Review 发现 `EDGE-LABEL-RVW-P2-004` 后停止自动修复，用户再次回复“确认”，单次授权仅处理该 finding 的 chain-bound `EscalatedRepair`。Round 8 Review Passed 后，用户明确确认“界面修复验收通过”，仅据此记录 UA5 Passed / Accepted；commit、merge、push、release 和 `Closed` 仍未授权。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -75,6 +79,7 @@
 - 审核并有限修复四份 DASHBOARD 实施 TASK，复审通过后将合同推进到 Ready。
 - 精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成规划 Git baseline。
 - 在规划 baseline 形成后，新开对话并在独立 Worktree 实施 `DASHBOARD-BE-001`，运行验证和独立 Review/repair，停在可供用户 UA3 的状态。
+- 在独立 Worktree 实施 `DASHBOARD-EDGE-LABEL-001`，只处理关系文字与任务卡片遮挡；当前已由用户 UA5 验收通过，停在 `Accepted / Uncommitted / Unmerged`。
 
 本轮不允许：
 
@@ -155,6 +160,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 | REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
+| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Accepted | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | Campaign complete / Uncommitted / Unmerged | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -169,7 +175,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`DASHBOARD-PORTABLE-001` 已由用户完成真实双项目 UA6 并明确确认验收通过，UA 状态保持 `Passed / User Confirmed`；功能提交 `4754813` 已通过 merge commit `17ab9be` 合入本地 `main`。提交前两个交付可靠性 P1 及后续 schema freeze finding 已由 `DASHBOARD-PORTABLE-REPAIR-003` 关闭，最终独立 Review `Passed / P0-P2=0/0/0`。当前 `REL-004` 只是在 README、版本号和内置 runtime 变更后执行发布前自动回归与交付收据，不要求用户重新 UA，也不撤销既有验收。README 重写、版本升级、本机 Skill 同步、`main` push、annotated tag 和正式 GitHub Release 由该独立发布任务记录。不得删除分支/Worktree、强制推送、改写历史或写 `Closed`。
+`DASHBOARD-EDGE-LABEL-001` 的默认 CADCat 页面遮挡、未知 N² 连线、混合图孤立节点、任务数量来源说明及高密度重新适配已形成候选修复；`CR-3` 以 91 标签导致 transform 改变后的焦点保持关闭 P2-009，完整验证为 84/84 unit、89/89 browser，Round 8 独立只读 Review Passed 且无开放 P0～P3。用户已明确确认界面修复验收通过，当前为 `Accepted / Uncommitted / Unmerged`；不得自动 commit、merge、push、release 或 `Closed`。
 
 ## 停止条件
 

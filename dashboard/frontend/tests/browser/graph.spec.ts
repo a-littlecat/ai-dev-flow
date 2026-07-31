@@ -31,7 +31,7 @@ test.describe("relationship graph", () => {
     await openGraph(page);
     await expect(page.locator(".graph-svg")).toBeVisible();
     await expect(page.locator(".edge")).toHaveCount(6);
-    await expect(page.locator(".assessment-link")).toHaveCount(2);
+    await expect(page.locator(".assessment-link")).toHaveCount(0);
     // Global snapshot / diagnostics / project provenance in the status bar.
     await expect(page.locator(STATUS_BAR)).toContainText("项目：D:/fixture");
     await expect(page.locator(STATUS_BAR)).toContainText("分支：codex/dashboard-fe-001");
@@ -118,7 +118,9 @@ test.describe("relationship graph", () => {
     await expect(node(page, "TASK-ALPHA").locator(".node-candidate-tag")).toHaveText("并行候选·非授权");
     await expect(node(page, "TASK-DELTA").locator(".node-candidate-tag")).toHaveText("并行候选·非授权");
     // Legend explains every encoding.
-    await expect(page.locator(".graph-legend")).toContainText("所有状态均带文字/符号；候选不代表已授权执行。");
+    await expect(page.locator(".graph-legend")).toContainText(
+      "关系图已收起 2 条并行评估以避免遮挡",
+    );
     await shot(page, "graph/non-colour-encoding");
   });
 
@@ -132,8 +134,12 @@ test.describe("relationship graph", () => {
     await expect(page.locator(".pair-item.pair-must_serial .pair-button")).toContainText(
       "TASK-BETA × TASK-GAMMA：必须串行",
     );
-    // Assessment arcs carry textual results, never colour-only.
+    // Candidate highlight reveals only candidate links; unknown/must-serial
+    // evidence stays out of the structural canvas until explicitly selected.
+    await page.getByRole("button", { name: /并行候选（2）/ }).click();
     await expect(page.locator(".assessment-candidate .assessment-label")).toContainText("并行候选");
+    await expect(page.locator(".assessment-must_serial")).toHaveCount(0);
+    await node(page, "TASK-BETA").click();
     await expect(page.locator(".assessment-must_serial .assessment-label")).toContainText("必须串行");
     // Detail panel repeats the non-authorisation disclaimer.
     await node(page, "TASK-ALPHA").click();
