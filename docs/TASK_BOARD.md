@@ -1,8 +1,8 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-08-01
-> - 当前模式：主工作区前端残留迁移与旧 Worktree 清理
-> - 当前阶段：`WORKSPACE-CLEANUP-001 Accepted / Review Passed / UA5 Passed / Committed / Unmerged`
+> - 当前模式：主工作区前端残留迁移与旧 Worktree 清理已交付
+> - 当前阶段：`WORKSPACE-CLEANUP-001 Closed / Review Passed / UA5 Passed / PR #7 Merged / Not Released`
 > - 当前方案：`docs/tasks/WORKSPACE-CLEANUP-001.md`
 
 ## 当前授权边界
@@ -171,7 +171,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
-| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Accepted | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / UA5-P2-001 Closed | UA5 Passed / User Confirmed | repair `782e04c` / receipt committed / Unmerged / Not Pushed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
+| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -186,7 +186,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`WORKSPACE-CLEANUP-001` 的“总错误 90 / ingestion error 89”统计口径修复已完成验证、独立 Review、用户真实 CADCat UA5 与本地提交。后续 push、PR、merge、release、tag、deploy 或 Closed 均需单独授权；禁止强制推送或改写历史。
+`WORKSPACE-CLEANUP-001` 已完成验证、独立 Review、用户真实 CADCat UA5，并通过 PR #7 合并与关闭。无剩余产品交付动作；Git 整理只允许执行 TASK“本轮交付清理精确清单”中的对象并逐项复核，清单外一律不删；不执行 tag、release、deploy 或正式本机 Skill/runtime 变更，禁止强制推送或改写历史。
 
 ## 停止条件
 
