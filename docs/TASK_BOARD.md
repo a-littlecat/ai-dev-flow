@@ -1,11 +1,15 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-30
-> - 当前模式：`REL-004` v0.9.1 跨项目 Dashboard 发布
-> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.1 / Not Closed`
-> - 当前方案：`docs/tasks/REL-004-release-v091-portable-dashboard.md`
+> - 快照日期：2026-07-31
+> - 当前模式：`GOAL-USAGE-001` Codex Goal 自动落地预设与中文触发
+> - 当前阶段：GOAL-USAGE-001 `Accepted / Review Passed / UA2 Passed / Committed / Pushed / Draft PR #2 / Unmerged`
+> - 当前方案：`docs/tasks/GOAL-USAGE-001.md`
 
 ## 当前授权边界
+
+用户于 2026-07-31 在比较受控 Goal、交付 Goal、Goal 适配器和零状态组合后，明确确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求“触发词增加中文”。`GOAL-USAGE-001` 获准在独立 Worktree 内增加 `governed_goal / auto_land / auto_release` 中文预设、确定性测试和直接文档；Review Passed 后可精确提交并推送任务分支，在目标分支干净、无来源不明重叠改动且合并后验证 GREEN 时执行可归属集成。该授权不包含 tag、release、deploy、删除、数据迁移、密钥/权限修改、本机 Skill 同步、旧 Worktree 删除、强制推送、历史改写或 `Closed`。
+
+旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。`GOAL-USAGE-001` 功能提交 `f205679` 已推送至任务分支并创建 Draft PR #2；GitHub 当前未报告 CI checks。用户于 2026-07-31 明确回复“验收通过”，中文触发词与自动落地权限上限的 UA2 已记为 Passed / Accepted。
 
 用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
@@ -75,6 +79,8 @@
 - 审核并有限修复四份 DASHBOARD 实施 TASK，复审通过后将合同推进到 Ready。
 - 精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成规划 Git baseline。
 - 在规划 baseline 形成后，新开对话并在独立 Worktree 实施 `DASHBOARD-BE-001`，运行验证和独立 Review/repair，停在可供用户 UA3 的状态。
+- 在独立 Worktree 实施 `GOAL-USAGE-001`，只增加 Codex 原生 Goal 治理预设、中文触发与测试；不修改 CORE policy、repair gate 或 Contract schema。
+- `GOAL-USAGE-001` Review Passed 后按用户确认的 `auto_land` ceiling 精确 commit、push，并仅在目标分支安全条件满足时执行 merge；release / deploy 保持未授权。
 
 本轮不允许：
 
@@ -155,6 +161,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 | REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
+| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Review | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Pending | Worktree / `codex/goal-usage-001` / Uncommitted / Unmerged | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -169,7 +176,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`DASHBOARD-PORTABLE-001` 已由用户完成真实双项目 UA6 并明确确认验收通过，UA 状态保持 `Passed / User Confirmed`；功能提交 `4754813` 已通过 merge commit `17ab9be` 合入本地 `main`。提交前两个交付可靠性 P1 及后续 schema freeze finding 已由 `DASHBOARD-PORTABLE-REPAIR-003` 关闭，最终独立 Review `Passed / P0-P2=0/0/0`。当前 `REL-004` 只是在 README、版本号和内置 runtime 变更后执行发布前自动回归与交付收据，不要求用户重新 UA，也不撤销既有验收。README 重写、版本升级、本机 Skill 同步、`main` push、annotated tag 和正式 GitHub Release 由该独立发布任务记录。不得删除分支/Worktree、强制推送、改写历史或写 `Closed`。
+`GOAL-USAGE-001` 当前只允许实现原生 Goal 零状态治理预设、中文触发词和确定性测试。完成全套验证与独立只读 Review 后，按用户已确认的 `auto_land` ceiling 形成精确 commit、推送任务分支，并在目标分支干净、无来源不明重叠改动、合并后验证 GREEN 时集成；不得创建 tag、release、deploy、同步本机 Skill、删除旧 Worktree、强制推送、改写历史或写 `Closed`。
 
 ## 停止条件
 

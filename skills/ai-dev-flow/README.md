@@ -15,6 +15,16 @@
 
 这两份文件是默认运行时内核。不要预加载整个 `references/`，也不要默认加载 `PROMPTS.md`。
 
+## Codex Goal 自动落地
+
+Codex 原生 Goal 负责持续运行，`ai-dev-flow` 负责范围、验证、Review、UA 和交付权限。推荐中文入口：
+
+```text
+启动自动落地目标：在冻结范围内持续实现、测试、复审、修复、提交、合并、推送并处理 PR/CI；不要创建 tag、release 或部署。
+```
+
+也支持“启动受控目标”“持续修到可验收”“我去休息，自动修好并交付”“不用中途问我，完成后直接交付”，以及带明确版本/环境的“自动发版”。完整语义见 `references/CODEX_GOAL_USAGE.md`。
+
 ## 三档结果
 
 | 结果 | 适合什么 | 默认成本 |
@@ -41,7 +51,7 @@
 - 不为证明流程存在而调用 Reviewer 或 subagent；
 - 不预加载长提示词、Batch、Wave、Loop、Memory、Constitution、角色或 provider 指南；
 - 不建设自动调度器、数据库、遥测、计费或模型 Adapter；
-- 不自动 merge、push、release、删除、外部同步或关闭任务。
+- 没有明确 Goal / delivery authority 时，不自动 merge、push、release、删除、外部同步或关闭任务；显式 `auto_land` 只预授权 commit、merge、push、PR/CI，仍不包含 release、deploy、删除或 `Closed`。
 
 这些旧指南仍保留为按需兼容资料，不是 v0.8 默认能力承诺。
 
@@ -75,6 +85,7 @@ TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前 Skill 包版
 - 用户动作等级：`references/ACCEPTANCE_GUIDE.md`
 - Git/diff：`references/GIT_PRECHECK.md`、`references/DIFF_REVIEW.md`
 - v0.7 迁移：`references/V0.8_MIGRATION.md`
+- Codex Goal 预设与中文触发：`references/CODEX_GOAL_USAGE.md`
 - 最小项目规则：`references/AGENTS_COMPAT.md`
 - 人工复制提示：`references/PROMPTS.md`
 
