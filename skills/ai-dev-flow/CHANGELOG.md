@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add zero-state Codex Goal governance presets: `governed_goal`, `auto_land`, and separately bounded `auto_release`.
+- Add explicit Chinese trigger phrases such as “启动受控目标”, “启动自动落地目标”, “我去休息，自动修好并交付”, and version/environment-bound automatic release phrases.
+- Keep native Goal runtime state outside the Skill and Workflow Contract; reuse existing TASK, Review, UA, repair-campaign, and delivery authority boundaries without changing `CORE.md` or `repair_gate.py`.
+- Supersede the unmerged custom `UnattendedRun` state-machine candidate without deleting its Worktree.
+
 ## 0.9.1 - 2026-07-30
 
 > `ai-dev-flow v0.9.1` 是跨项目 Dashboard 的正式发布身份；Workflow Contract schema 继续为 `adf/v0.7.0`，Scheduling schema 继续为 `ai-dev-flow/scheduling/v1`。

@@ -1,6 +1,6 @@
 ---
 name: ai-dev-flow
-description: 按风险启用的 Git-first AI 开发治理内核。用于需要任务事实源、权限边界、独立审查、修复上限或验收与交付状态分离的持续开发任务；低风险单会话任务会明确退出 Skill。
+description: 按风险启用的 Git-first AI 开发治理内核。用于任务事实源、权限边界、独立审查、修复上限或验收与交付分离；Codex Goal 支持 governed_goal“启动受控目标”、auto_land“启动自动落地目标”和 auto_release“自动发版”等中文预设；低风险任务明确退出 Skill，完整语义按需读取 references/CODEX_GOAL_USAGE.md。
 ---
 
 # ai-dev-flow v0.8
