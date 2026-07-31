@@ -107,6 +107,82 @@ def _stop(process: subprocess.Popen[str]) -> None:
 
 @unittest.skipUnless(os.name == "nt", "portable runtime uses the Windows read lease")
 class PortableRuntimeIntegrationTests(unittest.TestCase):
+    def test_same_project_second_instance_is_rejected_and_first_remains_available(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            installed_skill = root / "installed" / "ai-dev-flow"
+            shutil.copytree(
+                SOURCE_SKILL,
+                installed_skill,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            project = _create_external_project(root / "project", "SINGLETON-001")
+            runtime_root = root / "runtime"
+            command = [
+                sys.executable,
+                "-X",
+                "utf8",
+                str(installed_skill / "scripts" / "dashboard.py"),
+                "--project-root",
+                str(project),
+                "--port",
+                "0",
+                "--runtime-root",
+                str(runtime_root),
+                "--no-open",
+            ]
+            options = {
+                "cwd": root,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "text": True,
+                "encoding": "utf-8",
+                "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP,
+            }
+            first = subprocess.Popen(command, **options)
+            try:
+                state = _wait_for_states(runtime_root, 1)[0]
+                port = int(state["port"])
+                second = subprocess.run(
+                    command,
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=20,
+                )
+                self.assertEqual(2, second.returncode)
+                self.assertIn("already running", second.stderr)
+                self.assertIn(f"http://127.0.0.1:{port}/", second.stderr)
+                explicit_command = list(command)
+                explicit_command[explicit_command.index("--port") + 1] = str(port)
+                explicit_second = subprocess.run(
+                    explicit_command,
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=20,
+                )
+                self.assertEqual(2, explicit_second.returncode)
+                self.assertIn("already running", explicit_second.stderr)
+                self.assertIn(
+                    f"http://127.0.0.1:{port}/",
+                    explicit_second.stderr,
+                )
+                self.assertNotIn("address already in use", explicit_second.stderr.casefold())
+                self.assertEqual(
+                    ["SINGLETON-001"],
+                    [item["task_id"] for item in _snapshot(port)["tasks"]],
+                )
+                self.assertEqual(1, len(list(runtime_root.glob("*/*/state.json"))))
+            finally:
+                _stop(first)
+                if first.stdout:
+                    first.stdout.close()
+                if first.stderr:
+                    first.stderr.close()
+
     def test_unregistered_bundle_file_fails_startup(self):
         for kind, relative in (
             ("static", "dashboard/static/assets/unregistered.js"),

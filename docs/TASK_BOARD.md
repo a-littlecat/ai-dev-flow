@@ -1,11 +1,13 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-07-30
-> - 当前模式：`REL-004` v0.9.1 跨项目 Dashboard 发布
-> - 当前阶段：REL-004 `Accepted / Review Passed / UA7 Passed / Committed / Merged / Local Sync Verified / Released v0.9.1 / Not Closed`
-> - 当前方案：`docs/tasks/REL-004-release-v091-portable-dashboard.md`
+> - 快照日期：2026-07-31
+> - 当前模式：Dashboard 空闲 CPU 性能优化
+> - 当前阶段：DASHBOARD-IDLE-PERF-001 `Accepted / Review Passed / UA6 Passed / Uncommitted / Unmerged`
+> - 当前方案：`docs/tasks/DASHBOARD-IDLE-PERF-001.md`
 
 ## 当前授权边界
+
+用户于 2026-07-31 明确回复“性能验收通过，并启动自动落地目标：提交、合并页面修复和性能优化，重建运行时后同步本机 Skill。并关闭任务，删除分支。”该授权覆盖 `DASHBOARD-IDLE-PERF-001` 的 UA6 Passed / Accepted 写回、精确提交、推送、集成、runtime 重建、本机 Skill 同步、Closed 写回和完全合并后分支删除；不包含 tag、release、deploy、强制推送、历史改写或覆盖主工作区用户改动。
 
 用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
@@ -155,6 +157,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 | REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
+| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Review | 高 | 高 | BE-002、PORTABLE-001、REL-004 Accepted/Merged | Round 11 Passed；P0/P1/P2=`0/0/0` | UA6 Pending | Worktree / `codex/dashboard-idle-perf-001` / Uncommitted / Unmerged | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

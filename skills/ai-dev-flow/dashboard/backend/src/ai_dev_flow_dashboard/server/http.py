@@ -6,7 +6,7 @@ import mimetypes
 import socket
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
 from ai_dev_flow_dashboard.core import canonical_bytes
@@ -37,6 +37,7 @@ class DashboardHttpServer(ThreadingHTTPServer):
         heartbeat_seconds: float = SSE_HEARTBEAT_SECONDS,
         write_timeout_seconds: float = SSE_WRITE_TIMEOUT_SECONDS,
         max_event_bytes: int = SSE_MAX_EVENT_BYTES,
+        on_sse_client_change: Callable[[bool], None] | None = None,
     ) -> None:
         host, _ = server_address
         if host != LOOPBACK_HOST:
@@ -51,6 +52,7 @@ class DashboardHttpServer(ThreadingHTTPServer):
         self.heartbeat_seconds = heartbeat_seconds
         self.write_timeout_seconds = write_timeout_seconds
         self.max_event_bytes = max_event_bytes
+        self.on_sse_client_change = on_sse_client_change
         super().__init__(server_address, DashboardRequestHandler, bind_and_activate=True)
 
 
@@ -190,25 +192,35 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.connection.settimeout(self.server.write_timeout_seconds)
         self._write_sse(b"retry: 2000\n")
-
-        last_event_id = self.headers.get("Last-Event-ID")
-        initial = self.server.coordinator.event_payload(last_event_id, current=current)
-        if initial is not None:
-            self._write_sse(_snapshot_event_bytes(initial))
-            last_event_id = initial["revision"]
-        elif last_event_id is None:
-            last_event_id = current.revision
-
-        while not self.close_connection:
-            event = self.server.coordinator.wait_for_event(
+        connected = False
+        try:
+            if self.server.on_sse_client_change is not None:
+                self.server.on_sse_client_change(True)
+                connected = True
+            last_event_id = self.headers.get("Last-Event-ID")
+            initial = self.server.coordinator.event_payload(
                 last_event_id,
-                self.server.heartbeat_seconds,
+                current=current,
             )
-            if event is None:
-                self._write_sse(b": keep-alive\n\n")
-                continue
-            self._write_sse(_snapshot_event_bytes(event))
-            last_event_id = event["revision"]
+            if initial is not None:
+                self._write_sse(_snapshot_event_bytes(initial))
+                last_event_id = initial["revision"]
+            elif last_event_id is None:
+                last_event_id = current.revision
+
+            while not self.close_connection:
+                event = self.server.coordinator.wait_for_event(
+                    last_event_id,
+                    self.server.heartbeat_seconds,
+                )
+                if event is None:
+                    self._write_sse(b": keep-alive\n\n")
+                    continue
+                self._write_sse(_snapshot_event_bytes(event))
+                last_event_id = event["revision"]
+        finally:
+            if connected and self.server.on_sse_client_change is not None:
+                self.server.on_sse_client_change(False)
 
     def _write_sse(self, payload: bytes) -> None:
         if len(payload) > self.server.max_event_bytes:
@@ -261,6 +273,7 @@ def create_local_server(
     heartbeat_seconds: float = SSE_HEARTBEAT_SECONDS,
     write_timeout_seconds: float = SSE_WRITE_TIMEOUT_SECONDS,
     max_event_bytes: int = SSE_MAX_EVENT_BYTES,
+    on_sse_client_change: Callable[[bool], None] | None = None,
 ) -> DashboardHttpServer:
     if host != LOOPBACK_HOST:
         raise ValueError("non-loopback dashboard binding is forbidden")
@@ -273,4 +286,5 @@ def create_local_server(
         heartbeat_seconds=heartbeat_seconds,
         write_timeout_seconds=write_timeout_seconds,
         max_event_bytes=max_event_bytes,
+        on_sse_client_change=on_sse_client_change,
     )
