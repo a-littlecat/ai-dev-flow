@@ -63,7 +63,7 @@
 - UA 动作与结果：`UA2 Passed / User Confirmed`。
 - authority 边界：沿用任务已冻结的自动 merge authority；不扩展为 tag、release、deploy、删除、数据迁移、密钥/认证/授权修改、本机 Skill 同步、强制推送、历史改写或 `Closed`。
 
-- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=f2056794a3fa09c47067fd4cdb4fa734564c1829
+- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=f20567932be937cea134b5381c46a6134aeb7e57
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\goal-usage-001` / `codex/goal-usage-001`。
 - 回滚方式：对任务提交 `f205679` 使用普通 `git revert`；不删除 Worktree、不 reset、不改写历史。
 - 修改文件：`SKILL.md` 增加零成本按需入口；`CODEX_GOAL_USAGE.md` 定义三种预设、中文词表、authority、自动验收与 hard stop；README/CHANGELOG 对外说明；定向测试冻结零状态与权限边界；TASK/看板记录事实。
