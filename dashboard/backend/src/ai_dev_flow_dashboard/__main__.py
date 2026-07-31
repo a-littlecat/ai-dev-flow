@@ -59,11 +59,21 @@ def main(argv: list[str] | None = None) -> int:
             "dashboard runtime error: Skill changed during startup; restart required"
         )
     coordinator.set_server_state("ready")
-    watcher = PollingWatcher(coordinator)
+    watcher = PollingWatcher(
+        coordinator,
+        pause_without_clients=True,
+    )
     server = create_local_server(
         coordinator,
         host=args.host,
         port=args.port,
+        on_sse_client_change=(
+            lambda connected: (
+                watcher.client_connected()
+                if connected
+                else watcher.client_disconnected()
+            )
+        ),
     )
     monitor_stopped = threading.Event()
 

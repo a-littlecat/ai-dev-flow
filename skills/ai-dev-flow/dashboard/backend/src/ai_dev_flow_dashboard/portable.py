@@ -104,6 +104,74 @@ def _project_key(project_root: Path) -> str:
     return hashlib.sha256(normalized).hexdigest()[:20]
 
 
+class ProjectInstanceLease:
+    """Hold a process-scoped lock for one normalized project root."""
+
+    def __init__(self, project_root: Path, *, runtime_root: Path) -> None:
+        self.project_key = _project_key(project_root)
+        project_dir = runtime_root.resolve() / self.project_key
+        project_dir.mkdir(parents=True, exist_ok=True)
+        self.lock_path = project_dir / ".instance.lock"
+        self._file = self.lock_path.open("a+b")
+        try:
+            self._file.seek(0)
+            if self._file.read(1) == b"":
+                self._file.seek(0)
+                self._file.write(b"\0")
+                self._file.flush()
+            self._file.seek(0)
+            if os.name == "nt":
+                import msvcrt
+
+                msvcrt.locking(self._file.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(
+                    self._file.fileno(),
+                    fcntl.LOCK_EX | fcntl.LOCK_NB,
+                )
+        except OSError as exc:
+            self._file.close()
+            url = _existing_instance_url(runtime_root, self.project_key)
+            detail = f" at {url}" if url else ""
+            raise PortableRuntimeError(
+                f"Dashboard is already running for this project{detail}"
+            ) from exc
+
+    def close(self) -> None:
+        if self._file.closed:
+            return
+        self._file.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(self._file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(self._file.fileno(), fcntl.LOCK_UN)
+        self._file.close()
+
+
+def _existing_instance_url(runtime_root: Path, project_key: str) -> str | None:
+    project_dir = runtime_root.resolve() / project_key
+    states = sorted(
+        project_dir.glob("*/state.json"),
+        key=lambda path: path.stat().st_mtime_ns,
+        reverse=True,
+    )
+    for state_path in states:
+        try:
+            payload = json.loads(state_path.read_text(encoding="utf-8"))
+            port = int(payload["port"])
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+            continue
+        if 0 < port <= 65535:
+            return f"http://{LOOPBACK}:{port}/"
+    return None
+
+
 def _assert_external_runtime_root(
     runtime_root: Path,
     *,
@@ -225,33 +293,6 @@ def run(
         bundle_fingerprint = runtime_bundle_fingerprint(entry_root)
     validate_project_schemas(project_root, runtime)
     static_root = _static_root()
-    coordinator = SnapshotCoordinator(
-        project_root,
-        skill_root=runtime.root,
-    )
-    coordinator.refresh()
-    if skill_fingerprint(runtime.root) != runtime.fingerprint:
-        raise PortableRuntimeError(
-            "Skill changed during startup; restart with a stable installation"
-        )
-    coordinator.set_server_state("ready")
-    watcher = PollingWatcher(coordinator)
-    server = create_local_server(
-        coordinator,
-        host=LOOPBACK,
-        port=args.port,
-        static_root=static_root,
-    )
-    if bundle_fingerprint is not None:
-        verify_runtime_bundle(entry_root)
-    if (
-        bundle_fingerprint is not None
-        and runtime_bundle_fingerprint(entry_root) != bundle_fingerprint
-    ):
-        server.server_close()
-        raise PortableRuntimeError(
-            "Dashboard runtime bundle changed during startup; restart with a stable installation"
-        )
     runtime_root = (
         Path(args.runtime_root).expanduser().resolve()
         if args.runtime_root
@@ -262,6 +303,52 @@ def run(
         project_root=project_root,
         skill_roots=tuple(dict.fromkeys((runtime.root, entry_root))),
     )
+    lease = ProjectInstanceLease(
+        project_root,
+        runtime_root=runtime_root,
+    )
+    try:
+        coordinator = SnapshotCoordinator(
+            project_root,
+            skill_root=runtime.root,
+        )
+        coordinator.refresh()
+        if skill_fingerprint(runtime.root) != runtime.fingerprint:
+            raise PortableRuntimeError(
+                "Skill changed during startup; restart with a stable installation"
+            )
+        coordinator.set_server_state("ready")
+        watcher = PollingWatcher(
+            coordinator,
+            pause_without_clients=True,
+        )
+        server = create_local_server(
+            coordinator,
+            host=LOOPBACK,
+            port=args.port,
+            static_root=static_root,
+            on_sse_client_change=(
+                lambda connected: (
+                    watcher.client_connected()
+                    if connected
+                    else watcher.client_disconnected()
+                )
+            ),
+        )
+        if bundle_fingerprint is not None:
+            verify_runtime_bundle(entry_root)
+        if (
+            bundle_fingerprint is not None
+            and runtime_bundle_fingerprint(entry_root) != bundle_fingerprint
+        ):
+            server.server_close()
+            raise PortableRuntimeError(
+                "Dashboard runtime bundle changed during startup; "
+                "restart with a stable installation"
+            )
+    except BaseException:
+        lease.close()
+        raise
     stop_requested = threading.Event()
     monitor_stopped = threading.Event()
     previous_handlers: dict[signal.Signals, Any] = {}
@@ -364,8 +451,11 @@ def run(
             monitor_thread.join(timeout=5)
         for item, handler in previous_handlers.items():
             signal.signal(item, handler)
-        if state is not None:
-            state.close()
+        try:
+            if state is not None:
+                state.close()
+        finally:
+            lease.close()
 
 
 def main(

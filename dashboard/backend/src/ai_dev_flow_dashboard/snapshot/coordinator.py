@@ -47,6 +47,8 @@ class SnapshotCoordinator:
         self._server_state = "starting"
         self._watcher_state = "starting"
         self._watch_paths: tuple[Path, ...] = ()
+        self._watch_roots: tuple[Path, ...] = (self.project_root,)
+        self._watch_excluded_roots: tuple[Path, ...] = ()
         self._last_git_watch_fingerprint: str | None = None
         builder_schema_path = getattr(self.builder, "schema_path", None)
         self._schema_path = (
@@ -101,10 +103,37 @@ class SnapshotCoordinator:
                 )
             revision = str(result.snapshot["revision"])
             published: PublishedSnapshot
+            excluded_roots = tuple(
+                dict.fromkeys(
+                    Path(item).resolve()
+                    for item in (
+                        result.git.git_dir,
+                        result.git.common_dir,
+                    )
+                    if item is not None
+                )
+            )
+            watch_roots = tuple(
+                dict.fromkeys(
+                    (
+                        self.project_root,
+                        *(
+                            Path(item.root).resolve()
+                            for item in result.git.worktrees
+                            if not any(
+                                Path(item.root).resolve().is_relative_to(excluded)
+                                for excluded in excluded_roots
+                            )
+                        ),
+                    )
+                )
+            )
             with self._condition:
                 previous = self._current
                 self._last_refresh_at = _utc_now()
                 self._watch_paths = result.git.watch_paths
+                self._watch_roots = watch_roots
+                self._watch_excluded_roots = excluded_roots
                 self._last_git_watch_fingerprint = result.git.watch_fingerprint
                 if previous is not None and previous.revision == revision:
                     published = previous
@@ -256,6 +285,16 @@ class SnapshotCoordinator:
             return tuple(
                 dict.fromkeys((*self._watch_paths, self._schema_path))
             )
+
+    @property
+    def watch_roots(self) -> tuple[Path, ...]:
+        with self._condition:
+            return tuple(self._watch_roots)
+
+    @property
+    def watch_excluded_roots(self) -> tuple[Path, ...]:
+        with self._condition:
+            return tuple(self._watch_excluded_roots)
 
     def probe_git_fingerprint(self) -> str:
         """Collect a read-only status token so unstaged linked-Worktree changes wake the watcher."""
