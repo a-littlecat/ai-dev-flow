@@ -28,7 +28,11 @@ class AcceptedArtifactGuardTests(unittest.TestCase):
         self.assertTrue(report["candidate_consistent"], report)
         self.assertEqual(106, report["file_count"])
         self.assertEqual(100, report["expected_file_count"])
-        self.assertEqual(20, len(report["candidate_paths"]))
+        self.assertEqual(27, len(report["candidate_paths"]))
+        self.assertEqual(
+            "c5e1d4825a26ee8634629644823213ac1563be3ef36da51a090d949c62e27399",
+            report["candidate_root_digest"],
+        )
         self.assertEqual([], report["candidate_mismatches"])
 
     def test_changed_file_is_reported_by_path(self):

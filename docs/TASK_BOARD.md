@@ -2,8 +2,8 @@
 
 > - 快照日期：2026-07-31
 > - 当前模式：Dashboard 页面修复与空闲性能自动落地集成
-> - 当前阶段：EDGE-LABEL `Accepted / Committed / Pushed`；IDLE-PERF `Accepted / Committed / Pushed`；集成与 runtime 重建进行中
-> - 当前方案：`docs/tasks/DASHBOARD-EDGE-LABEL-001.md` + `docs/tasks/DASHBOARD-IDLE-PERF-001.md`
+> - 当前阶段：EDGE-LABEL `Accepted / Committed / Pushed`；IDLE-PERF `Accepted / Committed / Pushed`；集成 `Verification Green / In Review`
+> - 当前方案：`docs/tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md`
 
 ## 当前授权边界
 
@@ -170,6 +170,7 @@ REL-002 Closed / main@0422887
 | GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Accepted | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Not Released / Not Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Accepted | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / Pushed / Integration in progress | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Accepted | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / Pushed / Integration in progress | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
+| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Accepted | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Verification Green / Uncommitted / Unmerged | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

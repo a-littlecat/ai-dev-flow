@@ -121,6 +121,6 @@
 - Review findings：Round 10 独立只读 Review（session `019fb4c6-2893-7051-a579-849a492ff839`）为 `Needs Fix`，无新 P0/P1，但新增 `P2-014/P2-015`：上一轮 stop 回归的 2 秒 barrier 可能先于 stop 超时自行释放，无法构成真实 RED→GREEN 保护；`ERROR_NOTIFY_ENUM_DIR` 后重新设防异常未上报，可能阻止上层切换 fallback。当前 stop 回归改为独立 stopper，必须在 barrier 未释放且 updater 仍阻塞时由第一次 stop 无异常收敛；目录通知溢出后的 `_rearm()` 与其他分支一致捕获异常并调用 `_fail()`，新增真实事件完成后注入溢出与 ResetEvent 失败的确定性回归，等待 Round 11 独立复核。
 - Review findings：Round 11 独立只读 Review（session `019fb4d3-4ea7-70e1-99e4-4032062383d7`）为 `Passed`，确认 `P2-014/P2-015` Closed，P2-011～013 与全部更早 P1/P2 保持关闭，无开放或新增 P0/P1/P2；22 个暂存文件与精确清单一致，源码与内置 Skill 运行时对应 blob 一致。
 - UA 动作与结果：`UA6 Passed`；用户于 2026-07-31 明确确认性能验收通过。
-- 状态边界：`Accepted / Committed / Unmerged / Not Pushed / Not Released / Not Closed`。
-- 剩余风险：UA6 尚未由用户确认；非 Windows fallback 仅有自动回归，未做真实非 Windows 性能采样。
-- 下一步：按已授权 Auto-Land Goal 形成精确提交；随后在独立集成 Worktree 与页面候选串行集成、重建 runtime 并完成合并后验证。
+- 状态边界：`Accepted / Committed 2963353a33e3717202b91ba6b0bebcbbc994d88a / Pushed origin/codex/dashboard-idle-perf-001@cfcf23c / Unmerged / Not Released / Not Closed`。
+- 剩余风险：非 Windows fallback 仅有自动回归，未做真实非 Windows 性能采样。
+- 下一步：候选提交、推送和用户 UA6 确认已完成；正在独立集成 Worktree 与页面候选串行集成、重建 runtime 并完成合并后验证。
