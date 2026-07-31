@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-08-01
 > - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
-> - 当前阶段：`REL-005 Accepted / Review Passed / UA7 Passed / Uncommitted / Not Released`
+> - 当前阶段：`REL-005 Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released`
 > - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
 
 ## 当前授权边界
@@ -172,7 +172,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 | WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
-| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Accepted | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | Uncommitted / Unmerged / Not Released / Not Synced / Not Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
+| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Accepted | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | Committed `6ba3f63` / Unmerged / Not Released / Not Synced / Not Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

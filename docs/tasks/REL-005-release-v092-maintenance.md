@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `docs/tasks/REL-005-release-v092-maintenance.md#rel-005-ua7-2026-08-01`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 - `close_authority`: `None`
@@ -65,7 +65,7 @@
 
 ## Outcome
 
-- Base / Diff：base=f5e5e95e09ed6996c4831107ddbb29a00a95f35e;diff=f5e5e95..working-tree-review-candidate
+- Base / Diff：base=f5e5e95e09ed6996c4831107ddbb29a00a95f35e;diff=f5e5e95..6ba3f63324e3573606194796450411d3c2af68ef
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\rel-005-v092-maintenance` / `codex/rel-005-v092-maintenance`。
 - 回滚方式：发布前仅用普通反向 patch/revert；发布后不移动 tag，通过新版本修正；本机同步前创建精确备份并可恢复。
 - 修改文件：历史 TASK 与 TASK_BOARD 状态；frontend 开发依赖与 ESLint 10 兼容修复；v0.9.2 发布身份；生成的安装 runtime；Artifact Guard 候选清单与精确测试。
@@ -75,6 +75,7 @@
 <a id="rel-005-ua7-2026-08-01"></a>
 
 - UA 动作与结果：页面 UA5、性能/集成 UA6 和 Goal UA2 已分别由用户验收；用户在获知 ai-dev-flow 完整遗留清单、排除 CADCat 数据边界和推荐处理顺序后明确要求“完成剩余任务”，并明确授权提交、合并、v0.9.2 发布、本机 Skill 同步、关闭与清理。记录本发布收口为 `UA7 Passed / User Confirmed`。
-- 状态边界：Accepted / Review Passed / UA7 Passed / Uncommitted / Unmerged / Not Released / Not Synced / Not Closed。
+- 发布候选提交：`6ba3f63324e3573606194796450411d3c2af68ef`（`release: prepare ai-dev-flow v0.9.2`）；精确包含本 TASK 的 50 个允许文件。
+- 状态边界：Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released / Not Synced / Not Closed。
 - 剩余风险：本机 Skill 尚未备份/同步；`v0.9.2` tag 与 GitHub Release 尚未创建。
 - 下一步：提交并通过 PR 合入 `main`，随后执行本机现存 Skill 同步、annotated tag、正式 GitHub Release 和最终 Closed 收据。
