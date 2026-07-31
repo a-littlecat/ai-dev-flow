@@ -1,15 +1,17 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-07-31
-> - 当前模式：`GOAL-USAGE-001` Codex Goal 自动落地预设与中文触发
-> - 当前阶段：GOAL-USAGE-001 `Accepted / Review Passed / UA2 Passed / Committed / Pushed / PR #2 Merged / Not Released / Not Closed`
-> - 当前方案：`docs/tasks/GOAL-USAGE-001.md`
+> - 当前模式：Dashboard 页面修复与空闲性能自动落地集成
+> - 当前阶段：EDGE-LABEL `Accepted / Committed / Pushed`；IDLE-PERF `Accepted / Committed / Pushed`；集成与 runtime 重建进行中
+> - 当前方案：`docs/tasks/DASHBOARD-EDGE-LABEL-001.md` + `docs/tasks/DASHBOARD-IDLE-PERF-001.md`
 
 ## 当前授权边界
 
-用户于 2026-07-31 在比较受控 Goal、交付 Goal、Goal 适配器和零状态组合后，明确确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求“触发词增加中文”。`GOAL-USAGE-001` 获准在独立 Worktree 内增加 `governed_goal / auto_land / auto_release` 中文预设、确定性测试和直接文档；Review Passed 后可精确提交并推送任务分支，在目标分支干净、无来源不明重叠改动且合并后验证 GREEN 时执行可归属集成。该授权不包含 tag、release、deploy、删除、数据迁移、密钥/权限修改、本机 Skill 同步、旧 Worktree 删除、强制推送、历史改写或 `Closed`。
+用户于 2026-07-31 在比较受控 Goal、交付 Goal、Goal 适配器和零状态组合后，明确确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求“触发词增加中文”。`GOAL-USAGE-001` 已通过 PR #2 合并到 `main`；未执行 tag、release 或 deploy。
 
-旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。用户于 2026-07-31 明确回复“验收通过”，中文触发词与自动落地权限上限的 UA2 已记为 Passed / Accepted；PR #2 随后转为 Ready，并在 GitHub `CLEAN / MERGEABLE` 后合并为 `main@58837d7`。GitHub 未报告 CI checks；未执行 release、本机 Skill 同步、旧 Worktree 删除或 `Closed`。
+旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。
+
+用户进一步明确回复“性能验收通过，并启动自动落地目标：提交、合并页面修复和性能优化，重建运行时后同步本机 Skill。并关闭任务，删除分支。”该授权覆盖 `DASHBOARD-EDGE-LABEL-001` 与 `DASHBOARD-IDLE-PERF-001` 的验收写回、精确提交、推送、集成、runtime 重建、本机 Skill 同步、Closed 写回和完全合并后任务分支删除；不包含 tag、release、deploy、强制推送、历史改写或覆盖主工作区用户改动。
 
 用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
 
@@ -59,6 +61,8 @@
 
 `DASHBOARD-PORTABLE-001` 最终独立 Review 仅剩 `DASHBOARD-PORTABLE-RVW-P1-002` 开放。用户于 2026-07-30 在收到“创建 repair TASK、只修 `.pyc/__pycache__` 导入前校验缺口、补测试、完整验证并持续独立 Review 到无 P0/P1”的精确范围后回复“授权”。该指令授权 `DASHBOARD-PORTABLE-REPAIR-001` 的 scope-bound Repair Campaign；不授权新增依赖、改变只读/安全边界、UA6 代验收、Accepted、commit、merge、push、release、本机 Skill 同步或 `Closed`。
 
+用户于 2026-07-31 提供 CADCat 实际页面截图，确认关系文字仍被任务卡片遮挡，并在收到根因和独立前端修复建议后明确回复“确认”。该指令授权 `DASHBOARD-EDGE-LABEL-001` 在独立 Worktree 内补充碰撞 oracle、修复关系文字几何布局、运行前端验证、启动本机验收页并执行隔离只读 Review；不授权吸收或覆盖主仓库未提交前端改动，也不授权 commit、merge、push、release、外部同步、Accepted 或 `Closed`。Round 3 Review 发现 `EDGE-LABEL-RVW-P2-004` 后停止自动修复，用户再次回复“确认”，单次授权仅处理该 finding 的 chain-bound `EscalatedRepair`。Round 8 Review Passed 后，用户明确确认“界面修复验收通过”，仅据此记录 UA5 Passed / Accepted；commit、merge、push、release 和 `Closed` 仍未授权。
+
 本轮允许：
 
 - 重写 PLAN-001 和对应 RFC；
@@ -80,7 +84,9 @@
 - 精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成规划 Git baseline。
 - 在规划 baseline 形成后，新开对话并在独立 Worktree 实施 `DASHBOARD-BE-001`，运行验证和独立 Review/repair，停在可供用户 UA3 的状态。
 - 在独立 Worktree 实施 `GOAL-USAGE-001`，只增加 Codex 原生 Goal 治理预设、中文触发与测试；不修改 CORE policy、repair gate 或 Contract schema。
-- `GOAL-USAGE-001` Review Passed 后按用户确认的 `auto_land` ceiling 精确 commit、push，并仅在目标分支安全条件满足时执行 merge；release / deploy 保持未授权。
+- `GOAL-USAGE-001` 已完成 Review、UA、commit、push 与 merge；release / deploy 保持未授权。
+- 在独立 Worktree 实施 `DASHBOARD-EDGE-LABEL-001`，只处理关系文字与任务卡片遮挡；已由用户 UA5 验收通过并形成候选提交 `38f5940`。
+- 在独立 Worktree 实施 `DASHBOARD-IDLE-PERF-001`，以 Windows 原生文件事件、空闲暂停与单实例降低常驻 CPU；已由用户 UA6 验收通过并形成候选提交 `2963353`。
 
 本轮不允许：
 
@@ -161,7 +167,9 @@ REL-002 Closed / main@0422887
 | DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
 | DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
 | REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
-| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Review | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Pending | Worktree / `codex/goal-usage-001` / Uncommitted / Unmerged | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
+| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Accepted | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Not Released / Not Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
+| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Accepted | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / Pushed / Integration in progress | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
+| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Accepted | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / Pushed / Integration in progress | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -176,7 +184,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`GOAL-USAGE-001` 当前只允许实现原生 Goal 零状态治理预设、中文触发词和确定性测试。完成全套验证与独立只读 Review 后，按用户已确认的 `auto_land` ceiling 形成精确 commit、推送任务分支，并在目标分支干净、无来源不明重叠改动、合并后验证 GREEN 时集成；不得创建 tag、release、deploy、同步本机 Skill、删除旧 Worktree、强制推送、改写历史或写 `Closed`。
+`DASHBOARD-EDGE-LABEL-001` 与 `DASHBOARD-IDLE-PERF-001` 已分别通过完整验证、独立 Review 和用户 UA，形成并推送精确候选提交。当前只允许在最新 `origin/main` 的独立 Worktree 串行集成两候选、解决 TASK_BOARD 投影冲突、重建 Skill runtime、运行合并后全量验证与独立只读 Review；门禁 GREEN 后可推送、创建 PR、合并、同步本机物理 Skill、写回 Closed 并删除完全合并的任务分支。不得创建 tag、release、deploy、强制推送、改写历史或覆盖主工作区用户改动。
 
 ## 停止条件
 
