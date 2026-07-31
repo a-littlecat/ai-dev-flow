@@ -2,7 +2,7 @@
 
 <a id="rel-005-closure-2026-08-01"></a>
 
-> 当前结论（2026-08-01）：`REL-005` 已核验本任务 Review、提交、push、本机同步及后继版本采用证据。独立 UA3 未发生，因此任务与 UA3 均记为 `Deferred`，不伪写为验收通过或 Closed。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时历史快照，本说明与顶部 Contract 为唯一最新结论。
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务 Review、提交、push、本机同步及后继版本采用证据。独立 UA3 未发生并保持 `Deferred`；v0.9.2 发布提交曾产生不合法的 `Review -> Deferred` 记录，本次只做合法的前向 `Deferred -> Cancelled` 修正，任务现为 `Cancelled`，不伪写为验收通过或 Closed。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时历史快照，本说明与顶部 Contract 为唯一最新结论。
 
 ## Workflow Contract
 
@@ -10,7 +10,7 @@
 - `task_id`: `SYNC-001`
 - `task_type`: `document`
 - `task_class`: `D`
-- `lifecycle`: `Deferred`
+- `lifecycle`: `Cancelled`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Deferred`
