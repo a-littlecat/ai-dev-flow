@@ -171,7 +171,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
-| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Review | 高 | 高 | PR #5/#6 Merged；旧 main dirty 8 | Passed / P2×2 Closed | UA5 Pending | feature `9ee319e` / receipt pending / Unmerged / Not Pushed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
+| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Review | 高 | 高 | PR #5/#6 Merged；旧 main dirty 8 | Passed / P2×2 Closed | UA5 Pending | feature `9ee319e` / receipt committed / Unmerged / Not Pushed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
