@@ -1,14 +1,16 @@
 # CONTRACT-005：启用 Compact Template 与最小 Writer 路由
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-005` |
 | 任务类型 | 工作流核心改动 / 模板 / Prompt |
-| 当前模式 | UA6 已通过，保持已验收（`Accepted`） |
-| 下一允许模式 | 允许 CONTRACT-006 验证祖先关系后进入 Ready；merge 仍需另获用户授权 |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | D：修改核心 Writer 路由和多个长期入口 |
@@ -154,7 +156,7 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
 - 审查严重等级：最终无 P0-P3
 - P0 / P1 必须修改项：
@@ -181,9 +183,9 @@ git diff --name-only
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
+- 修改文件清单：Compact 模板、路由说明、专项测试、当前任务文件与 `docs/TASK_BOARD.md`
 - 范围越界文件：待审查
-- 审查状态：最终通过
+- 审查状态：通过
 - 审查结论：32/32 tests、三组 comparison lint 与全仓范围检查通过；无 P0-P3
 
 ## 审查-修复循环（review_repair_loop）记录
@@ -205,34 +207,37 @@ git diff --name-only
 
 - 用户动作等级：UA6
 - 用户需要做什么：回归验证 A/B Compact 与 legacy C/D 两条核心流程均未退化
-- agent 已提供的证据：待执行后填写
-- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
+- agent 已提供的证据：专项测试 5/5、全量测试 31/31、fixture diff 为空、两轮独立 Review
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：UA6 已通过
+- 验收反馈状态：通过
 - 当前反馈关联的 UA 等级：UA6
 - 反馈分类：原任务已完成，无失败反馈
 - 下一步建议：保持 Accepted；形成 Accepted commit 后启动 CONTRACT-006
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `61d0911` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现、两轮有限修复和最终 Review 均已提交；Accepted 状态记录待提交
+- Commit 状态：已提交
+- Commit 记录：实现、两轮有限修复、最终 Review 与 Accepted 状态均由 Git 历史保留
 - Commit hash：最终 Review 记录 `818313ac5d918ee6816630d0f0b874540bb05ec8`
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
 - 当前分支：`codex/contract-005-compact-routing`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：`7f0f7e5a54d0727098457811359dc6dbee5e7cf4`
+- 执行 Base commit：base=7f0f7e5a54d0727098457811359dc6dbee5e7cf4;diff=7f0f7e5..61d0911
 - 计划分支：`codex/contract-005-compact-routing`
 - Worktree：`D:\open-source\ai-dev-flow-contract-005`
 - Diff 范围：`7f0f7e5..818313a`（实现与最终 Review）；Accepted 状态由本次提交记录

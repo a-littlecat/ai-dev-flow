@@ -33,14 +33,14 @@
     "backend/src/ai_dev_flow_dashboard/snapshot/performance.py": "b8f39e3c08313652267ee953ec5f122089d6e0e24b4086798790957a2b6208ff",
     "backend/src/ai_dev_flow_dashboard/snapshot/watcher.py": "b11f54eeec5d6d8106aa7a58cbad2c53566dd6a60d1b4fd2fdf0c2fec6e4c797",
     "contracts/dashboard-contracts-v1.schema.json": "3819f0802e22624402ded6746a210756f2741fe158c79d034ed09782a4e4f3e0",
-    "static/assets/index-7LHWcuMt.js": "173bd43ad349173ae1ec07f36b3c416b6df06d1ab6c0dbc5b27e07b6567e7b8e",
-    "static/assets/index-CUmtDzMW.css": "367b17f39a6845aba1e87f91eeeb44c15929c5c17614b574563c0f55564b42b0",
-    "static/index.html": "ed719d0b31814ddf71a2472827b1ae2f2f1a0764a6b7564c5976475b862e6227"
+    "static/assets/index-DqfCZk4x.js": "0ceb30391a5502bc56d2fa126ddd49674e3f52df6860fbdb67ebb97cd66b71d4",
+    "static/assets/index-b6pyAwNE.css": "ea45572c986435d95215026784abba0a1720a7c7bbb902ea472c9e27ecc38e0e",
+    "static/index.html": "8006cd8516f7aa1f5cf1d83b627f8b3c7e86ae298f013cb9870467ff84837c6b"
   },
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
-  "skill_version": "0.9.1",
-  "source_fingerprint": "37f78b5748d77a176cb294b8512f518620c2fef6aa4cc0a0c82c1ed3c92fefbb",
+  "skill_version": "0.9.2",
+  "source_fingerprint": "446979dcf120575c18742457bc21a603031ca164ede0d6e24ea43d877c31aec7",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }

@@ -1,9 +1,9 @@
 # ai-dev-flow 任务看板
 
 > - 快照日期：2026-08-01
-> - 当前模式：主工作区前端残留迁移与旧 Worktree 清理已交付
-> - 当前阶段：`WORKSPACE-CLEANUP-001 Closed / Review Passed / UA5 Passed / PR #7 Merged / Not Released`
-> - 当前方案：`docs/tasks/WORKSPACE-CLEANUP-001.md`
+> - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
+> - 当前阶段：`REL-005 Accepted / Review Passed / UA7 Passed / Committed / Unmerged / Not Released`
+> - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
 
 ## 当前授权边界
 
@@ -138,40 +138,41 @@ REL-002 Closed / main@0422887
 
 | 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| REL-001 | 收口 v0.6 发布身份 | B | Accepted | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | Single / 独立分支 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Accepted | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 独立分支 | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Accepted | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1 | UA3 已通过 | Single / 独立分支 | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
-| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Accepted | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1 | UA3 已通过 | Single / 独立分支 | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
-| CONTRACT-004 | 实现只读 workflow_lint | C | Accepted | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1 | UA4 已通过 | Single / 独立分支 | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
-| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Accepted | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | Worktree | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
-| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Accepted | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | Worktree | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
+| REL-001 | 收口 v0.6 发布身份 | B | Closed | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | 已合并 / 已关闭 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Closed | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | 已合并 / 已关闭 | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Closed | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1 | UA3 已通过 | 已合并 / 已关闭 | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
+| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Closed | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1 | UA3 已通过 | 已合并 / 已关闭 | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
+| CONTRACT-004 | 实现只读 workflow_lint | C | Closed | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1 | UA4 已通过 | 已合并 / 已关闭 | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
+| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Closed | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | 已合并 / 已关闭 | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
+| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Closed | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | 已合并 / 已关闭 | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
-| PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Accepted | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | Single / 当前规划分支 | [PLAN-001](tasks/PLAN-001.md) |
-| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Review | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Pending | Single / `codex/lean-v08-slimming` | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Review | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Pending | Single + 串行隔离上下文 / `codex/lean-v08-slimming` | [LEAN-002](tasks/LEAN-002.md) |
+| PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Closed | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | 已合并 / 已关闭 | [PLAN-001](tasks/PLAN-001.md) |
+| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Deferred | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | merge Deferred / 后继版本已采用 / 无剩余执行动作 | [LEAN-001](tasks/LEAN-001.md) |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Deferred | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | Not Applicable / 后继版本已采用 / 无剩余执行动作 | [LEAN-002](tasks/LEAN-002.md) |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
-| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Review | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Pending | Committed / Pushed `fcd3a3e` / Local Sync Verified | [SYNC-001](tasks/SYNC-001.md) |
-| REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Accepted | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | AutoRepair 3/3 / Local + CADCat Sync Verified / Committed `2e9b718` / Branch Pushed `270e8ae` | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
-| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Accepted | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Not Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
-| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Accepted | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed `371383f` / children Ready | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
-| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Accepted | 高 | 高 | DASHBOARD-001 Accepted/Committed；实施 base `c5bbf3a` | Passed / P0-P3=`0/0/0/0`；P1-001～009 Closed | UA3 Passed / User Confirmed | Committed `cc922d4` / Merged local `main` / Not Pushed / Not Closed | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
-| DASHBOARD-BE-001-REPAIR-001 | 修复核心快照性能与 dirty ownership 合同 | D | Accepted | 高 | 高 | BE-001 Accepted/Merged；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `21e8816` / Merged local `main` via `6431229` / Not Pushed / Not Closed | [DASHBOARD-BE-001-REPAIR-001](tasks/DASHBOARD-BE-001-REPAIR-001.md) |
-| DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Accepted | 高 | 高 | BE-001 repair；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `3cc22ab` / Merged local `main` via `6431229` / Not Pushed / Not Closed | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
-| DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Accepted | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / feature `0/0/4/0`；post-merge repair `0/0/0/0` | UA4 Passed / User Confirmed | feature `2ed2bb9` / merge `3be0a2e` / repair `36d0795` / Committed / Merged local main / Not Pushed / Not Closed | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
-| DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Accepted | 高 | 高 | FE-001 Accepted/Committed/Merged/Review/UA；INTEGRATE-P1-001 | Passed / P0-P3=`0/0/1/0` | UA4 Passed / User Confirmed | feature `3c8160f` / merge `2ac8b3b` / Committed / Merged local main / Not Pushed / Not Closed | [DASHBOARD-FE-001-REPAIR-001](tasks/DASHBOARD-FE-001-REPAIR-001.md) |
-| DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Accepted | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged local main `acd0ddd` | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
-| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Accepted | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | feature `5131d03` / gates `35ab778` / merge `4f60dd3` / Committed / Merged local main / Not Pushed / Not Released / Not Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
-| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Accepted | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | tag target `c2dcb94` / Committed / Merged / Local Sync Verified / Released `v0.9.0` / Not Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
-| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Accepted | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / release follow-up authorized | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Accepted | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Accepted | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
-| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Accepted | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
-| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Accepted | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Not Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
+| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Deferred | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Deferred（未补写验收） | Committed / Pushed `fcd3a3e` / Local Sync Verified / 无剩余执行动作 | [SYNC-001](tasks/SYNC-001.md) |
+| REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Closed | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged main / Local Sync Verified / Closed | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
+| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Closed | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
+| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Closed | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed / Merged / Closed | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
+| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Closed | 高 | 高 | DASHBOARD-001 Accepted/Committed；实施 base `c5bbf3a` | Passed / P0-P3=`0/0/0/0`；P1-001～009 Closed | UA3 Passed / User Confirmed | Committed `cc922d4` / Merged / Closed | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
+| DASHBOARD-BE-001-REPAIR-001 | 修复核心快照性能与 dirty ownership 合同 | D | Closed | 高 | 高 | BE-001 Accepted/Merged；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `21e8816` / Merged / Closed | [DASHBOARD-BE-001-REPAIR-001](tasks/DASHBOARD-BE-001-REPAIR-001.md) |
+| DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Closed | 高 | 高 | BE-001 repair；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `3cc22ab` / Merged / Closed | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
+| DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Closed | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / feature `0/0/4/0`；post-merge repair `0/0/0/0` | UA4 Passed / User Confirmed | Committed / Merged / Closed | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
+| DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Closed | 高 | 高 | FE-001 Accepted/Committed/Merged/Review/UA；INTEGRATE-P1-001 | Passed / P0-P3=`0/0/1/0` | UA4 Passed / User Confirmed | Committed / Merged / Closed | [DASHBOARD-FE-001-REPAIR-001](tasks/DASHBOARD-FE-001-REPAIR-001.md) |
+| DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Closed | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged `acd0ddd` / Closed | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
+| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Closed | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | Committed / Merged / Released `v0.9.0` / Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
+| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Closed | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | tag target `c2dcb94` / Local Sync Verified / Released `v0.9.0` / Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
+| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Closed | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Closed | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
+| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Closed | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
+| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Closed | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
+| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Closed | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
 | GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Closed | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Local Sync Verified / Not Released / Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 | WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
+| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Accepted | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | Committed `6ba3f63` / Unmerged / Not Released / Not Synced / Not Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -186,7 +187,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`WORKSPACE-CLEANUP-001` 已完成验证、独立 Review、用户真实 CADCat UA5，并通过 PR #7 合并与关闭。无剩余产品交付动作；Git 整理只允许执行 TASK“本轮交付清理精确清单”中的对象并逐项复核，清单外一律不删；不执行 tag、release、deploy 或正式本机 Skill/runtime 变更，禁止强制推送或改写历史。
+`REL-005` 按用户授权执行除 CADCat 任务数据外的全部剩余项：历史 Contract/任务收口、开发依赖安全升级、runtime 重建、本机现存 Skill 同步与 `v0.9.2` 正式发布。发布前必须完整验证和独立只读 Review；禁止修改 CADCat、创建不存在的安装目录、强推或改写历史。
 
 ## 停止条件
 

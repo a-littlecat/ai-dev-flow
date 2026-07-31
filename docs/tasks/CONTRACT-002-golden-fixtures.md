@@ -1,14 +1,16 @@
 # CONTRACT-002：建立 Golden fixtures 与填写量基线
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-002` |
 | 任务类型 | 测试数据 / 文档 |
-| 当前模式 | 用户已完成 UA3 证据确认，任务已验收 |
-| 下一允许模式 | 保持已验收（`Accepted`）；允许后继任务验证祖先关系后进入 Ready |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：建立多目录机器 oracle，并成为后续 Reader 的测试基线 |
@@ -185,7 +187,7 @@ foreach ($c in $m.comparisons) {
 
 ## 代码审查
 
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（2 轮 repair 后最终复审）
 - 审查严重等级：无 P0/P1；保留 1 类 P2 文档定位精度项
 - P0 / P1 必须修改项：
@@ -239,9 +241,9 @@ foreach ($c in $m.comparisons) {
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
+- 修改文件清单：`skills/ai-dev-flow/tests/fixtures/**`、当前任务文件与 `docs/TASK_BOARD.md`
 - 范围越界文件：待审查
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查结论：完整任务范围无越界，无 P0/P1；允许进入 UA3
 
 ## 用户动作等级 / 验收建议
@@ -249,7 +251,8 @@ foreach ($c in $m.comparisons) {
 - 用户动作等级：UA3
 - 用户需要做什么：查看 coverage、真实样本对比和 fixture 验证证据
 - agent 已提供的证据：24 个唯一 ID、33 个 fixture 文件、全部 diagnostic coverage、JSON/路径/ledger/历史流转检查、三个真实 commit 来源、两轮独立 Review
-- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
@@ -260,22 +263,24 @@ foreach ($c in $m.comparisons) {
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `f7d870d` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `c8626a1`、首审记录 `4da8643`、第 1 轮修复 `23fcb7d`、复审记录 `e8313b2`、第 2 轮修复 / 最终复审 HEAD `2fd069e`
+- Commit 状态：已提交
+- Commit 记录：实现 `c8626a1`、首审记录 `4da8643`、第 1 轮修复 `23fcb7d`、复审记录 `e8313b2`、第 2 轮修复 / 最终复审 HEAD `2fd069e`
 - Commit hash：待填写
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
 - 当前分支：`codex/contract-002-golden-fixtures`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：`28e74f8`（CONTRACT-001 Accepted commit）
+- 执行 Base commit：base=28e74f8;diff=28e74f8..f7d870d
 - 计划分支：`codex/contract-002-golden-fixtures`
 - Diff 范围：`28e74f8..HEAD`（实现候选待提交并独立审查）
 - 下一任务：`CONTRACT-003`，仅在本任务 `Accepted` 后转为 `Ready`

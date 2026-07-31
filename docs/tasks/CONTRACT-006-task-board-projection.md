@@ -1,14 +1,16 @@
 # CONTRACT-006：增加 TASK_BOARD 只读投影与 drift 检查
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-006` |
 | 任务类型 | 代码 / 投影 Adapter / 模板 |
-| 当前模式 | UA6 已通过，保持已验收（`Accepted`） |
-| 下一允许模式 | 保持 Accepted；Closed、merge、push 仍需另获用户授权 |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 中 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增 TASK_BOARD Adapter 并影响状态一致性判断 |
@@ -136,7 +138,7 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
 - 审查严重等级：最终无 P0-P3
 - P0 / P1 必须修改项：
@@ -163,9 +165,9 @@ git diff --name-only
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
+- 修改文件清单：TASK_BOARD 只读投影实现、专项测试、模板、脚本说明与任务记录
 - 范围越界文件：待审查
-- 审查状态：最终通过
+- 审查状态：通过
 - 审查结论：41/41 tests 与针对性反例通过；无 P0-P3
 
 ## 审查-修复循环（review_repair_loop）记录
@@ -189,34 +191,37 @@ git diff --name-only
 
 - 用户动作等级：UA6
 - 用户需要做什么：回归验证 TASK 权威、board drift、legacy/Compact 与不写入行为
-- agent 已提供的证据：待执行后填写
-- 是否允许关闭任务：否；本次授权为 Accepted 与完成任务链，不包含 Closed 或 merge
+- agent 已提供的证据：完整测试 39/39、board 专项 7/7、fixture diff 为空、最终独立 Review
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：UA6 已通过
+- 验收反馈状态：通过
 - 当前反馈关联的 UA 等级：UA6
 - 反馈分类：原任务已完成，无失败反馈
 - 下一步建议：保持 Accepted；执行 CONTRACT-002~006 完成审计
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `63b4f7e` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现、两轮有限修复和最终 Review 均已提交；Accepted 状态记录待提交
+- Commit 状态：已提交
+- Commit 记录：实现、两轮有限修复、最终 Review 与 Accepted 状态均由 Git 历史保留
 - Commit hash：最终 Review 记录 `d05928aaabba0093ba8eb5bd213fb8e3c1423488`
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
 - 当前分支：`codex/contract-006-board-projection`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：`61d0911dfa3ff890b1a75493e2c5210c2ed9d7d1`
+- 执行 Base commit：base=61d0911dfa3ff890b1a75493e2c5210c2ed9d7d1;diff=61d0911..63b4f7e
 - 计划分支：`codex/contract-006-board-projection`
 - Diff 范围：`61d0911..d05928a`（实现与最终 Review）；Accepted 状态由本次提交记录
 - 后续任务：`CONTRACT-007` 不在本轮范围，需另行创建和确认

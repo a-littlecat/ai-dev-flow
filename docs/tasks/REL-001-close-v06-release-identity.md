@@ -1,14 +1,16 @@
 # REL-001：收口 v0.6 发布身份
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `REL-001` |
 | 任务类型 | 文档 / 发布治理 |
-| 当前模式 | UA7 用户决策已完成，等待后续收口授权 |
-| 下一允许模式 | 收口任务（`close_task`），需用户另行确认关闭或提交/合并动作 |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | B：改动范围小，但发布语义敏感 |
@@ -169,7 +171,8 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 - 用户动作等级：UA7
 - 用户需要做什么：已确认最终版本身份与 tag 策略；实际创建 tag 或发布仍需另行明确授权
 - agent 已提供的证据：版本检索、`git diff --check`、Skill quick validation、允许范围检查和空 tag 列表
-- 是否允许关闭任务：否；已达到 `Accepted`，但 `Closed`、commit、merge、tag、push 和发布均需分别授权
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
@@ -180,9 +183,10 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `752b11f` 已为当前主线祖先，发布身份随后由 v0.7.0 及更高版本延续
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
@@ -191,7 +195,7 @@ python -X utf8 "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\qui
 - 执行证据 commit / 审查前 HEAD：`d7abee028782653543b15e2207f62775e6515ef5`
 - P1 修复 commit：`dc363745eb2e378eb54696d50286c8278d7e8e1e`
 - 最终 release/tag 候选 commit：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`；已包含执行、修复、独立复审和 UA7 验收记录。实际创建 tag 仍需独立授权
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接

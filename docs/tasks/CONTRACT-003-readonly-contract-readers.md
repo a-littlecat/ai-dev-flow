@@ -1,14 +1,16 @@
 # CONTRACT-003：实现 Legacy / v0.7 只读 Reader
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-003` |
 | 任务类型 | 代码 / 单元测试 |
-| 当前模式 | 用户已完成 UA3 证据确认，任务已验收 |
-| 下一允许模式 | 保持 Accepted；允许后继任务验证祖先关系后进入 Ready |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增双格式 Reader 和不可变 Normalized View |
@@ -132,7 +134,7 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（2 轮修复后最终复审）
 - 审查严重等级：无 P0/P1；1 项 P2 不阻塞
 - P0 / P1 必须修改项：
@@ -151,9 +153,9 @@ git diff --name-only
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
+- 修改文件清单：Reader 实现、专项测试、当前任务文件与 `docs/TASK_BOARD.md`
 - 范围越界文件：待审查
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查结论：范围无越界，无 P0/P1；保留 1 项 P2
 
 ## 审查-修复循环（review_repair_loop）记录
@@ -205,7 +207,8 @@ git diff --name-only
 - 用户动作等级：UA3
 - 用户需要做什么：查看测试、只读证明和独立审查证据
 - agent 已提供的证据：14/14 Reader tests、RED 4 tests/8 failures、fixture hash/mtime 与 Base→HEAD diff、只读 surface、两轮独立 Review
-- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
@@ -216,22 +219,24 @@ git diff --name-only
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `95ec566` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现 `0e1d746`、首审记录 `6922cd9`、第 1 轮修复 `013cae2`、复审记录 `806b08c`；第 2 轮修复候选待提交
+- Commit 状态：已提交
+- Commit 记录：实现 `0e1d746`、首审记录 `6922cd9`、第 1 轮修复 `013cae2`、复审记录 `806b08c`；第 2 轮修复由后续 Git 历史保留
 - Commit hash：待提交后填写
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
 - 当前分支：`codex/contract-003-readonly-readers`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：`f7d870d`
+- 执行 Base commit：base=f7d870d;diff=f7d870d..95ec566
 - 计划分支：`codex/contract-003-readonly-readers`
 - Diff 范围：`f7d870d..HEAD`（执行中）
 - 下一任务：`CONTRACT-004`，仅在本任务 `Accepted` 后转为 `Ready`
