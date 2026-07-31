@@ -1,19 +1,23 @@
 # REPAIR-ESCALATION-001：实现用户授权的超限修复通道
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## Workflow Contract
 
 - `schema_version`: `adf/v0.7.0`
 - `task_id`: `REPAIR-ESCALATION-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
 - `ua_status`: `Passed`
 - `ua_evidence`: `#outcome`
 - `acceptance_authority`: `User Confirmed`
+- `close_authority`: `User Authorized`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## 目标与边界
 
@@ -94,6 +98,7 @@
 
 ## Outcome
 
+- 合并目标与事实证据：`main`；实现 `2e9b718`、验收记录 `270e8ae` 和推送记录 `8df7399` 均为当前主线祖先。
 - Base / Diff：base=070267326146924f3e05a94b67c16825bc1777de;diff=working-tree-ar3
 - 隔离位置：Worktree `D:\open-source\ai-dev-flow-wt\repair-escalation-001`；branch `codex/repair-escalation-001`。
 - 回滚方式：恢复本任务未提交 diff；同步后按同步前 SHA256 清单从源版本回填，不使用破坏性 reset。

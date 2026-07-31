@@ -6,13 +6,12 @@
 
 It keeps small tasks lightweight while applying TASK records, independent Review, and authority gates to high-risk, cross-session, real-environment, and delivery work. The Dashboard turns TASK, TASK_BOARD, Git, and Worktree facts into an interactive view of next actions, dependencies, parallel candidates, and decisions.
 
-## What is new in v0.9.1
+## What is new in v0.9.2
 
-- **Cross-project use**: project roots and Skill installations are separate. Projects no longer need a copied or linked Skill directory.
-- **Self-contained runtime**: the Skill package includes the backend, built frontend, and launcher. Normal use requires neither this source checkout nor Node.js.
-- **Multi-instance isolation**: ports are selected automatically by default. Every instance has its own ID, runtime directory, state, and cache; stopping one does not affect another.
-- **Pinned compatibility**: startup checks the Skill version, Workflow Contract schema, Scheduling schema, and supported Dashboard range. A Skill update requires a restart and never hot-mixes versions.
-- **Read-only live updates**: TASK, TASK_BOARD, Git dirty state, branch, HEAD, and Worktree changes refresh through SSE.
+- **Chinese Codex Goal presets**: phrases such as “启动受控目标”, “启动自动落地目标”, and “我去休息，自动修好并交付” keep native Goal persistence while the Skill governs scope, verification, Review, UA, and delivery authority.
+- **Historical task closeout**: repair six legacy Contracts; close 24 of 27 historical tasks with complete evidence and accurately defer three tasks that lack independent UA3 acceptance.
+- **Secure development dependencies**: upgrade Vite, Vitest, ESLint, and TypeScript ESLint while keeping 89 browser tests and 91 frontend unit tests green with zero `npm audit` findings.
+- **Compatible cross-project Dashboard**: retain the self-contained, read-only, multi-instance runtime with automatic port selection; installed use still requires no Node.js.
 - **Preserved safety boundary**: loopback only, no write API, no project/Skill/Git mutations, no Worktree creation, and no authority to accept, commit, merge, release, or close tasks.
 
 ## How it works
@@ -56,7 +55,7 @@ Open only the printed `127.0.0.1` URL. `Ctrl+C` stops that instance only.
 
 ### Start from this repository
 
-The source launcher additionally requires Node.js 22. Install the locked frontend dependencies before the first run in a clean checkout:
+The source launcher additionally requires Node.js 22.13+ on the 22.x line, or Node.js 24+. Install the locked frontend dependencies before the first run in a clean checkout:
 
 ```powershell
 Set-Location dashboard/frontend
@@ -94,7 +93,7 @@ The canonical policy lives only in `skills/ai-dev-flow/references/CORE.md` → `
 
 ## Versions and compatibility
 
-- Skill: `0.9.1`
+- Skill: `0.9.2`
 - Dashboard-supported Skill series: `0.9.x`
 - Workflow Contract: `adf/v0.7.0`
 - Scheduling: `ai-dev-flow/scheduling/v1`

@@ -1,14 +1,16 @@
 # CONTRACT-001：固化 Workflow Contract 语义规范
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-001` |
 | 任务类型 | 方案 / 协议文档 / Schema |
-| 当前模式 | 用户已完成 UA2 阅读确认，任务已验收 |
-| 下一允许模式 | 保持已验收（`Accepted`）；实际 merge 仍需另获用户授权 |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定语义接口并影响后续全部实现 |
@@ -193,7 +195,8 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 用户动作等级：UA2
 - 用户需要做什么：阅读规范摘要、字段表、Legacy/diagnostic 边界，确认与已批准 RFC 一致
 - agent 已提供的证据：JSON/Schema 检查、18 条状态流转对照、Skill validation、范围检查和后续独立 Review 记录
-- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
@@ -204,19 +207,21 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `28e74f8` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现结果、Review 记录和第 1 轮修复均已提交；复审记录待提交
+- Commit 状态：已提交
+- Commit 记录：实现结果、Review 记录和第 1 轮修复均已提交；复审记录由后续 Git 历史保留
 - 实现 commit：`021175a374381c48294e23ea2d24f6a987a78176`
 - Review 记录 commit：`a628fc7b1114c82279a7c4f4d047d425bc7025b5`
 - 第 1 轮修复 commit：`8427eefe10f40fbeb1d74ad251ce24d63d7fc0b0`
 - 修复证据 commit / 复审 HEAD：`14fd7f3dd57662ab7bfe844f5fc90dc1fa8efb72`
 - 复审记录 commit：`ba85738d9bf7b47110ac84ed21c16601ebf10ef2`
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
@@ -224,7 +229,7 @@ rg -n "UA7|User Confirmed|merge_authority|User Authorized|dual-read|single-write
 - 当前分支：`codex/contract-001-semantics`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
 - 准备 Base / 前置 Accepted commit：`752b11f1a8bd6fd2b8e0b7e13309457f9a072f33`
-- 执行 Base commit：`b198abce89e18dc417b935fa219be8ed6a56711a`；已验证包含前置 Accepted commit
+- 执行 Base commit：base=b198abce89e18dc417b935fa219be8ed6a56711a;diff=b198abce89e18dc417b935fa219be8ed6a56711a..28e74f8
 - 执行开始 HEAD：`b198abce89e18dc417b935fa219be8ed6a56711a`
 - 开始时工作区：干净，无来源不明改动；未发现不应提交文件
 - 计划分支：`codex/contract-001-semantics`

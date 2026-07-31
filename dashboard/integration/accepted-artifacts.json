@@ -12,11 +12,11 @@
   "file_count": 100,
   "root_digest": "25fd25e1eeac504521552b5218001018778460f546ae29d59902143082a41f65",
   "candidate": {
-    "task_id": "DASHBOARD-EDGE-PERF-INTEGRATE-001",
+    "task_id": "REL-005",
     "status": "review_candidate",
     "hash_algorithm": "git-blob",
-    "file_count": 27,
-    "root_digest": "c5e1d4825a26ee8634629644823213ac1563be3ef36da51a090d949c62e27399",
+    "file_count": 32,
+    "root_digest": "ffd32972e9992c441cb8f7d1087827fc5f00045f872bae85e377975beb26455d",
     "files": {
       "dashboard/backend/src/ai_dev_flow_dashboard/__main__.py": "0411baf2e8123cf046acf59636489e4525666660",
       "dashboard/backend/src/ai_dev_flow_dashboard/core/contract_gateway.py": "f8d0a146fdc7d7b79cbb005f7c3849300623fd69",
@@ -35,16 +35,21 @@
       "dashboard/backend/tests/be002/test_native_events.py": "f664ec3deeac41ac2a41badaa455f11893efb44f",
       "dashboard/backend/tests/be002/test_snapshot.py": "16d4faa7de6e05158e14b00e65210ff120860f4e",
       "dashboard/backend/tests/be002/test_watcher_performance.py": "24170ca472a1d786be1ca061ec3fb2f3c2ae0884",
-      "dashboard/frontend/scripts/generate-types.mjs": "831834975e46b72949b7f6089f08792b37462434",
+      "dashboard/frontend/package-lock.json": "d05eb86ca33b6f94573ce8eee0f66353d60bf6f2",
+      "dashboard/frontend/package.json": "6737f0faeef7a0a5360ff0c589066c054ac02687",
+      "dashboard/frontend/scripts/generate-types.mjs": "769243ad432c223e56cead249bc2ce19d98204ea",
       "dashboard/frontend/src/api/schema.ts": "0f57bcf7aef17d0cb3db724a8979a6f45bb9ebf9",
       "dashboard/frontend/src/generated/contracts.validators.ts": "610352388a798a25fb9b65e2de89b704faee2998",
       "dashboard/frontend/src/ui/graph/graphView.ts": "f778b39d27b86a1d92f05da6a04c81add614be62",
       "dashboard/frontend/src/ui/graph/layout.ts": "6cab6733b668497a7e45c5bbe1860ac519b627b8",
+      "dashboard/frontend/src/ui/overlays.ts": "f30dbc8f74472f84bf29b682db91413d5242318c",
       "dashboard/frontend/src/ui/toolbar.ts": "ef3ac78abdf0ebb0673c55b51680200005d306fd",
       "dashboard/frontend/tests/browser/graph.spec.ts": "20314d0a40535332eb60789b1d3f8c6756f42ed0",
       "dashboard/frontend/tests/browser/real-scale.spec.ts": "75f16b50a58eebdcdddadb06293eb75dde3aba50",
       "dashboard/frontend/tests/browser/responsive-a11y.spec.ts": "9b3097b8843464da67c8d3a0ccc39113fe3a9144",
-      "dashboard/frontend/tests/parallel-display.test.ts": "8974381f8a718d4d96a09f93e7bf133684cb9fcf"
+      "dashboard/frontend/tests/derive.test.ts": "3d4821c7723653dae0e54de619ffcd30aec65f1e",
+      "dashboard/frontend/tests/overlays.test.ts": "7494b2819572df8948e6ccd107f3dd3ef6407272",
+      "dashboard/frontend/tests/parallel-display.test.ts": "f619c0e5dab6c22354375dc5140d945e33ac66d7"
     }
   }
 }

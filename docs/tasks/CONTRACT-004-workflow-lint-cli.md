@@ -1,14 +1,16 @@
 # CONTRACT-004：实现只读 workflow_lint
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `CONTRACT-004` |
 | 任务类型 | 代码 / CLI / 单元测试 |
-| 当前模式 | 已完成 UA4，保持已验收（`Accepted`） |
-| 下一允许模式 | 允许后继任务验证祖先关系后进入 Ready；merge 仍需另获用户授权 |
-| 任务状态 | 已验收（`Accepted`） |
+| 当前模式 | 历史交付证据已核实，用户已授权收口 |
+| 下一允许模式 | 已关闭（`Closed`） |
+| 任务状态 | 已关闭（`Closed`） |
 | 优先级 | 高 |
 | 风险等级 | 高 |
 | 任务分级 | C：新增稳定 public facade、validator 和 CLI |
@@ -139,7 +141,7 @@ git diff --name-only
 
 ## 代码审查
 
-- 审查状态：最终复审通过
+- 审查状态：复审通过
 - 审查人或审查 agent：Codex 独立 Reviewer（第 1 轮）
 - 审查严重等级：P1（第 1 轮 5 项；修复复审仍有 2 项）
 - P0 / P1 必须修改项：
@@ -159,9 +161,9 @@ git diff --name-only
 
 - 审查方式：post-commit diff
 - 审查命令：待执行时填写
-- 修改文件清单：待填写
+- 修改文件清单：workflow facade、lint CLI、专项测试、脚本说明与任务记录
 - 范围越界文件：待审查
-- 审查状态：最终通过
+- 审查状态：通过
 - 审查结论：26/26 tests、三条 CLI 与 invocation error 均通过；无 P0/P1，保留 1 项非阻塞 P2
 
 ## 审查-修复循环（review_repair_loop）记录
@@ -197,33 +199,36 @@ git diff --name-only
 - 用户动作等级：UA4
 - 用户需要做什么：本地运行 CLI，核对 valid/violation/parse 输出与只读行为
 - agent 已提供的证据：26/26 自动测试、Human/JSON/项目目录 smoke、两轮独立复审；请用户运行“验证方式”中的三条 CLI 并确认输出符合预期
-- 是否允许关闭任务：否；本次授权为 Accepted 与继续后继任务，不包含 Closed 或 merge
+- 验收确认：用户已确认
+- 是否允许关闭任务：是（用户已确认）
 
 ## 用户验收反馈 / 实机测试反馈
 
-- 验收反馈状态：UA4 已通过
+- 验收反馈状态：通过
 - 当前反馈关联的 UA 等级：UA4
 - 反馈分类：原任务已完成，无失败反馈
 - 下一步建议：保持 Accepted；形成 Accepted commit 后启动 CONTRACT-005
 
 ## 合并状态
 
-- 合并状态：未合并
-- 合并目标：待执行时填写
-- 合并说明：实际 merge 必须另获用户确认
+- 合并状态：已合并
+- 合并目标与事实证据：main；Accepted 提交 `7f0f7e5` 已是当前 main 祖先
+- 合并说明：用户于 2026-08-01 授权完成 ai-dev-flow 剩余任务收口
+- 合并授权：User Authorized
 
 ## 提交 / 合并
 
-- Commit 状态：实现、两轮有限修复、最终复审记录均已提交；Accepted 状态记录待提交
+- Commit 状态：已提交
+- Commit 记录：实现、两轮有限修复、最终复审与 Accepted 状态均由 Git 历史保留
 - Commit hash：最终 Review 记录 `8fc6a44fec7bb5f22da4483428b701c24b5868eb`
-- Merge 状态：未合并
+- Merge 状态：已合并
 - 回滚方式：回退本任务独立 commit；执行时细化
 
 ## Git 与交接
 
 - 当前分支：`codex/contract-004-workflow-lint`
 - 建档时 HEAD：`4a6c41781a028bf6c78c1283f16f5d120ee61ae1`
-- 执行 Base commit：`95ec566`
+- 执行 Base commit：base=95ec566;diff=95ec566..7f0f7e5
 - 计划分支：`codex/contract-004-workflow-lint`
 - Diff 范围：`95ec566..8fc6a44`（实现与最终 Review）；Accepted 状态由本次提交记录
 - 下一任务：`CONTRACT-005`，仅在本任务 `Accepted` 后转为 `Ready`

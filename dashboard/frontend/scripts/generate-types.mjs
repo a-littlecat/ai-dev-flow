@@ -43,7 +43,7 @@ const VALIDATORS_BANNER = `/* eslint-disable */
 `;
 
 async function assertCurrent(pathname, expected, label) {
-  let current = "";
+  let current;
   try {
     current = await readFile(pathname, "utf-8");
   } catch {

@@ -1,15 +1,22 @@
 # SYNC-001：审查并同步 ai-dev-flow Skill 增量
 
+<a id="rel-005-closure-2026-08-01"></a>
+
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务 Review、提交、push、本机同步及后继版本采用证据。独立 UA3 未发生，因此任务与 UA3 均记为 `Deferred`，不伪写为验收通过或 Closed。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时历史快照，本说明与顶部 Contract 为唯一最新结论。
+
 ## Workflow Contract
 
 - `schema_version`: `adf/v0.7.0`
 - `task_id`: `SYNC-001`
 - `task_type`: `document`
 - `task_class`: `D`
-- `lifecycle`: `Review`
+- `lifecycle`: `Deferred`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
-- `ua_status`: `Pending`
+- `ua_status`: `Deferred`
+- `ua_evidence`: `docs/tasks/SYNC-001.md#rel-005-closure-2026-08-01`
+- `acceptance_authority`: `None`
+- `close_authority`: `None`
 - `commit_status`: `Committed`
 - `merge_status`: `Not Applicable`
 
@@ -56,7 +63,7 @@
 - 验证证据：用户提供的 `.agents` 源、Codex、OpenCode、cc-switch、Trae 五个目标均为 `VERSION=0.8.1`、90 / 90 文件，逐文件 SHA256 为 `Missing=0 / Extra=0 / Changed=0`，且五个目标的 Skill validator 全部通过；未创建缺失目录。
 - 验证证据：同步前 `main...origin/main` divergence 为 `0 / 0`；实现提交 `fcd3a3e` 已成功 push 到 `origin/main`，远端返回 `d4854a7..fcd3a3e main -> main`。
 - Review findings：第 1 轮 `Needs Fix`，经两轮有限 repair 与隔离复审后 `SYNC-001-P1-01`～`P1-04`、`P2-01`～`P2-04` 全部 Closed；最终结论 `Passed`，P0-P3 无开放项，允许进入同步、精确 commit 和 push。
-- UA 动作与结果：UA3 Pending；用户已授权执行审查、同步和 push，但完成结果尚未交付，不把动作授权写成验收通过。
+- UA 动作与结果：UA3 Deferred；独立 UA3 未发生。用户于 2026-08-01 的总体收口授权不替代验收；历史同步与 push 已完成、后继版本已发布，任务无剩余执行动作并转为 Deferred。
 - 状态边界：本机同步、实现 commit 和 push 已完成；Review Passed；UA3 仍 Pending；未创建或授权 tag、Release、删除或新建不存在的安装目录。
 - 剩余风险：`0.8.1` 是未发布开发线，不等于正式 release；用户尚未对最终证据完成 UA3。
 - 下一步：提交并 push 本收据记录；用户查看证据后可决定是否接受，未来如需正式发布 `v0.8.1` 应另行授权。

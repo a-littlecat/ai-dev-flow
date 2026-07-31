@@ -1,15 +1,22 @@
 # LEAN-002：构建默认关闭原型并执行阶段 B 对照
 
+<a id="rel-005-closure-2026-08-01"></a>
+
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务实现、Review、提交及后继 v0.8 发布采用证据。独立 UA3 未发生，因此任务与 UA3 均记为 `Deferred`，不伪写为验收通过或 Closed。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时历史快照，本说明与顶部 Contract 为唯一最新结论。
+
 ## Workflow Contract
 
 - `schema_version`: `adf/v0.7.0`
 - `task_id`: `LEAN-002`
 - `task_type`: `code`
 - `task_class`: `C`
-- `lifecycle`: `Review`
+- `lifecycle`: `Deferred`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
-- `ua_status`: `Pending`
+- `ua_status`: `Deferred`
+- `ua_evidence`: `docs/tasks/LEAN-002.md#rel-005-closure-2026-08-01`
+- `acceptance_authority`: `None`
+- `close_authority`: `None`
 - `commit_status`: `Committed`
 - `merge_status`: `Not Applicable`
 
@@ -89,7 +96,7 @@ git diff --check
 - V003 调用计数：三档 main=3；Full 隔离 Reviewer=1；前置/repair/scorer Reviewer 另按控制面实际调用记录，不混入代表任务 model-call 指标。
 - V002 历史结果：三档各 4 / 4 且机械门禁全通过，但整体独立 Review 的 2 项 P1 仍原样保留，不与 V003 合并。
 - Review findings：none；旧 `LEAN002-P1-001/P1-002`、前置 `LEAN002-V003-P1-001` 与 scorer `LEAN002-V003-SCORER-P1-001` 均已独立复审 Closed。
-- UA 动作与结果：UA3 Pending；Full 产生的验收问题仅为评估证据，未由 agent 代答。
+- UA 动作与结果：UA3 Deferred；独立 UA3 未发生。用户于 2026-08-01 的总体收口授权不替代验收；阶段 B 结果已被后续 v0.8 发布链采用，任务无剩余执行动作并转为 Deferred。
 
 ## V002 独立整体复审（历史只读）
 

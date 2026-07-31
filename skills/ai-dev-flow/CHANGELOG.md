@@ -2,10 +2,17 @@
 
 ## Unreleased
 
+## 0.9.2 - 2026-08-01
+
+> `ai-dev-flow v0.9.2` 是 Goal 中文预设、历史任务收口和开发依赖安全维护版本；Workflow Contract schema 继续为 `adf/v0.7.0`，Scheduling schema 继续为 `ai-dev-flow/scheduling/v1`。
+
 - Add zero-state Codex Goal governance presets: `governed_goal`, `auto_land`, and separately bounded `auto_release`.
 - Add explicit Chinese trigger phrases such as “启动受控目标”, “启动自动落地目标”, “我去休息，自动修好并交付”, and version/environment-bound automatic release phrases.
 - Keep native Goal runtime state outside the Skill and Workflow Contract; reuse existing TASK, Review, UA, repair-campaign, and delivery authority boundaries without changing `CORE.md` or `repair_gate.py`.
 - Supersede the unmerged custom `UnattendedRun` state-machine candidate without deleting its Worktree.
+- Repair six legacy Contract records, close 24 historical tasks with complete evidence, defer three without independent UA3 acceptance, and make the project Workflow Contract lint pass with zero errors and zero violations.
+- Upgrade the frontend development toolchain to Vite 7.3.6, Vitest 4.1.10, ESLint 10.8.0, TypeScript ESLint 8.65.0, and `@eslint/js` 10.0.1; `npm audit` reports zero vulnerabilities.
+- Rebuild the packaged Dashboard runtime from the verified source frontend without changing the installed runtime requirements or read-only security boundary.
 
 ## 0.9.1 - 2026-07-30
 

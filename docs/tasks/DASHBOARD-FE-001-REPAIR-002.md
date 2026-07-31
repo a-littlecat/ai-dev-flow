@@ -1,12 +1,14 @@
 # DASHBOARD-FE-001-REPAIR-002：增强关系图选中态可见性
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## Workflow Contract
 
 - `schema_version`: `adf/v0.7.0`
 - `task_id`: `DASHBOARD-FE-001-REPAIR-002`
 - `task_type`: `repair`
 - `task_class`: `D`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA6`
 - `ua_status`: `Passed`
@@ -15,7 +17,7 @@
 - `commit_status`: `Committed`
 - `merge_status`: `Merged`
 - `merge_authority`: `User Authorized`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 
 ## Scheduling
 

@@ -1,21 +1,23 @@
 # DASHBOARD-001：规划本地任务关系仪表盘与只读调度后端
 
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务的实现、Review、UA、提交、主线与后继发布证据，任务现为 `Closed`。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时的历史快照，不再代表当前状态；本说明与顶部 Contract 为唯一最新结论，且不改写原 UA 事实。
+
 ## Workflow Contract
 
 - `schema_version`: `adf/v0.7.0`
 - `task_id`: `DASHBOARD-001`
 - `task_type`: `plan`
 - `task_class`: `C`
-- `lifecycle`: `Accepted`
+- `lifecycle`: `Closed`
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-001-ua2-2026-07-28`
 - `acceptance_authority`: `User Confirmed`
-- `close_authority`: `None`
+- `close_authority`: `User Authorized`
 - `commit_status`: `Committed`
-- `merge_status`: `Unmerged`
-- `merge_authority`: `None`
+- `merge_status`: `Merged`
+- `merge_authority`: `User Authorized`
 
 ## 需求来源与已确认偏好
 
@@ -942,6 +944,7 @@ edges = sorted(edges)
 
 ## Outcome
 
+- 合并目标与事实证据：`main`；规划 Accepted 提交 `371383f` 与记录提交 `c5bbf3a` 均为当前主线祖先。
 - Base / Diff：`fb16bc50f02023aad4a51acd8bf495231fe65f63` 到六文件规划 baseline `371383f0d93048fa2a31c1ca1306a7e1421650ff`；仅规划文档。
 - 修改文件：本 TASK、`docs/TASK_BOARD.md`，以及新建的 `DASHBOARD-BE-001`、`DASHBOARD-BE-002`、`DASHBOARD-FE-001`、`DASHBOARD-INTEGRATE-001` 四份 TASK 文档。
 - 验证证据：最终 Ready 状态写回后，本 TASK targeted workflow lint 为 `errors/violations/warnings=0/0/2`，四份子 TASK 各为 `0/0/1`；project lint 为 `19/0/28`，19 个 error 均来自既有 Legacy TASK；TASK_BOARD 无 board diagnostics，DASHBOARD 文件无 error；四份 Scheduling 均为 13/13 字段且无 dangling TASK reference；ai-dev-flow 完整单元测试 `81/81 Passed`；`git diff --check` 通过。

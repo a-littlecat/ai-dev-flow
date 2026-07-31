@@ -9,13 +9,12 @@
 1. 小任务不强行套完整流程；高风险、跨会话、真实环境和交付任务才启用 TASK、独立 Review 与权限门禁。
 2. 把项目中的 TASK、TASK_BOARD、Git 和 Worktree 事实变成可交互关系图，帮助判断下一步、上下游、并行候选和待决事项。
 
-## v0.9.1 新版特性
+## v0.9.2 新版特性
 
-- **跨项目使用**：项目目录与 Skill 安装目录彻底分离，不再要求每个项目复制或链接 `skills/ai-dev-flow`。
-- **可独立运行**：Skill 包内含 Dashboard 后端、已构建前端和启动脚本；日常使用不需要保留本源码仓库，也不需要 Node.js。
-- **多实例隔离**：默认自动选择可用端口；每个项目有独立实例 ID、运行目录、状态和缓存，停止一个实例不会影响另一个。
-- **版本固定**：启动时检查 Skill 版本、Workflow Contract schema、Scheduling schema 和 Dashboard 支持范围；运行中检测到 Skill 更新会提示重启，不混用新旧规则。
-- **实时只读**：TASK、TASK_BOARD、Git dirty、分支、HEAD 和 Worktree 变化通过 SSE 自动刷新。
+- **Codex Goal 中文预设**：支持“启动受控目标”“启动自动落地目标”“我去休息，自动修好并交付”等入口；Goal 负责持续运行，Skill 继续负责范围、验证、Review、UA 和交付权限。
+- **历史任务收口**：修复 6 份旧 Contract 的可解析性；27 个历史任务中 24 个按完整证据 Closed，3 个缺少独立 UA3 的任务如实 Deferred。
+- **开发依赖安全更新**：升级 Vite、Vitest、ESLint 与 TypeScript ESLint；保持 Dashboard 89 个浏览器用例和 91 个前端单元测试通过，`npm audit` 为 0。
+- **跨项目 Dashboard 保持兼容**：继续提供自包含、只读、多实例隔离和自动端口的安装运行时；日常使用无需 Node.js。
 - **安全边界不变**：仅监听 loopback，没有写 API，不修改项目、Skill 或 Git，不创建 Worktree，也不授予验收、提交、合并、发布或 Closed 权限。
 
 ## 工作方式
@@ -59,7 +58,7 @@ py -3 -B -X utf8 `
 
 ### 从源码仓库启动
 
-源码入口额外需要 Node.js 22。首次在干净检出中运行前先安装锁定的前端依赖：
+源码入口额外需要 Node.js 22.13+（仅 22.x）或 Node.js 24+。首次在干净检出中运行前先安装锁定的前端依赖：
 
 ```powershell
 Set-Location dashboard/frontend
@@ -97,7 +96,7 @@ C:\Users\<user>\.agents\skills\ai-dev-flow
 
 ## 版本与兼容性
 
-- Skill：`0.9.1`
+- Skill：`0.9.2`
 - Dashboard 支持的 Skill 系列：`0.9.x`
 - Workflow Contract：`adf/v0.7.0`
 - Scheduling：`ai-dev-flow/scheduling/v1`

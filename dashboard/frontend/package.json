@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
   "description": "Read-only local task relationship dashboard frontend (DASHBOARD-FE-001). Consumes only the versioned dashboard/contracts v1 API.",
   "scripts": {
     "codegen": "node scripts/generate-types.mjs",
@@ -20,14 +23,15 @@
     "ajv": "^8.17.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "1.61.0",
     "@types/node": "^22.10.0",
-    "eslint": "^9.17.0",
+    "eslint": "^10.8.0",
     "jsdom": "^25.0.1",
     "json-schema-to-typescript": "^15.0.4",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.1",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.8"
+    "typescript-eslint": "^8.65.0",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
   }
 }

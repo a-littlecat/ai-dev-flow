@@ -1,13 +1,17 @@
 # LEAN-001：冻结 v0.8 评估合同并执行零额度回放
 
+<a id="rel-005-closure-2026-08-01"></a>
+
+> 当前结论（2026-08-01）：`REL-005` 已核验本任务实现、Review、提交及后继 v0.8 发布采用证据。独立 UA3 未发生，因此任务、UA3 与任务级 merge 均记为 `Deferred`，不伪写为验收通过或 Closed。下文早期“当前状态/下一步/Not Closed”等措辞均是形成时历史快照，本说明与顶部任务元数据为唯一最新结论。
+
 ## 任务元数据
 
 | 字段 | 当前值 |
 |---|---|
 | 任务编号 | `LEAN-001` |
 | 任务类型 | 测试 |
-| 当前模式 | 独立复审通过，等待 UA3（`review_task` 完成） |
-| 任务状态 | 待审查（`Review`） |
+| 当前模式 | 历史交付证据已核实，独立 UA3 未发生 |
+| 任务状态 | 延期（`Deferred`） |
 | 优先级 | 高 |
 | 风险等级 | 中 |
 | 任务分级 | C：新增可复现评估工具和冻结证据，但不修改现行 Skill 行为 |
@@ -62,7 +66,7 @@
 - 当前分支：`codex/lean-v08-slimming`
 - 执行位置：独立分支
 - Worktree 路径：不适用
-- Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..HEAD
+- Base commit：base=b7938ef61a13ddb1ea22787c9a9a2d70298aadd4;diff=b7938ef..da66c04
 - 当前 HEAD：`84fb56c`（第 2 轮 repair commit）
 - Diff 范围：`b7938ef..84fb56c`
 - 是否有未提交改动：开始前否
@@ -208,19 +212,29 @@ git diff --check
 - 审查结论：独立 Reviewer 已审查 `b7938ef..84fb56c`，原 findings 全部关闭，P0/P1/P2/P3 均为 0。
 - 是否允许进入验收建议：是；LEAN-001 保持 UA3 Pending
 
+<a id="用户动作等级--验收建议"></a>
+
 ## 用户动作等级 / 验收建议
 
 - 用户动作等级：UA3
 - 是否需要用户实机测试：否
 - 用户需要做什么：查看阶段 A hash、ledger、expected / actual 与门禁结论；无需自己运行命令。
 - agent 已提供的证据：历史 hash 校验、8 条原始 ledger、阶段 A 报告、8 / 8 专项测试、4 / 4 + 41 / 41 回归、targeted lint、JSON/AST、diff hygiene 与独立 Review `Passed`。
-- 是否允许关闭任务：否；本轮未包含 `Closed` 授权。
+- 是否允许关闭任务：否；独立 UA3 未发生，按后继版本已采用的事实转为 Deferred。
+
+## 用户验收反馈 / 实机测试反馈
+
+- 验收反馈状态：延期；独立 UA3 未发生，按 `docs/tasks/LEAN-001.md#rel-005-closure-2026-08-01` 的后继版本采用事实收口。
+- 当前反馈关联的 UA 等级：UA3
+- 反馈分类：未取得独立 UA3；历史评估结果已由后续 v0.8 发布链采用
+- 下一步建议：无需继续执行；仅在用户未来要求补做本任务独立 UA3 时恢复。
 
 ## 提交 / 合并
 
 - Commit 状态：已提交（本记录所在 LEAN-001 task commit）
 - Commit hash：实现 `c607cb7`；第 1 轮审查 `9ef43d3`；第 1 轮 repair `05d6828`；第 1 轮复审 `0509d05`；第 2 轮 repair `84fb56c`；最终复审写回以本任务最新 Git 记录为准
-- Merge 状态：未合并
+- Merge 状态：暂不合并
+- 合并说明：实现提交 `84fb56c` 与复审通过记录 `da66c04` 后来成为当前主线祖先，但本任务未取得独立 UA3 与任务级 merge authority，不把代码祖先关系补写成受权 merge。
 - 回滚方式：回退本任务独立 commit；不得使用破坏性 reset。
 
 ## 停止条件
