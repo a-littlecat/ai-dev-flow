@@ -6,12 +6,16 @@
 - `task_id`: `GOAL-USAGE-001`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `Review`
+- `lifecycle`: `Accepted`
 - `review_status`: `Passed`
 - `ua_level`: `UA2`
-- `ua_status`: `Pending`
+- `ua_status`: `Passed`
+- `ua_evidence`: `#goal-usage-001-ua2-2026-07-31`
+- `acceptance_authority`: `User Confirmed`
 - `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
+- `merge_authority`: `User Authorized`
+- `close_authority`: `None`
 
 ## 目标与边界
 
@@ -51,14 +55,22 @@
 
 ## Outcome
 
+<a id="goal-usage-001-ua2-2026-07-31"></a>
+### 用户 UA2 确认（2026-07-31）
+
+- 用户动作：用户在收到中文触发词、权限上限、测试、独立 Review、提交、推送和 Draft PR 状态后明确回复“验收通过”。
+- 确认范围：`governed_goal`、`auto_land`、`auto_release` 的中文完整意图触发，以及 `auto_land` 自动交付上限。
+- UA 动作与结果：`UA2 Passed / User Confirmed`。
+- authority 边界：沿用任务已冻结的自动 merge authority；不扩展为 tag、release、deploy、删除、数据迁移、密钥/认证/授权修改、本机 Skill 同步、强制推送、历史改写或 `Closed`。
+
 - Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=f2056794a3fa09c47067fd4cdb4fa734564c1829
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\goal-usage-001` / `codex/goal-usage-001`。
 - 回滚方式：对任务提交 `f205679` 使用普通 `git revert`；不删除 Worktree、不 reset、不改写历史。
 - 修改文件：`SKILL.md` 增加零成本按需入口；`CODEX_GOAL_USAGE.md` 定义三种预设、中文词表、authority、自动验收与 hard stop；README/CHANGELOG 对外说明；定向测试冻结零状态与权限边界；TASK/看板记录事实。
 - 验证证据：初始及 AR-1 后定向 Goal 规则均为 `6/6`、Skill 全套 unittest 均为 `91/91`；Skill quick validator `Skill is valid!`、默认运行时预算断言 `<=400`、Workflow Contract lint `0 errors / 0 violations / 1 transition-provenance warning`、`git diff --check` 通过；七个变更文件与精确允许清单一致。
 - Review findings：Round 1=`Needs Fix`，`GOAL-USAGE-RVW-P2-001` 指出 `auto_release` 与生产外部副作用硬停止冲突；`GOAL-USAGE-RVW-P2-002` 指出定向测试未冻结完整意图、安全排除、Designated Acceptor 和不完整发布信息边界。AR-1 限定显式发布 authority 的外部副作用边界并补充确定性断言；Round 2 独立只读 Review Passed，两个 P2 均 Closed，新增 P0/P1/P2/P3=`0/0/0/0`。
-- UA 动作与结果：UA2 Pending；用户需确认中文触发词和自动落地权限上限是否符合预期。
+- UA 动作与结果：UA2 Passed；用户于 2026-07-31 明确回复“验收通过”，确认中文触发词和自动落地权限上限符合预期。
 - 交付证据：功能提交 `f205679` 已推送至 `origin/codex/goal-usage-001`；Draft PR=`https://github.com/a-littlecat/ai-dev-flow/pull/2`，GitHub 当前未报告 CI checks。
-- 状态边界：Committed / Unmerged / Pushed / Draft PR / No CI Checks Reported / Not Released / Not Synced / Not Closed。
+- 状态边界：Accepted / Committed / Unmerged / Pushed / Draft PR / No CI Checks Reported / Not Released / Not Synced / Not Closed。
 - 剩余风险：Goal 是 Codex 平台能力；其他 Harness 不得伪装或模拟同名能力。
-- 下一步：等待 UA2 确认中文触发词与自动落地权限上限；通过后将 PR 转为 Ready 并按可用门禁继续集成。目标 `main` 有用户未提交前端改动，不执行本地 merge，并保持旧 Worktree 不删除。
+- 下一步：将 PR 转为 Ready，并在 GitHub 合并门禁允许时远端合并；目标 `main` 有用户未提交前端改动，不执行本地 merge，并保持旧 Worktree 不删除。
