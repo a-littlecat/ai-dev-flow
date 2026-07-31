@@ -2,7 +2,7 @@
 
 > - 快照日期：2026-07-31
 > - 当前模式：Dashboard 空闲 CPU 性能优化
-> - 当前阶段：DASHBOARD-IDLE-PERF-001 `Accepted / Review Passed / UA6 Passed / Uncommitted / Unmerged`
+> - 当前阶段：DASHBOARD-IDLE-PERF-001 `Accepted / Review Passed / UA6 Passed / Committed 2963353 / Unmerged`
 > - 当前方案：`docs/tasks/DASHBOARD-IDLE-PERF-001.md`
 
 ## 当前授权边界

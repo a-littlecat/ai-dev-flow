@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-idle-perf-001-ua6-2026-07-31`
 - `acceptance_authority`: `User Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 - `close_authority`: `None`
@@ -102,9 +102,9 @@
 - UA 动作与结果：`UA6 Passed / User Confirmed`。
 - authority 边界：允许提交、推送、集成、runtime 重建、本机 Skill 同步、Closed 写回和完全合并后分支删除；不包含 tag、release、deploy、强制推送或历史改写。
 
-- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=staged-review-candidate-11
+- Base / Diff：base=36aae03e944c3b8b7d5ec52d1417190012d1a6d1;diff=2963353a33e3717202b91ba6b0bebcbbc994d88a
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-idle-perf-001`，分支 `codex/dashboard-idle-perf-001`。
-- 回滚方式：放弃本隔离 Worktree 的未提交 diff；若未来形成提交，只通过新的逆向提交回滚，不改写历史。
+- 回滚方式：对候选提交 `2963353` 使用普通 `git revert`；不删除 Worktree、不 reset、不改写历史。
 - 修改文件：Dashboard watcher/事件源、SSE 客户端计数、便携单实例锁、对应 backend/integration 测试、Artifact Guard 候选、内置 Skill runtime、本 TASK 与 TASK_BOARD。
 - 验证证据：Python 3.13 backend `174/174`、integration `51/51`、frontend codegen/typecheck/lint/build + unit `82/82` + browser `83/83`、Skill `85/85`、runtime bundle `--check` 与 Artifact Guard candidate 均通过。
 - 验证证据：Round 11 Review Passed 最终候选的真实 CADCat 页面保持 SSE 已连接；连续 `25.025s` 整棵验收进程树采样平均约 `0.125%` 单逻辑核心、约 `0.0078%` 整机 CPU，20ms 轮询观察到 Git 进程 `0`，`last_refresh_at` 与 revision 全程不变，watcher 与 server 保持 `ready`；相对原始约 `103.3%` 单逻辑核心占用，降幅约 `99.88%`。
@@ -121,6 +121,6 @@
 - Review findings：Round 10 独立只读 Review（session `019fb4c6-2893-7051-a579-849a492ff839`）为 `Needs Fix`，无新 P0/P1，但新增 `P2-014/P2-015`：上一轮 stop 回归的 2 秒 barrier 可能先于 stop 超时自行释放，无法构成真实 RED→GREEN 保护；`ERROR_NOTIFY_ENUM_DIR` 后重新设防异常未上报，可能阻止上层切换 fallback。当前 stop 回归改为独立 stopper，必须在 barrier 未释放且 updater 仍阻塞时由第一次 stop 无异常收敛；目录通知溢出后的 `_rearm()` 与其他分支一致捕获异常并调用 `_fail()`，新增真实事件完成后注入溢出与 ResetEvent 失败的确定性回归，等待 Round 11 独立复核。
 - Review findings：Round 11 独立只读 Review（session `019fb4d3-4ea7-70e1-99e4-4032062383d7`）为 `Passed`，确认 `P2-014/P2-015` Closed，P2-011～013 与全部更早 P1/P2 保持关闭，无开放或新增 P0/P1/P2；22 个暂存文件与精确清单一致，源码与内置 Skill 运行时对应 blob 一致。
 - UA 动作与结果：`UA6 Passed`；用户于 2026-07-31 明确确认性能验收通过。
-- 状态边界：`Accepted / Uncommitted / Unmerged / Not Pushed / Not Released / Not Closed`。
+- 状态边界：`Accepted / Committed / Unmerged / Not Pushed / Not Released / Not Closed`。
 - 剩余风险：UA6 尚未由用户确认；非 Windows fallback 仅有自动回归，未做真实非 Windows 性能采样。
 - 下一步：按已授权 Auto-Land Goal 形成精确提交；随后在独立集成 Worktree 与页面候选串行集成、重建 runtime 并完成合并后验证。
