@@ -281,6 +281,20 @@ describe("graph layout", () => {
     expect(layout.height).toBeGreaterThan(0);
   });
 
+  it("wraps tasks without directional relationships into a reading grid", () => {
+    const taskIds = Array.from(
+      { length: 13 },
+      (_, index) => `UNRELATED-${String(index + 1).padStart(2, "0")}`,
+    );
+    const layout = layoutGraph(taskIds, []);
+    const xs = new Set([...layout.nodes.values()].map((node) => node.x));
+    const ys = new Set([...layout.nodes.values()].map((node) => node.y));
+
+    expect(xs.size).toBeGreaterThan(1);
+    expect(ys.size).toBeGreaterThan(1);
+    expect(layout.width).toBeGreaterThan(layout.height);
+  });
+
   it("flags cycle edges instead of dropping them from the data", () => {
     const edges = [
       makeDependsOn(801, "CYCLE-A", "CYCLE-B") as unknown as RelationshipEdge,

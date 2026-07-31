@@ -107,6 +107,29 @@ describe("parallel assessment display semantics", () => {
     expect(graph.root.querySelector(".legend-note")?.textContent).toContain(
       "“并行未知”仅在列表 / 详情中显示",
     );
+
+    store.setHighlight("candidates");
+    graph.update(store.get());
+    let visibleAssessmentLabels = [...graph.root.querySelectorAll(".assessment-label")].map(
+      (node) => node.textContent ?? "",
+    );
+    expect(visibleAssessmentLabels.some((text) => text.includes("并行候选"))).toBe(true);
+    expect(visibleAssessmentLabels.some((text) => text.includes("必须串行"))).toBe(false);
+
+    store.selectTask("SER-A");
+    graph.update(store.get());
+    visibleAssessmentLabels = [...graph.root.querySelectorAll(".assessment-label")].map(
+      (node) => node.textContent ?? "",
+    );
+    expect(visibleAssessmentLabels.some((text) => text.includes("必须串行"))).toBe(true);
+    expect(visibleAssessmentLabels.some((text) => text.includes("并行未知"))).toBe(false);
+    expect(graph.root.querySelectorAll(".assessment-unknown")).toHaveLength(0);
+
+    const titles = [...graph.root.querySelectorAll(".assessment-link title")].map(
+      (node) => node.textContent ?? "",
+    );
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles.every((text) => text.includes("requires_user_confirmation=true"))).toBe(true);
   });
 
   it("graph nodes always carry text state (lifecycle + next action), not colour alone", () => {
