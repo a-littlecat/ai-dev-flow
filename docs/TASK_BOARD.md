@@ -170,7 +170,7 @@ REL-002 Closed / main@0422887
 | GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Accepted | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Not Released / Not Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Accepted | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / Pushed / Integration in progress | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Accepted | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / Pushed / Integration in progress | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
-| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Accepted | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Verification Green / Uncommitted / Unmerged | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
+| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Accepted | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Committed `f3022f4` / Unmerged / Not Synced | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 

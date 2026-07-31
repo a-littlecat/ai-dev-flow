@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-edge-perf-integrate-001-ua6-2026-07-31`
 - `acceptance_authority`: `Designated Acceptor Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 - `close_authority`: `None`
@@ -60,7 +60,7 @@
 - 结果：上述判据均由当前环境的确定性验证满足，Round 3 独立 Review Passed，`P0/P1/P2/P3=0/0/0/0`；记录 `UA6 Passed / Designated Acceptor Confirmed`。
 - authority 边界：仅确认当前组合候选可提交并进入已授权 PR/merge；不授权 tag、release、deploy、强制推送、历史改写或覆盖主工作区用户改动。
 
-- Base / Diff：base=8bea393eafb2c4335f55c07ee1cfe8ae65084ea4;diff=staged-integration-candidate-1
+- Base / Diff：base=8bea393eafb2c4335f55c07ee1cfe8ae65084ea4;diff=f3022f498cf46e55f8abca37743f1c769485edfa
 - 隔离位置：`D:\open-source\ai-dev-flow-wt\dashboard-edge-perf-integrate-001` / `codex/dashboard-edge-perf-integrate-001`。
 - 回滚方式：合并前对集成提交使用普通 `git revert`；本机同步前保留时间戳备份；不 reset、不改写历史。
 - 修改文件：合并两个候选的原始提交与 TASK 收据；组合 Artifact Guard candidate 从 20 扩展为 27 路径并冻结 digest；runtime 以无 source map 生成，静态 JS 从 `index-BBzm13vu.js` 替换为 `index-7LHWcuMt.js`，同步 `index.html` 与 manifest；新增本集成 TASK 和看板投影。
@@ -68,6 +68,6 @@
 - 主工作区保护收据（2026-07-31）：保护对象为 `dashboard/frontend/src/ui/graph/graphView.ts`、`dashboard/frontend/src/ui/graph/layout.ts`、`dashboard/frontend/src/ui/overlays.ts`、`dashboard/frontend/tests/browser/graph.spec.ts`、`dashboard/frontend/tests/browser/real-scale.spec.ts`、`dashboard/frontend/tests/derive.test.ts`、`dashboard/frontend/tests/parallel-display.test.ts`、`dashboard/frontend/tests/overlays.test.ts`；执行前基线聚合 SHA256=`ECED3A9161E9A076FC5E218CF6B7C4A586E3057375C76AA875E81F5E7E5AABFB`，集成验证后复核聚合 SHA256 相同，结果 `8/8 unchanged`；主工作区仍为 `main@36aae03` 且上述 8 项保持用户未提交状态。
 - Review findings：Round 1 `Needs Fix` 的 `P2-001/P2-002/P3-003` 均为记录缺口；修正来源 TASK 陈旧状态、主工作区保护收据和 lint 对象表述后，Round 2 关闭全部 finding；Round 3 对保护路径笔误做最终只读复核，结论 `Review Passed`，`P0/P1/P2/P3=0/0/0/0`。
 - UA 动作与结果：页面 UA5 与性能 UA6 已由用户确认；组合 runtime 的冻结生成/parity/全套测试、主工作区保护和独立 Review 判据全部满足，由 Designated Acceptor 记录组合 `UA6 Passed`。
-- 状态边界：Accepted / Review Passed / UA6 Passed / Uncommitted integration receipt / Unmerged / Not Synced / Not Closed。
+- 状态边界：Accepted / Review Passed / UA6 Passed / Committed `f3022f498cf46e55f8abca37743f1c769485edfa` / Unmerged / Not Synced / Not Closed。
 - 剩余风险：生成 bundle 的 hashed asset 名必须以实际构建输出为准；任何偏离冻结集合均停止。
 - 下一步：形成集成提交并执行已授权 push / PR / merge；远端合并后同步本机物理 Skill，再写回 Closed 并删除已完全合并分支。
