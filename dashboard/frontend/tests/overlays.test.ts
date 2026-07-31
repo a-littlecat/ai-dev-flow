@@ -13,10 +13,23 @@ describe("task ingestion notice", () => {
         code,
         message: `TASK ingestion failed: ${code}`,
       };
+      const boardDiagnostic = {
+        ...makeDiagnostic(702, "error"),
+        code: "E_BOARD_PARSE",
+        message: "TASK_BOARD could not be parsed",
+      };
       const store = new AppStore();
+      const base = makeSnapshot();
       store.setSnapshot(
         makeSnapshot({
-          diagnostics: [diagnostic],
+          diagnostics: [diagnostic, boardDiagnostic],
+          summary: {
+            ...base.summary,
+            counts_by_severity: {
+              ...base.summary.counts_by_severity,
+              error: 2,
+            },
+          },
         }),
         null,
         null,
@@ -27,9 +40,12 @@ describe("task ingestion notice", () => {
 
       const notice = overlays.root.querySelector(".task-ingestion-notice");
       expect(notice?.textContent).toContain(
-        `关系图当前显示 ${store.get().snapshot?.summary.task_total} 个已解析任务`,
+        "当前共检测到 2 条错误，其中 1 条属于 TASK 解析或 Contract 不兼容错误",
       );
-      expect(notice?.textContent).toContain("部分任务可能未纳入");
+      expect(notice?.textContent).toContain(
+        `当前显示 ${store.get().snapshot?.summary.task_total} 个已解析任务`,
+      );
+      expect(notice?.textContent).toContain("可能导致部分任务未纳入关系图");
       expect(notice?.textContent).toContain("底部“诊断”");
     },
   );
