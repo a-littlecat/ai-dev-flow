@@ -29,6 +29,7 @@ export class Toolbar {
   readonly root: HTMLElement;
   private chipsRow: HTMLElement;
   private readonly search: HTMLInputElement;
+  private readonly taskSourceSummary: HTMLElement;
   private filterPanel: HTMLElement;
   private filterToggle: HTMLButtonElement;
   private pairList: HTMLElement;
@@ -63,14 +64,19 @@ export class Toolbar {
     this.search.placeholder = "搜索任务 ID / 标题…";
     this.search.setAttribute("aria-label", "搜索任务 ID 或标题");
     this.search.addEventListener("input", () => this.store.patchFilters({ text: this.search.value }));
-    this.chipsRow.append(this.search);
+    this.taskSourceSummary = el("span", "task-source-summary");
+    this.taskSourceSummary.title =
+      "关系图只显示项目根目录 docs/tasks 下成功解析的 Markdown TASK；无法解析的文件会进入诊断。TASK_BOARD 仅作为索引和状态投影。";
+    this.taskSourceSummary.setAttribute("role", "status");
+    this.taskSourceSummary.hidden = true;
+    this.chipsRow.append(this.search, this.taskSourceSummary);
     this.root.append(this.chipsRow, this.filterToggle, this.filterPanel, this.pairList);
   }
 
   update(state: AppState): void {
     // Remove transient chips but keep the persistent search input in place.
     for (const child of [...this.chipsRow.children]) {
-      if (child !== this.search) {
+      if (child !== this.search && child !== this.taskSourceSummary) {
         child.remove();
       }
     }
@@ -83,6 +89,12 @@ export class Toolbar {
     const derived = state.derived;
 
     if (snapshot && derived) {
+      const taskSourceText = `显示 ${snapshot.tasks.length} 个 TASK（来源：docs/tasks/*.md）`;
+      if (this.taskSourceSummary.textContent !== taskSourceText) {
+        this.taskSourceSummary.textContent = taskSourceText;
+      }
+      this.taskSourceSummary.hidden = false;
+
       // Search result count right beside the (persistent) search input: a
       // non-empty search always produces an explicit, screen-reader-visible
       // outcome — the size of the combined result set (structure AND text,
@@ -112,6 +124,8 @@ export class Toolbar {
         chip.addEventListener("click", () => this.store.setHighlight(entry.mode));
         this.chipsRow.append(chip);
       }
+    } else {
+      this.taskSourceSummary.hidden = true;
     }
 
     if (filtersActive(state.filters)) {

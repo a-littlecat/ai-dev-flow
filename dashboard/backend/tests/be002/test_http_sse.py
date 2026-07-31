@@ -4,6 +4,7 @@ import http.client
 import json
 import socket
 import tempfile
+import time
 import unittest
 
 from be002 import support
@@ -212,6 +213,32 @@ class HttpContractTests(ServerCase):
 
 
 class SseContractTests(ServerCase):
+    def test_sse_connection_lifecycle_notifies_runtime_watcher(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+        activity = []
+        self.server = create_local_server(
+            self.coordinator,
+            port=0,
+            heartbeat_seconds=0.05,
+            write_timeout_seconds=0.25,
+            on_sse_client_change=activity.append,
+        )
+        self.thread = support.run_server(self.server)
+        self.port = self.server.server_port
+
+        client, _ = self.raw_sse(until=b"event: snapshot")
+        deadline = time.monotonic() + 1
+        while activity != [True] and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual([True], activity)
+        client.close()
+        deadline = time.monotonic() + 1
+        while activity != [True, False] and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertEqual([True, False], activity)
+
     def test_initial_connection_sends_retry_full_reset_event(self):
         client, data = self.raw_sse(until=b"event: snapshot")
         try:

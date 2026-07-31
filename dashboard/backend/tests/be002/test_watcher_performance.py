@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import shutil
 import subprocess
 import tempfile
@@ -8,12 +9,20 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from be002 import support
-from ai_dev_flow_dashboard.core import canonical_bytes, snapshot_revision, validated_canonical_bytes
+from ai_dev_flow_dashboard.core import (
+    canonical_bytes,
+    canonical_sha256,
+    snapshot_revision,
+    validated_canonical_bytes,
+)
 from ai_dev_flow_dashboard.core.benchmark import generate_dataset
+from ai_dev_flow_dashboard.core.models import CoreResult
 from ai_dev_flow_dashboard.core.schema_validator import validate_contract
 from ai_dev_flow_dashboard.snapshot import PollingWatcher, SnapshotBuilder, SnapshotCoordinator
+from ai_dev_flow_dashboard.snapshot.events import PollingManifestEventSource
 from ai_dev_flow_dashboard.snapshot.performance import benchmark_summary, nearest_rank
 
 
@@ -21,6 +30,7 @@ class FakeCoordinator:
     def __init__(self, root: Path):
         self.project_root = root
         self.watch_paths = ()
+        self.watch_roots = (root,)
         self.watcher_state = "starting"
         self.refresh_times = []
 
@@ -31,6 +41,31 @@ class FakeCoordinator:
         self.refresh_times.append(time.monotonic())
 
 
+class FakeEventSource:
+    def __init__(self):
+        self.callback = None
+        self.paths = ()
+        self.stopped = False
+        self.failure = None
+        self.started = False
+
+    def start(self, paths, callback):
+        self.paths = tuple(paths)
+        self.callback = callback
+        self.started = True
+
+    def update(self, paths):
+        self.paths = tuple(paths)
+
+    def emit(self):
+        if self.callback is None:
+            raise AssertionError("event source has not started")
+        self.callback()
+
+    def stop(self):
+        self.stopped = True
+
+
 def create_watched_project(root: Path):
     task_dir = root / "docs" / "tasks"
     task_dir.mkdir(parents=True)
@@ -38,7 +73,108 @@ def create_watched_project(root: Path):
     (root / "docs" / "TASK_BOARD.md").write_text("board\n", encoding="utf-8")
 
 
+def project_source_digest(root: Path) -> str:
+    paths = sorted(
+        (*((root / "docs" / "tasks").glob("*.md")), root / "docs" / "TASK_BOARD.md"),
+        key=lambda item: item.relative_to(root).as_posix(),
+    )
+    return canonical_sha256(
+        tuple(
+            (
+                path.relative_to(root).as_posix(),
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+                path.stat().st_size,
+            )
+            for path in paths
+        )
+    )
+
+
 class PollingWatcherTests(unittest.TestCase):
+    def test_client_connection_does_not_trigger_redundant_refresh_or_periodic_scan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            coordinator = FakeCoordinator(root)
+            events = FakeEventSource()
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=events,
+                pause_without_clients=True,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            self.assertEqual(1, len(coordinator.refresh_times))
+            coordinator.refresh_times.clear()
+            time.sleep(0.15)
+            self.assertEqual([], coordinator.refresh_times)
+
+            watcher.client_connected()
+            time.sleep(0.15)
+            self.assertEqual([], coordinator.refresh_times)
+
+            watcher.client_disconnected()
+            time.sleep(0.15)
+            watcher.stop()
+            self.assertEqual([], coordinator.refresh_times)
+            self.assertTrue(events.stopped)
+
+    def test_file_event_refreshes_without_client_but_idle_has_no_integrity_scan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            coordinator = FakeCoordinator(root)
+            events = FakeEventSource()
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=events,
+                pause_without_clients=True,
+                poll_interval=0.01,
+                debounce_seconds=0.02,
+                max_wait_seconds=0.1,
+                integrity_interval=10,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            coordinator.refresh_times.clear()
+            events.emit()
+            deadline = time.monotonic() + 1
+            while len(coordinator.refresh_times) < 1 and time.monotonic() < deadline:
+                time.sleep(0.01)
+            time.sleep(0.15)
+            watcher.stop()
+            self.assertEqual(1, len(coordinator.refresh_times))
+
+    def test_explicit_integrity_interval_is_measured_after_slow_refresh_completes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+
+            class SlowCoordinator(FakeCoordinator):
+                def refresh(self):
+                    self.refresh_times.append(time.monotonic())
+                    time.sleep(0.08)
+
+            coordinator = SlowCoordinator(root)
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=FakeEventSource(),
+                integrity_interval=0.05,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            time.sleep(0.32)
+            watcher.stop()
+            self.assertGreaterEqual(len(coordinator.refresh_times), 2)
+            gaps = [
+                right - left
+                for left, right in zip(
+                    coordinator.refresh_times,
+                    coordinator.refresh_times[1:],
+                )
+            ]
+            self.assertTrue(all(gap >= 0.12 for gap in gaps), gaps)
+
     def test_trailing_debounce_coalesces_rapid_saves_and_publishes_within_one_second(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -55,6 +191,7 @@ class PollingWatcherTests(unittest.TestCase):
             while coordinator.watcher_state != "ready" and time.monotonic() < deadline:
                 time.sleep(0.01)
             self.assertTrue(watcher.wait_until_idle(1))
+            coordinator.refresh_times.clear()
             task = root / "docs" / "tasks" / "TASK-001.md"
             first_save = time.monotonic()
             for index in range(3):
@@ -82,6 +219,7 @@ class PollingWatcherTests(unittest.TestCase):
             )
             watcher.start()
             time.sleep(0.05)
+            coordinator.refresh_times.clear()
             task = root / "docs" / "tasks" / "TASK-001.md"
             first_save = time.monotonic()
             for index in range(7):
@@ -100,9 +238,11 @@ class PollingWatcherTests(unittest.TestCase):
             create_watched_project(root)
 
             class RacingCoordinator(FakeCoordinator):
+                race_enabled = False
+
                 def refresh(self):
                     super().refresh()
-                    if len(self.refresh_times) == 1:
+                    if self.race_enabled and len(self.refresh_times) == 1:
                         task = self.project_root / "docs" / "tasks" / "TASK-001.md"
                         task.write_text("second event\n", encoding="utf-8")
 
@@ -115,6 +255,8 @@ class PollingWatcherTests(unittest.TestCase):
             )
             watcher.start()
             self.assertTrue(watcher.wait_until_idle(1))
+            coordinator.refresh_times.clear()
+            coordinator.race_enabled = True
             task = root / "docs" / "tasks" / "TASK-001.md"
             task.write_text("first event\n", encoding="utf-8")
             deadline = time.monotonic() + 2
@@ -221,7 +363,6 @@ class PollingWatcherTests(unittest.TestCase):
                 poll_interval=0.01,
                 debounce_seconds=0.04,
                 max_wait_seconds=0.2,
-                git_probe_interval=0.05,
             )
             watcher.start()
             self.assertTrue(watcher.wait_until_idle(2))
@@ -286,6 +427,341 @@ class PollingWatcherTests(unittest.TestCase):
             finally:
                 watcher.stop()
 
+    def test_manifest_fallback_detects_ordinary_worktree_file_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            ordinary = root / "src" / "value.txt"
+            ordinary.parent.mkdir()
+            ordinary.write_text("one\n", encoding="utf-8")
+            coordinator = FakeCoordinator(root)
+            watcher = None
+            fallback = PollingManifestEventSource(
+                lambda: watcher.capture_manifest(),
+                interval=0.02,
+            )
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=fallback,
+                poll_interval=0.01,
+                debounce_seconds=0.02,
+                max_wait_seconds=0.1,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            coordinator.refresh_times.clear()
+            ordinary.write_text("two\n", encoding="utf-8")
+            deadline = time.monotonic() + 2
+            while not coordinator.refresh_times and time.monotonic() < deadline:
+                time.sleep(0.01)
+            watcher.stop()
+            self.assertEqual(1, len(coordinator.refresh_times))
+
+    def test_manifest_fallback_detects_tracked_dotfile_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            dotfile = root / ".gitattributes"
+            dotfile.write_text("* text=auto\n", encoding="utf-8")
+            coordinator = FakeCoordinator(root)
+            watcher = None
+            fallback = PollingManifestEventSource(
+                lambda: watcher.capture_manifest(),
+                interval=0.02,
+            )
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=fallback,
+                poll_interval=0.01,
+                debounce_seconds=0.02,
+                max_wait_seconds=0.1,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            coordinator.refresh_times.clear()
+            dotfile.write_text("* text=auto eol=lf\n", encoding="utf-8")
+            deadline = time.monotonic() + 2
+            while not coordinator.refresh_times and time.monotonic() < deadline:
+                time.sleep(0.01)
+            watcher.stop()
+            self.assertEqual(1, len(coordinator.refresh_times))
+
+    def test_runtime_native_failure_switches_to_manifest_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            coordinator = FakeCoordinator(root)
+            native = FakeEventSource()
+            with mock.patch(
+                "ai_dev_flow_dashboard.snapshot.watcher.default_event_source",
+                return_value=native,
+            ):
+                watcher = PollingWatcher(
+                    coordinator,
+                    fallback_interval=0.02,
+                    poll_interval=0.01,
+                    debounce_seconds=0.02,
+                    max_wait_seconds=0.1,
+                )
+                watcher.start()
+                self.assertTrue(watcher.wait_until_idle(1))
+                coordinator.refresh_times.clear()
+                native.failure = OSError("native read failed")
+                native.emit()
+                deadline = time.monotonic() + 2
+                while not coordinator.refresh_times and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                watcher.stop()
+            self.assertTrue(native.stopped)
+            self.assertEqual("ready", coordinator.watcher_state)
+            self.assertEqual(1, len(coordinator.refresh_times))
+
+    def test_new_watch_roots_are_armed_before_follow_up_refresh(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            linked = root.parent / f"{root.name}-linked"
+            linked.mkdir()
+            self.addCleanup(shutil.rmtree, linked, True)
+            create_watched_project(root)
+            events = FakeEventSource()
+
+            class GrowingCoordinator(FakeCoordinator):
+                def refresh(self):
+                    super().refresh()
+                    if len(self.refresh_times) == 1:
+                        self.watch_roots = (self.project_root, linked)
+
+            coordinator = GrowingCoordinator(root)
+            watcher = PollingWatcher(coordinator, event_source=events)
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            watcher.stop()
+            self.assertEqual(2, len(coordinator.refresh_times))
+            self.assertIn(
+                linked.resolve(),
+                {request.directory for request in events.paths},
+            )
+
+    def test_existing_new_top_level_directory_is_armed_before_refresh(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            coordinator = FakeCoordinator(root)
+            events = FakeEventSource()
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=events,
+                poll_interval=0.01,
+                debounce_seconds=0.02,
+                max_wait_seconds=0.1,
+            )
+            watcher.start()
+            self.assertTrue(watcher.wait_until_idle(1))
+            created = root / "created"
+            created.mkdir()
+            coordinator.refresh_times.clear()
+            events.emit()
+            deadline = time.monotonic() + 1
+            while not coordinator.refresh_times and time.monotonic() < deadline:
+                time.sleep(0.01)
+            watcher.stop()
+            by_path = {
+                request.directory: request.recursive
+                for request in events.paths
+            }
+            self.assertTrue(by_path[created.resolve()])
+
+    def test_event_requests_keep_precise_external_git_paths_and_exclude_objects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "worktree"
+            external_git = Path(directory) / "metadata"
+            create_watched_project(root)
+            (root / ".git" / "objects").mkdir(parents=True)
+            (external_git / "refs" / "heads").mkdir(parents=True)
+            (external_git / "worktrees").mkdir()
+            (external_git / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+            (external_git / "index").write_bytes(b"index")
+            coordinator = FakeCoordinator(root)
+            coordinator.watch_excluded_roots = (root / ".git",)
+            coordinator.watch_paths = (
+                external_git / "HEAD",
+                external_git / "index",
+                external_git / "refs" / "heads",
+                external_git / "worktrees",
+            )
+            requests = PollingWatcher(coordinator)._event_requests()
+            by_path = {
+                request.directory: request.recursive
+                for request in requests
+            }
+            self.assertFalse(by_path[root.resolve()])
+            self.assertNotIn((root / ".git").resolve(), by_path)
+            self.assertFalse(by_path[external_git.resolve()])
+            self.assertTrue(by_path[(external_git / "refs" / "heads").resolve()])
+            self.assertTrue(by_path[(external_git / "worktrees").resolve()])
+
+    def test_manifest_prunes_git_object_database(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            git_object = root / ".git" / "objects" / "aa" / "object"
+            git_object.parent.mkdir(parents=True)
+            git_object.write_bytes(b"one")
+            watcher = PollingWatcher(FakeCoordinator(root))
+            before = watcher.capture_manifest()
+            self.assertNotIn(str(git_object.absolute()), {item[0] for item in before})
+            git_object.write_bytes(b"two")
+            self.assertEqual(before, watcher.capture_manifest())
+
+    def test_manifest_prunes_internal_custom_git_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            create_watched_project(root)
+            metadata = root / "metadata"
+            git_object = metadata / "objects" / "aa" / "object"
+            git_object.parent.mkdir(parents=True)
+            git_object.write_bytes(b"one")
+            coordinator = FakeCoordinator(root)
+            coordinator.watch_excluded_roots = (metadata,)
+            coordinator.watch_paths = (
+                metadata / "HEAD",
+                metadata / "index",
+            )
+            (metadata / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+            (metadata / "index").write_bytes(b"index")
+            watcher = PollingWatcher(coordinator)
+            manifest = watcher.capture_manifest()
+            manifest_paths = {item[0] for item in manifest}
+            self.assertIn(str((metadata / "HEAD").absolute()), manifest_paths)
+            self.assertIn(str((metadata / "index").absolute()), manifest_paths)
+            self.assertNotIn(str(git_object.absolute()), manifest_paths)
+            requests = watcher._event_requests()
+            by_path = {
+                request.directory: request.recursive
+                for request in requests
+            }
+            self.assertFalse(by_path[metadata.resolve()])
+            self.assertFalse(by_path[root.resolve()])
+
+    def test_real_coordinator_prunes_internal_separate_git_directory(self):
+        if shutil.which("git") is None:
+            self.skipTest("git is required")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            metadata = root / "custom-git-metadata"
+            create_watched_project(root)
+            (root / "docs" / "tasks" / "TASK-001.md").write_text(
+                "\n".join(
+                    (
+                        "# TEST-001：test",
+                        "",
+                        "## Workflow Contract",
+                        "",
+                        "- `task_id`: `TEST-001`",
+                        "",
+                        "## Scheduling",
+                        "",
+                        "- `branch_hint`: `codex/test`",
+                        "",
+                    )
+                ),
+                encoding="utf-8",
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "init",
+                    f"--separate-git-dir={metadata}",
+                    str(root),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "config", "user.name", "Dashboard Test"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "config", "user.email", "test@example.invalid"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "add", "docs"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(root), "commit", "-m", "fixture"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            linked_worktree = Path(directory) / "linked-worktree"
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(linked_worktree),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            class StaticCore:
+                def inspect(self, *, worktrees=None):
+                    del worktrees
+                    return CoreResult(
+                        manifest_sha256=project_source_digest(root),
+                        tasks=(support.task("TEST-001", branch_hint="codex/test"),),
+                        edges=(),
+                        actions=(),
+                        parallel_assessments=(),
+                        diagnostics=(),
+                        projections={},
+                    )
+
+            builder = SnapshotBuilder(root, core=StaticCore())
+            coordinator = SnapshotCoordinator(root, builder=builder)
+            coordinator.refresh()
+            watcher = PollingWatcher(coordinator)
+
+            self.assertIn(metadata.resolve(), coordinator.watch_excluded_roots)
+            self.assertNotIn(metadata.resolve(), coordinator.watch_roots)
+            self.assertIn(linked_worktree.resolve(), coordinator.watch_roots)
+            self.assertIn((metadata / "HEAD").resolve(), coordinator.watch_paths)
+            self.assertIn((metadata / "index").resolve(), coordinator.watch_paths)
+            refs_heads = (metadata / "refs" / "heads").resolve()
+            self.assertIn(refs_heads, coordinator.watch_paths)
+
+            git_object = metadata / "objects" / "aa" / "object"
+            git_object.parent.mkdir(parents=True, exist_ok=True)
+            git_object.write_bytes(b"one")
+            manifest_paths = {item[0] for item in watcher.capture_manifest()}
+            self.assertNotIn(str(git_object.absolute()), manifest_paths)
+            self.assertIn(str((metadata / "HEAD").absolute()), manifest_paths)
+            self.assertIn(str((metadata / "index").absolute()), manifest_paths)
+
+            by_path = {
+                request.directory: request.recursive
+                for request in watcher._event_requests()
+            }
+            self.assertFalse(by_path[metadata.resolve()])
+            self.assertTrue(by_path[refs_heads])
+            self.assertFalse(by_path[linked_worktree.resolve()])
+            self.assertTrue(by_path[(linked_worktree / "docs").resolve()])
+            self.assertFalse(by_path[root.resolve()])
+
     def test_temporary_task_files_are_not_watched(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -305,11 +781,15 @@ class PollingWatcherTests(unittest.TestCase):
             create_watched_project(root)
             coordinator = FakeCoordinator(root)
 
-            class FailingWatcher(PollingWatcher):
-                def capture_manifest(self):
+            class FailingEventSource(FakeEventSource):
+                def start(self, paths, callback):
+                    del paths, callback
                     raise OSError("unavailable")
 
-            watcher = FailingWatcher(coordinator)
+            watcher = PollingWatcher(
+                coordinator,
+                event_source=FailingEventSource(),
+            )
             watcher.start()
             deadline = time.monotonic() + 1
             while coordinator.watcher_state != "failed" and time.monotonic() < deadline:

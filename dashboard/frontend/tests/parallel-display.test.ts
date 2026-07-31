@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * Display-semantics tests for parallel assessments (candidate / must_serial /
- * unknown): the graph and the pair list must show all three states with text
- * (never colour alone) and must never present a candidate as authorized.
+ * unknown): evidence views must show all three states with text (never colour
+ * alone), while the graph only reveals actionable assessment links on demand.
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { AppStore } from "../src/state/store";
@@ -73,6 +73,19 @@ describe("parallel assessment display semantics", () => {
     expect(chips.some((label) => label.startsWith("并行候选（2）"))).toBe(true);
   });
 
+  it("keeps the task-source live region stable during viewport-only updates", () => {
+    const store = storeWithAssessments();
+    const toolbar = new Toolbar(store);
+    toolbar.update(store.get());
+    const source = toolbar.root.querySelector(".task-source-summary");
+    expect(source).not.toBeNull();
+    expect(source?.getAttribute("role")).toBe("status");
+
+    store.setViewport({ x: 25, y: 40, k: 1.2 });
+    toolbar.update(store.get());
+    expect(toolbar.root.querySelector(".task-source-summary")).toBe(source);
+  });
+
   it("graph marks candidate tasks with a non-authority tag and leaves unknown/must_serial tasks untagged", () => {
     const store = storeWithAssessments();
     const graph = new GraphView(store);
@@ -87,12 +100,13 @@ describe("parallel assessment display semantics", () => {
     }
 
     const assessmentLabels = [...graph.root.querySelectorAll(".assessment-label")].map((node) => node.textContent ?? "");
-    expect(assessmentLabels.some((t) => t.includes("并行候选"))).toBe(true);
-    expect(assessmentLabels.some((t) => t.includes("必须串行"))).toBe(true);
-    expect(assessmentLabels.some((t) => t.includes("并行未知"))).toBe(true);
-
-    const titles = [...graph.root.querySelectorAll(".assessment-link title")].map((node) => node.textContent ?? "");
-    expect(titles.every((t) => t.includes("requires_user_confirmation=true"))).toBe(true);
+    expect(assessmentLabels).toEqual([]);
+    expect(graph.root.querySelector(".legend-note")?.textContent).toContain(
+      "关系图已收起 3 条并行评估以避免遮挡",
+    );
+    expect(graph.root.querySelector(".legend-note")?.textContent).toContain(
+      "“并行未知”仅在列表 / 详情中显示",
+    );
   });
 
   it("graph nodes always carry text state (lifecycle + next action), not colour alone", () => {
@@ -106,5 +120,30 @@ describe("parallel assessment display semantics", () => {
       expect(text).toContain("状态：");
       expect(text).toContain("下一步：");
     }
+  });
+
+  it("resets the assessment legend when a later snapshot is empty", () => {
+    const store = storeWithAssessments();
+    const graph = new GraphView(store);
+    graph.update(store.get());
+    expect(graph.root.querySelector(".legend-note")?.textContent).toContain(
+      "关系图已收起 3 条并行评估以避免遮挡",
+    );
+
+    store.setSnapshot(
+      makeSnapshot({
+        tasks: [],
+        edges: [],
+        actions: [],
+        parallel_assessments: [],
+        diagnostics: [],
+      }),
+      null,
+      null,
+    );
+    graph.update(store.get());
+    expect(graph.root.querySelector(".legend-note")?.textContent).toBe(
+      "图中关系均带文字/符号；候选不代表已授权执行。",
+    );
   });
 });

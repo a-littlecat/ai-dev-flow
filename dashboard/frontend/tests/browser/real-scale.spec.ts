@@ -99,6 +99,40 @@ function buildRealScaleSnapshot(): DashboardSnapshot {
   });
 }
 
+function buildDenseCandidateSnapshot(): DashboardSnapshot {
+  const snapshot = buildRealScaleSnapshot();
+  const tasks = snapshot.tasks.slice(0, 14);
+  const assessments = [];
+  let pairIndex = 0;
+  for (let left = 0; left < tasks.length; left += 1) {
+    for (let right = left + 1; right < tasks.length; right += 1) {
+      assessments.push(
+        makeAssessment(
+          20_000 + pairIndex,
+          String(tasks[left]!.task_id),
+          String(tasks[right]!.task_id),
+          "candidate",
+          ["ALL_CHECKS_PASSED"],
+        ),
+      );
+      pairIndex += 1;
+    }
+  }
+  return validateContract<DashboardSnapshot>("DashboardSnapshot", {
+    ...JSON.parse(JSON.stringify(snapshot)),
+    tasks,
+    parallel_assessments: assessments,
+    summary: {
+      ...snapshot.summary,
+      task_total: tasks.length,
+      counts_by_lifecycle: {
+        ...snapshot.summary.counts_by_lifecycle,
+        Ready: tasks.length,
+      },
+    },
+  });
+}
+
 async function openRealScale(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildRealScaleSnapshot());
@@ -127,9 +161,22 @@ test.describe("real project scale: 21 tasks / 210 pair assessments", () => {
       await expect(toggle).toContainText("必须串行 10");
       await expect(toggle).toContainText("未知 198");
       await expect(toggle).toContainText("候选不等于授权");
+      await expect(page.locator(".task-source-summary")).toHaveText(
+        "显示 21 个 TASK（来源：docs/tasks/*.md）",
+      );
       await expect(list).toBeHidden();
       expect(await graphHeight(page)).toBeGreaterThanOrEqual(240);
       await expect(page.locator(".detail-panel")).toBeVisible();
+      await expect(page.locator(".assessment-link")).toHaveCount(0);
+      await expect(page.locator(".legend-note")).toContainText(
+        "关系图已收起 210 条并行评估以避免遮挡",
+      );
+      const gridTracks = await page.locator(".node").evaluateAll((nodes) => ({
+        columns: new Set(nodes.map((node) => Math.round(node.getBoundingClientRect().x))).size,
+        rows: new Set(nodes.map((node) => Math.round(node.getBoundingClientRect().y))).size,
+      }));
+      expect(gridTracks.columns).toBeGreaterThan(1);
+      expect(gridTracks.rows).toBeGreaterThan(1);
 
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -171,4 +218,75 @@ test.describe("real project scale: 21 tasks / 210 pair assessments", () => {
       expect(await graphHeight(page)).toBeGreaterThanOrEqual(240);
     });
   }
+
+  test("dense candidate labels trigger a new fit after layout height grows", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockReset();
+    await mockSetSnapshot(buildDenseCandidateSnapshot());
+    await page.goto("/");
+    await expect(page.locator(".node")).toHaveCount(14);
+    const initialTransform = await page.locator(".graph-viewport").getAttribute("transform");
+
+    await page.getByRole("button", { name: /并行候选（14）/ }).click();
+    await expect(page.locator(".assessment-label")).toHaveCount(91);
+    await expect
+      .poll(() => page.locator(".graph-viewport").getAttribute("transform"))
+      .not.toBe(initialTransform);
+
+    const svgBox = (await page.locator(".graph-svg").boundingBox())!;
+    for (const label of await page.locator(".assessment-label").all()) {
+      const labelBox = (await label.boundingBox())!;
+      expect(labelBox.x).toBeGreaterThanOrEqual(svgBox.x - 1);
+      expect(labelBox.y).toBeGreaterThanOrEqual(svgBox.y - 1);
+      expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(svgBox.x + svgBox.width + 1);
+      expect(labelBox.y + labelBox.height).toBeLessThanOrEqual(svgBox.y + svgBox.height + 1);
+    }
+  });
+
+  test("scheduled refit preserves focus on the selected graph task", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockReset();
+    await mockSetSnapshot(buildDenseCandidateSnapshot());
+    await page.goto("/");
+    await expect
+      .poll(() => page.locator(".graph-viewport").getAttribute("transform"))
+      .not.toBe("translate(0, 0) scale(1)");
+    const initial = page.locator('.node[data-task-id="REAL-01"]');
+    await initial.focus();
+    await expect(initial).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator(".node-selected")).toHaveAttribute(
+      "data-task-id",
+      "REAL-01",
+    );
+    await expect(initial).toBeFocused();
+    await expect(page.locator(".assessment-label")).toHaveCount(13);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+    const transformBeforeHighlight = await page
+      .locator(".graph-viewport")
+      .getAttribute("transform");
+
+    // HTMLElement.click() exercises the same store/render path without moving
+    // focus to the toolbar button, so the graph task remains the focus owner
+    // whose preservation is under test.
+    await page.getByRole("button", { name: /并行候选（14）/ }).evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
+    await expect(page.locator(".assessment-label")).toHaveCount(91);
+    await expect
+      .poll(() => page.locator(".graph-viewport").getAttribute("transform"))
+      .not.toBe(transformBeforeHighlight);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.activeElement?.closest<SVGGElement>(".node")?.dataset.taskId ?? null,
+        ),
+      )
+      .toBe("REAL-01");
+  });
 });
