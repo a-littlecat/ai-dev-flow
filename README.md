@@ -12,7 +12,7 @@
 ## v0.9.2 新版特性
 
 - **Codex Goal 中文预设**：支持“启动受控目标”“启动自动落地目标”“我去休息，自动修好并交付”等入口；Goal 负责持续运行，Skill 继续负责范围、验证、Review、UA 和交付权限。
-- **历史任务收口**：修复 6 份旧 Contract 的可解析性；27 个历史任务中 24 个按完整证据 Closed，3 个缺少独立 UA3 的任务如实 Deferred。
+- **历史任务收口**：修复 6 份旧 Contract 的可解析性；27 个历史任务中 24 个按完整证据 Closed，3 个缺少独立 UA3 的任务保留 UA Deferred 并将任务合法收口为 Cancelled。
 - **开发依赖安全更新**：升级 Vite、Vitest、ESLint 与 TypeScript ESLint；保持 Dashboard 89 个浏览器用例和 91 个前端单元测试通过，`npm audit` 为 0。
 - **跨项目 Dashboard 保持兼容**：继续提供自包含、只读、多实例隔离和自动端口的安装运行时；日常使用无需 Node.js。
 - **安全边界不变**：仅监听 loopback，没有写 API，不修改项目、Skill 或 Git，不创建 Worktree，也不授予验收、提交、合并、发布或 Closed 权限。

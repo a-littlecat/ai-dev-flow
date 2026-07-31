@@ -9,7 +9,7 @@ It keeps small tasks lightweight while applying TASK records, independent Review
 ## What is new in v0.9.2
 
 - **Chinese Codex Goal presets**: phrases such as “启动受控目标”, “启动自动落地目标”, and “我去休息，自动修好并交付” keep native Goal persistence while the Skill governs scope, verification, Review, UA, and delivery authority.
-- **Historical task closeout**: repair six legacy Contracts; close 24 of 27 historical tasks with complete evidence and accurately defer three tasks that lack independent UA3 acceptance.
+- **Historical task closeout**: repair six legacy Contracts; close 24 of 27 historical tasks with complete evidence, while keeping UA deferred and legally cancelling the three tasks that lack independent UA3 acceptance.
 - **Secure development dependencies**: upgrade Vite, Vitest, ESLint, and TypeScript ESLint while keeping 89 browser tests and 91 frontend unit tests green with zero `npm audit` findings.
 - **Compatible cross-project Dashboard**: retain the self-contained, read-only, multi-instance runtime with automatic port selection; installed use still requires no Node.js.
 - **Preserved safety boundary**: loopback only, no write API, no project/Skill/Git mutations, no Worktree creation, and no authority to accept, commit, merge, release, or close tasks.
