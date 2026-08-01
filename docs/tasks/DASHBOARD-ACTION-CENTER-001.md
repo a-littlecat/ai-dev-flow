@@ -12,7 +12,7 @@
 - `ua_status`: `Passed`
 - `ua_evidence`: `#dashboard-action-center-001-ua6-2026-08-01`
 - `acceptance_authority`: `Designated Acceptor Confirmed`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 - `merge_authority`: `User Authorized`
 - `close_authority`: `None`
@@ -80,13 +80,14 @@
 - 结果：Round 3 fresh `npm run verify` 通过，Vitest `95/95`、Playwright `96/96`；真实 in-app Browser 桌面/移动端、核心往返和 console error=`0`；`design-qa.md` final result=`passed`；Round 3 独立只读 Review session `019fbc9f-8f7e-7571-b58b-90f5343b184d` 为 `Passed`，P0/P1/P2/P3=`0/0/0/0`。记录 `UA6 Passed / Designated Acceptor Confirmed / Accepted`。
 - authority 边界：仅确认冻结方案达到机器可确定验收并可进入用户已授权的 commit/push/PR/merge；不授权 tag、release、deploy、外部 Skill 同步、删除或 `Closed`。
 
-- Base / Diff：base=7e9ad6418b516ea419ea3ba429de4d260d7a8597;diff=working-tree
+- Base / Diff：base=7e9ad6418b516ea419ea3ba429de4d260d7a8597;diff=b2098f8fee44eda34d7bf18d547b04bc69e2758c
 - 隔离位置：`codex/dashboard-action-center-001` 分支上的当前 Worktree。
 - 回滚方式：在合并前丢弃本 TASK 的精确 diff；合并后通过 revert 本 TASK 的交付 commit 回滚，不改写历史。
 - 修改文件：新增 `overview.ts` 与 `actionCenter.ts` 实现事实约束的默认工作台；`store.ts` / `main.ts` / `statusBar.ts` / `toolbar.ts` / `graphView.ts` / `detailPanel.ts` 完成视图分层、任务路线和简化状态栏；`styles.css` 落地桌面/移动视觉；新增并更新 Vitest/Playwright 回归；同步两份 TASK、看板和 `design-qa.md`。
 - 验证证据：Round 3 fresh `npm run verify` exit `0`，codegen/typecheck/ESLint/production build 通过，Vitest `95/95`、Playwright `96/96`；目标 workflow lint `errors=0 / violations=0 / warnings=1`（未跟踪 TASK 的 lifecycle 历史不可验证）；`git diff --check` 通过；真实 in-app Browser 桌面 `1536×1024`、移动 `390×844`、核心页面切换和 console error=`0`；`design-qa.md` final result=`passed`。
 - Review findings：首轮独立只读 Review `019fbc79-84ad-7143-a449-80e8d5abf12b` 为 `Needs Fix`，P0/P1/P2/P3=`0/2/0/0`；Round 1 复审 `019fbcfa-2b15-7202-8c4d-ec61402aa98e` 为 `Needs Fix`，P0/P1/P2/P3=`0/1/1/0`；Round 2 复审 `019fbc95-2bbb-78d1-ad79-bf69d45388d9` 为 `Needs Fix`，P0/P1/P2/P3=`0/2/0/0`；Round 3 复审 `019fbc9f-8f7e-7571-b58b-90f5343b184d` 为 `Passed`，P0/P1/P2/P3=`0/0/0/0`，全部历史 finding Closed。
 - UA 动作与结果：用户已选择视觉方向；同尺寸视觉、DOM/交互、响应式、无溢出、只读事实语义和浏览器运行证据全部满足冻结 UA6 判据；Designated Acceptor 于 2026-08-01 记录 `UA6 Passed / Accepted`。
+- Commit 证据：功能、回归、Design QA 与两份 TASK 已精确提交为 `b2098f8fee44eda34d7bf18d547b04bc69e2758c`；提交后仅本 TASK/看板收据待提交。
 - 状态边界：Goal Active；release/deploy/Closed 未授权。
 - 剩余风险：真实数据当前可能没有并行候选，必须用真实空状态验证，不得以示意数据冒充可并行建议。
 - 下一步：精确提交并进入已授权的远端 PR/CI/merge 流程。

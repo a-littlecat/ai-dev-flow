@@ -7,7 +7,7 @@
 
 ## 当前执行任务（2026-08-01）
 
-- `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Active / Review Passed / UA6 Passed / Uncommitted / Unmerged`。用户已触发自动落地，范围是把 Dashboard 默认页改为“当前行动 + 并行建议 + 同时进行 + 等待与串行”的聚焦工作台，并保留任务上下游与完整关系图入口；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；允许 commit、push、PR/CI 和 merge，不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
+- `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Active / Review Passed / UA6 Passed / Committed b2098f8 / Unmerged`。用户已触发自动落地，范围是把 Dashboard 默认页改为“当前行动 + 并行建议 + 同时进行 + 等待与串行”的聚焦工作台，并保留任务上下游与完整关系图入口；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；允许 push、PR/CI 和 merge，不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
 ## 当前授权边界
@@ -175,8 +175,8 @@ REL-002 Closed / main@0422887
 | GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Closed | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Local Sync Verified / Not Released / Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
 | DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
 | DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
-| DASHBOARD-FOCUS-ASSESSMENT-001 | 消除聚焦链与并行评估线的视觉歧义 | B | Review | 中 | 中 | REL-005 Closed；用户截图反馈 | Passed / P0-P3=`0/0/0/0` | UA3 Pending | Tracked / working tree / Uncommitted | [DASHBOARD-FOCUS-ASSESSMENT-001](tasks/DASHBOARD-FOCUS-ASSESSMENT-001.md) |
-| DASHBOARD-ACTION-CENTER-001 | 将默认关系图改为聚焦的任务执行工作台 | D | Accepted | 高 | 高 | FOCUS-ASSESSMENT 承接 diff；用户确认视觉方案 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Controlled / Uncommitted / Unmerged | [DASHBOARD-ACTION-CENTER-001](tasks/DASHBOARD-ACTION-CENTER-001.md) |
+| DASHBOARD-FOCUS-ASSESSMENT-001 | 消除聚焦链与并行评估线的视觉歧义 | B | Review | 中 | 中 | REL-005 Closed；用户截图反馈 | Passed / P0-P3=`0/0/0/0` | UA3 Pending | Committed `b2098f8` / Unmerged | [DASHBOARD-FOCUS-ASSESSMENT-001](tasks/DASHBOARD-FOCUS-ASSESSMENT-001.md) |
+| DASHBOARD-ACTION-CENTER-001 | 将默认关系图改为聚焦的任务执行工作台 | D | Accepted | 高 | 高 | FOCUS-ASSESSMENT 承接 diff；用户确认视觉方案 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | Committed `b2098f8` / Unmerged | [DASHBOARD-ACTION-CENTER-001](tasks/DASHBOARD-ACTION-CENTER-001.md) |
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 | WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
 | REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Closed | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | PR #9 Merged `f50c7c7` / Released `v0.9.2` / Local Sync Verified / Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |

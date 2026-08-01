@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 
 ## 目标与边界
 
@@ -31,9 +31,10 @@
 
 ## Outcome
 
-- Base / Diff：base=7e9ad6418b516ea419ea3ba429de4d260d7a8597;diff=working-tree
+- Base / Diff：base=7e9ad6418b516ea419ea3ba429de4d260d7a8597;diff=b2098f8fee44eda34d7bf18d547b04bc69e2758c
 - 修改文件：`graphView.ts` 计算并标记聚焦链外评估线并补充解释文字；`styles.css` 将其降至 15% 层级；`graph.spec.ts` 覆盖上游、下游和退出聚焦恢复；本 TASK 与看板记录范围和证据。
 - 验证证据：定向 Playwright `1/1` 通过；fresh `npm ci` 后 `npm run verify` exit `0`，codegen/typecheck/ESLint/production build 通过，Vitest `91/91`、Playwright `89/89`。
 - Review findings：独立只读 Review session `019fbbe3-49c7-7bc1-acd0-673cb7e123b7` 为 `Passed`，未发现会破坏现有行为或阻碍合并的缺陷，P0/P1/P2/P3=`0/0/0/0`；审查环境 `approval=never / sandbox=read-only`，审查前后工作区文件清单不变。
 - Review / UA：Review Passed；UA3 Pending，未以自动测试或 Reviewer 代替用户验收。
-- 剩余风险与下一步：源码实现尚未重建或同步到已安装 Skill；commit、merge、push、release、外部同步、Accepted 和 Closed 均未授权。
+- Commit 证据：本任务 diff 随 `DASHBOARD-ACTION-CENTER-001` 精确提交为 `b2098f8fee44eda34d7bf18d547b04bc69e2758c`；用户验收仍保持 UA3 Pending，不以承接任务的 UA6 替代。
+- 剩余风险与下一步：源码实现尚未重建或同步到已安装 Skill；本任务 UA3、Accepted、merge、release、外部同步和 Closed 仍保持原边界；仅其已知 diff 随当前自动落地任务提交。
