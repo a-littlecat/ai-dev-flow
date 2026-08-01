@@ -37,4 +37,5 @@
 - Review findings：独立只读 Review session `019fbbe3-49c7-7bc1-acd0-673cb7e123b7` 为 `Passed`，未发现会破坏现有行为或阻碍合并的缺陷，P0/P1/P2/P3=`0/0/0/0`；审查环境 `approval=never / sandbox=read-only`，审查前后工作区文件清单不变。
 - Review / UA：Review Passed；UA3 Pending，未以自动测试或 Reviewer 代替用户验收。
 - Commit 证据：本任务 diff 随 `DASHBOARD-ACTION-CENTER-001` 精确提交为 `b2098f8fee44eda34d7bf18d547b04bc69e2758c`；用户验收仍保持 UA3 Pending，不以承接任务的 UA6 替代。
-- 剩余风险与下一步：源码实现尚未重建或同步到已安装 Skill；本任务 UA3、Accepted、merge、release、外部同步和 Closed 仍保持原边界；仅其已知 diff 随当前自动落地任务提交。
+- 承接证据：本任务的已知实现 diff 已纳入 `DASHBOARD-ACTION-CENTER-001`，并随该 Accepted 父任务经 PR #11 进入 `main@23545309a3bc0377d5e3f4284caeaf054993a41f`；这不把本任务自身推进为 Merged，不改变 UA3 Pending / Review lifecycle。
+- 剩余风险与下一步：源码实现尚未重建或同步到已安装 Skill；本任务 UA3、Accepted、独立 merge、release、外部同步和 Closed 仍保持原边界。
