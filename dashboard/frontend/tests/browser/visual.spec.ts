@@ -11,7 +11,7 @@ import { buildGraphSnapshot, mockReset, mockSetSnapshot, shot } from "./helpers"
 async function openGraph(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildGraphSnapshot());
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(5);
 }
 
@@ -47,11 +47,11 @@ test.describe("after-evidence screenshots", () => {
 
   test("1440×900: stale and partial fixtures", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/?fixture=stale");
+    await page.goto("/?fixture=stale&view=network");
     await expect(page.locator(".stale-strip-stale")).toBeVisible();
     await shot(page, "after/stale-1440");
 
-    await page.goto("/?fixture=partial");
+    await page.goto("/?fixture=partial&view=network");
     await expect(page.locator(".stale-strip-partial")).toBeVisible();
     await shot(page, "after/partial-1440");
   });

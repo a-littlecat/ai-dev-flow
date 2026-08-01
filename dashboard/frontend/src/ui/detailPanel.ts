@@ -53,26 +53,29 @@ export class DetailPanel {
 
   update(state: AppState): void {
     clear(this.root);
+    const idle = state.detail.status === "idle";
+    const collapsed = idle || state.panelCollapsed;
     const header = el("div", "detail-header");
     const title = el("h2", "detail-title", state.detail.taskId ? `任务详情：${state.detail.taskId}` : "任务详情");
-    const toggle = el("button", "detail-toggle", state.panelCollapsed ? "展开 ▸" : "收起 ◂");
-    toggle.type = "button";
-    toggle.setAttribute("aria-expanded", String(!state.panelCollapsed));
-    toggle.addEventListener("click", () => this.store.togglePanel());
-    header.append(title, toggle);
+    header.append(title);
+    if (!idle) {
+      const toggle = el("button", "detail-toggle", state.panelCollapsed ? "展开 ▸" : "收起 ◂");
+      toggle.type = "button";
+      toggle.setAttribute("aria-expanded", String(!state.panelCollapsed));
+      toggle.addEventListener("click", () => this.store.togglePanel());
+      header.append(toggle);
+    }
     this.root.append(header);
-    this.root.classList.toggle("detail-collapsed", state.panelCollapsed);
-    if (state.panelCollapsed) {
+    this.root.hidden = idle;
+    this.root.classList.toggle("detail-collapsed", collapsed);
+    this.root.classList.toggle("detail-idle", idle);
+    if (collapsed) {
       return;
     }
 
     const body = el("div", "detail-body");
     this.root.append(body);
     const detail = state.detail;
-    if (detail.status === "idle") {
-      body.append(el("p", "detail-hint", "在关系图中选择一个节点查看完整详情。"));
-      return;
-    }
     if (detail.status === "loading") {
       body.append(el("p", "detail-hint", "正在加载任务详情…"));
       return;

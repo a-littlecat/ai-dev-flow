@@ -10,7 +10,7 @@ import { buildGraphSnapshot, mockReset, mockSetSnapshot, shot } from "./helpers"
 async function openGraph(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildGraphSnapshot());
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(5);
 }
 
@@ -96,7 +96,7 @@ test.describe("responsive widths", () => {
     await mockReset();
     await mockSetSnapshot(snapshot);
     await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto("/");
+    await page.goto("/?view=network");
 
     await expect(page.locator(".node")).toHaveCount(1);
     await expect(page.locator(".edge-label")).toHaveCount(1);
@@ -125,7 +125,7 @@ test.describe("responsive widths", () => {
     await mockReset();
     await mockSetSnapshot(snapshot);
     await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto("/");
+    await page.goto("/?view=network");
 
     await expect(page.locator(".node")).toHaveCount(2);
     await expect(page.locator(".edge-label")).toHaveCount(3);
@@ -162,7 +162,7 @@ test.describe("responsive widths", () => {
     };
     await mockReset();
     await mockSetSnapshot(snapshot);
-    await page.goto("/");
+    await page.goto("/?view=network");
 
     await expect(page.locator(".node")).toHaveCount(5);
     await expect(page.locator(".assessment-unknown")).toHaveCount(0);
@@ -193,7 +193,7 @@ test.describe("responsive widths", () => {
     await mockReset();
     await mockSetSnapshot(snapshot);
     await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto("/");
+    await page.goto("/?view=network");
 
     await expect(page.locator(".node")).toHaveCount(5);
     await expect(page.locator(".edge-label")).toHaveCount(1);
@@ -220,11 +220,12 @@ test.describe("responsive widths", () => {
       expect(overflow).toBeLessThanOrEqual(1);
       const svgBox = (await page.locator(".graph-svg").boundingBox())!;
       expect(svgBox.width).toBeGreaterThan(width * 0.4);
-      await expect(page.locator(".detail-panel")).toBeVisible();
+      await expect(page.locator(".detail-panel")).toBeHidden();
       await expect(page.locator(".status-bar")).toBeVisible();
 
       // Interaction still works at this width.
       await page.locator('.node[data-task-id="TASK-ALPHA"]').click();
+      await expect(page.locator(".detail-panel")).toBeVisible();
       await expect(page.locator(".detail-title")).toContainText("TASK-ALPHA");
       await page.getByRole("button", { name: "放大" }).click();
       await page.getByRole("button", { name: "适配视图（显示完整网络）" }).click();
@@ -254,7 +255,7 @@ test.describe("responsive widths", () => {
   for (const { width, height } of VIEWPORTS) {
     test(`diagnostics drawer stays a bottom footer in the stale scenario at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height });
-      await page.goto("/?fixture=stale");
+      await page.goto("/?fixture=stale&view=network");
       await expect(page.locator(".diag-drawer-toggle")).toBeVisible();
 
       const drawer = (await page.locator(".diag-drawer").boundingBox())!;
@@ -299,7 +300,7 @@ test.describe("frozen UA4 viewports", () => {
       const svgBox = (await page.locator(".graph-svg").boundingBox())!;
       expect(svgBox.width).toBeGreaterThan(width * 0.4);
       expect(svgBox.height).toBeGreaterThan(height * 0.4);
-      await expect(page.locator(".detail-panel")).toBeVisible();
+      await expect(page.locator(".detail-panel")).toBeHidden();
       await expect(page.locator(".status-bar")).toBeVisible();
 
       // Occlusion oracle identical to the regression widths above.
@@ -342,7 +343,10 @@ test.describe("frozen UA4 viewports", () => {
     expect(nodeBox.y).toBeLessThan(844);
     await expectNoRelationshipLabelOcclusion(page, "390x844");
 
-    // Detail panel stacks below the graph instead of squeezing it sideways.
+    // Detail stays out of the way until a task is selected, then stacks below
+    // the graph instead of squeezing it sideways.
+    await expect(page.locator(".detail-panel")).toBeHidden();
+    await page.locator('.node[data-task-id="TASK-ALPHA"]').click();
     await expect(page.locator(".detail-panel")).toBeVisible();
     const detailBox = (await page.locator(".detail-panel").boundingBox())!;
     expect(detailBox.width).toBeLessThanOrEqual(390 + 1);

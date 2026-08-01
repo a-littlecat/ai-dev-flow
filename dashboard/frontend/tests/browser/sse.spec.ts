@@ -31,7 +31,7 @@ test.describe("SSE live updates", () => {
     const revA = buildGraphSnapshot();
     await mockReset();
     await mockSetSnapshot(revA);
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
     await shot(page, "sse/connected");
 
@@ -55,7 +55,7 @@ test.describe("SSE live updates", () => {
     const revA = buildGraphSnapshot();
     await mockReset();
     await mockSetSnapshot(revA);
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     await page.locator('.node[data-task-id="TASK-BETA"]').click();
@@ -79,7 +79,7 @@ test.describe("SSE live updates", () => {
     const revA = buildGraphSnapshot();
     await mockReset();
     await mockSetSnapshot(revA);
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     await page.locator('.node[data-task-id="TASK-BETA"]').click();
@@ -104,7 +104,7 @@ test.describe("SSE live updates", () => {
   test("disconnection shows reconnecting state and recovers automatically", async ({ page }) => {
     await mockReset();
     await mockSetSnapshot(buildGraphSnapshot());
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     // Select a node: a clean reconnect (Last-Event-ID == current revision)
@@ -126,7 +126,7 @@ test.describe("SSE live updates", () => {
 
   test("snapshot unavailable shows a retryable error and recovers via retry", async ({ page }) => {
     await mockReset(); // no snapshot: /api/v1/snapshot answers 503
-    await page.goto("/");
+    await page.goto("/?view=network");
     const banner = page.locator(".overlay-error");
     await expect(banner).toBeVisible();
     await expect(banner).toContainText("SNAPSHOT_UNAVAILABLE");
@@ -182,7 +182,7 @@ test.describe("out-of-order response protection", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
     await mockSendEvent(makeEvent(rev("b"), "fresh", false));
     await mockSendEvent(makeEvent(rev("c"), "fresh", false));
@@ -215,7 +215,7 @@ test.describe("out-of-order response protection", () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(newDetail) });
     });
 
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
     await page.locator('.node[data-task-id="TASK-ALPHA"]').click();
 
@@ -246,7 +246,7 @@ test.describe("out-of-order response protection", () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(crossDetail) });
     });
 
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
     await page.locator('.node[data-task-id="TASK-ALPHA"]').click();
 
@@ -371,7 +371,7 @@ test.describe("SSE protocol errors", () => {
       await route.continue();
     });
 
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     // Malformed JSON frame, then a schema-drifting frame: both must be
@@ -423,7 +423,7 @@ test.describe("SSE protocol errors", () => {
       await route.continue();
     });
 
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     // Protocol error: the banner renders, then the controlled re-sync (ETag
@@ -473,7 +473,7 @@ test.describe("response body read failures", () => {
     const startupRefetch = page.waitForResponse(
       (response) => response.url().includes("/api/v1/snapshot") && response.status() === 304,
     );
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
     await startupRefetch;
 
@@ -504,7 +504,7 @@ test.describe("diagnostics drawer accessibility under live updates", () => {
     const revA = buildGraphSnapshot();
     await mockReset();
     await mockSetSnapshot(revA);
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：已连接");
 
     const toggle = page.locator(".diag-drawer-toggle");

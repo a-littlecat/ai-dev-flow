@@ -13,7 +13,7 @@ const VIEWPORT = ".graph-viewport";
 async function openGraph(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildGraphSnapshot());
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(5);
   await expect(page.locator(STATUS_BAR)).toContainText("快照：新鲜");
 }
@@ -284,10 +284,22 @@ test.describe("relationship graph", () => {
     const selectedEdgeInsideFocus = page.locator(".edge-selected-context:not(.edge-dimmed)");
     expect(await selectedEdgeInsideFocus.count()).toBeGreaterThan(0);
     await expect(selectedEdgeInsideFocus.first()).toHaveCSS("opacity", "1");
+    const mustSerialOutsideUpstream = page.locator(
+      ".assessment-must_serial.assessment-focus-dimmed",
+    );
+    await expect(mustSerialOutsideUpstream).toHaveCount(1);
+    await expect(mustSerialOutsideUpstream).toHaveCSS("opacity", "0.15");
+    await expect(page.locator(".graph-legend")).toContainText(
+      "聚焦仅沿正式上下游关系；链外并行评估线已淡化，不代表上下游",
+    );
     await shot(page, "graph/focus-upstream");
 
     await page.locator(".graph-svg").press("Escape");
     await expect(page.locator(".focus-banner")).toHaveCount(0);
+    const restoredMustSerial = page.locator(".assessment-link.assessment-must_serial");
+    await expect(restoredMustSerial).toHaveCount(1);
+    await expect(restoredMustSerial).not.toHaveClass(/assessment-focus-dimmed/);
+    await expect(restoredMustSerial).toHaveCSS("opacity", "1");
 
     await node(page, "TASK-GAMMA").click();
     await page.getByRole("button", { name: "只高亮选中节点的下游链" }).click();
@@ -298,6 +310,7 @@ test.describe("relationship graph", () => {
     await expect(node(page, "TASK-EPSILON")).toHaveClass(/node-dimmed/);
     await expect(node(page, "TASK-ALPHA")).toHaveClass(/node-dimmed/);
     await expect(node(page, "TASK-BETA")).toHaveClass(/node-dimmed/);
+    await expect(page.locator(".assessment-must_serial.assessment-focus-dimmed")).toHaveCount(1);
     await shot(page, "graph/focus-downstream");
 
     await page.getByRole("button", { name: "恢复完整网络视图" }).click();

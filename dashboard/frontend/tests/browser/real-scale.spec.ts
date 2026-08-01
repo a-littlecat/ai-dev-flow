@@ -136,7 +136,7 @@ function buildDenseCandidateSnapshot(): DashboardSnapshot {
 async function openRealScale(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildRealScaleSnapshot());
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(21);
   await expect(page.locator(".status-bar")).toContainText("快照：新鲜");
 }
@@ -156,17 +156,14 @@ test.describe("real project scale: 21 tasks / 210 pair assessments", () => {
       const toggle = page.locator(".pair-list-toggle");
       const list = page.locator("#parallel-assessment-list");
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
-      await expect(toggle).toContainText("共 210");
+      await expect(toggle).toContainText("关系判定");
       await expect(toggle).toContainText("候选 2");
-      await expect(toggle).toContainText("必须串行 10");
-      await expect(toggle).toContainText("未知 198");
-      await expect(toggle).toContainText("候选不等于授权");
-      await expect(page.locator(".task-source-summary")).toHaveText(
-        "显示 21 个 TASK（来源：docs/tasks/*.md）",
-      );
+      await expect(toggle).toContainText("串行 10");
+      await expect(toggle).toContainText("待确认 198");
+      await expect(page.locator(".task-source-summary")).toHaveText("21 个任务");
       await expect(list).toBeHidden();
       expect(await graphHeight(page)).toBeGreaterThanOrEqual(240);
-      await expect(page.locator(".detail-panel")).toBeVisible();
+      await expect(page.locator(".detail-panel")).toBeHidden();
       await expect(page.locator(".assessment-link")).toHaveCount(0);
       await expect(page.locator(".legend-note")).toContainText(
         "关系图已收起 210 条并行评估以避免遮挡",
@@ -223,7 +220,7 @@ test.describe("real project scale: 21 tasks / 210 pair assessments", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockReset();
     await mockSetSnapshot(buildDenseCandidateSnapshot());
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(".node")).toHaveCount(14);
     const initialTransform = await page.locator(".graph-viewport").getAttribute("transform");
 
@@ -247,7 +244,7 @@ test.describe("real project scale: 21 tasks / 210 pair assessments", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockReset();
     await mockSetSnapshot(buildDenseCandidateSnapshot());
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect
       .poll(() => page.locator(".graph-viewport").getAttribute("transform"))
       .not.toBe("translate(0, 0) scale(1)");

@@ -192,6 +192,14 @@ export function buildGraphSnapshot(revisionSeed = 900): DashboardSnapshot {
   ];
 
   const actions = [
+    // Matrix row 9: Review + Passed + UA pending — first in wire order.
+    makeAction(304, "TASK-DELTA", {
+      action_kind: "user_decision",
+      eligibility: "actionable",
+      reason_codes: ["USER_DECISION_PENDING"],
+      required_authority: "user_decision",
+      authority_state: "not_required",
+    }),
     // Matrix row 6: Ready + all dependencies satisfied.
     makeAction(301, "TASK-ALPHA", {
       evidence: [makeProvenance(9, "docs/tasks/TASK-ALPHA.md")],
@@ -208,14 +216,6 @@ export function buildGraphSnapshot(revisionSeed = 900): DashboardSnapshot {
       action_kind: "review",
       reason_codes: ["REVIEW_AUTHORITY_UNSUPPORTED"],
       required_authority: "review",
-    }),
-    // Matrix row 9: Review + Passed + UA pending — the only actionable kind.
-    makeAction(304, "TASK-DELTA", {
-      action_kind: "user_decision",
-      eligibility: "actionable",
-      reason_codes: ["USER_DECISION_PENDING"],
-      required_authority: "user_decision",
-      authority_state: "not_required",
     }),
     // Matrix row 3: Draft.
     makeAction(305, "TASK-EPSILON", {
