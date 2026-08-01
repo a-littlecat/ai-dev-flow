@@ -44,6 +44,8 @@ export class GraphView {
   private assessmentLayer: SVGGElement;
   private nodeLayer: SVGGElement;
   private legendNote: HTMLElement;
+  private selectionControls: HTMLButtonElement[] = [];
+  private fullNetworkControl: HTMLButtonElement | null = null;
   private layout: GraphLayout | null = null;
   private nodeElements = new Map<string, SVGGElement>();
   private relationshipLabelRects: LayoutRect[] = [];
@@ -60,21 +62,26 @@ export class GraphView {
     const controls = el("div", "graph-controls");
     controls.setAttribute("role", "toolbar");
     controls.setAttribute("aria-label", "关系图视图控制");
-    const buttons: [string, string, () => void][] = [
-      ["＋", "放大", () => this.zoomBy(1.25)],
-      ["－", "缩小", () => this.zoomBy(0.8)],
-      ["适配", "适配视图（显示完整网络）", () => this.fitToContent()],
-      ["定位", "定位到当前选中节点", () => this.locateSelected()],
-      ["聚焦上游", "只高亮选中节点的上游链", () => this.focus("upstream")],
-      ["聚焦下游", "只高亮选中节点的下游链", () => this.focus("downstream")],
-      ["完整网络", "恢复完整网络视图", () => this.store.clearFocus()],
+    const buttons: [string, string, () => void, "always" | "selection" | "focus"][] = [
+      ["＋", "放大", () => this.zoomBy(1.25), "always"],
+      ["－", "缩小", () => this.zoomBy(0.8), "always"],
+      ["适配", "适配视图（显示完整网络）", () => this.fitToContent(), "always"],
+      ["定位", "定位到当前选中节点", () => this.locateSelected(), "selection"],
+      ["聚焦上游", "只高亮选中节点的上游链", () => this.focus("upstream"), "selection"],
+      ["聚焦下游", "只高亮选中节点的下游链", () => this.focus("downstream"), "selection"],
+      ["完整网络", "恢复完整网络视图", () => this.store.clearFocus(), "focus"],
     ];
-    for (const [text, aria, handler] of buttons) {
+    for (const [text, aria, handler, visibility] of buttons) {
       const button = el("button", "graph-control-btn", text);
       button.type = "button";
       button.setAttribute("aria-label", aria);
       button.title = aria;
       button.addEventListener("click", handler);
+      if (visibility === "selection") {
+        this.selectionControls.push(button);
+      } else if (visibility === "focus") {
+        this.fullNetworkControl = button;
+      }
       controls.append(button);
     }
 
@@ -99,6 +106,12 @@ export class GraphView {
   // ---- rendering -------------------------------------------------------
 
   update(state: AppState): void {
+    for (const control of this.selectionControls) {
+      control.hidden = state.selectedTaskId === null;
+    }
+    if (this.fullNetworkControl) {
+      this.fullNetworkControl.hidden = state.focus.mode === "all";
+    }
     const focusedTaskIdBeforeRender = this.focusedTaskId();
     clear(this.edgeLayer);
     clear(this.assessmentLayer);
@@ -123,10 +136,17 @@ export class GraphView {
     const visible = filterTasks(snapshot, derived, state.filters);
     const highlighted =
       state.highlight !== "none" ? highlightTasks(snapshot, derived, state.highlight) : null;
-    const focusSet =
-      state.focus.mode !== "all" && state.focus.taskId
-        ? focusClosure(derived, state.focus.taskId, state.focus.mode)
-        : null;
+    let focusSet: Set<string> | null = null;
+    if (state.focus.mode !== "all" && state.focus.taskId) {
+      if (state.focus.mode === "context") {
+        focusSet = new Set([
+          ...focusClosure(derived, state.focus.taskId, "upstream"),
+          ...focusClosure(derived, state.focus.taskId, "downstream"),
+        ]);
+      } else {
+        focusSet = focusClosure(derived, state.focus.taskId, state.focus.mode);
+      }
+    }
     const searchText = state.filters.text.trim();
     const searchMatched = searchText !== "" ? visible : null;
     // Search matches and an explicitly requested focus chain are both direct
@@ -185,15 +205,27 @@ export class GraphView {
       if (!selectedContext && !candidateHighlight) {
         continue;
       }
-      this.renderAssessment(assessment, selectedContext || candidateHighlight);
+      const outsideFocus =
+        focusSet !== null &&
+        (!focusSet.has(assessment.left_task_id) || !focusSet.has(assessment.right_task_id));
+      this.renderAssessment(
+        assessment,
+        selectedContext || candidateHighlight,
+        outsideFocus,
+      );
       renderedAssessmentCount += 1;
     }
     const hiddenAssessmentCount =
       snapshot.parallel_assessments.length - renderedAssessmentCount;
-    this.legendNote.textContent =
+    const focusExplanation =
+      focusSet !== null
+        ? "聚焦仅沿正式上下游关系；链外并行评估线已淡化，不代表上下游。"
+        : "";
+    const assessmentExplanation =
       hiddenAssessmentCount > 0
-        ? `关系图已收起 ${hiddenAssessmentCount} 条并行评估以避免遮挡；选择任务或点击“并行候选”查看候选 / 必须串行连线，“并行未知”仅在列表 / 详情中显示。候选不代表已授权执行。`
-        : "图中关系均带文字/符号；候选不代表已授权执行。";
+        ? `关系图已收起 ${hiddenAssessmentCount} 条并行评估以避免遮挡；选择任务或点击“并行候选”查看候选 / 必须串行连线，“并行未知”仅在列表 / 详情中显示。`
+        : "图中关系均带文字/符号。";
+    this.legendNote.textContent = `${focusExplanation}${assessmentExplanation}候选不代表已授权执行。`;
     for (const task of snapshot.tasks) {
       const layoutNode = this.layout.nodes.get(task.task_id);
       if (!layoutNode) {
@@ -430,7 +462,11 @@ export class GraphView {
     this.edgeLayer.append(group);
   }
 
-  private renderAssessment(assessment: ParallelAssessment, emphasize: boolean): void {
+  private renderAssessment(
+    assessment: ParallelAssessment,
+    emphasize: boolean,
+    outsideFocus: boolean,
+  ): void {
     if (!this.layout) {
       return;
     }
@@ -442,6 +478,9 @@ export class GraphView {
     const classes = ["assessment-link", `assessment-${assessment.result}`];
     if (emphasize) {
       classes.push("assessment-emphasized");
+    }
+    if (outsideFocus) {
+      classes.push("assessment-focus-dimmed");
     }
     const group = svgEl("g", { class: classes.join(" ") });
     const path = assessmentArc(left, right);
@@ -944,9 +983,12 @@ function buildMarkers(): SVGMarkerElement[] {
 }
 
 function buildLegend(): HTMLElement {
-  const legend = el("aside", "graph-legend");
+  const legend = document.createElement("details");
+  legend.className = "graph-legend";
   legend.setAttribute("aria-label", "图例");
-  legend.append(el("h3", "legend-title", "图例"));
+  legend.append(el("summary", "legend-summary", "图例与说明"));
+  const content = el("div", "legend-content");
+  content.append(el("h3", "legend-title visually-hidden", "图例"));
   const items: [string, string][] = [
     ["— 依赖（实线箭头，标注条件满足状态）", "legend-line legend-depends"],
     ["— 父子（细实线箭头）", "legend-line legend-parent"],
@@ -956,8 +998,9 @@ function buildLegend(): HTMLElement {
     ["～ 并行评估连线（按选择显示候选 / 必须串行；未知见列表 / 详情）", "legend-line legend-assessment"],
   ];
   for (const [text, cls] of items) {
-    legend.append(el("div", cls, text));
+    content.append(el("div", cls, text));
   }
-  legend.append(el("div", "legend-note", "图中关系均带文字/符号；候选不代表已授权执行。"));
+  content.append(el("div", "legend-note", "图中关系均带文字/符号；候选不代表已授权执行。"));
+  legend.append(content);
   return legend;
 }

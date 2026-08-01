@@ -75,7 +75,7 @@ function buildLongFieldStateSnapshot(state: "stale" | "partial"): DashboardSnaps
 async function inject(page: Page, snapshot: DashboardSnapshot): Promise<void> {
   await mockReset();
   await mockSetSnapshot(snapshot);
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(5);
 }
 
@@ -171,6 +171,10 @@ async function expectRegionsDisjoint(page: Page): Promise<void> {
     const boxA = await page.locator(a).boundingBox();
     const boxB = await page.locator(b).boundingBox();
     expect(boxA, `${a} must be laid out`).not.toBeNull();
+    if (b === ".detail-panel" && boxB === null) {
+      await expect(page.locator(b)).toBeHidden();
+      continue;
+    }
     expect(boxB, `${b} must be laid out`).not.toBeNull();
     expect(intersects(boxA!, boxB!), `${a} overlaps ${b}`).toBe(false);
   }

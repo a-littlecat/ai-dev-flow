@@ -28,7 +28,6 @@ const PAIR_DISCLOSURE_THRESHOLD = 12;
 export class Toolbar {
   readonly root: HTMLElement;
   private chipsRow: HTMLElement;
-  private readonly search: HTMLInputElement;
   private readonly taskSourceSummary: HTMLElement;
   private filterPanel: HTMLElement;
   private filterToggle: HTMLButtonElement;
@@ -57,39 +56,27 @@ export class Toolbar {
       // Re-render immediately: the panel content only rebuilds in update().
       this.update(this.store.get());
     });
-    // The search input is created once and never rebuilt: keystroke-by-
-    // keystroke typing keeps focus, caret and selection across updates.
-    this.search = el("input", "toolbar-search") as HTMLInputElement;
-    this.search.type = "search";
-    this.search.placeholder = "搜索任务 ID / 标题…";
-    this.search.setAttribute("aria-label", "搜索任务 ID 或标题");
-    this.search.addEventListener("input", () => this.store.patchFilters({ text: this.search.value }));
     this.taskSourceSummary = el("span", "task-source-summary");
     this.taskSourceSummary.title =
       "关系图只显示项目根目录 docs/tasks 下成功解析的 Markdown TASK；无法解析的文件会进入诊断。TASK_BOARD 仅作为索引和状态投影。";
     this.taskSourceSummary.setAttribute("role", "status");
     this.taskSourceSummary.hidden = true;
-    this.chipsRow.append(this.search, this.taskSourceSummary);
+    this.chipsRow.append(this.taskSourceSummary);
     this.root.append(this.chipsRow, this.filterToggle, this.filterPanel, this.pairList);
   }
 
   update(state: AppState): void {
-    // Remove transient chips but keep the persistent search input in place.
+    // Remove transient chips while keeping the persistent task-count label.
     for (const child of [...this.chipsRow.children]) {
-      if (child !== this.search && child !== this.taskSourceSummary) {
+      if (child !== this.taskSourceSummary) {
         child.remove();
       }
-    }
-    // Sync the value only on external changes (e.g. 清除筛选); while the
-    // user types, value and filter state are already identical.
-    if (this.search.value !== state.filters.text) {
-      this.search.value = state.filters.text;
     }
     const snapshot = state.snapshot;
     const derived = state.derived;
 
     if (snapshot && derived) {
-      const taskSourceText = `显示 ${snapshot.tasks.length} 个 TASK（来源：docs/tasks/*.md）`;
+      const taskSourceText = `${snapshot.tasks.length} 个任务`;
       if (this.taskSourceSummary.textContent !== taskSourceText) {
         this.taskSourceSummary.textContent = taskSourceText;
       }
@@ -113,6 +100,9 @@ export class Toolbar {
 
       const counts = highlightCounts(snapshot, derived);
       for (const entry of HIGHLIGHT_ENTRIES) {
+        if (counts[entry.mode] === 0) {
+          continue;
+        }
         const chip = el(
           "button",
           `highlight-chip${state.highlight === entry.mode ? " highlight-chip-active" : ""}`,
@@ -139,7 +129,11 @@ export class Toolbar {
       const banner = el(
         "span",
         "focus-banner",
-        `聚焦${state.focus.mode === "upstream" ? "上游" : "下游"}：${state.focus.taskId}（Esc 或“完整网络”恢复）`,
+        `${
+          state.focus.mode === "context"
+            ? "任务路线"
+            : `聚焦${state.focus.mode === "upstream" ? "上游" : "下游"}`
+        }：${state.focus.taskId}（Esc 或“完整网络”恢复）`,
       );
       banner.setAttribute("role", "status");
       this.chipsRow.append(banner);
@@ -256,12 +250,13 @@ export class Toolbar {
     }
     const pairIsExpanded =
       this.pairExpanded ?? snapshot.parallel_assessments.length <= PAIR_DISCLOSURE_THRESHOLD;
+    this.pairList.classList.toggle("pair-list-expanded", pairIsExpanded);
     const header = el("div", "pair-list-header");
-    const title = el("h3", "pair-list-title", "并行评估（候选 ≠ 授权，均需用户确认）");
+    const title = el("h3", "pair-list-title visually-hidden", "并行评估（候选 ≠ 授权，均需用户确认）");
     const toggle = el(
       "button",
       "pair-list-toggle",
-      `共 ${snapshot.parallel_assessments.length}：候选 ${counts.candidate} / 必须串行 ${counts.must_serial} / 未知 ${counts.unknown}，候选不等于授权 ${pairIsExpanded ? "▴" : "▾"}`,
+      `关系判定：候选 ${counts.candidate} · 串行 ${counts.must_serial} · 待确认 ${counts.unknown} ${pairIsExpanded ? "▴" : "▾"}`,
     );
     toggle.type = "button";
     toggle.setAttribute("aria-expanded", String(pairIsExpanded));

@@ -17,7 +17,8 @@ export interface Viewport {
   k: number;
 }
 
-export type FocusMode = "all" | "upstream" | "downstream";
+export type FocusMode = "all" | "context" | "upstream" | "downstream";
+export type ViewMode = "overview" | "network";
 
 export interface DetailState {
   status: "idle" | "loading" | "ready" | "error";
@@ -36,6 +37,7 @@ export interface AppState {
   health: Health | null;
   connection: SseStatus | "disconnected" | "fixture";
   fixtureName: string | null;
+  viewMode: ViewMode;
   selectedTaskId: string | null;
   detail: DetailState;
   panelCollapsed: boolean;
@@ -101,6 +103,7 @@ export class AppStore {
       health: null,
       connection: "disconnected",
       fixtureName: null,
+      viewMode: "overview",
       selectedTaskId: null,
       detail: { status: "idle", taskId: null, data: null, error: null },
       panelCollapsed: prefs.panelCollapsed ?? false,
@@ -194,6 +197,24 @@ export class AppStore {
 
   setHealth(health: Health): void {
     this.update({ health });
+  }
+
+  showOverview(): void {
+    this.update({ viewMode: "overview" });
+  }
+
+  showFullNetwork(): void {
+    this.update({ viewMode: "network", focus: { mode: "all", taskId: null } });
+  }
+
+  openTaskRoute(taskId: string): void {
+    this.update({
+      viewMode: "network",
+      selectedTaskId: taskId,
+      detail: { status: "loading", taskId, data: null, error: null },
+      panelCollapsed: false,
+      focus: { mode: "context", taskId },
+    });
   }
 
   selectTask(taskId: string | null): void {

@@ -11,7 +11,7 @@ import { buildGraphSnapshot, mockReset, mockSetSnapshot, shot } from "./helpers"
 async function openGraph(page: Page): Promise<void> {
   await mockReset();
   await mockSetSnapshot(buildGraphSnapshot());
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(".node")).toHaveCount(5);
 }
 
@@ -167,7 +167,7 @@ test.describe("search feedback (UA4-001-P1-001)", () => {
     await expect(page.locator(".node-dimmed")).toHaveCount(5);
     // The selection was filtered out: the detail panel is cleared, not stale.
     await expect(page.locator(".detail-title")).toHaveText("任务详情");
-    await expect(page.locator(".detail-hint").first()).toContainText("在关系图中选择一个节点");
+    await expect(page.locator(".detail-panel")).toBeHidden();
     await shot(page, "search/no-results");
   });
 

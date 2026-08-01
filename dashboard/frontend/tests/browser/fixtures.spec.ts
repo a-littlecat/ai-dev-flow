@@ -22,7 +22,7 @@ test.describe("versioned fixture states", () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await route.continue();
     });
-    await page.goto("/?fixture=fresh");
+    await page.goto("/?fixture=fresh&view=network");
     const overlay = page.locator(".overlay-loading");
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveText("正在加载本地任务快照…");
@@ -31,7 +31,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("fresh fixture: empty graph hint, fixture badge and fresh status", async ({ page }) => {
-    await page.goto("/?fixture=fresh");
+    await page.goto("/?fixture=fresh&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：新鲜");
     await expect(page.locator(STATUS_BAR)).toContainText("fixture：fresh");
     await expect(page.locator(STATUS_BAR)).toContainText("实时连接：fixture 模式（无 SSE）");
@@ -43,7 +43,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("stale fixture: stale strip, stale source list, degraded git and diagnostics", async ({ page }) => {
-    await page.goto("/?fixture=stale");
+    await page.goto("/?fixture=stale&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：过期");
     await expect(page.locator(STATUS_BAR)).toContainText("Git 降级");
     const strip = page.locator(".stale-strip-stale");
@@ -58,7 +58,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("partial fixture: partial strip and unavailable git", async ({ page }) => {
-    await page.goto("/?fixture=partial");
+    await page.goto("/?fixture=partial&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：不完整");
     await expect(page.locator(STATUS_BAR)).toContainText("Git 不可用");
     const strip = page.locator(".stale-strip-partial");
@@ -68,7 +68,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("parse-error fixture: parse diagnostic surfaces in strip and drawer", async ({ page }) => {
-    await page.goto("/?fixture=parse-error");
+    await page.goto("/?fixture=parse-error&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：不完整");
     const strip = page.locator(".stale-strip-partial");
     await expect(strip).toContainText("SCHEDULING_PARSE_ERROR");
@@ -79,7 +79,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("dependency-cycle fixture: cycle diagnostic is visible, not hidden", async ({ page }) => {
-    await page.goto("/?fixture=dependency-cycle");
+    await page.goto("/?fixture=dependency-cycle&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：不完整");
     await expect(page.locator(".stale-strip-partial")).toContainText("DEPENDENCY_CYCLE");
     await page.locator(".diag-drawer-toggle").click();
@@ -88,7 +88,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("parallel-unknown fixture: unknown assessment listed with non-authorisation notice", async ({ page }) => {
-    await page.goto("/?fixture=parallel-unknown");
+    await page.goto("/?fixture=parallel-unknown&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：新鲜");
     await expect(page.locator(".pair-list-title")).toHaveText("并行评估（候选 ≠ 授权，均需用户确认）");
     await expect(page.locator(".pair-item.pair-unknown .pair-button")).toContainText("PAIR-A × PAIR-B：并行未知");
@@ -96,7 +96,7 @@ test.describe("versioned fixture states", () => {
   });
 
   test("git-degraded fixture: fresh snapshot with degraded git warning", async ({ page }) => {
-    await page.goto("/?fixture=git-degraded");
+    await page.goto("/?fixture=git-degraded&view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：新鲜");
     await expect(page.locator(STATUS_BAR)).toContainText("Git 降级");
     await expect(page.locator(".overlay-strip")).toHaveCount(0);
@@ -109,7 +109,7 @@ test.describe("versioned fixture states", () => {
     await mockReset();
     await mockSetSnapshot(buildGraphSnapshot());
     await mockSetTaskError(taskDetailErrorEnvelope());
-    await page.goto("/");
+    await page.goto("/?view=network");
     await expect(page.locator(STATUS_BAR)).toContainText("快照：新鲜");
     await page.locator('.node[data-task-id="TASK-ALPHA"]').click();
     await expect(page.locator(".detail-error")).toContainText("错误 TASK_NOT_FOUND：任务不存在");

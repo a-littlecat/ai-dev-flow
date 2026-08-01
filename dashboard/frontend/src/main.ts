@@ -22,6 +22,7 @@ import { StatusBar } from "./ui/statusBar";
 import { Toolbar } from "./ui/toolbar";
 import { GraphView } from "./ui/graph/graphView";
 import { DetailPanel } from "./ui/detailPanel";
+import { ActionCenter } from "./ui/actionCenter";
 import { Overlays } from "./ui/overlays";
 import { el } from "./ui/dom";
 import { SNAPSHOT_STATE_LABEL } from "./ui/labels";
@@ -30,13 +31,15 @@ const HEALTH_POLL_MS = 4000;
 
 class DashboardApp {
   private readonly store = new AppStore();
-  private readonly statusBar = new StatusBar();
+  private readonly statusBar: StatusBar;
+  private readonly actionCenter: ActionCenter;
   private readonly toolbar: Toolbar;
   private readonly graph: GraphView;
   private readonly detail: DetailPanel;
   private readonly overlays: Overlays;
   private readonly events: SnapshotEventStream;
   private readonly fixtureName: string | null;
+  private readonly networkView: HTMLElement;
   private healthTimer: number | null = null;
   private lastAnnouncedRevision: string | null = null;
   /**
@@ -52,7 +55,12 @@ class DashboardApp {
   constructor(mount: HTMLElement) {
     const params = new URLSearchParams(window.location.search);
     this.fixtureName = params.get("fixture");
+    if (params.get("view") === "network") {
+      this.store.showFullNetwork();
+    }
 
+    this.statusBar = new StatusBar(this.store);
+    this.actionCenter = new ActionCenter(this.store);
     this.toolbar = new Toolbar(this.store);
     this.graph = new GraphView(this.store);
     this.detail = new DetailPanel(this.store);
@@ -62,14 +70,30 @@ class DashboardApp {
     const main = el("main", "app-main");
     const workspace = el("div", "app-workspace");
     workspace.append(this.graph.root, this.detail.root);
-    main.append(this.toolbar.root, workspace);
+    this.networkView = el("section", "network-view");
+    this.networkView.setAttribute("aria-label", "完整任务关系图");
+    this.networkView.append(this.toolbar.root, workspace);
+    main.append(this.actionCenter.root, this.networkView);
     layout.append(this.statusBar.root, this.overlays.root, main, this.overlays.drawerRoot, this.overlays.liveRegion);
     mount.append(layout);
 
     this.store.subscribe((state, changed) => {
-      if (changed.has("snapshot") || changed.has("connection") || changed.has("phase") || changed.has("phaseError")) {
+      if (
+        changed.has("snapshot") ||
+        changed.has("connection") ||
+        changed.has("phase") ||
+        changed.has("phaseError") ||
+        changed.has("viewMode") ||
+        changed.has("filters")
+      ) {
         this.statusBar.update(state);
         this.overlays.update(state);
+      }
+      if (changed.has("snapshot") || changed.has("phase") || changed.has("viewMode")) {
+        this.actionCenter.update(state);
+      }
+      if (changed.has("viewMode")) {
+        this.syncView(state);
       }
       if (
         changed.has("snapshot") ||
@@ -85,8 +109,19 @@ class DashboardApp {
       if (changed.has("detail") || changed.has("panelCollapsed") || changed.has("snapshot")) {
         this.detail.update(state);
       }
-      if (changed.has("selectedTaskId") && state.selectedTaskId) {
+      if (
+        (changed.has("selectedTaskId") || changed.has("detail")) &&
+        state.selectedTaskId &&
+        state.detail.status === "loading" &&
+        state.detail.taskId === state.selectedTaskId
+      ) {
         void this.loadDetail(state.selectedTaskId);
+      }
+      if (changed.has("selectedTaskId")) {
+        // The detail panel is now contextual: opening or closing it changes
+        // the graph's available width. Re-fit immediately so no node remains
+        // hidden below the panel and keyboard "0" has a stable baseline.
+        this.graph.fitToContent(false);
       }
       if (changed.has("filters") && state.snapshot && state.derived) {
         // Keep the detail panel consistent with the visible result set: a
@@ -138,7 +173,16 @@ class DashboardApp {
     // reacts to changes, so the loading banner would never appear.
     const initial = this.store.get();
     this.statusBar.update(initial);
+    this.actionCenter.update(initial);
+    this.syncView(initial);
     this.overlays.update(initial);
+  }
+
+  private syncView(state: ReturnType<AppStore["get"]>): void {
+    this.networkView.hidden = state.viewMode !== "network";
+    if (!this.networkView.hidden) {
+      requestAnimationFrame(() => this.graph.fitToContent(false));
+    }
   }
 
   async start(): Promise<void> {
