@@ -89,6 +89,7 @@
 - UA 动作与结果：用户已选择视觉方向；同尺寸视觉、DOM/交互、响应式、无溢出、只读事实语义和浏览器运行证据全部满足冻结 UA6 判据；Designated Acceptor 于 2026-08-01 记录 `UA6 Passed / Accepted`。
 - Commit 证据：功能、回归、Design QA 与两份 TASK 已精确提交为 `b2098f8fee44eda34d7bf18d547b04bc69e2758c`；提交后仅本 TASK/看板收据待提交。
 - 合并目标与事实证据：目标=`main`；功能提交 `b2098f8fee44eda34d7bf18d547b04bc69e2758c` 与验收收据 `4fdd155ab4f67c7ead5a14aaac030a9fdeba2490` 经 PR #11 于 2026-08-01 合并为 `origin/main@23545309a3bc0377d5e3f4284caeaf054993a41f`；GitHub 状态 `MERGED`，PR 未配置额外 checks。
-- 状态边界：Accepted / Review Passed / UA6 Passed / Committed / Merged via PR #11；Goal 仅等待合并收据落地；release/deploy/Closed 未授权。
+- 合并收据：PR #11 的状态收据提交 `4b407bc5b931950314952d25495bb9871298ac66` 经 PR #12 合入 `main@d9472652018f18f7027d7208cab6336a9d86ec19`；远端 `main` 已同时包含功能和状态事实。
+- 状态边界：Goal Complete；Accepted / Review Passed / UA6 Passed / Committed / Merged via PR #11，状态收据 via PR #12；release/deploy/Closed 未授权且未执行。
 - 剩余风险：真实数据当前可能没有并行候选，必须用真实空状态验证，不得以示意数据冒充可并行建议。
-- 下一步：提交并合并本状态收据；不执行 release/deploy/Closed。
+- 下一步：无；不执行 release/deploy/Closed。

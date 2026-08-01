@@ -7,7 +7,7 @@
 
 ## 当前执行任务（2026-08-01）
 
-- `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Active / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；仅等待本状态收据合并，不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
+- `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
 ## 当前授权边界
