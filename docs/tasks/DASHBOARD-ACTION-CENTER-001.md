@@ -90,6 +90,8 @@
 - Commit 证据：功能、回归、Design QA 与两份 TASK 已精确提交为 `b2098f8fee44eda34d7bf18d547b04bc69e2758c`；提交后仅本 TASK/看板收据待提交。
 - 合并目标与事实证据：目标=`main`；功能提交 `b2098f8fee44eda34d7bf18d547b04bc69e2758c` 与验收收据 `4fdd155ab4f67c7ead5a14aaac030a9fdeba2490` 经 PR #11 于 2026-08-01 合并为 `origin/main@23545309a3bc0377d5e3f4284caeaf054993a41f`；GitHub 状态 `MERGED`，PR 未配置额外 checks。
 - 合并收据：PR #11 的状态收据提交 `4b407bc5b931950314952d25495bb9871298ac66` 经 PR #12 合入 `main@d9472652018f18f7027d7208cab6336a9d86ec19`；远端 `main` 已同时包含功能和状态事实。
-- 状态边界：Goal Complete；Accepted / Review Passed / UA6 Passed / Committed / Merged via PR #11，状态收据 via PR #12；release/deploy/Closed 未授权且未执行。
+- Runtime 与本机同步证据：用户于 2026-08-01 明确要求执行既定页面方案；重建 portable runtime 后 `build_skill_runtime.py --check` 通过，manifest 登记 `36` 个文件；源 Skill 与物理安装目录 `C:\Users\92336\.agents\skills\ai-dev-flow` 均为 `132` 个文件，缺失/额外/SHA256 差异=`0/0/0`，Codex 与 OpenCode Junction 均继续指向该物理目录。
+- 运行验证：已重启 CADCat Dashboard 与同一 Microsoft Dev Tunnel；本地健康状态为 `server=ready / watcher=ready / snapshot=fresh`。真实浏览器确认默认显示“任务执行总览”，可进入“完整任务关系图”并返回；公网匿名入口仍跳转 GitHub 登录，使用临时 `connect` scope 校验时首页与健康接口均返回 `200`、加载新版 `index-CNnAfzLu.js`，访问保护和授权后转发均正常。
+- 状态边界：Goal Complete；Accepted / Review Passed / UA6 Passed / Committed / Merged via PR #11，状态收据 via PR #12；Runtime Rebuilt / Local Sync Verified / Local Browser Verified。本次 runtime 与本记录变更不属于既有 `b2098f8` / PR #11 / PR #12 收据，本轮交付以当前分支新增 Git 提交为准；formal release/deploy/Closed 未执行。
 - 剩余风险：真实数据当前可能没有并行候选，必须用真实空状态验证，不得以示意数据冒充可并行建议。
 - 下一步：无；不执行 release/deploy/Closed。
