@@ -3,14 +3,16 @@
 import json
 import pathlib
 import re
+from collections.abc import Mapping
 from types import MappingProxyType
 
 
 FIELDS = {
     "adapter_id", "verified_at", "skill_loading", "read_files", "write_files",
     "run_commands", "git", "context_isolation", "write_isolation", "subagents",
-    "approval_gate", "runtime_hooks", "session_events", "preferred_review_recipe",
-    "fallback_review_recipe", "runtime_sync_method", "version_sensitive_notes",
+    "approval_gate", "runtime_hooks", "session_events", "runtime_session_bridge",
+    "preferred_review_recipe", "fallback_review_recipe",
+    "formal_skill_sync_method", "version_sensitive_notes",
 }
 ENUMS = {
     "skill_loading": {"native", "markdown", "unsupported"},
@@ -20,6 +22,7 @@ ENUMS = {
     "approval_gate": {"native", "manual", "none"},
     "runtime_hooks": {"native", "plugin", "none"},
     "session_events": {"native", "adapter", "manual", "none"},
+    "runtime_session_bridge": {"native", "adapter", "manual", "none"},
     "preferred_review_recipe": {"R1", "R2", "R3", "R4", "R5"},
     "fallback_review_recipe": {"R1", "R2", "R3", "R4", "R5"},
 }
@@ -32,13 +35,8 @@ class AdapterLoadError(ValueError):
     pass
 
 
-def load_adapter(path):
-    source = pathlib.Path(path)
-    try:
-        value = json.loads(source.read_text(encoding="utf-8", errors="strict"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise AdapterLoadError(f"cannot load adapter {source}: {exc}") from exc
-    if not isinstance(value, dict) or set(value) != FIELDS:
+def _validate_adapter(value):
+    if not isinstance(value, Mapping) or set(value) != FIELDS:
         raise AdapterLoadError("adapter must contain exactly the required fields")
     if not isinstance(value["adapter_id"], str) or ADAPTER_ID.fullmatch(value["adapter_id"]) is None:
         raise AdapterLoadError("adapter_id is invalid")
@@ -48,11 +46,20 @@ def load_adapter(path):
         if not isinstance(value[field], bool):
             raise AdapterLoadError(f"{field} must be boolean")
     for field, allowed in ENUMS.items():
-        if value[field] not in allowed:
+        if not isinstance(value[field], str) or value[field] not in allowed:
             raise AdapterLoadError(f"{field} has an unsupported value")
-    for field in ("runtime_sync_method", "version_sensitive_notes"):
+    for field in ("formal_skill_sync_method", "version_sensitive_notes"):
         if not isinstance(value[field], str) or not value[field].strip():
             raise AdapterLoadError(f"{field} must be a non-empty string")
+
+
+def load_adapter(path):
+    source = pathlib.Path(path)
+    try:
+        value = json.loads(source.read_text(encoding="utf-8", errors="strict"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise AdapterLoadError(f"cannot load adapter {source}: {exc}") from exc
+    _validate_adapter(value)
     return MappingProxyType(value)
 
 
@@ -88,6 +95,11 @@ def select_review_recipe(
     if not frozen_diff or not stable_finding_ids:
         return "R5"
 
+    try:
+        _validate_adapter(adapter)
+    except AdapterLoadError:
+        return "R5"
+
     if _can_review(adapter):
         context = adapter["context_isolation"]
         write = adapter["write_isolation"]
@@ -97,9 +109,11 @@ def select_review_recipe(
             return "R2"
         if context == "independent_session" and write == "readonly_copy":
             return "R3"
-    if (
-        cross_harness_authorized
-        and _can_review(external_adapter)
-    ):
-        return "R4"
+    if cross_harness_authorized:
+        try:
+            _validate_adapter(external_adapter)
+        except AdapterLoadError:
+            return "R5"
+        if _can_review(external_adapter):
+            return "R4"
     return "R5"

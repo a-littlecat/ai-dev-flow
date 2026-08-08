@@ -34,6 +34,12 @@ class CapabilityAdapterTests(unittest.TestCase):
         self.assertEqual("R3", self.select(by_id["opencode"]))
         self.assertEqual("R5", self.select(by_id["generic"]))
         self.assertEqual("R5", self.select(by_id["zcode"]))
+        self.assertEqual("native", by_id["codex"]["runtime_session_bridge"])
+        self.assertEqual("adapter", by_id["opencode"]["runtime_session_bridge"])
+        self.assertNotEqual(
+            by_id["codex"]["runtime_session_bridge"],
+            by_id["codex"]["formal_skill_sync_method"],
+        )
 
     def test_synthetic_adapter_onboards_without_core_change(self):
         core_before = (SKILL_ROOT / "policy" / "core.json").read_bytes()
@@ -68,6 +74,17 @@ class CapabilityAdapterTests(unittest.TestCase):
             "R5",
             adapter_loader.select_review_recipe(codex, frozen_diff=True),
         )
+
+    def test_recipe_selection_revalidates_untrusted_adapter_mappings(self):
+        codex = dict(adapter_loader.load_adapter(SKILL_ROOT / "adapters" / "codex.json"))
+        missing = {name: codex[name] for name in ("read_files", "context_isolation", "write_isolation")}
+        unknown = dict(codex, model="not-a-governance-input")
+        invalid = dict(codex, runtime_session_bridge="automatic-sync")
+        invalid_list = dict(codex, runtime_session_bridge=[])
+        invalid_dict = dict(codex, write_isolation={"mode": "sandbox_read_only"})
+        for value in (missing, unknown, invalid, invalid_list, invalid_dict):
+            with self.subTest(value=value):
+                self.assertEqual("R5", self.select(value))
         contradictory = dict(codex)
         contradictory["read_files"] = False
         self.assertEqual("R5", self.select(contradictory))

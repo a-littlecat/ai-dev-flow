@@ -463,6 +463,27 @@ class RepairGateTests(unittest.TestCase):
         self.assertEqual(stopped["decision"], "Stop")
         self.assertIn("ROUND3_NO_RED_TO_GREEN", stopped["reason_codes"])
 
+    def test_progress_round_attempt_id_follows_evolved_base_budget(self):
+        policy = copy.deepcopy(POLICY)
+        policy["repair"]["base_auto_rounds"] = 3
+        policy["repair"]["autonomous_max_rounds"] = 4
+        ledger = base_ledger()
+        add_attempt(ledger, "AR-1", "AutoRepair")
+        add_attempt(ledger, "AR-2", "AutoRepair")
+        add_attempt(
+            ledger,
+            "AR-3",
+            "AutoRepair",
+            gate_decision="AutoRepairAllowed",
+            progress_value=progress(True),
+        )
+        rebind_ledger_policy(ledger, policy)
+        result = repair_gate.evaluate(ledger, policy, trusted_context(ledger))
+        self.assertEqual(
+            (result["decision"], result["eligible_mode"], result["next_attempt_id"]),
+            ("MechanicallyEligible", "ExtendRound3", "AR-4"),
+        )
+
     def test_green_regression_new_blocker_and_evidence_stall_stop_round3(self):
         cases = {}
         green_regression = progress(True)
@@ -1137,19 +1158,22 @@ class RepairGateTests(unittest.TestCase):
                 self.assertEqual(result["decision"], "Blocked")
                 self.assertIn(reason, result["reason_codes"])
 
-    def test_security_critical_policy_mutations_block_in_memory_evaluation(self):
+    def test_canonical_policy_safety_mutations_are_blocked_after_digest_rebind(self):
         mutations = (
             lambda value: value["repair"]["post_stop"]["authority_must_bind"].pop(),
             lambda value: value["repair"]["campaign"]["authority_must_bind"].pop(),
             lambda value: value["repair"]["campaign"]["hard_stop_flags"].remove("test_oracle_weakened"),
             lambda value: value["repair"]["history"].update({"require_trusted_context": False}),
             lambda value: value["repair"]["campaign"].update({"task_change_resets_streak": True}),
+            lambda value: value["repair"]["required_true_fields"].remove("authority_frozen"),
+            lambda value: value["repair"]["required_false_fields"].remove("external_side_effect"),
         )
         for index, change in enumerate(mutations):
             malformed = copy.deepcopy(POLICY)
             change(malformed)
             with self.subTest(index=index):
-                result = repair_gate.evaluate(base_ledger(), malformed)
+                ledger = rebind_ledger_policy(base_ledger(), malformed)
+                result = repair_gate.evaluate(ledger, malformed, trusted_context(ledger))
                 self.assertEqual(result["decision"], "Blocked")
                 self.assertIn("POLICY_CONSTRAINT_VIOLATION", result["reason_codes"])
 

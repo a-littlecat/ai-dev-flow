@@ -1086,7 +1086,7 @@ def _auto_decision(policy, state):
     progress_errors = _progress_reasons(latest, state["chain"])
     if progress_errors:
         return "Stop", progress_errors + ["USER_DECISION_REQUIRED"], None
-    return "ExtendRound3", ["ROUND3_PROGRESS_RECEIPT_VERIFIED"], "AR-3"
+    return "ExtendRound3", ["ROUND3_PROGRESS_RECEIPT_VERIFIED"], f"AR-{used + 1}"
 
 
 def evaluate(ledger, policy, trusted_context=None):

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-policy-schema-version": "ai-dev-flow/v0.8-policy-rc3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "unknown_input", "routes", "review", "safety", "reviewer_selection", "repair"],
+  "properties": {
+    "schema_version": {"const": "ai-dev-flow/v0.8-policy-rc3"},
+    "unknown_input": {"enum": ["Blocked", "InspectAndResolve"]},
+    "routes": {"$ref": "core.schema.json#/properties/routes"},
+    "review": {"$ref": "core.schema.json#/properties/review"},
+    "safety": {"$ref": "core.schema.json#/properties/safety"},
+    "reviewer_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "cross_harness", "native_unavailable", "same_context_self_review"],
+      "properties": {
+        "default": {"enum": ["same_harness_native_isolated", "capability_driven"]},
+        "cross_harness": {"enum": ["explicit_user_authority_only", "forbidden"]},
+        "native_unavailable": {"enum": ["Blocked", "Pending"]},
+        "same_context_self_review": {"enum": ["Pending", "Blocked"]}
+      }
+    },
+    "repair": {"$ref": "repair-campaign.schema.json#/properties/repair"}
+  }
+}

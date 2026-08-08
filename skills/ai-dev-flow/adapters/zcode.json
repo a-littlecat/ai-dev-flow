@@ -12,8 +12,9 @@
   "approval_gate": "none",
   "runtime_hooks": "none",
   "session_events": "none",
+  "runtime_session_bridge": "none",
   "preferred_review_recipe": "R5",
   "fallback_review_recipe": "R5",
-  "runtime_sync_method": "unsupported until the local Harness is available and verified",
+  "formal_skill_sync_method": "unsupported until the local Harness is available and verified",
   "version_sensitive_notes": "No local zcode command was found on 2026-08-08; do not infer capabilities from product documentation alone."
 }
