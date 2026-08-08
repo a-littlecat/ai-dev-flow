@@ -342,6 +342,15 @@ class RuntimeCliTests(unittest.TestCase):
                 )
             self.assertEqual(0, code)
             self.assertEqual("cli-one", json.loads(output.call_args.args[0])["session_id"])
+            with mock.patch("builtins.print") as heartbeat_output:
+                heartbeat_code = cli_main(
+                    ["session", "heartbeat", *common, "--session", "cli-one"]
+                )
+            self.assertEqual(0, heartbeat_code)
+            self.assertEqual(
+                "implementing",
+                json.loads(heartbeat_output.call_args.args[0])["phase"],
+            )
             self.assertEqual(2, cli_main(["session", "update", *common, "--session", "missing", "--phase", "done"]))
 
     def test_status_cli_uses_console_builder(self):

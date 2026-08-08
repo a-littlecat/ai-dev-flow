@@ -12,9 +12,19 @@
   "approval_gate": "native",
   "runtime_hooks": "native",
   "session_events": "native",
-  "runtime_session_bridge": {"type": "none", "command": null, "hooks": {}},
+  "runtime_session_bridge": {
+    "type": "command",
+    "command": "{python} -B {skill_root}/scripts/adf.py",
+    "hooks": {
+      "start": "session start --project-root {project_root} --session {session_id} --task {task_id} --harness codex --phase {phase} --next-step {next_step} --status-summary {status_summary}",
+      "update": "session update --project-root {project_root} --session {session_id} --phase {phase} --next-step {next_step} --status-summary {status_summary}",
+      "wait": "session wait --project-root {project_root} --session {session_id} --reason {reason}",
+      "end": "session end --project-root {project_root} --session {session_id} --reason {reason}",
+      "heartbeat": "session heartbeat --project-root {project_root} --session {session_id}"
+    }
+  },
   "preferred_review_recipe": "R2",
   "fallback_review_recipe": "R3",
   "formal_skill_sync_method": "explicit governed Skill sync only",
-  "version_sensitive_notes": "Verified against codex exec help; this stage has no executable Runtime Session bridge, so no bridge capability is claimed."
+  "version_sensitive_notes": "Runtime Session command bridge uses the bundled fail-closed adf.py entry point; Codex must invoke the documented lifecycle hooks explicitly."
 }

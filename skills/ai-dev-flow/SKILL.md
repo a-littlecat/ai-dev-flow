@@ -106,6 +106,7 @@ receipt chain、trusted context、EscalatedRepair 和 Repair Campaign 不在默�
 - 需要完整执行细节：`WORKFLOW.md`
 - 独立代码审查：`CODE_REVIEW_CHECKLIST.md`
 - Harness 能力与 Review 选择（必需组合）：`CAPABILITY_REQUIREMENTS.md` + `REVIEW_RECIPES.md`；需要具体适配信息时再读对应的一份 `adapters/*.json`
+- 需要 Harness 向 Project Console 写入 live session：`RUNTIME_SESSION_USAGE.md`
 - 用户动作等级：`ACCEPTANCE_GUIDE.md`
 - Git/diff 专项：`GIT_PRECHECK.md` 或 `DIFF_REVIEW.md`
 - v0.7 兼容/迁移：`V0.8_MIGRATION.md`

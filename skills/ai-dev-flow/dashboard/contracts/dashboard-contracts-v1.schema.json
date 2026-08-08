@@ -760,7 +760,7 @@
     "ProjectConsole": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version", "revision", "snapshot_revision", "generated_at", "state", "freshness", "counts", "active_work", "human_attention", "ready_queue", "blocked", "stale_sessions", "recent_changes", "ambiguity", "disclaimer"],
+      "required": ["schema_version", "revision", "snapshot_revision", "generated_at", "state", "freshness", "counts", "active_work", "human_attention", "ready_queue", "blocked", "stale_sessions", "recent_changes", "ready_ambiguity", "disclaimer"],
       "properties": {
         "schema_version": {"const": "adf/project-console/v1"},
         "revision": {"$ref": "#/$defs/Sha256"},
@@ -775,7 +775,7 @@
         "blocked": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
         "stale_sessions": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
         "recent_changes": {"type": "array", "items": {"$ref": "#/$defs/ConsoleRecentChange"}},
-        "ambiguity": {"$ref": "#/$defs/ConsoleAmbiguity"},
+        "ready_ambiguity": {"$ref": "#/$defs/ConsoleAmbiguity"},
         "disclaimer": {"type": "string"}
       }
     },

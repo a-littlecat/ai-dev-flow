@@ -111,6 +111,56 @@ def _stop(process: subprocess.Popen[str]) -> None:
 
 @unittest.skipUnless(os.name == "nt", "portable runtime uses the Windows read lease")
 class PortableRuntimeIntegrationTests(unittest.TestCase):
+    def test_adf_cli_fails_closed_for_missing_or_tampered_runtime_manifest(self):
+        for kind in ("missing-manifest", "tampered-runtime"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                installed_skill = root / "installed" / "ai-dev-flow"
+                shutil.copytree(
+                    SOURCE_SKILL,
+                    installed_skill,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                )
+                project = _create_external_project(root / "project", "PREFLIGHT-001")
+                if kind == "missing-manifest":
+                    (installed_skill / "dashboard" / "runtime-manifest.json").unlink()
+                    expected = "manifest cannot be read"
+                else:
+                    target = (
+                        installed_skill
+                        / "dashboard"
+                        / "backend"
+                        / "src"
+                        / "ai_dev_flow_dashboard"
+                        / "cli.py"
+                    )
+                    target.write_bytes(target.read_bytes() + b"\n# tampered\n")
+                    expected = "runtime file changed"
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-B",
+                        str(installed_skill / "scripts" / "adf.py"),
+                        "session",
+                        "list",
+                        "--project-root",
+                        str(project),
+                        "--runtime-root",
+                        str(root / "runtime"),
+                        "--format",
+                        "json",
+                    ],
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=20,
+                )
+                self.assertEqual(2, result.returncode)
+                self.assertIn(expected, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertFalse((root / "runtime").exists())
+
     def test_same_project_second_instance_is_rejected_and_first_remains_available(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

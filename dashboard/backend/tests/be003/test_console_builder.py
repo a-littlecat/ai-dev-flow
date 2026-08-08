@@ -55,6 +55,7 @@ class ConsoleBuilderTests(unittest.TestCase):
         validate_contract(console)
         self.assertEqual(["TEST-001"], [item["task_id"] for item in console["active_work"]])
         self.assertEqual("正在验证 Console", console["active_work"][0]["status_summary"])
+        self.assertEqual(["task", "runtime"], console["active_work"][0]["source_kinds"])
         self.store.wait("live", "user check")
         console = ConsoleBuilder(self.store).build(self.published(snapshot))
         self.assertEqual(1, console["counts"]["human_attention"])
@@ -97,12 +98,12 @@ class ConsoleBuilderTests(unittest.TestCase):
         ]
         ready = ConsoleBuilder(self.store).build(self.published(snapshot))
         self.assertEqual(["READY-HIGH", "READY-LOW"], [item["task_id"] for item in ready["ready_queue"]])
-        self.assertTrue(ready["ambiguity"]["has_unique_primary"])
-        self.assertEqual(1, ready["ambiguity"]["candidate_count"])
+        self.assertTrue(ready["ready_ambiguity"]["has_unique_primary"])
+        self.assertEqual(1, ready["ready_ambiguity"]["candidate_count"])
         snapshot["tasks"][0]["priority"] = "high"
         tied = ConsoleBuilder(self.store).build(self.published(snapshot))
-        self.assertFalse(tied["ambiguity"]["has_unique_primary"])
-        self.assertEqual(2, tied["ambiguity"]["candidate_count"])
+        self.assertFalse(tied["ready_ambiguity"]["has_unique_primary"])
+        self.assertEqual(2, tied["ready_ambiguity"]["candidate_count"])
         snapshot["tasks"][0]["lifecycle"] = "Blocked"
         snapshot["actions"][0]["action_kind"] = "none"
         snapshot["actions"][0]["eligibility"] = "unknown"
@@ -187,6 +188,57 @@ class ConsoleBuilderTests(unittest.TestCase):
         self.assertEqual(["needs_authority"], item["action_eligibilities"])
         self.assertEqual("execute", item["action_kind"])
         self.assertEqual(0, result["counts"]["human_attention"])
+        self.assertEqual("可以作为下一项开始", item["status_summary"])
+        self.assertEqual("尚未授权自动执行", item["next_step"])
+        self.assertEqual(["task"], item["source_kinds"])
+
+    def test_ready_ambiguity_ignores_active_work_in_real_action_chain(self):
+        snapshot = support.snapshot_with_task(
+            task_id="ACTIVE-001", lifecycle="In Progress", priority="high"
+        )
+        base = copy.deepcopy(snapshot["tasks"][0])
+        ready_a = {**base, "task_id": "READY-A", "title": "a", "lifecycle": "Ready"}
+        ready_b = {**base, "task_id": "READY-B", "title": "b", "lifecycle": "Ready"}
+        snapshot["tasks"].extend((ready_a, ready_b))
+        nodes = (
+            support.task("ACTIVE-001", lifecycle="In Progress", priority="high"),
+            support.task("READY-A", lifecycle="Ready", priority="high"),
+            support.task("READY-B", lifecycle="Ready", priority="high"),
+        )
+        snapshot["actions"] = list(primitive(ActionEngine().recommend(nodes, (), ())))
+        self.store.start(
+            session_id="active-real-chain",
+            task_id="ACTIVE-001",
+            harness_id="codex",
+            phase="implementing",
+            next_step="work",
+        )
+
+        result = ConsoleBuilder(self.store).build(self.published(snapshot))
+
+        self.assertEqual(1, result["counts"]["active_work"])
+        self.assertEqual(2, result["counts"]["ready_queue"])
+        self.assertFalse(result["ready_ambiguity"]["has_unique_primary"])
+        self.assertEqual(2, result["ready_ambiguity"]["candidate_count"])
+
+    def test_ready_ambiguity_is_empty_when_only_active_work_exists(self):
+        snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="high")
+        node = support.task("TEST-001", lifecycle="In Progress", priority="high")
+        snapshot["actions"] = list(primitive(ActionEngine().recommend((node,), (), ())))
+        self.store.start(
+            session_id="active-only-real-chain",
+            task_id="TEST-001",
+            harness_id="codex",
+            phase="implementing",
+            next_step="work",
+        )
+
+        result = ConsoleBuilder(self.store).build(self.published(snapshot))
+
+        self.assertEqual(1, result["counts"]["active_work"])
+        self.assertEqual(0, result["counts"]["ready_queue"])
+        self.assertFalse(result["ready_ambiguity"]["has_unique_primary"])
+        self.assertEqual(0, result["ready_ambiguity"]["candidate_count"])
 
     def test_active_work_same_priority_sorts_by_recent_activity_descending(self):
         snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="medium")
@@ -219,6 +271,25 @@ class ConsoleBuilderTests(unittest.TestCase):
         serialized = str(console_a).casefold()
         for forbidden in ("prompt", "token", "secret", "stdout", "environment", "shell"):
             self.assertNotIn(forbidden, serialized)
+
+    def test_source_kinds_include_git_only_when_git_provenance_participates(self):
+        snapshot = support.snapshot_with_task(lifecycle="Ready")
+        snapshot["tasks"][0]["provenance"] = [
+            {
+                "source_path": ".git/HEAD",
+                "heading": None,
+                "field": "lifecycle",
+                "line": 1,
+                "raw_value": "Ready",
+                "source_type": "git",
+            }
+        ]
+        node = support.task("TEST-001", lifecycle="Ready")
+        snapshot["actions"] = list(primitive(ActionEngine().recommend((node,), (), ())))
+
+        item = ConsoleBuilder(self.store).build(self.published(snapshot))["ready_queue"][0]
+
+        self.assertEqual(["task", "git"], item["source_kinds"])
 
     def test_snapshot_changes_are_included_without_runtime_sessions(self):
         snapshot = support.snapshot_with_task()

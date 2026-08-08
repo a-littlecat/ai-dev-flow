@@ -216,6 +216,11 @@ class RuntimeSessionStore:
             status_summary="等待用户处理",
         )
 
+    def heartbeat(self, session_id: str) -> dict[str, Any]:
+        """Refresh liveness without changing the current phase or user-facing state."""
+
+        return self.update(session_id)
+
     def end(self, session_id: str, reason: str) -> dict[str, Any]:
         session_id = self._session_id(session_id)
         with self._mutation_lock(session_id):
