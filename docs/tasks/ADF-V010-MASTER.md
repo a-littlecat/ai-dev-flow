@@ -39,7 +39,7 @@
 
 - 完成标准：六个阶段按依赖顺序交付，并严格停在真实用户 UA 与显式发布授权门禁。
 - 验证命令或检查：逐阶段执行总合同指定测试、独立只读 Review、diff 检查和生命周期收据核对。
-- [ ] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
+- [x] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
 - [ ] PROJECT-CONSOLE-FE 自动化与 Review 通过，并停在真实用户 UA 门禁。
 - [ ] 用户真实 UA Passed 且明确同意后，才执行 LEGACY-RETIRE。
 - [ ] 用户显式发布授权后，才执行 RELEASE。
@@ -58,4 +58,4 @@
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
 - 状态边界：CORE-SPLIT Review Passed、UA3 Pending；阶段分支已推送，Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14) 已创建；未 merge / release / 正式 Skill 同步 / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
-- 下一步：CORE-SPLIT/CAPABILITY-REVIEW 已分别交付 Draft PR #14/#15；RUNTIME-CONSOLE-BE 已 Review Passed，形成阶段提交与 Draft PR 后进入 Project Console UI。
+- 下一步：CORE-SPLIT/CAPABILITY-REVIEW 已分别交付 Draft PR #14/#15；RUNTIME-CONSOLE-BE 已 Review Passed 并提交 `f7f3a63`，push/Draft PR 后进入 Project Console UI。

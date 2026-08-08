@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -60,12 +60,12 @@
 
 ## Outcome
 
-- Base / Diff：base=0b82d7c;diff=0b82d7c..working-tree。
+- Base / Diff：base=0b82d7c;diff=f7f3a63。
 - 隔离位置：`codex/v010-runtime-console-be` / `D:/open-source/ai-dev-flow-wt/v010-runtime-console-be`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CAPABILITY-REVIEW 历史。
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
 - 验证证据：backend `202/202`（普通 symlink 权限测试 skip 2，Windows Junction 真实回退测试通过）；Skill `113/113`；frontend codegen/check、typecheck、lint、Vitest `95/95`、build 与 Playwright `96/96` 通过；Runtime bundle `43/43` 且跨 autocrlf 一致；integration 新增 installed-layout 与便携 Console API 用例通过，完整套件仅保留 Stage 0 已登记 artifact guard 与 state-matrix 基线债务。
 - Review findings：Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`，全部稳定 finding Closed。
-- 状态边界：Review / Passed / UA3 Pending / Uncommitted / Unmerged / Not Released / Not Closed。
+- 状态边界：Review / Passed / UA3 Pending / Committed (`f7f3a63`) / Unmerged / Not Released / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：精确提交并推送 stacked branch、创建 Draft PR；随后按第 18 节进入 Project Console UI 阶段。
+- 下一步：推送 stacked branch、创建 Draft PR；随后按第 18 节进入 Project Console UI 阶段。
