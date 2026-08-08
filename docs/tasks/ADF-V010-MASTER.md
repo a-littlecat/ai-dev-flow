@@ -58,4 +58,4 @@
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
 - 状态边界：CORE-SPLIT Review Passed、UA3 Pending；阶段分支已推送，Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14) 已创建；未 merge / release / 正式 Skill 同步 / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
-- 下一步：CORE-SPLIT/CAPABILITY-REVIEW 已分别交付 Draft PR #14/#15；RUNTIME-CONSOLE-BE 已 Review Passed 并提交 `f7f3a63`，push/Draft PR 后进入 Project Console UI。
+- 下一步：CORE-SPLIT/CAPABILITY-REVIEW/RUNTIME-CONSOLE-BE 已分别交付 Draft PR #14/#15/#16；从 Stage 3 delivery head 串行进入 Project Console UI，并停在真实用户 UA 门禁。

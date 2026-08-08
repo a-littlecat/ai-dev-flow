@@ -66,6 +66,7 @@
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
 - 验证证据：backend `202/202`（普通 symlink 权限测试 skip 2，Windows Junction 真实回退测试通过）；Skill `113/113`；frontend codegen/check、typecheck、lint、Vitest `95/95`、build 与 Playwright `96/96` 通过；Runtime bundle `43/43` 且跨 autocrlf 一致；integration 新增 installed-layout 与便携 Console API 用例通过，完整套件仅保留 Stage 0 已登记 artifact guard 与 state-matrix 基线债务。
 - Review findings：Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`，全部稳定 finding Closed。
-- 状态边界：Review / Passed / UA3 Pending / Committed (`f7f3a63`) / Unmerged / Not Released / Not Closed。
+- Delivery：implementation=`f7f3a63`；receipt=`587bdc1`；branch `codex/v010-runtime-console-be` 已推送；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
+- 状态边界：Review / Passed / UA3 Pending / Committed (`f7f3a63`) / Pushed / Draft PR #16 / Unmerged / Not Released / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：推送 stacked branch、创建 Draft PR；随后按第 18 节进入 Project Console UI 阶段。
+- 下一步：按第 18 节从本阶段 delivery head 串行进入 Project Console UI；不 merge 本 PR。
