@@ -10,7 +10,7 @@
 - `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14/#15 外部修复已推送；#16 外部修复已通过新隔离 Review 并提交，待推送与向上更新 #17。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
 - `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。
 - `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 0e4c2ff / Draft PR #15 / Unmerged`。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Review Passed / Controlled / UA3 Pending / Committed 46a16b7 / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；新隔离 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Follow-up Review Passed / Controlled / UA3 Pending / Committed 981079a / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；portable integration 已同步验证 Ready 进入 `ready_queue`，follow-up Review session `019fe250-5410-7743-a734-2758ad74ebb7` 为 `Passed 0/0/0/0`。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

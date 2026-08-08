@@ -56,6 +56,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT 外部修复 Review Passed、Pushed `56c2aa7`、UA3 Pending；CAPABILITY-REVIEW 外部修复 Review Passed / Pushed `0e4c2ff` / UA3 Pending；RUNTIME-CONSOLE-BE 外部修复 Review Passed / Committed `46a16b7` / UA3 Pending。未 merge PR / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：CORE-SPLIT 外部修复 Review Passed、Pushed `56c2aa7`、UA3 Pending；CAPABILITY-REVIEW 外部修复 Review Passed / Pushed `0e4c2ff` / UA3 Pending；RUNTIME-CONSOLE-BE 外部修复及 portable follow-up Review Passed / Committed `981079a` / UA3 Pending。未 merge PR / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
 - 下一步：推送 #16 并以普通 merge 更新 #17，完成前端外部修复、全量验证与新隔离 Review；仍不提前进入正式用户 UA。
