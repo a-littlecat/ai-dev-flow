@@ -1,6 +1,6 @@
 # v0.7 Compact TASK 兼容模板
 
-> 本文件只为 v0.7 Writer/Reader、golden fixtures 和既有项目保留。v0.8 的 Lite 结果为 `DoNotUseSkill`，不创建 Compact TASK；新建任务按 `SKILL.md` 路由选择 `TASK_TEMPLATE_BRIEF.md` 或 `TASK_TEMPLATE.md`，全部 Controlled 使用完整模板。旧任务无需迁移。
+> 本文件只为 v0.7 Writer/Reader、golden fixtures 和既有项目保留。新建任务使用 v0.10 Brief/Full；旧任务无需迁移。Reader 内部把 v0.7 `Pending / Do Not Merge` 映射为 `Not Run / Blocked`，但对旧 Dashboard/Board 保持原兼容投影与完成门禁。
 
 ```markdown
 # <TASK-ID>：<任务标题>
@@ -36,4 +36,4 @@
 - 剩余风险：<待填写>
 ```
 
-兼容写入只能更新现有 Contract 和 Outcome，不重建 legacy 的重复状态段落。条件未知时停止并写“待确认”，不得用本模板替代 v0.8 路由。
+兼容写入只能更新现有 Contract 和 Outcome，不添加 `review_requirement`、不重建 legacy 的重复状态段落。条件未知时停止并写“待确认”，不得用本模板创建新任务。

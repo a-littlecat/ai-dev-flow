@@ -219,6 +219,71 @@ class WorkflowContractValidationTests(unittest.TestCase):
         contract = self.api.reader.inspect_text(text, pathlib.Path("TASK-CHECK.md"))
         return [item.code for item in self.api._validate(contract, require_commit=True)]
 
+    def v010_completion(self, requirement="Not Required", review_status="Not Run"):
+        return self.canonical(lifecycle="Accepted").replace(
+            "- `schema_version`: `adf/v0.7.0`",
+            "- `schema_version`: `adf/v0.10.0`",
+        ).replace(
+            "- `review_status`: `Passed`",
+            f"- `review_requirement`: `{requirement}`\n- `review_status`: `{review_status}`",
+        ).replace(
+            "- `ua_level`: `UA3`\n- `ua_status`: `Pending`",
+            "- `ua_level`: `UA0`\n- `ua_status`: `Not Required`\n- `acceptance_authority`: `User Confirmed`",
+        )
+
+    def test_v010_review_requirement_completion_guards(self):
+        allowed = self.codes_for_text(self.v010_completion())
+        self.assertNotIn("V_REVIEW_GUARD", allowed)
+
+        required = self.codes_for_text(self.v010_completion("Required", "Not Run"))
+        self.assertIn("V_REVIEW_GUARD", required)
+
+        for state in ("In Review", "Needs Fix", "Blocked"):
+            with self.subTest(state=state):
+                codes = self.codes_for_text(self.v010_completion("Not Required", state))
+                self.assertIn("V_REVIEW_GUARD", codes)
+
+        passed = self.codes_for_text(self.v010_completion("Required", "Passed"))
+        self.assertNotIn("V_REVIEW_GUARD", passed)
+
+    def test_v010_policy_required_inputs_reject_not_required(self):
+        controlled = self.v010_completion().replace(
+            "- `task_class`: `C`",
+            "- `task_class`: `D`",
+        )
+        self.assertIn(
+            "V_REVIEW_REQUIREMENT_GUARD",
+            self.codes_for_text(controlled),
+        )
+
+        high_ua = self.v010_completion().replace(
+            "- `ua_level`: `UA0`",
+            "- `ua_level`: `UA5`",
+        )
+        self.assertIn(
+            "V_REVIEW_REQUIREMENT_GUARD",
+            self.codes_for_text(high_ua),
+        )
+
+        with tempfile.TemporaryDirectory() as td:
+            source = pathlib.Path(td) / "TASK-CHECK.md"
+            source.write_text(
+                self.v010_completion()
+                + "\n## Scheduling\n\n"
+                + "- `risk_flags`: `shared_component`\n",
+                encoding="utf-8",
+            )
+            contract = self.api.reader.inspect_task(source)
+            codes = [
+                item.code
+                for item in self.api._validate(
+                    contract,
+                    require_commit=True,
+                    source_file=source,
+                )
+            ]
+        self.assertIn("V_REVIEW_REQUIREMENT_GUARD", codes)
+
     def test_complete_core_state_ua_delivery_and_overlay_guards(self):
         self.assertNotIn("V_STATE_GUARD", self.codes_for_text(self.canonical()))
         self.assertIn("V_STATE_GUARD", self.codes_for_text(self.canonical(outcome=False)))
@@ -280,6 +345,250 @@ class WorkflowContractValidationTests(unittest.TestCase):
             __import__("subprocess").run(["git", "commit", "-am", "illegal"], cwd=root, check=True, capture_output=True)
             illegal = self.api.WorkflowContract.inspect(task)
             self.assertIn("V_ILLEGAL_TRANSITION", [d.code for d in illegal.diagnostics])
+
+    def test_v010_review_cannot_regress_to_not_run_after_review_started(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            task = root / "docs" / "tasks" / "TASK-REVIEW-HIST.md"
+            task.parent.mkdir(parents=True)
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                __import__("subprocess").run(
+                    command,
+                    cwd=root,
+                    check=True,
+                    capture_output=True,
+                )
+            started = self.v010_completion("Not Required", "In Review").replace(
+                "TASK-CHECK",
+                "TASK-REVIEW-HIST",
+            ).replace("`Accepted`", "`Review`")
+            task.write_text(started, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "add", "docs/tasks/TASK-REVIEW-HIST.md"],
+                cwd=root,
+                check=True,
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            regressed = self.v010_completion("Not Required", "Not Run").replace(
+                "TASK-CHECK",
+                "TASK-REVIEW-HIST",
+            )
+            task.write_text(regressed, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            report = self.api.WorkflowContract.inspect(task)
+            task.write_text(
+                regressed.replace("- 验证证据：tests pass", "- 验证证据：tests pass again"),
+                encoding="utf-8",
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "ordinary edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            three_step = self.api.WorkflowContract.inspect(task)
+        self.assertIn(
+            "V_REVIEW_REGRESSION",
+            [item.code for item in report.diagnostics],
+        )
+        self.assertIn(
+            "V_REVIEW_REGRESSION",
+            [item.code for item in three_step.diagnostics],
+        )
+
+    def test_v010_review_history_rename_is_blocked_after_review_started(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            old_task = root / "docs" / "tasks" / "TASK-REVIEW-OLD.md"
+            new_task = root / "docs" / "tasks" / "TASK-REVIEW-RENAMED.md"
+            old_task.parent.mkdir(parents=True)
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                __import__("subprocess").run(
+                    command, cwd=root, check=True, capture_output=True
+                )
+            started = self.v010_completion("Not Required", "In Review").replace(
+                "TASK-CHECK", "TASK-REVIEW-OLD"
+            ).replace("`Accepted`", "`Review`")
+            old_task.write_text(started, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = started.replace("`Review`", "`Accepted`").replace(
+                "`In Review`", "`Not Run`"
+            )
+            old_task.write_text(hidden, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            __import__("subprocess").run(
+                ["git", "mv", old_task.relative_to(root), new_task.relative_to(root)],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = hidden.replace("TASK-REVIEW-OLD", "TASK-REVIEW-RENAMED")
+            new_task.write_text(hidden, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "rename task"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            new_task.write_text(
+                hidden.replace("- 验证证据：tests pass", "- 验证证据：tests pass again"),
+                encoding="utf-8",
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "ordinary edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            report = self.api.WorkflowContract.inspect(new_task)
+        self.assertIn(
+            "V_REVIEW_HISTORY_AMBIGUOUS",
+            [item.code for item in report.diagnostics],
+        )
+
+    def test_v010_review_history_copy_from_unchanged_source_is_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            old_task = root / "docs" / "tasks" / "TASK-COPY-OLD.md"
+            new_task = root / "docs" / "tasks" / "TASK-COPY-NEW.md"
+            old_task.parent.mkdir(parents=True)
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                __import__("subprocess").run(
+                    command, cwd=root, check=True, capture_output=True
+                )
+            started = self.v010_completion("Not Required", "In Review").replace(
+                "TASK-CHECK", "TASK-COPY-OLD"
+            ).replace("`Accepted`", "`Review`")
+            old_task.write_text(started, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = started.replace("`Review`", "`Accepted`").replace(
+                "`In Review`", "`Not Run`"
+            )
+            old_task.write_text(hidden, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            new_task.write_text(old_task.read_text(encoding="utf-8"), encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "copy unchanged task"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            copied = hidden.replace("TASK-COPY-OLD", "TASK-COPY-NEW").replace(
+                "- 验证证据：tests pass", "- 验证证据：ordinary edit"
+            )
+            new_task.write_text(copied, encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "commit", "-am", "ordinary copied task edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            report = self.api.WorkflowContract.inspect(new_task)
+        self.assertIn(
+            "V_REVIEW_HISTORY_AMBIGUOUS",
+            [item.code for item in report.diagnostics],
+        )
+
+    def test_v010_unrelated_sibling_rename_does_not_block_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            task_dir = root / "docs" / "tasks"
+            target = task_dir / "TASK-TARGET.md"
+            sibling = task_dir / "TASK-SIBLING.md"
+            renamed = task_dir / "TASK-SIBLING-RENAMED.md"
+            task_dir.mkdir(parents=True)
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                __import__("subprocess").run(
+                    command, cwd=root, check=True, capture_output=True
+                )
+            target.write_text(
+                self.v010_completion("Not Required", "Not Run").replace(
+                    "TASK-CHECK", "TASK-TARGET"
+                ),
+                encoding="utf-8",
+            )
+            sibling.write_text("# unrelated sibling\n", encoding="utf-8")
+            __import__("subprocess").run(
+                ["git", "add", "."], cwd=root, check=True, capture_output=True
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "initial tasks"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            __import__("subprocess").run(
+                ["git", "mv", sibling.relative_to(root), renamed.relative_to(root)],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            __import__("subprocess").run(
+                ["git", "commit", "-m", "rename unrelated sibling"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            report = self.api.WorkflowContract.inspect(target)
+        self.assertNotIn(
+            "V_REVIEW_HISTORY_AMBIGUOUS",
+            [item.code for item in report.diagnostics],
+        )
 
 
 if __name__ == "__main__":

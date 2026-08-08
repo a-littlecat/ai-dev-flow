@@ -210,6 +210,10 @@ test.describe("relationship graph", () => {
     await expect(detail).toContainText("任务详情：TASK-ALPHA");
     await expect(detail).toContainText("状态轴（相互独立，不合并）");
     await expect(detail).toContainText("生命周期");
+    await expect(detail).toContainText("合同版本adf/v0.10.0");
+    await expect(detail).toContainText("评审要求不强制评审");
+    await expect(detail).toContainText("评审状态未运行");
+    await expect(detail).toContainText("兼容评审投影待评审");
     await expect(detail).toContainText("执行 ｜ 需要授权");
     await expect(detail).toContainText("docs/tasks/TASK-ALPHA.md:7");
     await expect(detail.locator(".worktree-line").first()).toContainText("D:/fixture-wt-alpha");

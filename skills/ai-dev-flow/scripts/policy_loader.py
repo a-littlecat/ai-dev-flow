@@ -14,7 +14,7 @@ LEGACY_POLICY_PATTERN = re.compile(
 
 SCHEMA_FIELDS = {
     "adf/policy-core/v1": {
-        "schema_version", "unknown_input", "routes", "review", "safety",
+        "schema_version", "unknown_input", "routes", "review", "independent_review", "safety",
     },
     "adf/repair-basic/v1": {
         "schema_version", "finding_id_required", "base_auto_rounds",
@@ -170,6 +170,25 @@ def _validate_routes_review_safety(value, legacy=False):
         exact=["acceptance_recommendation", "delivery", "merge", "release"],
     )
     _string(review["missing_authority_or_capability"], "review.missing_authority_or_capability", {"Blocked"})
+
+    if not legacy:
+        independent = _object(
+            value["independent_review"],
+            "independent_review",
+            {"context_isolation", "frozen_diff_input", "stable_finding_ids", "write_isolation"},
+        )
+        for name in ("context_isolation", "frozen_diff_input", "stable_finding_ids"):
+            _string(independent[name], f"independent_review.{name}", {"required"})
+        write_isolation = _object(
+            independent["write_isolation"],
+            "independent_review.write_isolation",
+            {"one_of"},
+        )
+        _string_list(
+            write_isolation["one_of"],
+            "independent_review.write_isolation.one_of",
+            exact=["native_read_only", "sandbox_read_only", "readonly_copy"],
+        )
 
     safety = _object(
         value["safety"],

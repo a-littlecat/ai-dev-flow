@@ -1,0 +1,19 @@
+{
+  "adapter_id": "test-harness",
+  "verified_at": "2026-08-08",
+  "skill_loading": "markdown",
+  "read_files": true,
+  "write_files": true,
+  "run_commands": true,
+  "git": true,
+  "context_isolation": "native",
+  "write_isolation": "native_read_only",
+  "subagents": "native",
+  "approval_gate": "manual",
+  "runtime_hooks": "none",
+  "session_events": "manual",
+  "preferred_review_recipe": "R1",
+  "fallback_review_recipe": "R5",
+  "runtime_sync_method": "fixture only",
+  "version_sensitive_notes": "Synthetic adapter proving that data-only onboarding does not modify core policy or recipe code."
+}

@@ -288,6 +288,11 @@ class DashboardCore:
                 continue
             profile = profiles.get(contract.task_id, SchedulingProfile("absent", (), (), (), (), ()))
             values = dict(contract.normalized)
+            internal_review = values.get("review_status")
+            wire_review = {
+                "Not Run": "Pending",
+                "Blocked": "Do Not Merge",
+            }.get(internal_review, internal_review)
             result.append(
                 TaskNode(
                     task_id=contract.task_id,
@@ -302,8 +307,11 @@ class DashboardCore:
                     lifecycle=DashboardCore._wire_enum_value(
                         "lifecycle", values.get("lifecycle")
                     ),
+                    contract_schema_version=values.get("schema_version"),
+                    review_requirement=values.get("review_requirement"),
+                    review_state=internal_review,
                     review_status=DashboardCore._wire_enum_value(
-                        "review_status", values.get("review_status")
+                        "review_status", wire_review
                     ),
                     ua_level=DashboardCore._wire_enum_value(
                         "ua_level", values.get("ua_level")

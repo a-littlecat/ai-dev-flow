@@ -1,0 +1,19 @@
+{
+  "adapter_id": "codex",
+  "verified_at": "2026-08-08",
+  "skill_loading": "native",
+  "read_files": true,
+  "write_files": true,
+  "run_commands": true,
+  "git": true,
+  "context_isolation": "independent_process",
+  "write_isolation": "sandbox_read_only",
+  "subagents": "native",
+  "approval_gate": "native",
+  "runtime_hooks": "native",
+  "session_events": "native",
+  "preferred_review_recipe": "R2",
+  "fallback_review_recipe": "R3",
+  "runtime_sync_method": "explicit governed Skill sync only",
+  "version_sensitive_notes": "Verified against codex exec help; re-check --ephemeral and --sandbox syntax before every invocation."
+}

@@ -1,0 +1,19 @@
+{
+  "adapter_id": "zcode",
+  "verified_at": "2026-08-08",
+  "skill_loading": "unsupported",
+  "read_files": false,
+  "write_files": false,
+  "run_commands": false,
+  "git": false,
+  "context_isolation": "none",
+  "write_isolation": "none",
+  "subagents": "none",
+  "approval_gate": "none",
+  "runtime_hooks": "none",
+  "session_events": "none",
+  "preferred_review_recipe": "R5",
+  "fallback_review_recipe": "R5",
+  "runtime_sync_method": "unsupported until the local Harness is available and verified",
+  "version_sensitive_notes": "No local zcode command was found on 2026-08-08; do not infer capabilities from product documentation alone."
+}

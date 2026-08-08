@@ -112,6 +112,9 @@ def task(task_id: str, **overrides) -> TaskNode:
         "task_type": "code",
         "task_class": "B",
         "lifecycle": "Ready",
+        "contract_schema_version": "adf/v0.7.0",
+        "review_requirement": "Legacy Unspecified",
+        "review_state": "Passed",
         "review_status": "Passed",
         "ua_level": "UA3",
         "ua_status": "Pending",
@@ -138,6 +141,11 @@ def task(task_id: str, **overrides) -> TaskNode:
         "diagnostic_ids": (),
         "provenance": (),
     }
+    if "review_status" in overrides and "review_state" not in overrides:
+        overrides["review_state"] = {
+            "Pending": "Not Run",
+            "Do Not Merge": "Blocked",
+        }.get(overrides["review_status"], overrides["review_status"])
     values.update(overrides)
     return TaskNode(**values)
 

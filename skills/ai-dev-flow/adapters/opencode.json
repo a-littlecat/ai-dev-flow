@@ -1,0 +1,19 @@
+{
+  "adapter_id": "opencode",
+  "verified_at": "2026-08-08",
+  "skill_loading": "markdown",
+  "read_files": true,
+  "write_files": true,
+  "run_commands": true,
+  "git": true,
+  "context_isolation": "independent_session",
+  "write_isolation": "readonly_copy",
+  "subagents": "opaque",
+  "approval_gate": "native",
+  "runtime_hooks": "plugin",
+  "session_events": "adapter",
+  "preferred_review_recipe": "R3",
+  "fallback_review_recipe": "R5",
+  "runtime_sync_method": "explicit governed Skill sync only",
+  "version_sensitive_notes": "CLI 1.18.4 was present; current help did not prove a true read-only sandbox, so re-check help and use a read-only copy."
+}
