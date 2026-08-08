@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -76,13 +76,13 @@
 
 ## Outcome
 
-- Base / Diff：base=d6d6484;diff=d6d6484..working-tree
+- Base / Diff：base=d6d6484;diff=d6d6484..83ec457
 - 隔离位置：`codex/v010-capability-review` / `D:/open-source/ai-dev-flow-wt/v010-capability-review`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CORE-SPLIT 历史。
 - 修改文件：新增 capability/recipe 文档、五个薄 Adapter 与 loader；Workflow Contract reader/validator/schema 双读 v0.7/v0.10；Full/Brief 模板升级 v0.10，Compact 保留 v0.7；Dashboard 仅增加兼容字段、动作判定与详情展示；补齐相关测试和生成类型。
 - 范围适配：`policy_loader.py` 与 `schemas/workflow-contract.schema.json` 未列在最初允许清单，但分别是 CORE-SPLIT 新增严格 loader 与现有 RuntimeCompatibility 的直接事实源；为保持 core policy 可加载和双版本 schema 可启动而做最小改动，不扩展到 Runtime/Project Console。
 - 验证证据：Round 2 fresh Adapter 定向 `6/6`、Skill `119/119`、backend `182/182`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；Round 1 后 frontend codegen check/typecheck/lint/Vitest `95/95`/build/Playwright `96/96` 已通过，Round 2 未改前端。首次组合 `npm run verify` 仅因工具 124 秒硬超时无终态，随后拆分组件全部通过。stack full integration 已知为 `51/52`，唯一 artifact guard 失败须在上层全部更新后复跑。
 - Review findings：Round 1 `Needs Fix 0/4/0/0`；Round 2/3/4 依次收敛 `R002`；用户授权 ER-1 后，session `019fe130-43df-7551-b44c-659b67ba9fe6` 为 `Passed 0/0/0/0`，`R001`～`R004` 全部 Closed。
-- 状态边界：External Repair Review Passed / Fresh Verification Passed / UA3 Pending / Current Repair Uncommitted / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- 状态边界：External Repair Review Passed / Fresh Verification Passed / Repair Committed `83ec457` / UA3 Pending / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：生产依赖树存在基线 `fast-uri` high advisory，`package-lock.json` 本阶段未改；正式发布前应在 RELEASE 阶段单独评估兼容升级。集成套件两项历史债务仍未在本阶段修复。
-- 下一步：提交/push #15 当前修复，再以普通 merge 更新 #16。禁止提前进入正式 UA。
+- 下一步：push #15 当前修复，再以普通 merge 更新 #16。禁止提前进入正式 UA。
