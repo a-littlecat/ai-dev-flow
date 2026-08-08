@@ -23,6 +23,8 @@ test.beforeEach(async () => {
           queue: "human_attention",
           actor: "user",
           next_step: "查看 TASK 中两个选项及影响",
+          status_summary: "方案已准备，正在等待用户选择",
+          why_now_codes: ["USER_DECISION_PENDING"],
           action_kind: "user_decision",
           action_eligibility: "needs_authority",
           action_kinds: ["user_decision"],
@@ -38,6 +40,7 @@ test.beforeEach(async () => {
           harness_id: "codex",
           phase: "validating",
           next_step: "运行真实 smoke test",
+          why_now_codes: ["ACTIVE_RUNTIME_SESSION"],
           freshness: "live",
           source_kinds: ["task", "git", "runtime"],
           last_activity_at: new Date(Date.now() - 12_000).toISOString(),
@@ -101,8 +104,13 @@ test("console is the default and preserves server queue order with explicit fres
   const headings = await page.locator(".console-section-heading h2").allTextContents();
   expect(headings.slice(0, 3)).toEqual(["需要你处理", "正在进行", "下一步队列"]);
   await expect(page.locator(".console-section-human")).toContainText("确认打印预览方案");
+  await expect(page.locator(".console-section-human")).toContainText("状态方案已准备，正在等待用户选择");
+  await expect(page.locator(".console-section-human .console-card-line").filter({ hasText: "原因" })).toContainText("正在等待用户决策");
+  await expect(page.locator(".console-section-human .console-card-line").filter({ hasText: "原因" })).not.toContainText("USER_DECISION_PENDING");
+  await expect(page.locator(".console-section-human .console-diagnostics")).toContainText("USER_DECISION_PENDING");
   await expect(page.locator(".console-section-active .console-source")).toHaveText(["实时", "TASK + Git 派生"]);
   await expect(page.locator(".console-section-active .console-card-meta").first()).toContainText("来源：TASK + Git + Runtime");
+  await expect(page.locator(".console-section-active .console-card-line").filter({ hasText: "原因" }).first()).toContainText("Runtime 会话正在活跃执行");
   await expect(page.locator(".console-section-stale")).toContainText("状态过期");
   await expect(page.locator(".console-ambiguity")).toHaveText("当前没有唯一主任务，存在 2 个可执行候选。");
   await expect(page.locator(".console-section-ready .console-task-id")).toHaveText(["TASK-BETA", "TASK-ALPHA"]);
@@ -256,6 +264,27 @@ test("a console response slower than the polling interval still becomes visible"
   expect(calls).toBeGreaterThanOrEqual(1);
 });
 
+test("console polling switches from visible 2s to hidden 10s", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/api/v1/console", async (route) => {
+    calls += 1;
+    await route.continue();
+  });
+  await page.goto("/");
+  await expect(page.locator(".console-section-human")).toContainText("确认打印预览方案");
+  const visibleBaseline = calls;
+  await expect.poll(() => calls, { timeout: 3_500 }).toBeGreaterThan(visibleBaseline);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  const hiddenBaseline = calls;
+  await page.waitForTimeout(3_000);
+  expect(calls).toBe(hiddenBaseline);
+  await expect.poll(() => calls, { timeout: 9_000 }).toBeGreaterThan(hiddenBaseline);
+});
+
 test("snapshot-only fixture mode falls back to the explicit network diagnostic route", async ({ page }) => {
   await page.goto("/?fixture=fresh");
 
@@ -274,4 +303,15 @@ test("card actions expose unique task context to assistive technology", async ({
   );
   expect(names.every((name) => Boolean(name))).toBe(true);
   expect(new Set(names).size).toBe(names.length);
+});
+
+test("copy actions fall back when navigator.clipboard is unavailable", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    document.execCommand = () => true;
+  });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "复制下一步 TASK-DELTA", exact: true }).click();
+  await expect(page.locator(".project-console [aria-live='polite']")).toHaveText("复制下一步已复制。");
 });

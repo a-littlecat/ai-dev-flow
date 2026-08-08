@@ -72,6 +72,7 @@ export function makeConsoleItem(overrides: Partial<ConsoleItem> = {}): ConsoleIt
     harness_id: null,
     phase: null,
     next_step: "继续执行任务",
+    status_summary: "任务已 Ready，可按授权边界继续",
     why_now_codes: ["DEPENDENCIES_SATISFIED"],
     blocking_task_ids: [],
     unblocks_count: 0,

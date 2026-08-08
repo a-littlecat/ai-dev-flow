@@ -17,6 +17,7 @@ import { fetchConsole, fetchFixtureSnapshot, fetchHealth, fetchSnapshot, fetchTa
 import { SnapshotEventStream } from "./api/sse";
 import { AppStore } from "./state/store";
 import { filterTasks, resolveSelectionAfterFilter } from "./state/derive";
+import { consolePollDelay } from "./state/consolePolling";
 import "./styles.css";
 import { StatusBar } from "./ui/statusBar";
 import { Toolbar } from "./ui/toolbar";
@@ -29,7 +30,6 @@ import { SNAPSHOT_STATE_LABEL } from "./ui/labels";
 import { ProjectConsoleView } from "./ui/projectConsole";
 
 const HEALTH_POLL_MS = 4000;
-const CONSOLE_POLL_MS = 5000;
 
 class DashboardApp {
   private readonly store = new AppStore();
@@ -45,6 +45,7 @@ class DashboardApp {
   private readonly networkView: HTMLElement;
   private healthTimer: number | null = null;
   private consoleTimer: number | null = null;
+  private consoleFailures = 0;
   private lastAnnouncedRevision: string | null = null;
   /**
    * Snapshot refreshes are serialized through a promise chain and tagged
@@ -182,6 +183,12 @@ class DashboardApp {
         void this.queueSnapshotRefresh(false);
       },
     });
+    document.addEventListener("visibilitychange", () => {
+      this.scheduleConsolePolling();
+      if (document.visibilityState === "visible") {
+        void this.queueConsoleRefresh();
+      }
+    });
 
     // Paint the initial (loading) state; before this the subscriber only
     // reacts to changes, so the loading banner would never appear.
@@ -212,7 +219,7 @@ class DashboardApp {
       await this.loadFixture();
     } else {
       await this.queueSnapshotRefresh(false);
-      this.consoleTimer = window.setInterval(() => void this.queueConsoleRefresh(), CONSOLE_POLL_MS);
+      this.scheduleConsolePolling();
     }
     // Fit the initial graph once content is laid out.
     requestAnimationFrame(() => this.graph.fitToContent(false));
@@ -297,25 +304,27 @@ class DashboardApp {
     const refreshes = async (): Promise<void> => {
       do {
         this.consoleRefreshQueued = false;
-        await this.refreshConsole();
+        const succeeded = await this.refreshConsole();
+        this.consoleFailures = succeeded ? 0 : this.consoleFailures + 1;
       } while (this.consoleRefreshQueued);
     };
     const active = refreshes().finally(() => {
       this.consoleRefreshActive = null;
+      this.scheduleConsolePolling();
     });
     this.consoleRefreshActive = active;
     return active;
   }
 
-  private async refreshConsole(): Promise<void> {
+  private async refreshConsole(): Promise<boolean> {
     if (!this.store.get().snapshot) {
-      return;
+      return true;
     }
     this.store.setConsoleLoading();
     const result = await fetchConsole(this.store.get().console.etag ?? undefined);
     if (!result.ok) {
       this.store.setConsoleFailure(result.failure);
-      return;
+      return false;
     }
     if (result.value === null) {
       if (!this.store.setConsoleNotModified()) {
@@ -324,13 +333,28 @@ class DashboardApp {
         // that stale ETag instead of leaving the default page spinning.
         void this.queueConsoleRefresh();
       }
-      return;
+      return true;
     }
     if (!this.store.setConsoleReady(result.value.console, result.value.etag)) {
       // Snapshot and Console replies are generation-bound. Re-sync instead
       // of showing a cross-revision queue or deriving a queue in the client.
       void this.queueSnapshotRefresh(false);
     }
+    return true;
+  }
+
+  private scheduleConsolePolling(): void {
+    if (this.fixtureName) {
+      return;
+    }
+    if (this.consoleTimer !== null) {
+      window.clearTimeout(this.consoleTimer);
+    }
+    const delay = consolePollDelay(document.visibilityState, this.consoleFailures);
+    this.consoleTimer = window.setTimeout(() => {
+      this.consoleTimer = null;
+      void this.queueConsoleRefresh();
+    }, delay);
   }
 
   private onSnapshotEvent(_revision: string, resetRequired: boolean): void {

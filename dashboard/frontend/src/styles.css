@@ -349,6 +349,21 @@ body {
   letter-spacing: 0.04em;
 }
 
+.console-diagnostics {
+  margin-top: 7px;
+  color: var(--faint);
+  font-size: 11px;
+}
+.console-diagnostics summary { width: fit-content; cursor: pointer; }
+.console-diagnostic-values { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.console-diagnostic-values code {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
 .console-card-actions {
   display: flex;
   flex-wrap: wrap;

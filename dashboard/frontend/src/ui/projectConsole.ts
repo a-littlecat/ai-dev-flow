@@ -1,5 +1,6 @@
 import type { ConsoleItem, ProjectConsole } from "../generated/contracts.types";
 import type { AppState, AppStore } from "../state/store";
+import { copyText } from "./clipboard";
 import { clear, el } from "./dom";
 
 const PHASE_LABEL: Record<string, string> = {
@@ -18,6 +19,41 @@ const SOURCE_LABEL: Record<string, string> = {
   git: "Git",
   runtime: "Runtime",
 };
+
+const WHY_NOW_LABEL: Record<string, string> = {
+  ACTIVE_RUNTIME_SESSION: "Runtime 会话正在活跃执行",
+  DEPENDENCIES_SATISFIED: "前置依赖已经满足",
+  WAITING_USER: "正在等待用户确认",
+  RUNTIME_BLOCKED: "运行中的任务已声明阻塞",
+  TASK_BLOCKED: "任务合同已声明阻塞",
+  TASK_IN_PROGRESS_WITHOUT_LIVE_SESSION: "任务正在进行，但没有活跃 Runtime 会话",
+  STALE_RUNTIME_SESSION: "Runtime 会话状态已经过期",
+  INVALID_RUNTIME_SESSION: "Runtime 会话证据无效",
+  CONTRACT_STATE_INVALID: "任务合同状态无效",
+  TERMINAL_STATE: "任务已经处于终态",
+  REPAIR_AUTHORITY_UNSUPPORTED: "当前缺少修复授权",
+  PLANNING_DECISION_REQUIRED: "需要先完成规划决策",
+  DEPENDENCY_STATE_UNKNOWN: "依赖状态尚不明确",
+  DEPENDENCY_UNSATISFIED: "仍有前置依赖未满足",
+  EXECUTION_AUTHORITY_UNSUPPORTED: "当前缺少执行授权",
+  CONTINUE_AUTHORITY_UNSUPPORTED: "当前缺少继续执行授权",
+  REVIEW_AUTHORITY_UNSUPPORTED: "当前缺少审查授权",
+  USER_DECISION_PENDING: "正在等待用户决策",
+  ACCEPTANCE_RECORD_PENDING: "验收记录尚未完成",
+  COMMIT_AUTHORITY_UNSUPPORTED: "当前缺少提交授权",
+  MERGE_AUTHORITY_PRESENT: "已具备合并授权",
+  MERGE_AUTHORITY_DENIED: "合并授权已被拒绝",
+  MERGE_AUTHORITY_REQUIRED: "需要先取得合并授权",
+  RELEASE_AXIS_UNSUPPORTED: "当前阶段不支持发布",
+  CLOSE_AUTHORITY_PRESENT: "已具备关闭授权",
+  CLOSE_AUTHORITY_DENIED: "关闭授权已被拒绝",
+  CLOSE_AUTHORITY_REQUIRED: "需要先取得关闭授权",
+  STATE_COMBINATION_UNMAPPED: "当前状态组合尚无安全动作",
+};
+
+export function whyNowLabel(code: string): string {
+  return WHY_NOW_LABEL[code] ?? "存在未识别的治理条件，请查看诊断码";
+}
 
 export class ProjectConsoleView {
   readonly root = el("section", "project-console");
@@ -164,12 +200,13 @@ export class ProjectConsoleView {
     ].filter(Boolean);
     const sources = `来源：${item.source_kinds.map((source) => SOURCE_LABEL[source] ?? source).join(" + ")}`;
     meta.textContent = metaParts.length ? `${metaParts.join(" · ")} · ${sources}` : sources;
-    article.append(meta, labelledLine("下一步", item.next_step));
+    article.append(meta, labelledLine("状态", item.status_summary), labelledLine("下一步", item.next_step));
     if (item.blocking_task_ids.length > 0) {
       article.append(labelledLine("阻塞于", item.blocking_task_ids.join("、")));
     }
     if (item.why_now_codes.length > 0) {
-      article.append(labelledLine("原因", item.why_now_codes.join(" · ")));
+      article.append(labelledLine("原因", item.why_now_codes.map(whyNowLabel).join("；")));
+      article.append(diagnosticCodes(item.why_now_codes));
     }
     const actions = el("div", "console-card-actions");
     const context = [item.task_id ?? item.title, item.session_id].filter(Boolean).join(" · ");
@@ -224,10 +261,9 @@ export class ProjectConsoleView {
 
   private copyButton(text: string, key: string, taskId: string | null, value: string, accessibleName: string): HTMLButtonElement {
     return this.button(text, key, taskId, () => {
-      void navigator.clipboard.writeText(value).then(
-        () => { this.announcement.textContent = `${text}已复制。`; },
-        () => { this.announcement.textContent = `${text}失败，请手动复制。`; },
-      );
+      void copyText(value).then((copied) => {
+        this.announcement.textContent = copied ? `${text}已复制。` : `${text}失败，请手动复制。`;
+      });
     }, accessibleName);
   }
 
@@ -270,9 +306,13 @@ function consoleStateLabel(state: ProjectConsole["state"]): string {
   return state === "fresh" ? "事实状态：新鲜" : state === "stale" ? "事实状态：陈旧" : "事实状态：证据不完整";
 }
 
-function freshnessItem(label: string, timestamp: string, source: string): HTMLElement {
+function freshnessItem(label: string, timestamp: string | null, source: string): HTMLElement {
   const item = el("div", "freshness-item");
-  item.append(el("span", "freshness-label", label), el("strong", null, ageLabel(timestamp)), el("span", "freshness-source", source));
+  item.append(
+    el("span", "freshness-label", label),
+    el("strong", null, timestamp ? ageLabel(timestamp) : "无会话数据"),
+    el("span", "freshness-source", source),
+  );
   return item;
 }
 
@@ -280,6 +320,17 @@ function labelledLine(label: string, value: string): HTMLElement {
   const line = el("p", "console-card-line");
   line.append(el("span", "console-line-label", label), document.createTextNode(value));
   return line;
+}
+
+function diagnosticCodes(codes: string[]): HTMLElement {
+  const details = el("details", "console-diagnostics");
+  details.append(el("summary", null, `诊断码（${codes.length}）`));
+  const values = el("div", "console-diagnostic-values");
+  for (const code of codes) {
+    values.append(el("code", null, code));
+  }
+  details.append(values);
+  return details;
 }
 
 function ageLabel(timestamp: string): string {
