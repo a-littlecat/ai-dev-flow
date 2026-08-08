@@ -56,6 +56,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT Review Passed、UA3 Pending；Stage 0/1 实现提交 `9ac594d` 已形成，尚未 push / PR / merge / release / Closed。
+- 状态边界：CORE-SPLIT Review Passed、UA3 Pending；阶段分支已推送，Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14) 已创建；未 merge / release / 正式 Skill 同步 / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
 - 下一步：交付 CORE-SPLIT 阶段分支后，串行进入 CAPABILITY-REVIEW；不在本阶段修复 Dashboard 基线债务。

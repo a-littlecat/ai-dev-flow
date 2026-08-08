@@ -64,6 +64,6 @@
 - 验证证据：Stage 1 Skill `99/99`、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=63`、`git diff --check` 均通过；安全约束定向测试 `53/53` 通过；Dashboard tracked diff 为空，核心 policy 具体 Harness/模型名匹配 `0`。Stage 0 frontend Vitest `95/95`、Playwright `96/96` 通过；Integration 基线 `1 failure + 1 error` 均在 Dashboard 禁止修改范围，已在 Master 记录。
 - Review findings：Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`R001/R002` Closed。
 - UA 动作与结果：UA3 Pending，不由自动验证代替。
-- 状态边界：实现提交 `9ac594d` 已形成；尚未 push / PR / merge / release / Closed。
+- 状态边界：实现提交 `9ac594d`、Review 收据提交 `314ef09` 已推送至 `origin/codex/v010-core-split`；Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14) 已创建。UA3 Pending；未 merge / release / 正式 Skill 同步 / Closed。
 - 剩余风险：UA3 仍为 Pending；Review 通过不授权 merge、release、正式 Skill 同步或 Closed。
-- 下一步：提交本收据，推送阶段分支并创建 Draft PR；随后从阶段 HEAD 建立 CAPABILITY-REVIEW stacked branch/worktree。
+- 下一步：提交并推送本 delivery 收据；随后从阶段 HEAD 建立 CAPABILITY-REVIEW stacked branch/worktree。
