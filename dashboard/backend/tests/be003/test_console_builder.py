@@ -49,10 +49,12 @@ class ConsoleBuilderTests(unittest.TestCase):
             harness_id="codex",
             phase="validating",
             next_step="tests",
+            status_summary="正在验证 Console",
         )
         console = ConsoleBuilder(self.store).build(self.published(snapshot))
         validate_contract(console)
         self.assertEqual(["TEST-001"], [item["task_id"] for item in console["active_work"]])
+        self.assertEqual("正在验证 Console", console["active_work"][0]["status_summary"])
         self.store.wait("live", "user check")
         console = ConsoleBuilder(self.store).build(self.published(snapshot))
         self.assertEqual(1, console["counts"]["human_attention"])
@@ -72,6 +74,7 @@ class ConsoleBuilderTests(unittest.TestCase):
             ["TASK_IN_PROGRESS_WITHOUT_LIVE_SESSION"],
             active["active_work"][0]["why_now_codes"],
         )
+        self.assertEqual("任务正在进行", active["active_work"][0]["status_summary"])
         base = copy.deepcopy(snapshot["tasks"][0])
         high = {**base, "task_id": "READY-HIGH", "title": "high", "lifecycle": "Ready", "priority": "high"}
         low = {**base, "task_id": "READY-LOW", "title": "low", "lifecycle": "Ready", "priority": "low"}
@@ -94,8 +97,12 @@ class ConsoleBuilderTests(unittest.TestCase):
         ]
         ready = ConsoleBuilder(self.store).build(self.published(snapshot))
         self.assertEqual(["READY-HIGH", "READY-LOW"], [item["task_id"] for item in ready["ready_queue"]])
-        self.assertFalse(ready["ambiguity"]["has_unique_primary"])
-        self.assertEqual(2, ready["ambiguity"]["candidate_count"])
+        self.assertTrue(ready["ambiguity"]["has_unique_primary"])
+        self.assertEqual(1, ready["ambiguity"]["candidate_count"])
+        snapshot["tasks"][0]["priority"] = "high"
+        tied = ConsoleBuilder(self.store).build(self.published(snapshot))
+        self.assertFalse(tied["ambiguity"]["has_unique_primary"])
+        self.assertEqual(2, tied["ambiguity"]["candidate_count"])
         snapshot["tasks"][0]["lifecycle"] = "Blocked"
         snapshot["actions"][0]["action_kind"] = "none"
         snapshot["actions"][0]["eligibility"] = "unknown"
@@ -175,10 +182,21 @@ class ConsoleBuilderTests(unittest.TestCase):
         recommendations = ActionEngine().recommend((node,), (), ())
         snapshot["actions"] = list(primitive(recommendations))
         result = ConsoleBuilder(self.store).build(self.published(snapshot))
-        item = result["human_attention"][0]
+        item = result["ready_queue"][0]
         self.assertEqual("needs_authority", item["action_eligibility"])
         self.assertEqual(["needs_authority"], item["action_eligibilities"])
         self.assertEqual("execute", item["action_kind"])
+        self.assertEqual(0, result["counts"]["human_attention"])
+
+    def test_active_work_same_priority_sorts_by_recent_activity_descending(self):
+        snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="medium")
+        second = {**copy.deepcopy(snapshot["tasks"][0]), "task_id": "TEST-002", "title": "second"}
+        snapshot["tasks"].append(second)
+        self.store.start(session_id="older", task_id="TEST-001", harness_id="codex", phase="implementing", next_step="work")
+        self.clock.value += dt.timedelta(seconds=1)
+        self.store.start(session_id="newer", task_id="TEST-002", harness_id="codex", phase="implementing", next_step="work")
+        result = ConsoleBuilder(self.store).build(self.published(snapshot))
+        self.assertEqual(["TEST-002", "TEST-001"], [item["task_id"] for item in result["active_work"]])
 
     def test_unknown_live_session_is_visible_as_blocked(self):
         self.store.start(
@@ -205,6 +223,7 @@ class ConsoleBuilderTests(unittest.TestCase):
     def test_snapshot_changes_are_included_without_runtime_sessions(self):
         snapshot = support.snapshot_with_task()
         console = ConsoleBuilder(self.store).build(self.published(snapshot))
+        self.assertIsNone(console["freshness"]["runtime_facts_at"])
         self.assertEqual(
             {
                 "task_id": "TEST-001",

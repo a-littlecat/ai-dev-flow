@@ -692,7 +692,7 @@
       "properties": {
         "task_facts_at": {"type": "string"},
         "git_facts_at": {"type": "string"},
-        "runtime_facts_at": {"type": "string"}
+        "runtime_facts_at": {"type": ["string", "null"]}
       }
     },
     "ConsoleCounts": {
@@ -710,7 +710,7 @@
     "ConsoleItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["task_id", "title", "queue", "actor", "session_id", "harness_id", "phase", "next_step", "why_now_codes", "blocking_task_ids", "unblocks_count", "priority", "last_activity_at", "freshness", "source_kinds", "branch", "worktree", "action_kind", "action_eligibility", "action_kinds", "action_eligibilities"],
+      "required": ["task_id", "title", "queue", "actor", "session_id", "harness_id", "phase", "next_step", "status_summary", "why_now_codes", "blocking_task_ids", "unblocks_count", "priority", "last_activity_at", "freshness", "source_kinds", "branch", "worktree", "action_kind", "action_eligibility", "action_kinds", "action_eligibilities"],
       "properties": {
         "task_id": {"type": ["string", "null"]},
         "title": {"type": "string"},
@@ -720,6 +720,7 @@
         "harness_id": {"$ref": "#/$defs/NullableString"},
         "phase": {"type": ["string", "null"], "enum": ["planning", "implementing", "validating", "reviewing", "repairing", "waiting_user", "blocked", "done", null]},
         "next_step": {"type": "string"},
+        "status_summary": {"type": "string"},
         "why_now_codes": {"$ref": "#/$defs/StringArray"},
         "blocking_task_ids": {"$ref": "#/$defs/StringArray"},
         "unblocks_count": {"type": "integer", "minimum": 0},
