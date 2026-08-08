@@ -16,7 +16,10 @@ subagents: [native, opaque, none]
 approval_gate: [native, manual, none]
 runtime_hooks: [native, plugin, none]
 session_events: [native, adapter, manual, none]
-runtime_session_bridge: [native, adapter, manual, none]
+runtime_session_bridge:
+  type: [command, manual, none]
+  command: string | null
+  hooks: {start, update, wait, end, heartbeat}
 ```
 
 `context_isolation` 只说明上下文边界，不能代替写隔离；`readonly_copy` 必须由 Orchestrator 在调用前建立且在 Review 后核对原工作区未变化。任何 `none` 都不能被解释为已经满足对应能力。
@@ -32,6 +35,8 @@ approval_gate, runtime_hooks, session_events, runtime_session_bridge,
 preferred_review_recipe, fallback_review_recipe,
 formal_skill_sync_method, version_sensitive_notes
 ```
+
+`runtime_session_bridge.type=command` 只能在真实可执行入口存在时声明，且必须同时给出入口与 `start/update/wait/end/heartbeat` 五个 Hook 模板。未实现或未验证时必须用 `manual` 或 `none`，不得用产品名或推测冒充桥接证据。
 
 `runtime_session_bridge` 仅描述运行时会话事实如何进入 Harness；`formal_skill_sync_method` 仅描述取得独立交付授权后的正式 Skill 安装/同步方式。两者是不同能力轴，Adapter 不得以会话桥接暗示或执行正式 Skill sync。
 
