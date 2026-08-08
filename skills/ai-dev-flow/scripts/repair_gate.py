@@ -9,12 +9,24 @@ import json
 import pathlib
 import re
 
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from policy_loader import (
+    PolicyLoadError,
+    load_policy_document,
+    thaw_policy,
+    validate_policy_value,
+)
+
 
 LEDGER_SCHEMA = "ai-dev-flow/repair-ledger-v1"
 TRUSTED_CONTEXT_SCHEMA = "ai-dev-flow/repair-trusted-context-v1"
 CAMPAIGN_STATE_SCHEMA = "ai-dev-flow/repair-campaign-state-v1"
-CURRENT_POLICY_SCHEMA = "ai-dev-flow/v0.8-policy-rc3"
+CURRENT_POLICY_SCHEMA = "adf/repair-campaign/v1"
 LEGACY_SINGLE_POLICY_SCHEMA = "ai-dev-flow/v0.8-policy-rc2"
+LEGACY_CAMPAIGN_POLICY_SCHEMA = "ai-dev-flow/v0.8-policy-rc3"
 ALLOWED_DECISIONS = {"MechanicallyEligible"}
 REVIEW_DECISIONS = {"Passed", "Needs Fix", "Blocked"}
 SEVERITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "Closed": 4}
@@ -23,10 +35,6 @@ ATTEMPT_PATTERN = re.compile(r"^(AR|ER)-([1-9][0-9]*)$")
 EVIDENCE_REF_PATTERN = re.compile(r"^(conversation|task):[^#]+#[^#]+$")
 CAMPAIGN_PROFILES = {"core_product", "harness"}
 CAMPAIGN_OUTCOMES = {"NotStarted", "MeasurableProgress", "NoProgress"}
-POLICY_PATTERN = re.compile(
-    r"<!-- POLICY_JSON_BEGIN -->\s*```json\s*(\{.*?\})\s*```\s*<!-- POLICY_JSON_END -->",
-    flags=re.DOTALL,
-)
 
 
 class InvocationError(Exception):
@@ -57,44 +65,56 @@ def attestation_hash(record):
 
 def load_policy(path):
     try:
-        text = pathlib.Path(path).read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        raise InvocationError(f"cannot read policy: {exc}") from exc
-    match = POLICY_PATTERN.search(text)
-    if not match:
-        raise InvocationError(f"POLICY_JSON block missing: {path}")
-    try:
-        return json.loads(match.group(1))
-    except json.JSONDecodeError as exc:
-        raise InvocationError(f"invalid POLICY_JSON: {exc}") from exc
+        return thaw_policy(load_policy_document(path))
+    except PolicyLoadError as exc:
+        raise InvocationError(str(exc)) from exc
+
+
+def _required_object_fields(value, required, code):
+    if not isinstance(value, dict):
+        return [f"POLICY_INVALID_{code}"]
+    errors = []
+    missing = set(required) - set(value)
+    if missing:
+        errors.append(f"POLICY_MISSING_{code}_FIELDS")
+    return errors
 
 
 def validate_policy(policy, *, allow_legacy_single=False):
+    """Validate in-memory policies while preserving structured legacy reason codes."""
+
     if not isinstance(policy, dict):
         return ["POLICY_NOT_OBJECT"]
+    schema = policy.get("schema_version")
+    allowed_schemas = {CURRENT_POLICY_SCHEMA, LEGACY_CAMPAIGN_POLICY_SCHEMA}
+    if allow_legacy_single:
+        allowed_schemas.add(LEGACY_SINGLE_POLICY_SCHEMA)
+    if schema not in allowed_schemas:
+        return ["POLICY_CONFLICT_SCHEMA_VERSION"]
+
+    try:
+        validate_policy_value(policy)
+        constraint_errors = []
+    except PolicyLoadError:
+        constraint_errors = ["POLICY_CONSTRAINT_VIOLATION"]
+
+    legacy_single = schema == LEGACY_SINGLE_POLICY_SCHEMA
+    allowed_top = (
+        {"schema_version", "repair"}
+        if schema == CURRENT_POLICY_SCHEMA
+        else {
+            "schema_version", "unknown_input", "routes", "review", "safety",
+            "reviewer_selection", "repair",
+        }
+    )
+    errors = list(constraint_errors)
+    if set(policy) - allowed_top:
+        errors.append("POLICY_UNKNOWN_TOP_LEVEL_FIELDS")
     repair = policy.get("repair")
     if not isinstance(repair, dict):
-        return ["POLICY_REPAIR_SECTION_INVALID"]
-    errors = []
-    legacy_single = (
-        allow_legacy_single
-        and policy.get("schema_version") == LEGACY_SINGLE_POLICY_SCHEMA
-        and "campaign" not in repair
-    )
-    expected_schema = (
-        LEGACY_SINGLE_POLICY_SCHEMA if legacy_single else CURRENT_POLICY_SCHEMA
-    )
-    if policy.get("schema_version") != expected_schema:
-        errors.append("POLICY_CONFLICT_SCHEMA_VERSION")
-    expected_reviewer_selection = {
-        "default": "same_harness_native_isolated",
-        "cross_harness": "explicit_user_authority_only",
-        "native_unavailable": "Blocked",
-        "same_context_self_review": "Pending",
-    }
-    if not legacy_single and policy.get("reviewer_selection") != expected_reviewer_selection:
-        errors.append("POLICY_CONFLICT_REVIEWER_SELECTION")
-    expected_repair_fields = {
+        return errors + ["POLICY_REPAIR_SECTION_INVALID"]
+
+    required_repair = {
         "repair_round_definition",
         "non_counting_actions",
         "chain_identity_fields",
@@ -116,31 +136,26 @@ def validate_policy(policy, *, allow_legacy_single=False):
         "eligible_modes",
     }
     if not legacy_single:
-        expected_repair_fields.add("campaign")
-    if set(repair) - expected_repair_fields:
+        required_repair.add("campaign")
+    unknown = set(repair) - required_repair
+    missing = required_repair - set(repair)
+    if unknown:
         errors.append("POLICY_UNKNOWN_REPAIR_FIELDS")
-    exact_values = {
-        "repair_round_definition": "patch_to_next_independent_review",
-        "ledger_schema": LEDGER_SCHEMA,
-        "evidence_trust_boundary": "ledger_is_untrusted_trusted_context_is_supplied_by_project_or_harness",
-        "base_auto_rounds": 2,
-        "autonomous_max_rounds": 3,
-        "task_change_resets_budget": False,
-        "model_change_resets_budget": False,
-        "promotion_requires_trusted_orchestrator": True,
-    }
-    for name, expected in exact_values.items():
-        if repair.get(name) != expected:
-            errors.append(f"POLICY_CONFLICT_{name.upper()}")
+    if missing:
+        errors.append("POLICY_MISSING_REPAIR_FIELDS")
+
     for name in ("base_auto_rounds", "autonomous_max_rounds"):
         value = repair.get(name)
         if not isinstance(value, int) or isinstance(value, bool) or value < 1:
             errors.append(f"POLICY_INVALID_{name.upper()}")
-    if not errors and repair["base_auto_rounds"] >= repair["autonomous_max_rounds"]:
+    base = repair.get("base_auto_rounds")
+    maximum = repair.get("autonomous_max_rounds")
+    if isinstance(base, int) and isinstance(maximum, int) and base >= maximum:
         errors.append("POLICY_INVALID_AUTO_ROUND_LIMITS")
+
     for name in (
-        "chain_identity_fields",
         "non_counting_actions",
+        "chain_identity_fields",
         "required_true_fields",
         "required_false_fields",
         "mechanical_decisions",
@@ -148,175 +163,126 @@ def validate_policy(policy, *, allow_legacy_single=False):
         "eligible_modes",
     ):
         value = repair.get(name)
-        if not isinstance(value, list) or not value or any(not isinstance(item, str) or not item for item in value):
+        if (
+            not isinstance(value, list)
+            or not value
+            or len(value) != len(set(value))
+            or any(not isinstance(item, str) or not item for item in value)
+        ):
             errors.append(f"POLICY_INVALID_{name.upper()}")
-    expected_lists = {
-        "chain_identity_fields": [
-            "repair_chain_id",
-            "finding_ids",
-            "closure_contract_hash",
-            "allowed_files_hash",
-        ],
-        "non_counting_actions": [
-            "diagnostic_evidence_only",
-            "record_only_correction",
-            "review_only",
-            "task_or_board_receipt_sync",
-            "test_rerun_without_patch",
-            "ua_without_patch",
-        ],
-        "required_true_fields": [
-            "dependencies_frozen",
-            "authority_frozen",
-            "root_cause_known",
-            "reviewer_capable",
-            "repairer_capable",
-            "within_cost_boundary",
-        ],
-        "required_false_fields": ["external_side_effect"],
-        "mechanical_decisions": ["MechanicallyEligible", "Stop", "Blocked"],
-        "promotion_decisions": [
-            "AutoRepairAllowed",
-            "ExtendRound3",
-            "EscalatedRepairAllowed",
-        ],
-        "eligible_modes": ["AutoRepair", "ExtendRound3", "EscalatedRepair"],
-    }
-    for name, expected in expected_lists.items():
-        if repair.get(name) != expected:
-            errors.append(f"POLICY_CONFLICT_{name.upper()}")
-    expected_record_only = {
-        "default_severity": ["P2", "P3"],
-        "p1_only_if": [
-            "can_authorize_unsafe_action",
-            "can_hide_blocking_finding",
-        ],
-    }
-    record_only = repair.get("record_only_finding")
-    if isinstance(record_only, dict) and set(record_only) - set(expected_record_only):
-        errors.append("POLICY_UNKNOWN_RECORD_ONLY_FIELDS")
-    if record_only != expected_record_only:
-        errors.append("POLICY_CONFLICT_RECORD_ONLY_FINDING")
-    required_sections = ["history", "round_3_progress", "post_stop"]
+
+    for name in (
+        "task_change_resets_budget",
+        "model_change_resets_budget",
+        "promotion_requires_trusted_orchestrator",
+    ):
+        if not isinstance(repair.get(name), bool):
+            errors.append(f"POLICY_INVALID_{name.upper()}")
+
+    errors.extend(_required_object_fields(
+        repair.get("record_only_finding"),
+        {"default_severity", "p1_only_if"},
+        "RECORD_ONLY_FINDING",
+    ))
+    errors.extend(_required_object_fields(
+        repair.get("history"),
+        {
+            "attempt_count_source",
+            "receipt_hash_algorithm",
+            "require_history_anchor",
+            "require_trusted_context",
+            "trusted_context_schema",
+            "require_independent_review_receipt_after_each_attempt",
+        },
+        "HISTORY",
+    ))
+    errors.extend(_required_object_fields(
+        repair.get("round_3_progress"),
+        {
+            "source",
+            "require_red_to_green",
+            "forbid_green_to_red",
+            "forbid_new_blocking_findings",
+            "severity_must_not_increase",
+            "evidence_coverage_must_strictly_increase",
+            "round_3_target_required",
+        },
+        "ROUND_3_PROGRESS",
+    ))
+    errors.extend(_required_object_fields(
+        repair.get("post_stop"),
+        {
+            "state",
+            "mode",
+            "ai_repair_allowed_with_explicit_authority",
+            "manual_implementation_required",
+            "default_authorized_attempts",
+            "authority_source",
+            "authority_must_bind",
+            "independent_review_after_each_attempt",
+            "history_resets",
+            "failure_decision",
+        },
+        "POST_STOP",
+    ))
     if not legacy_single:
-        required_sections.append("campaign")
-    for name in required_sections:
-        if not isinstance(repair.get(name), dict):
-            errors.append(f"POLICY_INVALID_{name.upper()}")
-    history = repair.get("history")
-    expected_history = {
-        "attempt_count_source": "validated_receipt_chain",
-        "receipt_hash_algorithm": "sha256_canonical_json",
-        "require_history_anchor": True,
-        "require_trusted_context": True,
-        "trusted_context_schema": TRUSTED_CONTEXT_SCHEMA,
-        "require_independent_review_receipt_after_each_attempt": True,
-    }
+        errors.extend(_required_object_fields(
+            repair.get("campaign"),
+            {
+                "authority_mode",
+                "ai_repair_allowed_with_explicit_authority",
+                "authority_source",
+                "authority_must_bind",
+                "profiles",
+                "scope_manifest",
+                "progress_source",
+                "progress_resets_no_progress_streak",
+                "task_change_resets_streak",
+                "model_change_resets_streak",
+                "chain_change_resets_streak",
+                "hard_stop_flags",
+                "independent_review_after_each_attempt",
+                "delivery_authority_separate",
+            },
+            "CAMPAIGN",
+        ))
+
+    history = repair.get("history", {})
     if isinstance(history, dict):
-        if set(history) - set(expected_history):
-            errors.append("POLICY_UNKNOWN_HISTORY_FIELDS")
-        for name, expected in expected_history.items():
-            if history.get(name) != expected:
-                errors.append(f"POLICY_CONFLICT_HISTORY_{name.upper()}")
-    progress = repair.get("round_3_progress")
-    expected_progress = {
-        "source": "latest_independent_review_receipt",
-        "require_red_to_green": True,
-        "forbid_green_to_red": True,
-        "forbid_new_blocking_findings": True,
-        "severity_must_not_increase": True,
-        "evidence_coverage_must_strictly_increase": True,
-        "round_3_target_required": True,
-    }
-    if isinstance(progress, dict):
-        if set(progress) - set(expected_progress):
-            errors.append("POLICY_UNKNOWN_PROGRESS_FIELDS")
-        for name, expected in expected_progress.items():
-            if progress.get(name) != expected:
-                errors.append(f"POLICY_CONFLICT_PROGRESS_{name.upper()}")
-    post_stop = repair.get("post_stop")
+        if history.get("trusted_context_schema") != TRUSTED_CONTEXT_SCHEMA:
+            errors.append("POLICY_CONFLICT_HISTORY_TRUSTED_CONTEXT_SCHEMA")
+        for name in (
+            "require_history_anchor",
+            "require_trusted_context",
+            "require_independent_review_receipt_after_each_attempt",
+        ):
+            if not isinstance(history.get(name), bool):
+                errors.append(f"POLICY_INVALID_HISTORY_{name.upper()}")
+
+    post_stop = repair.get("post_stop", {})
     if isinstance(post_stop, dict):
-        exact_post_stop = {
-            "state": "UserDecisionRequired",
-            "mode": "EscalatedRepair",
-            "ai_repair_allowed_with_explicit_authority": True,
-            "manual_implementation_required": False,
-            "default_authorized_attempts": 1,
-            "authority_source": "trusted_context_attested_chain_bound_authority_receipt",
-            "independent_review_after_each_attempt": True,
-            "history_resets": False,
-            "failure_decision": "Stop",
-        }
-        expected_post_stop_fields = set(exact_post_stop) | {"authority_must_bind"}
-        if set(post_stop) - expected_post_stop_fields:
-            errors.append("POLICY_UNKNOWN_POST_STOP_FIELDS")
-        for name, expected in exact_post_stop.items():
-            if post_stop.get(name) != expected:
-                errors.append(f"POLICY_CONFLICT_POST_STOP_{name.upper()}")
         default = post_stop.get("default_authorized_attempts")
         if not isinstance(default, int) or isinstance(default, bool) or default < 1:
             errors.append("POLICY_INVALID_DEFAULT_AUTHORIZED_ATTEMPTS")
-        binds = post_stop.get("authority_must_bind")
-        expected_binds = [
-            "repair_chain_digest",
-            "closure_contract_hash",
-            "allowed_files_hash",
-            "target_finding_ids",
-            "authorized_attempt_ids",
-        ]
-        if binds != expected_binds:
-            errors.append("POLICY_CONFLICT_AUTHORITY_MUST_BIND")
-    campaign = repair.get("campaign")
-    if not legacy_single and isinstance(campaign, dict):
-        expected_campaign = {
-            "authority_mode": "RepairCampaignAuthority",
-            "ai_repair_allowed_with_explicit_authority": True,
-            "authority_source": "trusted_context_attested_task_bound_campaign_receipt",
-            "authority_must_bind": [
-                "campaign_id",
-                "task_id",
-                "acceptance_contract_hash",
-                "allowed_scope_hash",
-                "profile",
-                "activation_chain_digest",
-                "activation_history_head_hash",
-            ],
-            "profiles": {
-                "core_product": {"max_consecutive_no_progress": 4},
-                "harness": {"max_consecutive_no_progress": 5},
-            },
-            "scope_manifest": {
-                "exact_files_field": "allowed_exact_files",
-                "path_prefixes_field": "allowed_path_prefixes",
-                "require_relative_normalized_paths": True,
-                "current_chain_files_must_be_subset": True,
-            },
-            "progress_source": "trusted_context_attested_campaign_state_receipt",
-            "progress_resets_no_progress_streak": True,
-            "task_change_resets_streak": False,
-            "model_change_resets_streak": False,
-            "chain_change_resets_streak": False,
-            "hard_stop_flags": [
-                "p0_finding",
-                "security_boundary_change",
-                "data_integrity_risk",
-                "scope_outside_campaign",
-                "irreversible_action",
-                "external_side_effect",
-                "test_oracle_weakened",
-                "unapproved_dependency_change",
-                "required_evidence_missing",
-            ],
-            "independent_review_after_each_attempt": True,
-            "delivery_authority_separate": True,
-        }
-        if set(campaign) - set(expected_campaign):
-            errors.append("POLICY_UNKNOWN_CAMPAIGN_FIELDS")
-        for name, expected in expected_campaign.items():
-            if campaign.get(name) != expected:
-                errors.append(f"POLICY_CONFLICT_CAMPAIGN_{name.upper()}")
-    return errors
 
+    campaign = repair.get("campaign")
+    if isinstance(campaign, dict):
+        profiles = campaign.get("profiles")
+        if not isinstance(profiles, dict) or not profiles:
+            errors.append("POLICY_INVALID_CAMPAIGN_PROFILES")
+        else:
+            for profile in profiles.values():
+                limit = profile.get("max_consecutive_no_progress") if isinstance(profile, dict) else None
+                if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+                    errors.append("POLICY_INVALID_CAMPAIGN_PROFILES")
+                    break
+        hard_stops = campaign.get("hard_stop_flags")
+        if not isinstance(hard_stops, list) or not hard_stops or len(hard_stops) != len(set(hard_stops)):
+            errors.append("POLICY_INVALID_CAMPAIGN_HARD_STOP_FLAGS")
+
+    if repair.get("ledger_schema") != LEDGER_SCHEMA:
+        errors.append("POLICY_CONFLICT_LEDGER_SCHEMA")
+    return list(dict.fromkeys(errors))
 
 def _ledger_uses_campaign(ledger):
     if not isinstance(ledger, dict):
@@ -1295,7 +1261,7 @@ def main(argv=None):
     parser = ReadOnlyParser(
         description="只读判定 receipt-backed AutoRepair / EscalatedRepair / RepairCampaign 边界。"
     )
-    default_policy = pathlib.Path(__file__).resolve().parents[1] / "references" / "CORE.md"
+    default_policy = pathlib.Path(__file__).resolve().parents[1] / "policy" / "repair-campaign.json"
     parser.add_argument("target", nargs="?", help="repair ledger JSON；使用 - 从 stdin 读取")
     parser.add_argument("--policy", default=str(default_policy))
     parser.add_argument("--trusted-context", help="由 harness / 只读项目快照 / 当前 Orchestrator 提供的独立 JSON")

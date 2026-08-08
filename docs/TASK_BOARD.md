@@ -1,12 +1,14 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-01
-> - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
-> - 当前阶段：`REL-005 Closed / Review Passed / UA7 Passed / PR #9/#10 Merged / Released v0.9.2 / Local Sync Verified / Branch Cleanup Verified`
-> - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
+> - 快照日期：2026-08-08
+> - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
+> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT In Progress，Review Passed / 后续五阶段 Draft`
+> - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
-## 当前执行任务（2026-08-01）
+## 当前执行任务（2026-08-08）
 
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Uncommitted / Unmerged / Not Released / Not Closed`。总合同拆成六个串行阶段；只允许 `ADF-V010-CORE-SPLIT` 当前进入 In Progress，后续阶段保持 Draft。Project Console 真实用户 UA 前禁止删除 Legacy，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`In Progress / Controlled / Review Passed / UA3 Pending / Uncommitted / Unmerged`。Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过；Round 3 `0/0/0/0`，稳定 findings 全部 Closed。执行位置 `D:/open-source/ai-dev-flow-wt/v010-core-split`，base=`origin/main@7f2686f`；待形成阶段 commit 后再进入 Review，未授权 merge、release、正式 Skill 同步或 Closed。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

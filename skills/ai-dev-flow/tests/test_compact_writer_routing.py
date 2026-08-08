@@ -16,6 +16,8 @@ def read(path):
 
 def policy_from(path):
     text = read(path)
+    if path.suffix == ".json":
+        return json.loads(text)
     match = re.search(
         r"<!-- POLICY_JSON_BEGIN -->\s*```json\s*(\{.*?\})\s*```\s*<!-- POLICY_JSON_END -->",
         text,
@@ -30,7 +32,8 @@ class V08SlimRuntimeTests(unittest.TestCase):
     def setUp(self):
         self.skill = read(SKILL_ROOT / "SKILL.md")
         self.core = read(REFERENCES / "CORE.md")
-        self.policy = policy_from(REFERENCES / "CORE.md")
+        self.policy = policy_from(SKILL_ROOT / "policy" / "core.json")
+        self.repair_policy = policy_from(SKILL_ROOT / "policy" / "repair-campaign.json")
 
     def test_version_and_contract_identity_are_independent(self):
         self.assertEqual(read(SKILL_ROOT / "VERSION").strip(), "0.9.2")
@@ -59,17 +62,31 @@ class V08SlimRuntimeTests(unittest.TestCase):
         for section in ("routes", "review", "safety"):
             with self.subTest(section=section):
                 self.assertEqual(self.policy[section], frozen[section])
-        self.assertNotEqual(self.policy["repair"], frozen["repair"])
+        self.assertNotIn("repair", self.policy)
+        self.assertNotEqual(self.repair_policy["repair"], frozen["repair"])
+
+    def test_unknown_input_pre_resolution_preserves_fail_closed_outcome(self):
+        frozen = policy_from(PROTOTYPE / "references" / "CORE.md")
+        unknown = self.policy["unknown_input"]
+        self.assertEqual(frozen["unknown_input"], "Blocked")
+        self.assertEqual(unknown["discoverable"], "InspectAndResolve")
+        for field in ("authority", "external_evidence", "rule_conflict", "unresolved_final"):
+            with self.subTest(field=field):
+                self.assertEqual(unknown[field], "Blocked")
+        for text in (self.skill, self.core):
+            self.assertIn("只读", text)
+            self.assertIn("未解析", text)
+            self.assertIn("不能进入 Lite/Tracked/Controlled", text)
 
     def test_default_runtime_is_two_files_and_within_budget(self):
         self.assertIn("SKILL.md", read(SKILL_ROOT / "README.md"))
-        self.assertIn("CORE.md", self.skill)
-        self.assertIn("默认运行时工作流输入只有本文件与 `CORE.md`", self.skill)
-        self.assertIn("不要默认加载 `PROMPTS.md`", self.skill)
+        self.assertIn("policy/core.json", self.skill)
+        self.assertIn("默认运行时工作流输入只有本文件与 `policy/core.json`", self.skill)
+        self.assertIn("不要默认加载 Repair、`PROMPTS.md`", self.skill)
 
         total_lines = sum(
             len(read(path).splitlines())
-            for path in (SKILL_ROOT / "SKILL.md", REFERENCES / "CORE.md")
+            for path in (SKILL_ROOT / "SKILL.md", SKILL_ROOT / "policy" / "core.json")
         )
         self.assertLessEqual(total_lines, 400)
 
@@ -107,19 +124,16 @@ class V08SlimRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(self.policy["review"]["missing_authority_or_capability"], "Blocked")
 
-    def test_reviewer_selection_is_native_first_and_never_auto_crosses_harnesses(self):
-        selection = self.policy["reviewer_selection"]
-        self.assertEqual(selection["default"], "same_harness_native_isolated")
-        self.assertEqual(selection["cross_harness"], "explicit_user_authority_only")
-        self.assertEqual(selection["native_unavailable"], "Blocked")
-        self.assertEqual(selection["same_context_self_review"], "Pending")
+    def test_core_policy_is_harness_and_model_neutral(self):
+        serialized = json.dumps(self.policy, ensure_ascii=False)
+        for name in ("Codex", "Kimi", "OpenCode", "ZCode", "Claude", "GPT-5"):
+            self.assertNotIn(name, serialized)
         workflow = read(REFERENCES / "WORKFLOW.md")
         agents_compat = read(REFERENCES / "AGENTS_COMPAT.md")
-        for text in (self.skill, self.core, workflow, agents_compat):
+        for text in (self.skill, workflow, agents_compat):
             with self.subTest(source=text[:40]):
                 self.assertIn("不得自动", text)
                 self.assertIn("Harness", text)
-        self.assertIn("Kimi 原生 `Agent`", self.core)
         self.assertIn("只有用户明确指定外部 Reviewer 来源时", workflow)
         self.assertIn("native-unavailable=`Blocked`", read(
             ROOT
@@ -129,7 +143,7 @@ class V08SlimRuntimeTests(unittest.TestCase):
         ))
 
     def test_repair_policy_has_autonomous_and_user_authorized_boundaries(self):
-        repair = self.policy["repair"]
+        repair = self.repair_policy["repair"]
         self.assertEqual(repair["repair_round_definition"], "patch_to_next_independent_review")
         self.assertEqual(repair["base_auto_rounds"], 2)
         self.assertEqual(repair["autonomous_max_rounds"], 3)
@@ -253,6 +267,8 @@ class V08SlimRuntimeTests(unittest.TestCase):
             "GIT_PRECHECK.md",
             "DIFF_REVIEW.md",
             "V0.8_MIGRATION.md",
+            "REPAIR_BASIC.md",
+            "REPAIR_CAMPAIGN.md",
         )
         for name in names:
             with self.subTest(name=name):

@@ -11,9 +11,9 @@
 支持 Skill 的 agent 先读：
 
 1. `SKILL.md`
-2. `references/CORE.md`
+2. `policy/core.json`
 
-这两份文件是默认运行时内核。不要预加载整个 `references/`，也不要默认加载 `PROMPTS.md`。
+这两份文件是默认运行时内核。不要预加载 Repair、整个 `references/` 或 `PROMPTS.md`。
 
 ## Codex Goal 自动落地
 
@@ -33,7 +33,7 @@ Codex 原生 Goal 负责持续运行，`ai-dev-flow` 负责范围、验证、Rev
 | `Tracked` | 跨会话、范围较大或需要证据留存 | TASK；风险命中时才调用只读 Reviewer |
 | `Controlled` | D 级、高风险、真实环境、交付或不可逆动作 | 完整 TASK；关键动作前强制独立 Review |
 
-准确触发条件只在 `references/CORE.md` 的 `POLICY_JSON` 中维护。输入不完整或权限不明时为 `Blocked`，不猜测降级。
+准确触发条件只在 `policy/core.json` 中维护。本地可发现的信息先检查；权限、外部证据或规则冲突不明时为 `Blocked`。
 
 ## 默认保留什么
 
@@ -70,14 +70,16 @@ TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前 Skill 包版
 - Controlled 在验收建议、delivery、merge、release 前强制 Review。
 - Reviewer 默认由当前 Harness 自身建立原生只读隔离上下文；不得自动跨 Harness，只有用户明确指定时才允许。
 - Reviewer 只审查，Repairer 只处理稳定 finding ID。
-- `AutoRepair` 基础预算 2 轮；只有冻结 finding 的 RED→GREEN、无回归且证据覆盖增加时才增加第 3 轮。
-- 3 是自主 repair loop 上限。`Stop` 后可授权默认一次的 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`。
-- campaign 在核心产品连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决；硬停止不等待计数耗尽。
-- repair chain 绑定 finding 和 closure contract；换 TASK 或模型不重置，失败回到 `Stop`，外部副作用不得自动重试。
+- 普通 finding 才读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：基础预算 2 轮，有进展时最多增加 1 轮，每次 patch 后独立 Review。
+- receipt chain、trusted context、EscalatedRepair 与 Campaign 只在显式严格场景读取 `policy/repair-campaign.json` 与 `references/REPAIR_CAMPAIGN.md`。
+- 严格 campaign 保留 4/5 次无进展阈值和 hard stop；外部副作用不得自动重试。
 
 ## 按需文档
 
 - 执行细节：`references/WORKFLOW.md`
+- 核心 policy：`policy/core.json`
+- 普通 Repair：`policy/repair-basic.json`、`references/REPAIR_BASIC.md`
+- 严格 Campaign：`policy/repair-campaign.json`、`references/REPAIR_CAMPAIGN.md`
 - TASK 模板：`references/TASK_TEMPLATE.md`
 - 单会话 Tracked 简版模板：`references/TASK_TEMPLATE_BRIEF.md`
 - 代码审查：`references/CODE_REVIEW_CHECKLIST.md`
@@ -107,7 +109,7 @@ python skills/ai-dev-flow/scripts/workflow_lint.py . --format human
 python skills/ai-dev-flow/scripts/repair_gate.py repair-ledger.json --trusted-context trusted-context.json --format human
 ```
 
-lint 通过只代表可确定结构规则通过，不代表 Review、UA、merge、release 或 Closed。
+`repair_gate.py` 默认直接读取 JSON campaign policy；旧 `CORE.md POLICY_JSON` 只作 deprecated 迁移输入。lint 或机械 gate 通过都不代表 Review、UA、merge、release 或 Closed。
 
 ## 本地 Dashboard
 
