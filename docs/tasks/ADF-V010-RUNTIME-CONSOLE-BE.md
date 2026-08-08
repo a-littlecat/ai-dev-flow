@@ -43,9 +43,13 @@
 - [x] `session` / `status --watch` 与 API 共用同一 Console Builder。
 - [x] `/console` schema、ETag/304、loopback/method allowlist 和敏感字段排除通过。
 - [x] Queue 分组与排序正确；多候选不伪造唯一主任务；Snapshot v1 兼容。
-- [x] 不新增外部 Python 依赖；全量相关测试与独立只读 Review通过。
+- [x] 外部复审修复后的全量相关测试与新独立只读 Review 通过。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
+
+- `ADF-V010-STACKED-EXT-P1-CONSOLE-001`：真实 `ActionEngine` 对 Ready 任务返回 `execute + needs_authority`，旧 Builder 将其送入 human_attention。修复：先按阻断事实 fail-closed，再把 Ready 的真实 execute/actionable 或 execute/needs_authority 明确视为 ready candidate；集成测试直接使用真实 ActionEngine 输出，不伪造 actionable。
+- 外部 P2：无 Runtime 时 `runtime_facts_at=null`；ConsoleItem 增加 `status_summary`；ambiguity 只统计显式候选的最高排序并列；active_work 同优先级按最近活动降序；首次 Runtime 目录创建用真实双进程回归证明 race-safe。
+- 当前外部修复已吸收 #15 `0e4c2ff`，实现与 fresh backend `204/204`、Skill `119/119`、Runtime bundle `43/43` 已通过。新隔离只读 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`；Reviewer 独立通过真实 ActionEngine 探针、bundle/codegen、合同同步、workflow lint 与 diff check。其只读沙箱不能创建系统临时目录，因此未在该沙箱内重跑会写临时目录的完整 backend/Skill/integration 测试；动态全量证据来自本阶段主执行环境的 fresh run，不把沙箱限制误报为测试通过。
 
 - Attempt AR-1：独立只读 Review Round 1 为 `Needs Fix 0/5/0/0`；Reviewer 进程未向 Harness 暴露可引用 session id，收据标记为 `harness-not-exposed`。
 - RED：目录在检查前可经 symlink/Junction 逃逸；未来时间戳可长期保持 live；并发 start 存在覆盖窗口；Queue Engine 会压缩同任务多动作并使用非正式 eligibility；规范 Skill Runtime 尚未包含 Stage 3 后端与合同。
@@ -60,13 +64,13 @@
 
 ## Outcome
 
-- Base / Diff：base=0b82d7c;diff=f7f3a63。
+- Base / Diff：base=d0a4281;diff=d0a4281..46a16b7
 - 隔离位置：`codex/v010-runtime-console-be` / `D:/open-source/ai-dev-flow-wt/v010-runtime-console-be`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CAPABILITY-REVIEW 历史。
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
-- 验证证据：backend `202/202`（普通 symlink 权限测试 skip 2，Windows Junction 真实回退测试通过）；Skill `113/113`；frontend codegen/check、typecheck、lint、Vitest `95/95`、build 与 Playwright `96/96` 通过；Runtime bundle `43/43` 且跨 autocrlf 一致；integration 新增 installed-layout 与便携 Console API 用例通过，完整套件仅保留 Stage 0 已登记 artifact guard 与 state-matrix 基线债务。
-- Review findings：Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`，全部稳定 finding Closed。
-- Delivery：implementation=`f7f3a63`；receipt=`587bdc1`；branch `codex/v010-runtime-console-be` 已推送；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
-- 状态边界：Review / Passed / UA3 Pending / Committed (`f7f3a63`) / Pushed / Draft PR #16 / Unmerged / Not Released / Not Closed。
+- 验证证据：外部修复 fresh be003 `21/21`（skip 2）、backend `204/204`（skip 2）、Skill `119/119`、Runtime bundle `43/43`、codegen check 与 `git diff --check` 已通过；frontend 与 integration 待在上层 UI 合并后执行完整验证。完整 integration 已知边界为 `51/52`，唯一 artifact guard 失败不得误报为全绿。
+- Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮外部修复后的新隔离只读 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`，无开放 finding。
+- Delivery：初始 implementation=`f7f3a63`、receipt=`587bdc1`；外部修复 implementation=`46a16b7`；branch `codex/v010-runtime-console-be` 待推送当前收据；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
+- 状态边界：External Repair Review Passed / UA3 Pending / External Repair Committed `46a16b7` / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：按第 18 节从本阶段 delivery head 串行进入 Project Console UI；不 merge 本 PR。
+- 下一步：提交/push #16，再以普通 merge 更新 #17。禁止提前进入正式用户 UA。

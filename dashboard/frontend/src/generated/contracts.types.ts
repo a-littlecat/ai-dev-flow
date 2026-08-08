@@ -427,7 +427,7 @@ disclaimer: string
 export interface ConsoleFreshness {
 task_facts_at: string
 git_facts_at: string
-runtime_facts_at: string
+runtime_facts_at: (string | null)
 }
 
 export interface ConsoleCounts {
@@ -447,6 +447,7 @@ session_id: NullableString
 harness_id: NullableString
 phase: ("planning" | "implementing" | "validating" | "reviewing" | "repairing" | "waiting_user" | "blocked" | "done" | null)
 next_step: string
+status_summary: string
 why_now_codes: StringArray
 blocking_task_ids: StringArray
 unblocks_count: number

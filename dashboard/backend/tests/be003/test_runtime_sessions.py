@@ -211,6 +211,30 @@ class RuntimeSessionStoreTests(unittest.TestCase):
         self.assertCountEqual(["success", "conflict"], outcomes)
         self.assertEqual(1, len(self.store.list()))
 
+    def test_first_runtime_directory_creation_is_safe_across_processes(self):
+        script = (
+            "import pathlib,sys;"
+            "from ai_dev_flow_dashboard.runtime import RuntimeSessionStore;"
+            "store=RuntimeSessionStore(pathlib.Path(sys.argv[1]),runtime_root=pathlib.Path(sys.argv[2]));"
+            "store.start(session_id=sys.argv[3],task_id='TEST-001',harness_id='codex',phase='implementing',next_step='work')"
+        )
+        environment = os.environ.copy()
+        environment["PYTHONPATH"] = str(REPO_ROOT / "dashboard" / "backend" / "src")
+        processes = [
+            subprocess.Popen(
+                [sys.executable, "-B", "-X", "utf8", "-c", script, str(self.project), str(self.runtime), session_id],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                env=environment,
+            )
+            for session_id in ("first-a", "first-b")
+        ]
+        results = [process.communicate(timeout=20) for process in processes]
+        self.assertEqual([0, 0], [process.returncode for process in processes], results)
+        self.assertEqual(["first-a", "first-b"], sorted(item["session_id"] for item in self.store.list()))
+
     def test_abandoned_process_lock_is_released_by_the_operating_system(self):
         script = (
             "import pathlib,time;"
@@ -278,7 +302,7 @@ class RuntimeSessionStoreTests(unittest.TestCase):
         )
         if result.returncode != 0:
             self.skipTest("junction creation is unavailable")
-        with mock.patch.object(type(self.store.project_dir), "is_junction", new=None):
+        with mock.patch.object(type(self.store.project_dir), "is_junction", new=None, create=True):
             with self.assertRaises(RuntimeSessionError):
                 self.store.start(
                     session_id="junction-escape",

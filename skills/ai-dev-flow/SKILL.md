@@ -98,14 +98,14 @@ receipt chain、trusted context、EscalatedRepair 和 Repair Campaign 不在默�
 
 ## 按需 reference
 
-只有当前动作确实需要时，最多选择一份最相关文件：
+只有当前动作确实需要时，读取满足该动作所需的最小 reference 集合。单一主题通常只读一份；下列明确标注的必需组合必须共同读取，不能为了“一份”限制而漏掉合同：
 
 - 创建/更新 Tracked 或 Controlled TASK：`TASK_TEMPLATE.md`（符合单会话条件的 Tracked 任务可用 `TASK_TEMPLATE_BRIEF.md`）
 - 普通 finding：`policy/repair-basic.json` + `REPAIR_BASIC.md`
 - 显式严格自动化：`policy/repair-campaign.json` + `REPAIR_CAMPAIGN.md`
 - 需要完整执行细节：`WORKFLOW.md`
 - 独立代码审查：`CODE_REVIEW_CHECKLIST.md`
-- Harness 能力与 Review 选择：`CAPABILITY_REQUIREMENTS.md` + `REVIEW_RECIPES.md`；需要具体适配信息时再读一份 `adapters/*.json`
+- Harness 能力与 Review 选择（必需组合）：`CAPABILITY_REQUIREMENTS.md` + `REVIEW_RECIPES.md`；需要具体适配信息时再读对应的一份 `adapters/*.json`
 - 用户动作等级：`ACCEPTANCE_GUIDE.md`
 - Git/diff 专项：`GIT_PRECHECK.md` 或 `DIFF_REVIEW.md`
 - v0.7 兼容/迁移：`V0.8_MIGRATION.md`

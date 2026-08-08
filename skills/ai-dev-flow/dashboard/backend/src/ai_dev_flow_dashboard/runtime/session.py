@@ -330,17 +330,21 @@ class RuntimeSessionStore:
                 temporary.unlink()
 
     def _prepare_directories(self) -> None:
-        if not self.runtime_root.exists():
-            self.runtime_root.mkdir(parents=True, exist_ok=False)
-        self._assert_safe_existing(self.runtime_root)
-        if not self.project_dir.exists():
-            self.project_dir.mkdir(exist_ok=False)
-        self._assert_safe_existing(self.project_dir)
-        if not self.sessions_dir.exists():
-            self.sessions_dir.mkdir(exist_ok=False)
-        self._assert_safe_existing(self.sessions_dir)
+        self._ensure_directory(self.runtime_root, parents=True)
+        self._ensure_directory(self.project_dir)
+        self._ensure_directory(self.sessions_dir)
         if self.sessions_dir.resolve() != self.sessions_dir:
             raise RuntimeSessionError("runtime session directory escaped its root")
+
+    @classmethod
+    def _ensure_directory(cls, path: Path, *, parents: bool = False) -> None:
+        try:
+            path.mkdir(parents=parents, exist_ok=False)
+        except FileExistsError:
+            pass
+        except OSError as exc:
+            raise RuntimeSessionError(f"cannot create runtime directory: {path}") from exc
+        cls._assert_safe_existing(path)
 
     @classmethod
     def _assert_safe_existing(cls, path: Path) -> None:

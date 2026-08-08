@@ -2,16 +2,16 @@
 
 > - 快照日期：2026-08-08
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / 前三阶段已交付 Draft PR / PROJECT-CONSOLE-FE In Progress / 后续两阶段 Draft`
+> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 外部修复已推送且 UA Pending / PROJECT-CONSOLE-FE 外部修复进行中 / 后续两阶段禁止启动`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
 ## 当前执行任务（2026-08-08）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Committed 9ac594d / Unmerged / Not Released / Not Closed`。总合同拆成六个串行阶段；CORE-SPLIT 已完成 Review 与实现提交，后续阶段仍按依赖串行。Project Console 真实用户 UA 前禁止删除 Legacy，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`Review / Controlled / Review Passed / UA3 Pending / Committed 9ac594d + receipt 314ef09 / Pushed / Draft PR #14 / Unmerged`。Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过；Round 3 `0/0/0/0`，稳定 findings 全部 Closed。执行位置 `D:/open-source/ai-dev-flow-wt/v010-core-split`，base=`origin/main@7f2686f`；未授权 merge、release、正式 Skill 同步或 Closed。
-- `ADF-V010-CAPABILITY-REVIEW`：`Review / Controlled / Review Passed / UA3 Pending / Committed 384f96f + receipt 0b82d7c / Pushed / Draft PR #15 / Unmerged`。stacked base=`CORE-SPLIT delivery head 9a8642a`；能力驱动 Review、v0.10 Contract、Adapter 与最小 Dashboard 兼容已通过全量验证和 ER-1 独立复审；Stage 3 已从该 delivery head 串行启动。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`Review / Controlled / Review Passed Round 3 0/0/0/0 / UA3 Pending / Committed f7f3a63 + receipt 587bdc1 / Pushed / Draft PR #16 / Unmerged`。base=`CAPABILITY-REVIEW delivery head 0b82d7c`；Runtime Session、Console Builder、CLI、只读 `/api/v1/console` 与 43/43 规范 Runtime bundle 已完成验证和独立只读 Review；session=`019fe173-997c-7ea1-af34-37c61d437857`。未 merge、release、同步本机 Skill 或 Closed。
-- `ADF-V010-PROJECT-CONSOLE-FE`：`Candidate Ready / Controlled / Review Passed Round 3 0/0/0/0 / UA5 Pending user_only / Committed da82235 + receipt cd728eb / Pushed / Draft PR #17 / Unmerged`。base=`RUNTIME-CONSOLE-BE delivery head 95bc31d`；默认 Console、network/legacy 回退、revision/ETag/stale 保护、慢轮询与可访问性已通过全量自动化、真实浏览器 Design QA 和两轮 AutoRepair 后独立复审；session=`019fe1b4-e054-7500-b22a-ab233f72fc2c`。必须停在真实用户 UA，不得提前退役 Legacy。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 外部修复已通过新隔离 Review 并推送；#17 正在吸收下层并处理前端/UX finding。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。
+- `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 0e4c2ff / Draft PR #15 / Unmerged`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Review Passed / Controlled / UA3 Pending / Pushed 21ea7ed / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；新隔离 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`。
+- `ADF-V010-PROJECT-CONSOLE-FE`：`External Review Needs Fix / Controlled / Repair In Progress / Review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged`。正在修复可见/隐藏/失败退避刷新、status_summary 展示、why_now 用户文案与 clipboard 降级；历史 Passed 收据不可复用。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
