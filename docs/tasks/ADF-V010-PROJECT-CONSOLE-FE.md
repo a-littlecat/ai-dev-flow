@@ -11,7 +11,7 @@
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -59,12 +59,13 @@
 
 ## Outcome
 
-- Base / Diff：base=ab0f8fd;diff=ab0f8fd..working-tree。
+- Base / Diff：base=ab0f8fd;diff=ab0f8fd..5213d0b。
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `204/204`（skip 2）、Skill `119/119`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `108/108`；visible/hidden 轮询、Clipboard 降级、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.13 integration 完整套件 `51/52`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，拒绝当前 stacked 重构差异；无运行态失败。workflow lint `errors=0/violations=0/warnings=1`，唯一 warning 为提交前 lifecycle 历史不可验证。
 - Review findings：外部修复首轮 session `019fe259-ae28-7772-a8d8-3bdd29501821` 为 `Needs Fix 0/1/1/0`；修复后 session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`，全部稳定 finding Closed。
-- 状态边界：External Repair Review Passed / UA5 Pending user_only / Current Repair Uncommitted / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- Delivery：初始 implementation=`da82235`、receipt=`cd728eb`；外部修复 implementation=`5213d0b`、receipt=本次事实收据提交；branch `codex/v010-project-console-fe` 待推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
+- 状态边界：External Repair Review Passed / UA5 Pending user_only / External Repair Committed `5213d0b` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
 - 下一步：仅提交/push #17，并停在 `UA5 Pending user_only`，等待用户在真实 CADCat 与两个真实 Harness 任务上主动开始验收；不得提前执行 LEGACY-RETIRE。

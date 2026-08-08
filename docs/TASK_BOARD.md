@@ -2,16 +2,16 @@
 
 > - 快照日期：2026-08-08
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 外部修复已推送且 UA Pending / PROJECT-CONSOLE-FE 外部修复进行中 / 后续两阶段禁止启动`
+> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 外部修复已推送且 UA Pending / PROJECT-CONSOLE-FE 外部修复 Review Passed、UA Pending / 后续两阶段禁止启动`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
 ## 当前执行任务（2026-08-08）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 外部修复已通过新隔离 Review 并推送；#17 正在吸收下层并处理前端/UX finding。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 外部修复已通过新隔离 Review 并推送；#17 外部修复已通过新隔离 Review 并提交，待推送后停在用户 UA 门禁。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
 - `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。
 - `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 0e4c2ff / Draft PR #15 / Unmerged`。
 - `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Follow-up Review Passed / Controlled / UA3 Pending / Pushed 626e65d / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；portable integration 已同步验证 Ready 进入 `ready_queue`，follow-up Review session `019fe250-5410-7743-a734-2758ad74ebb7` 为 `Passed 0/0/0/0`。
-- `ADF-V010-PROJECT-CONSOLE-FE`：`External Review Needs Fix / Controlled / Repair In Progress / Review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged`。正在修复可见/隐藏/失败退避刷新、status_summary 展示、why_now 用户文案与 clipboard 降级；历史 Passed 收据不可复用。
+- `ADF-V010-PROJECT-CONSOLE-FE`：`External Repair Review Passed / Controlled / UA5 Pending user_only / Committed 5213d0b / Draft PR #17 / Unmerged`。可见 2s/隐藏 10s/失败指数退避、status_summary、why-now 用户文案与 clipboard 降级已通过 fresh 验证；Review session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`。等待用户在真实 CADCat 与两个真实 Harness 任务上主动验收。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
