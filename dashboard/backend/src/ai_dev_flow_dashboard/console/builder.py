@@ -124,9 +124,8 @@ class ConsoleBuilder:
         queues["blocked"].sort(key=self._activity_key)
         queues["stale_sessions"].sort(key=self._activity_key)
         candidates = [
-            (self._primary_candidate_key(item), item)
-            for name in ("active_work", "human_attention", "ready_queue")
-            for item in queues[name]
+            (self._ready_rank(item), item)
+            for item in queues["ready_queue"]
         ]
         highest_candidates = []
         if candidates:
@@ -153,13 +152,13 @@ class ConsoleBuilder:
             "counts": {name: len(items) for name, items in queues.items()},
             **queues,
             "recent_changes": self._recent_changes(published, sessions),
-            "ambiguity": {
+            "ready_ambiguity": {
                 "has_unique_primary": len(highest_candidates) == 1,
                 "candidate_count": len(highest_candidates),
                 "message": (
-                    "当前有唯一主候选"
+                    "当前有唯一 Ready 主候选"
                     if len(highest_candidates) == 1
-                    else "当前没有唯一主任务"
+                    else "当前没有唯一 Ready 主候选"
                 ),
             },
             "disclaimer": DISCLAIMER,
@@ -234,7 +233,7 @@ class ConsoleBuilder:
             "priority": task.get("priority") or "medium",
             "last_activity_at": session.get("updated_at") if session else None,
             "freshness": session.get("freshness") if session else task.get("freshness", "fresh"),
-            "source_kinds": ["task", "git", *( ["runtime"] if session else [] )],
+            "source_kinds": self._source_kinds(task, actions, session),
             "branch": session.get("branch") if session else None,
             "worktree": session.get("worktree") if session else None,
             "action_kind": (action or {}).get("action_kind", "none"),
@@ -305,6 +304,12 @@ class ConsoleBuilder:
             return "需要补充证据"
         if not action:
             return "核对 TASK 与运行时状态"
+        if queue == "ready_queue" and action.get("action_kind") == "execute":
+            return (
+                "尚未授权自动执行"
+                if action.get("eligibility") == "needs_authority"
+                else "开始执行任务"
+            )
         return {
             "execute": "继续执行任务",
             "review": "进行独立 Review",
@@ -321,7 +326,7 @@ class ConsoleBuilder:
         if queue == "human_attention":
             return "任务等待用户处理"
         if queue == "ready_queue":
-            return "任务已就绪，可以开始"
+            return "可以作为下一项开始"
         if queue == "blocked":
             return "任务当前受阻"
         return str(task.get("lifecycle") or (action or {}).get("action_kind") or "状态待核对")
@@ -347,11 +352,14 @@ class ConsoleBuilder:
 
     @staticmethod
     def _ready_key(item):
+        return (*ConsoleBuilder._ready_rank(item), item.get("task_id") or "")
+
+    @staticmethod
+    def _ready_rank(item):
         return (
             PRIORITY.get(item["priority"], 1),
             -item.get("unblocks_count", 0),
             ConsoleBuilder._descending_time(item.get("last_activity_at")),
-            item.get("task_id") or "",
         )
 
     @staticmethod
@@ -361,13 +369,16 @@ class ConsoleBuilder:
         return -dt.datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
 
     @staticmethod
-    def _primary_candidate_key(item):
-        queue = item["queue"]
-        priority = PRIORITY.get(item["priority"], 1)
-        activity = ConsoleBuilder._descending_time(item.get("last_activity_at"))
-        if queue == "active_work":
-            return (0, priority, activity)
-        if queue == "human_attention":
-            human_rank = 0 if item.get("phase") == "waiting_user" else 1 if "user_decision" in item.get("action_kinds", ()) else 2
-            return (1, human_rank, priority)
-        return (2, priority, -item.get("unblocks_count", 0), activity)
+    def _source_kinds(task, actions, session):
+        kinds = {"task"}
+        provenance = list(task.get("provenance", ()))
+        provenance.extend(
+            item
+            for action in actions
+            for item in action.get("evidence", ())
+        )
+        if any(item.get("source_type") == "git" for item in provenance):
+            kinds.add("git")
+        if session is not None:
+            kinds.add("runtime")
+        return [kind for kind in ("task", "git", "runtime") if kind in kinds]

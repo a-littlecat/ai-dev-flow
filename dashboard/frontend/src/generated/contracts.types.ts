@@ -420,7 +420,7 @@ ready_queue: ConsoleItem[]
 blocked: ConsoleItem[]
 stale_sessions: ConsoleItem[]
 recent_changes: ConsoleRecentChange[]
-ambiguity: ConsoleAmbiguity
+ready_ambiguity: ConsoleAmbiguity
 disclaimer: string
 }
 

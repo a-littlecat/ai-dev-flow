@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
@@ -56,6 +56,8 @@
 - Fresh 验证：backend `204/204`（skip 2）、Skill `119/119`、frontend Vitest `109/109` 与 Playwright `108/108`、typecheck/lint/build/codegen、Runtime bundle `43/43`、workflow lint `0 errors / 0 violations / 1 warning`、diff check 均通过。Python 3.13 full integration 为 `51/52`，唯一失败是冻结 artifact guard，`baseline_preserved=true`；portable、真实 proxy、真实异常 state-matrix 等其余 51 项均通过。
 - Review session `019fe259-ae28-7772-a8d8-3bdd29501821` 为 `Needs Fix 0/1/1/0`：`P1-003` 指出 `ACTIVE_RUNTIME_SESSION` 缺用户文案，`P2-003` 指出当前 stacked repair base 落后。修复：补齐活跃会话文案，并由单测直接读取 ConsoleBuilder 源码、覆盖其全部 7 个固定原因码；当前 base/diff 更新为 `ab0f8fd..working-tree`。等待修复后新隔离 Review。
 - 修复后新隔离只读 Review session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`；`P1-003`、`P2-003` 均 Closed，无开放 finding。Reviewer 复核 7/7 ConsoleBuilder 固定码、ActionEngine 已知原因码、浏览器报告、43/43 Runtime bundle 与当前 stacked ancestry；未代替用户 UA。
+- `ADF-V010-EXT-R2-P1-001`：前端 Ready 区改用 `ready_ambiguity`，文案只描述 Ready 最高排名并列，不再把 active/human 写成“唯一主候选”。Ready 卡片收敛为“可以作为下一项开始 / 尚未授权自动执行 / 开始执行任务”，手动按钮只打开任务路由，不安静授予自动执行 authority。
+- 本轮 P3：Clipboard API 与 `execCommand` 都失败时，卡片内显示只读、可选择的完整文本，并把焦点恢复到触发按钮；Playwright 使用真实 DOM 回归覆盖最终失败路径。当前 `Needs Fix / Review Pending / UA5 Pending user_only`，历史 Passed 收据不适用于本轮 diff。
 
 ## Outcome
 

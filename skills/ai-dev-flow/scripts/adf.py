@@ -5,18 +5,16 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from runtime_bundle import BundlePreflightError, preflight_bundle
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-CANDIDATES = (
-    SKILL_ROOT / "dashboard" / "backend" / "src",
-    SKILL_ROOT.parents[1] / "dashboard" / "backend" / "src",
-)
-for candidate in CANDIDATES:
-    if (candidate / "ai_dev_flow_dashboard" / "cli.py").is_file():
-        sys.path.insert(0, str(candidate))
-        break
-else:
-    raise SystemExit("adf error: Dashboard backend runtime is missing")
+sys.dont_write_bytecode = True
+try:
+    backend_src = preflight_bundle(SKILL_ROOT)
+except BundlePreflightError as exc:
+    print(f"adf error: {exc}", file=sys.stderr)
+    raise SystemExit(2) from None
+sys.path.insert(0, str(backend_src))
 
 from ai_dev_flow_dashboard.cli import main  # noqa: E402
 

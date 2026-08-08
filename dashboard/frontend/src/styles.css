@@ -370,6 +370,20 @@ body {
   gap: 7px;
   margin-top: 14px;
 }
+
+.console-copy-fallback {
+  flex: 1 1 100%;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.55rem;
+  color: var(--text);
+  background: var(--surface-raised);
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
 .console-action { padding: 4px 9px; font-size: 12px; background: var(--surface); }
 
 .console-ambiguity {

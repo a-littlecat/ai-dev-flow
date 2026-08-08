@@ -71,8 +71,8 @@ export function makeConsoleItem(overrides: Partial<ConsoleItem> = {}): ConsoleIt
     session_id: null,
     harness_id: null,
     phase: null,
-    next_step: "继续执行任务",
-    status_summary: "任务已 Ready，可按授权边界继续",
+    next_step: "尚未授权自动执行",
+    status_summary: "可以作为下一项开始",
     why_now_codes: ["DEPENDENCIES_SATISFIED"],
     blocking_task_ids: [],
     unblocks_count: 0,
@@ -112,7 +112,7 @@ export function makeProjectConsole(
     blocked: [],
     stale_sessions: [],
     recent_changes: [],
-    ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一主任务" },
+    ready_ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一 Ready 主候选" },
     disclaimer: "Project Console 是只读投影。",
   };
   const result = { ...base, ...overrides };

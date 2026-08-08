@@ -12,7 +12,7 @@
   "approval_gate": "manual",
   "runtime_hooks": "none",
   "session_events": "manual",
-  "runtime_session_bridge": "manual",
+  "runtime_session_bridge": {"type": "manual", "command": null, "hooks": {}},
   "preferred_review_recipe": "R1",
   "fallback_review_recipe": "R5",
   "formal_skill_sync_method": "fixture only",

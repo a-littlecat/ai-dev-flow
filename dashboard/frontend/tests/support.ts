@@ -48,7 +48,7 @@ export function makeProjectConsole(snapshotRevision: string, overrides: Partial<
     blocked: [],
     stale_sessions: [],
     recent_changes: [],
-    ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一主任务" },
+    ready_ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一 Ready 主候选" },
     disclaimer: "只读投影",
     ...overrides,
   });

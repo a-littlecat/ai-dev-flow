@@ -172,10 +172,10 @@ export class ProjectConsoleView {
     const section = this.queueSection("下一步队列", "ready", data.ready_queue, state);
     const ambiguity = el(
       "p",
-      `console-ambiguity${data.ambiguity.has_unique_primary ? " ambiguity-unique" : ""}`,
-      data.ambiguity.has_unique_primary
-        ? "当前存在唯一主候选。"
-        : `当前没有唯一主任务，存在 ${data.ambiguity.candidate_count} 个可执行候选。`,
+      `console-ambiguity${data.ready_ambiguity.has_unique_primary ? " ambiguity-unique" : ""}`,
+      data.ready_ambiguity.has_unique_primary
+        ? "当前存在唯一 Ready 主候选。"
+        : `当前没有唯一 Ready 主候选，最高排名并列 ${data.ready_ambiguity.candidate_count} 项。`,
     );
     ambiguity.setAttribute("role", "status");
     section.insertBefore(ambiguity, section.children[1] ?? null);
@@ -211,7 +211,8 @@ export class ProjectConsoleView {
     const actions = el("div", "console-card-actions");
     const context = [item.task_id ?? item.title, item.session_id].filter(Boolean).join(" · ");
     if (item.task_id) {
-      actions.append(this.button("查看任务", `task:${item.task_id}`, item.task_id, () => this.store.openTaskRoute(item.task_id!), `查看任务 ${context}`));
+      const actionText = tone === "ready" ? "开始执行任务" : "查看任务";
+      actions.append(this.button(actionText, `task:${item.task_id}`, item.task_id, () => this.store.openTaskRoute(item.task_id!), `${actionText} ${context}`));
       const path = state.snapshot?.tasks.find((task) => task.task_id === item.task_id)?.source_path;
       if (path) {
         actions.append(this.copyButton("复制 TASK 路径", `task-path:${item.task_id}`, item.task_id, path, `复制 TASK 路径 ${context}`));
@@ -260,11 +261,26 @@ export class ProjectConsoleView {
   }
 
   private copyButton(text: string, key: string, taskId: string | null, value: string, accessibleName: string): HTMLButtonElement {
-    return this.button(text, key, taskId, () => {
+    const button = this.button(text, key, taskId, () => {
       void copyText(value).then((copied) => {
-        this.announcement.textContent = copied ? `${text}已复制。` : `${text}失败，请手动复制。`;
+        if (copied) {
+          button.parentElement?.querySelector(".console-copy-fallback")?.remove();
+          this.announcement.textContent = `${text}已复制。`;
+          return;
+        }
+        const fallback = el("textarea", "console-copy-fallback") as HTMLTextAreaElement;
+        fallback.value = value;
+        fallback.readOnly = true;
+        fallback.rows = Math.min(6, Math.max(2, value.split("\n").length));
+        fallback.setAttribute("aria-label", `${text}失败，可手动选择的完整文本`);
+        button.parentElement?.querySelector(".console-copy-fallback")?.remove();
+        button.insertAdjacentElement("afterend", fallback);
+        fallback.select();
+        button.focus({ preventScroll: true });
+        this.announcement.textContent = `${text}失败，已显示可手动选择的完整文本。`;
       });
     }, accessibleName);
+    return button;
   }
 
   private restoreFocus(key: string | null, taskId: string | null): void {

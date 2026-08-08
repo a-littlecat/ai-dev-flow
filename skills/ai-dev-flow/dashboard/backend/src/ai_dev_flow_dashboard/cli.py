@@ -18,7 +18,7 @@ def _parser() -> argparse.ArgumentParser:
     subcommands = parser.add_subparsers(dest="command", required=True)
     session = subcommands.add_parser("session")
     session_commands = session.add_subparsers(dest="session_command", required=True)
-    for name in ("start", "update", "wait", "end", "list"):
+    for name in ("start", "update", "wait", "end", "heartbeat", "list"):
         command = session_commands.add_parser(name)
         command.add_argument("--project-root", default=".")
         command.add_argument("--runtime-root")
@@ -84,6 +84,8 @@ def _session(args) -> object:
         )
     if args.session_command == "wait":
         return store.wait(args.session, args.reason)
+    if args.session_command == "heartbeat":
+        return store.heartbeat(args.session)
     if args.session_command == "end":
         return store.end(args.session, args.reason)
     return store.list()
@@ -108,7 +110,7 @@ def _human(value: object) -> str:
         return json.dumps(value, ensure_ascii=False, indent=2)
     lines = [
         f"Project Console  revision={value['revision'][:12]}  state={value['state']}",
-        value["ambiguity"]["message"],
+        value["ready_ambiguity"]["message"],
     ]
     for key, label in (
         ("human_attention", "需要你处理"),

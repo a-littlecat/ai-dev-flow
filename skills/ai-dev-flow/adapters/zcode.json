@@ -12,7 +12,7 @@
   "approval_gate": "none",
   "runtime_hooks": "none",
   "session_events": "none",
-  "runtime_session_bridge": "none",
+  "runtime_session_bridge": {"type": "none", "command": null, "hooks": {}},
   "preferred_review_recipe": "R5",
   "fallback_review_recipe": "R5",
   "formal_skill_sync_method": "unsupported until the local Harness is available and verified",

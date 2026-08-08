@@ -34,8 +34,13 @@ class CapabilityAdapterTests(unittest.TestCase):
         self.assertEqual("R3", self.select(by_id["opencode"]))
         self.assertEqual("R5", self.select(by_id["generic"]))
         self.assertEqual("R5", self.select(by_id["zcode"]))
-        self.assertEqual("native", by_id["codex"]["runtime_session_bridge"])
-        self.assertEqual("adapter", by_id["opencode"]["runtime_session_bridge"])
+        self.assertEqual("command", by_id["codex"]["runtime_session_bridge"]["type"])
+        self.assertEqual("command", by_id["opencode"]["runtime_session_bridge"]["type"])
+        self.assertEqual("command", by_id["kimi-code"]["runtime_session_bridge"]["type"])
+        self.assertEqual(
+            {"start", "update", "wait", "end", "heartbeat"},
+            set(by_id["codex"]["runtime_session_bridge"]["hooks"]),
+        )
         self.assertNotEqual(
             by_id["codex"]["runtime_session_bridge"],
             by_id["codex"]["formal_skill_sync_method"],
@@ -81,8 +86,16 @@ class CapabilityAdapterTests(unittest.TestCase):
         unknown = dict(codex, model="not-a-governance-input")
         invalid = dict(codex, runtime_session_bridge="automatic-sync")
         invalid_list = dict(codex, runtime_session_bridge=[])
+        incomplete_command = dict(
+            codex,
+            runtime_session_bridge={
+                "type": "command",
+                "command": "python adf.py",
+                "hooks": {"start": "session start"},
+            },
+        )
         invalid_dict = dict(codex, write_isolation={"mode": "sandbox_read_only"})
-        for value in (missing, unknown, invalid, invalid_list, invalid_dict):
+        for value in (missing, unknown, invalid, invalid_list, incomplete_command, invalid_dict):
             with self.subTest(value=value):
                 self.assertEqual("R5", self.select(value))
         contradictory = dict(codex)

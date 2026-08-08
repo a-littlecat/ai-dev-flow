@@ -22,17 +22,42 @@ ENUMS = {
     "approval_gate": {"native", "manual", "none"},
     "runtime_hooks": {"native", "plugin", "none"},
     "session_events": {"native", "adapter", "manual", "none"},
-    "runtime_session_bridge": {"native", "adapter", "manual", "none"},
     "preferred_review_recipe": {"R1", "R2", "R3", "R4", "R5"},
     "fallback_review_recipe": {"R1", "R2", "R3", "R4", "R5"},
 }
 BOOLEAN_FIELDS = {"read_files", "write_files", "run_commands", "git"}
 ADAPTER_ID = re.compile(r"^[a-z][a-z0-9-]*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+BRIDGE_TYPES = {"command", "manual", "none"}
+BRIDGE_HOOKS = {"start", "update", "wait", "end", "heartbeat"}
 
 
 class AdapterLoadError(ValueError):
     pass
+
+
+def _validate_runtime_session_bridge(value):
+    if not isinstance(value, Mapping) or set(value) != {"type", "command", "hooks"}:
+        raise AdapterLoadError(
+            "runtime_session_bridge must contain exactly type, command, and hooks"
+        )
+    bridge_type = value["type"]
+    if not isinstance(bridge_type, str) or bridge_type not in BRIDGE_TYPES:
+        raise AdapterLoadError("runtime_session_bridge.type has an unsupported value")
+    command = value["command"]
+    hooks = value["hooks"]
+    if bridge_type == "command":
+        if not isinstance(command, str) or not command.strip():
+            raise AdapterLoadError("command bridge requires a non-empty command")
+        if not isinstance(hooks, Mapping) or set(hooks) != BRIDGE_HOOKS:
+            raise AdapterLoadError("command bridge requires all lifecycle hooks")
+        if any(not isinstance(item, str) or not item.strip() for item in hooks.values()):
+            raise AdapterLoadError("command bridge hooks must be non-empty strings")
+        return
+    if command is not None or not isinstance(hooks, Mapping) or hooks:
+        raise AdapterLoadError(
+            "manual and none bridges cannot declare executable command or hooks"
+        )
 
 
 def _validate_adapter(value):
@@ -48,6 +73,7 @@ def _validate_adapter(value):
     for field, allowed in ENUMS.items():
         if not isinstance(value[field], str) or value[field] not in allowed:
             raise AdapterLoadError(f"{field} has an unsupported value")
+    _validate_runtime_session_bridge(value["runtime_session_bridge"])
     for field in ("formal_skill_sync_method", "version_sensitive_notes"):
         if not isinstance(value[field], str) or not value[field].strip():
             raise AdapterLoadError(f"{field} must be a non-empty string")

@@ -88,7 +88,7 @@ test.beforeEach(async () => {
         { task_id: "TASK-GAMMA", session_id: "codex-live", kind: "runtime_session", at: new Date().toISOString() },
         { task_id: "TASK-ALPHA", session_id: null, kind: "task_snapshot", at: new Date(Date.now() - 5_000).toISOString() },
       ],
-      ambiguity: { has_unique_primary: false, candidate_count: 2, message: "当前没有唯一主任务" },
+      ready_ambiguity: { has_unique_primary: false, candidate_count: 2, message: "当前没有唯一 Ready 主候选" },
     }),
   );
 });
@@ -112,8 +112,11 @@ test("console is the default and preserves server queue order with explicit fres
   await expect(page.locator(".console-section-active .console-card-meta").first()).toContainText("来源：TASK + Git + Runtime");
   await expect(page.locator(".console-section-active .console-card-line").filter({ hasText: "原因" }).first()).toContainText("Runtime 会话正在活跃执行");
   await expect(page.locator(".console-section-stale")).toContainText("状态过期");
-  await expect(page.locator(".console-ambiguity")).toHaveText("当前没有唯一主任务，存在 2 个可执行候选。");
+  await expect(page.locator(".console-ambiguity")).toHaveText("当前没有唯一 Ready 主候选，最高排名并列 2 项。");
   await expect(page.locator(".console-section-ready .console-task-id")).toHaveText(["TASK-BETA", "TASK-ALPHA"]);
+  await expect(page.locator(".console-section-ready")).toContainText("可以作为下一项开始");
+  await expect(page.locator(".console-section-ready")).toContainText("尚未授权自动执行");
+  await expect(page.getByRole("button", { name: "开始执行任务 TASK-BETA", exact: true })).toBeVisible();
   await expect(page.locator(".console-freshness")).toContainText("TASK 派生");
   await expect(page.locator(".console-freshness")).toContainText("Git 派生");
   await expect(page.locator(".console-freshness")).toContainText("Runtime");
@@ -167,7 +170,7 @@ test("empty queues remain explicit instead of inventing a primary task", async (
   await mockSetConsole(makeProjectConsole(snapshot));
   await page.goto("/");
 
-  await expect(page.locator(".console-ambiguity")).toContainText("没有唯一主任务");
+  await expect(page.locator(".console-ambiguity")).toContainText("没有唯一 Ready 主候选");
   await expect(page.locator(".console-section-human .console-empty")).toBeVisible();
   await expect(page.locator(".console-section-active .console-empty")).toBeVisible();
   await expect(page.locator(".console-section-ready .console-empty")).toBeVisible();
@@ -198,7 +201,7 @@ test("real-scale queues and extreme identifiers stay readable without browser er
   await mockSetConsole(
     makeProjectConsole(snapshot, {
       ready_queue: ready,
-      ambiguity: { has_unique_primary: false, candidate_count: ready.length, message: "当前没有唯一主任务" },
+      ready_ambiguity: { has_unique_primary: false, candidate_count: ready.length, message: "当前没有唯一 Ready 主候选" },
     }),
   );
   await page.setViewportSize({ width: 390, height: 844 });
@@ -227,7 +230,7 @@ test("console keeps transport status separate from fact state and maps every fre
           session_id: freshness === "live" || freshness === "ended" ? `session-${index}` : null,
         }),
       ),
-      ambiguity: { has_unique_primary: false, candidate_count: freshnessValues.length, message: "当前没有唯一主任务" },
+      ready_ambiguity: { has_unique_primary: false, candidate_count: freshnessValues.length, message: "当前没有唯一 Ready 主候选" },
     }),
   );
   await page.goto("/");
@@ -314,4 +317,23 @@ test("copy actions fall back when navigator.clipboard is unavailable", async ({ 
 
   await page.getByRole("button", { name: "复制下一步 TASK-DELTA", exact: true }).click();
   await expect(page.locator(".project-console [aria-live='polite']")).toHaveText("复制下一步已复制。");
+});
+
+test("final clipboard failure exposes complete selectable text and restores button focus", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    document.execCommand = () => false;
+  });
+  await page.goto("/");
+
+  const button = page.getByRole("button", { name: "复制下一步 TASK-DELTA", exact: true });
+  await button.click();
+
+  const fallback = page.getByRole("textbox", { name: "复制下一步失败，可手动选择的完整文本" });
+  await expect(fallback).toHaveValue("查看 TASK 中两个选项及影响");
+  await expect(fallback).toHaveJSProperty("readOnly", true);
+  await expect(button).toBeFocused();
+  await expect(page.locator(".project-console [aria-live='polite']")).toHaveText(
+    "复制下一步失败，已显示可手动选择的完整文本。",
+  );
 });
