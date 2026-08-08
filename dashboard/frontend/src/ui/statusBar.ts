@@ -9,6 +9,8 @@ export class StatusBar {
   private readonly actions = el("div", "status-actions");
   private readonly search = el("input", "status-search") as HTMLInputElement;
   private readonly viewToggle = el("button", "status-view-toggle");
+  private readonly legacyToggle = el("button", "status-legacy-toggle");
+  private readonly consoleToggle = el("button", "status-console-toggle");
 
   constructor(private readonly store: AppStore) {
     this.root.setAttribute("aria-label", "全局状态栏");
@@ -33,19 +35,19 @@ export class StatusBar {
     });
     this.viewToggle.type = "button";
     this.viewToggle.addEventListener("click", () => {
-      if (this.store.get().viewMode === "overview") {
-        this.store.showFullNetwork();
-      } else {
-        this.store.showOverview();
-      }
+      this.store.showFullNetwork();
     });
-    this.actions.append(this.search, this.viewToggle);
+    this.legacyToggle.type = "button";
+    this.legacyToggle.addEventListener("click", () => this.store.showLegacy());
+    this.consoleToggle.type = "button";
+    this.consoleToggle.addEventListener("click", () => this.store.showConsole());
+    this.actions.append(this.search, this.consoleToggle, this.viewToggle, this.legacyToggle);
     this.root.append(this.summary, this.actions);
   }
 
   update(state: AppState): void {
     clear(this.summary);
-    const brand = el("span", "status-brand", "任务关系仪表盘");
+    const brand = el("span", "status-brand", "Project Console");
     brand.append(el("span", "status-readonly", "只读"));
     this.summary.append(brand);
 
@@ -118,11 +120,15 @@ export class StatusBar {
     if (this.search.value !== state.filters.text) {
       this.search.value = state.filters.text;
     }
-    this.viewToggle.textContent = state.viewMode === "overview" ? "完整关系图 →" : "← 执行总览";
-    this.viewToggle.setAttribute(
-      "aria-label",
-      state.viewMode === "overview" ? "打开完整关系图" : "返回任务执行总览",
-    );
+    this.consoleToggle.textContent = "项目总览";
+    this.viewToggle.textContent = "关系诊断";
+    this.legacyToggle.textContent = "旧版回退";
+    this.consoleToggle.setAttribute("aria-pressed", String(state.viewMode === "console"));
+    this.viewToggle.setAttribute("aria-pressed", String(state.viewMode === "network"));
+    this.legacyToggle.setAttribute("aria-pressed", String(state.viewMode === "legacy"));
+    this.consoleToggle.setAttribute("aria-label", "打开 Project Console 项目总览");
+    this.viewToggle.setAttribute("aria-label", state.viewMode === "legacy" ? "打开完整关系图" : "打开完整任务关系诊断");
+    this.legacyToggle.setAttribute("aria-label", state.viewMode === "network" ? "返回任务执行总览" : "打开旧版 Action Center 回退视图");
   }
 }
 

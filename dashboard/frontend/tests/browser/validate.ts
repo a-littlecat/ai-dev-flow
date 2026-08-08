@@ -33,6 +33,7 @@ const validators = {
   Health: validator("Health"),
   ErrorEnvelope: validator("ErrorEnvelope"),
   SnapshotEvent: validator("SnapshotEvent"),
+  ProjectConsole: validator("ProjectConsole"),
 } as const;
 
 export type ContractKind = keyof typeof validators;

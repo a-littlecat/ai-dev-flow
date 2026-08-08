@@ -405,3 +405,76 @@ state: ("fresh" | "stale" | "partial")
 changed_task_ids: StringArray
 reset_required: boolean
 }
+
+export interface ProjectConsole {
+schema_version: "adf/project-console/v1"
+revision: Sha256
+snapshot_revision: Sha256
+generated_at: string
+state: ("fresh" | "stale" | "partial")
+freshness: ConsoleFreshness
+counts: ConsoleCounts
+active_work: ConsoleItem[]
+human_attention: ConsoleItem[]
+ready_queue: ConsoleItem[]
+blocked: ConsoleItem[]
+stale_sessions: ConsoleItem[]
+recent_changes: ConsoleRecentChange[]
+ambiguity: ConsoleAmbiguity
+disclaimer: string
+}
+
+export interface ConsoleFreshness {
+task_facts_at: string
+git_facts_at: string
+runtime_facts_at: (string | null)
+}
+
+export interface ConsoleCounts {
+active_work: number
+human_attention: number
+ready_queue: number
+blocked: number
+stale_sessions: number
+}
+
+export interface ConsoleItem {
+task_id: (string | null)
+title: string
+queue: ("active_work" | "human_attention" | "ready_queue" | "blocked" | "stale_sessions")
+actor: ("agent" | "user")
+session_id: NullableString
+harness_id: NullableString
+phase: ("planning" | "implementing" | "validating" | "reviewing" | "repairing" | "waiting_user" | "blocked" | "done" | null)
+next_step: string
+status_summary: string
+why_now_codes: StringArray
+blocking_task_ids: StringArray
+unblocks_count: number
+priority: ("high" | "medium" | "low")
+last_activity_at: NullableString
+freshness: ("fresh" | "stale" | "partial" | "live" | "ended" | "invalid")
+/**
+ * @minItems 1
+ */
+source_kinds: [("task" | "git" | "runtime"), ...(("task" | "git" | "runtime"))[]]
+branch: NullableString
+worktree: NullableString
+action_kind: string
+action_eligibility: ("actionable" | "blocked" | "needs_authority" | "unknown" | "not_applicable")
+action_kinds: StringArray
+action_eligibilities: ("actionable" | "blocked" | "needs_authority" | "unknown" | "not_applicable")[]
+}
+
+export interface ConsoleRecentChange {
+task_id: (string | null)
+session_id: (string | null)
+kind: ("task_snapshot" | "runtime_session")
+at: string
+}
+
+export interface ConsoleAmbiguity {
+has_unique_primary: boolean
+candidate_count: number
+message: string
+}

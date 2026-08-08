@@ -10,6 +10,7 @@ import type {
   DashboardSnapshot,
   ErrorEnvelope,
   Health,
+  ProjectConsole,
   SnapshotEvent,
   TaskDetail,
 } from "../generated/contracts.types";
@@ -17,6 +18,7 @@ import {
   validateDashboardSnapshot,
   validateErrorEnvelope,
   validateHealth,
+  validateProjectConsole,
   validateSnapshotEvent,
   validateTaskDetail,
 } from "../generated/contracts.validators";
@@ -25,6 +27,7 @@ const validators = {
   DashboardSnapshot: validateDashboardSnapshot as ValidateFunction<DashboardSnapshot>,
   TaskDetail: validateTaskDetail as ValidateFunction<TaskDetail>,
   Health: validateHealth as ValidateFunction<Health>,
+  ProjectConsole: validateProjectConsole as ValidateFunction<ProjectConsole>,
   ErrorEnvelope: validateErrorEnvelope as ValidateFunction<ErrorEnvelope>,
   SnapshotEvent: validateSnapshotEvent as ValidateFunction<SnapshotEvent>,
 } as const;

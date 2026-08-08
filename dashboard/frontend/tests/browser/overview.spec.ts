@@ -17,7 +17,7 @@ test.beforeEach(async () => {
 
 test("default workbench prioritises current action and evidence-backed parallel advice", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   await expect(page.getByRole("region", { name: "任务执行总览" })).toBeVisible();
   await expect(page.locator(".network-view")).toBeHidden();
@@ -35,7 +35,7 @@ test("default workbench prioritises current action and evidence-backed parallel 
 });
 
 test("current action opens a focused task route and can return to overview", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?view=legacy");
   await page.getByRole("button", { name: "查看并决定" }).click();
 
   await expect(page.locator(".graph-svg")).toBeVisible();
@@ -53,7 +53,7 @@ test("current action opens a focused task route and can return to overview", asy
 
 test("mobile defaults to a readable vertical workbench instead of a miniature graph", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   await expect(page.locator(".action-center")).toBeVisible();
   await expect(page.locator(".graph-svg")).toBeHidden();
@@ -66,7 +66,7 @@ test("mobile defaults to a readable vertical workbench instead of a miniature gr
 test("live snapshot refresh preserves the focused overview action", async ({ page }) => {
   const revA = buildGraphSnapshot();
   await mockSetSnapshot(revA);
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   const action = page.locator('[data-overview-focus-key="current:TASK-DELTA"]');
   await action.focus();
@@ -83,7 +83,7 @@ test("live snapshot refresh preserves the focused overview action", async ({ pag
 test("live snapshot refresh follows the same task when it moves between sections", async ({ page }) => {
   const revA = buildGraphSnapshot();
   await mockSetSnapshot(revA);
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   const currentDelta = page.locator('[data-overview-focus-key="current:TASK-DELTA"]');
   await currentDelta.focus();
@@ -106,7 +106,7 @@ test("live snapshot refresh follows the same task when it moves between sections
 test("live snapshot refresh uses a deterministic fallback and announces a removed task", async ({ page }) => {
   const revA = buildGraphSnapshot();
   await mockSetSnapshot(revA);
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   const currentDelta = page.locator('[data-overview-focus-key="current:TASK-DELTA"]');
   await currentDelta.focus();
@@ -141,7 +141,7 @@ test("authority denial is shown as an action block, not an invented task depende
     blocking_condition_ids: [],
   });
   await mockSetSnapshot(snapshot);
-  await page.goto("/");
+  await page.goto("/?view=legacy");
 
   const waiting = page.locator(".overview-waiting");
   await expect(waiting).toContainText("动作受阻");

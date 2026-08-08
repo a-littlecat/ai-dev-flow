@@ -40,14 +40,14 @@
     "contracts/dashboard-contracts-v1.schema.json": "e213e52716972a3a887d4a6047adfbba3cd5e4ded0293297a19e27a1d9f75ddb",
     "contracts/project-console-v1.schema.json": "474aa39074ad53d4fea02b58879982f2fafdd0677f768ec49b8b043362da61c3",
     "contracts/runtime-session-v1.schema.json": "6bc95a4c631cf2b5a5fd00c854e338839114d4f047b6744166bfa92e9ae1299e",
-    "static/assets/index-CJKLBKmT.js": "c4fb097d8ede76cfba859f71497f219274427b7b67a22b75542c9c1e8811fdce",
-    "static/assets/index-PKl_O_go.css": "2a84592f3aefd57f972af3c2fef69648beb92423c661676453e4b4dac5be5b86",
-    "static/index.html": "75fdc8ddd1d91a4e3e31c32ca6862f778309e5c62169e02e76fd6203e32e7481"
+    "static/assets/index-B9bD7Nof.js": "5440fc7d81b8805676174e35ee145460344c362d38176035a7ce52eefa0ee041",
+    "static/assets/index-S06hJBo2.css": "ccb1a2319814b1a83ad0733496edb2caf3900ccbc022e7473a055eb9cc0b8a48",
+    "static/index.html": "90e4fbd95b0f37abb4c3a709e750675d83e2407336c74857565c1ba0cde32cae"
   },
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
   "skill_version": "0.9.2",
-  "source_fingerprint": "be3395962afcd025774b9205c7d536cdbb4dee67f13436c722778c7064d8b361",
+  "source_fingerprint": "d7acde23743af9b05603b4f36c85ccc04d3dde206b0b5194102dada1c39a3d0c",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }
