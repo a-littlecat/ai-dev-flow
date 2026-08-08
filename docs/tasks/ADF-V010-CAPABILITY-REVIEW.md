@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -69,13 +69,13 @@
 
 ## Outcome
 
-- Base / Diff：base=9a8642acb7b2f2372e8610594686bd38a9d7fc19;diff=9a8642ac..working-tree
+- Base / Diff：base=9a8642acb7b2f2372e8610594686bd38a9d7fc19;implementation=`384f96f`。
 - 隔离位置：`codex/v010-capability-review` / `D:/open-source/ai-dev-flow-wt/v010-capability-review`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CORE-SPLIT 历史。
 - 修改文件：新增 capability/recipe 文档、五个薄 Adapter 与 loader；Workflow Contract reader/validator/schema 双读 v0.7/v0.10；Full/Brief 模板升级 v0.10，Compact 保留 v0.7；Dashboard 仅增加兼容字段、动作判定与详情展示；补齐相关测试和生成类型。
 - 范围适配：`policy_loader.py` 与 `schemas/workflow-contract.schema.json` 未列在最初允许清单，但分别是 CORE-SPLIT 新增严格 loader 与现有 RuntimeCompatibility 的直接事实源；为保持 core policy 可加载和双版本 schema 可启动而做最小改动，不扩展到 Runtime/Project Console。
 - 验证证据：Skill 最终 `113/113`；backend 最终 `182/182`；Workflow JSON Schema policy/完成门禁组合 `7/7`；frontend codegen/check、typecheck、lint、Vitest `95/95`、build、Playwright `96/96` 与新增详情目标用例通过；integration Python 3.13 为 `49/51`，仅 Stage 0 已登记 artifact guard 与 state-matrix 基线债务；最终 workflow lint 与 `git diff --check` 待提交前重跑。
 - Review findings：Round 1 `Needs Fix 0/4/0/0`；Round 2/3/4 依次收敛 `R002`；用户授权 ER-1 后，session `019fe130-43df-7551-b44c-659b67ba9fe6` 为 `Passed 0/0/0/0`，`R001`～`R004` 全部 Closed。
-- 状态边界：Review / Passed / UA3 Pending / Uncommitted / Unmerged / Not Released / Not Closed。
+- 状态边界：Review / Passed / UA3 Pending / Committed (`384f96f`) / Unmerged / Not Released / Not Closed。
 - 剩余风险：生产依赖树存在基线 `fast-uri` high advisory，`package-lock.json` 本阶段未改；正式发布前应在 RELEASE 阶段单独评估兼容升级。集成套件两项历史债务仍未在本阶段修复。
-- 下一步：完成提交前一致性检查；提交、推送当前 stacked branch 并创建 Draft PR，然后按第 18 节进入 RUNTIME-CONSOLE-BE。
+- 下一步：推送当前 stacked branch 并创建 Draft PR，然后按第 18 节进入 RUNTIME-CONSOLE-BE。
