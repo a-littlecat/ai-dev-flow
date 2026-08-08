@@ -1,0 +1,14 @@
+{
+  "schema_version": "adf/repair-basic/v1",
+  "finding_id_required": true,
+  "base_auto_rounds": 2,
+  "optional_progress_rounds": 1,
+  "independent_review_after_patch": true,
+  "progress_gate": {
+    "require_red_to_green": true,
+    "forbid_green_to_red": true,
+    "forbid_new_blocking_finding": true,
+    "severity_must_not_increase": true
+  },
+  "on_budget_exhausted": "UserDecisionRequired"
+}

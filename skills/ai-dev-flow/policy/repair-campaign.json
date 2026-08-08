@@ -1,0 +1,120 @@
+{
+  "schema_version": "adf/repair-campaign/v1",
+  "repair": {
+    "repair_round_definition": "patch_to_next_independent_review",
+    "non_counting_actions": [
+      "diagnostic_evidence_only",
+      "record_only_correction",
+      "review_only",
+      "task_or_board_receipt_sync",
+      "test_rerun_without_patch",
+      "ua_without_patch"
+    ],
+    "chain_identity_fields": [
+      "repair_chain_id",
+      "finding_ids",
+      "closure_contract_hash",
+      "allowed_files_hash"
+    ],
+    "ledger_schema": "ai-dev-flow/repair-ledger-v1",
+    "evidence_trust_boundary": "ledger_is_untrusted_trusted_context_is_supplied_by_project_or_harness",
+    "record_only_finding": {
+      "default_severity": ["P2", "P3"],
+      "p1_only_if": ["can_authorize_unsafe_action", "can_hide_blocking_finding"]
+    },
+    "base_auto_rounds": 2,
+    "autonomous_max_rounds": 3,
+    "history": {
+      "attempt_count_source": "validated_receipt_chain",
+      "receipt_hash_algorithm": "sha256_canonical_json",
+      "require_history_anchor": true,
+      "require_trusted_context": true,
+      "trusted_context_schema": "ai-dev-flow/repair-trusted-context-v1",
+      "require_independent_review_receipt_after_each_attempt": true
+    },
+    "required_true_fields": [
+      "dependencies_frozen",
+      "authority_frozen",
+      "root_cause_known",
+      "reviewer_capable",
+      "repairer_capable",
+      "within_cost_boundary"
+    ],
+    "required_false_fields": ["external_side_effect"],
+    "round_3_progress": {
+      "source": "latest_independent_review_receipt",
+      "require_red_to_green": true,
+      "forbid_green_to_red": true,
+      "forbid_new_blocking_findings": true,
+      "severity_must_not_increase": true,
+      "evidence_coverage_must_strictly_increase": true,
+      "round_3_target_required": true
+    },
+    "task_change_resets_budget": false,
+    "model_change_resets_budget": false,
+    "post_stop": {
+      "state": "UserDecisionRequired",
+      "mode": "EscalatedRepair",
+      "ai_repair_allowed_with_explicit_authority": true,
+      "manual_implementation_required": false,
+      "default_authorized_attempts": 1,
+      "authority_source": "trusted_context_attested_chain_bound_authority_receipt",
+      "authority_must_bind": [
+        "repair_chain_digest",
+        "closure_contract_hash",
+        "allowed_files_hash",
+        "target_finding_ids",
+        "authorized_attempt_ids"
+      ],
+      "independent_review_after_each_attempt": true,
+      "history_resets": false,
+      "failure_decision": "Stop"
+    },
+    "campaign": {
+      "authority_mode": "RepairCampaignAuthority",
+      "ai_repair_allowed_with_explicit_authority": true,
+      "authority_source": "trusted_context_attested_task_bound_campaign_receipt",
+      "authority_must_bind": [
+        "campaign_id",
+        "task_id",
+        "acceptance_contract_hash",
+        "allowed_scope_hash",
+        "profile",
+        "activation_chain_digest",
+        "activation_history_head_hash"
+      ],
+      "profiles": {
+        "core_product": {"max_consecutive_no_progress": 4},
+        "harness": {"max_consecutive_no_progress": 5}
+      },
+      "scope_manifest": {
+        "exact_files_field": "allowed_exact_files",
+        "path_prefixes_field": "allowed_path_prefixes",
+        "require_relative_normalized_paths": true,
+        "current_chain_files_must_be_subset": true
+      },
+      "progress_source": "trusted_context_attested_campaign_state_receipt",
+      "progress_resets_no_progress_streak": true,
+      "task_change_resets_streak": false,
+      "model_change_resets_streak": false,
+      "chain_change_resets_streak": false,
+      "hard_stop_flags": [
+        "p0_finding",
+        "security_boundary_change",
+        "data_integrity_risk",
+        "scope_outside_campaign",
+        "irreversible_action",
+        "external_side_effect",
+        "test_oracle_weakened",
+        "unapproved_dependency_change",
+        "required_evidence_missing"
+      ],
+      "independent_review_after_each_attempt": true,
+      "delivery_authority_separate": true
+    },
+    "mechanical_decisions": ["MechanicallyEligible", "Stop", "Blocked"],
+    "promotion_decisions": ["AutoRepairAllowed", "ExtendRound3", "EscalatedRepairAllowed"],
+    "promotion_requires_trusted_orchestrator": true,
+    "eligible_modes": ["AutoRepair", "ExtendRound3", "EscalatedRepair"]
+  }
+}

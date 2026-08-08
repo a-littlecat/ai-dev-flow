@@ -11,12 +11,28 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SKILL_ROOT = ROOT / "skills" / "ai-dev-flow"
 SCRIPT = SKILL_ROOT / "scripts" / "repair_gate.py"
-CORE = SKILL_ROOT / "references" / "CORE.md"
+CORE = SKILL_ROOT / "policy" / "repair-campaign.json"
 
 SPEC = importlib.util.spec_from_file_location("repair_gate", SCRIPT)
 repair_gate = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(repair_gate)
 POLICY = repair_gate.load_policy(CORE)
+CORE_POLICY = json.loads((SKILL_ROOT / "policy" / "core.json").read_text(encoding="utf-8"))
+
+
+def legacy_rc2_policy():
+    return {
+        "schema_version": "ai-dev-flow/v0.8-policy-rc2",
+        "unknown_input": "Blocked",
+        "routes": copy.deepcopy(CORE_POLICY["routes"]),
+        "review": copy.deepcopy(CORE_POLICY["review"]),
+        "safety": copy.deepcopy(CORE_POLICY["safety"]),
+        "repair": {
+            key: copy.deepcopy(value)
+            for key, value in POLICY["repair"].items()
+            if key != "campaign"
+        },
+    }
 
 
 def seal(record):
@@ -447,6 +463,27 @@ class RepairGateTests(unittest.TestCase):
         self.assertEqual(stopped["decision"], "Stop")
         self.assertIn("ROUND3_NO_RED_TO_GREEN", stopped["reason_codes"])
 
+    def test_progress_round_attempt_id_follows_evolved_base_budget(self):
+        policy = copy.deepcopy(POLICY)
+        policy["repair"]["base_auto_rounds"] = 3
+        policy["repair"]["autonomous_max_rounds"] = 4
+        ledger = base_ledger()
+        add_attempt(ledger, "AR-1", "AutoRepair")
+        add_attempt(ledger, "AR-2", "AutoRepair")
+        add_attempt(
+            ledger,
+            "AR-3",
+            "AutoRepair",
+            gate_decision="AutoRepairAllowed",
+            progress_value=progress(True),
+        )
+        rebind_ledger_policy(ledger, policy)
+        result = repair_gate.evaluate(ledger, policy, trusted_context(ledger))
+        self.assertEqual(
+            (result["decision"], result["eligible_mode"], result["next_attempt_id"]),
+            ("MechanicallyEligible", "ExtendRound3", "AR-4"),
+        )
+
     def test_green_regression_new_blocker_and_evidence_stall_stop_round3(self):
         cases = {}
         green_regression = progress(True)
@@ -494,10 +531,7 @@ class RepairGateTests(unittest.TestCase):
         self.assertFalse(result["manual_implementation_required"])
 
     def test_legacy_rc2_single_authority_receipts_remain_verifiable(self):
-        legacy_policy = copy.deepcopy(POLICY)
-        legacy_policy["schema_version"] = "ai-dev-flow/v0.8-policy-rc2"
-        del legacy_policy["reviewer_selection"]
-        del legacy_policy["repair"]["campaign"]
+        legacy_policy = legacy_rc2_policy()
         ledger = self.auto_stopped_ledger()
         authority = authority_receipt(ledger["repair_chain"])
         ledger["authority_records"].append(authority)
@@ -521,10 +555,7 @@ class RepairGateTests(unittest.TestCase):
         self.assertIn("POLICY_CONFLICT_SCHEMA_VERSION", blocked["reason_codes"])
 
     def test_cli_accepts_legacy_rc2_policy_for_non_campaign_ledger(self):
-        legacy_policy = copy.deepcopy(POLICY)
-        legacy_policy["schema_version"] = "ai-dev-flow/v0.8-policy-rc2"
-        del legacy_policy["reviewer_selection"]
-        del legacy_policy["repair"]["campaign"]
+        legacy_policy = legacy_rc2_policy()
         ledger = self.auto_stopped_ledger()
         authority = authority_receipt(ledger["repair_chain"])
         ledger["authority_records"].append(authority)
@@ -1098,52 +1129,53 @@ class RepairGateTests(unittest.TestCase):
         cases = {}
         missing = copy.deepcopy(POLICY)
         del missing["repair"]["history"]
-        cases["POLICY_INVALID_HISTORY"] = missing
+        cases["POLICY_MISSING_REPAIR_FIELDS"] = missing
         empty = copy.deepcopy(POLICY)
         empty["repair"]["round_3_progress"] = {}
-        cases["POLICY_CONFLICT_PROGRESS_SOURCE"] = empty
+        cases["POLICY_MISSING_ROUND_3_PROGRESS_FIELDS"] = empty
         schema = copy.deepcopy(POLICY)
         schema["repair"]["ledger_schema"] = "unknown"
         cases["POLICY_CONFLICT_LEDGER_SCHEMA"] = schema
-        disabled = copy.deepcopy(POLICY)
-        disabled["repair"]["history"]["require_trusted_context"] = False
-        cases["POLICY_CONFLICT_HISTORY_REQUIRE_TRUSTED_CONTEXT"] = disabled
         base_limit = copy.deepcopy(POLICY)
-        base_limit["repair"]["base_auto_rounds"] = 1
-        cases["POLICY_CONFLICT_BASE_AUTO_ROUNDS"] = base_limit
+        base_limit["repair"]["base_auto_rounds"] = "two"
+        cases["POLICY_INVALID_BASE_AUTO_ROUNDS"] = base_limit
         maximum = copy.deepcopy(POLICY)
         maximum["repair"]["autonomous_max_rounds"] = 2
-        cases["POLICY_CONFLICT_AUTONOMOUS_MAX_ROUNDS"] = maximum
-        escalation_default = copy.deepcopy(POLICY)
-        escalation_default["repair"]["post_stop"]["default_authorized_attempts"] = 2
-        cases["POLICY_CONFLICT_POST_STOP_DEFAULT_AUTHORIZED_ATTEMPTS"] = escalation_default
+        maximum["repair"]["base_auto_rounds"] = 2
+        cases["POLICY_INVALID_AUTO_ROUND_LIMITS"] = maximum
         campaign_profile = copy.deepcopy(POLICY)
-        campaign_profile["repair"]["campaign"]["profiles"]["core_product"][
-            "max_consecutive_no_progress"
-        ] = 5
-        cases["POLICY_CONFLICT_CAMPAIGN_PROFILES"] = campaign_profile
+        campaign_profile["repair"]["campaign"]["profiles"]["core_product"]["max_consecutive_no_progress"] = 0
+        cases["POLICY_INVALID_CAMPAIGN_PROFILES"] = campaign_profile
         campaign_hard_stops = copy.deepcopy(POLICY)
-        campaign_hard_stops["repair"]["campaign"]["hard_stop_flags"].remove(
-            "test_oracle_weakened"
-        )
-        cases["POLICY_CONFLICT_CAMPAIGN_HARD_STOP_FLAGS"] = campaign_hard_stops
-        campaign_reset = copy.deepcopy(POLICY)
-        campaign_reset["repair"]["campaign"]["chain_change_resets_streak"] = True
-        cases["POLICY_CONFLICT_CAMPAIGN_CHAIN_CHANGE_RESETS_STREAK"] = campaign_reset
-        reviewer_selection = copy.deepcopy(POLICY)
-        reviewer_selection["reviewer_selection"]["cross_harness"] = "automatic_fallback"
-        cases["POLICY_CONFLICT_REVIEWER_SELECTION"] = reviewer_selection
+        campaign_hard_stops["repair"]["campaign"]["hard_stop_flags"] = []
+        cases["POLICY_INVALID_CAMPAIGN_HARD_STOP_FLAGS"] = campaign_hard_stops
         unknown_repair = copy.deepcopy(POLICY)
         unknown_repair["repair"]["reset_budget_on_new_task"] = True
         cases["POLICY_UNKNOWN_REPAIR_FIELDS"] = unknown_repair
-        unknown_history = copy.deepcopy(POLICY)
-        unknown_history["repair"]["history"]["trust_ledger"] = True
-        cases["POLICY_UNKNOWN_HISTORY_FIELDS"] = unknown_history
         for reason, malformed in cases.items():
             with self.subTest(reason=reason):
                 result = repair_gate.evaluate(base_ledger(), malformed)
                 self.assertEqual(result["decision"], "Blocked")
                 self.assertIn(reason, result["reason_codes"])
+
+    def test_canonical_policy_safety_mutations_are_blocked_after_digest_rebind(self):
+        mutations = (
+            lambda value: value["repair"]["post_stop"]["authority_must_bind"].pop(),
+            lambda value: value["repair"]["campaign"]["authority_must_bind"].pop(),
+            lambda value: value["repair"]["campaign"]["hard_stop_flags"].remove("test_oracle_weakened"),
+            lambda value: value["repair"]["history"].update({"require_trusted_context": False}),
+            lambda value: value["repair"]["campaign"].update({"task_change_resets_streak": True}),
+            lambda value: value["repair"]["required_true_fields"].remove("authority_frozen"),
+            lambda value: value["repair"]["required_false_fields"].remove("external_side_effect"),
+        )
+        for index, change in enumerate(mutations):
+            malformed = copy.deepcopy(POLICY)
+            change(malformed)
+            with self.subTest(index=index):
+                ledger = rebind_ledger_policy(base_ledger(), malformed)
+                result = repair_gate.evaluate(ledger, malformed, trusted_context(ledger))
+                self.assertEqual(result["decision"], "Blocked")
+                self.assertIn("POLICY_CONSTRAINT_VIOLATION", result["reason_codes"])
 
     def test_cli_malformed_policy_returns_json_exit_2_without_traceback(self):
         malformed = copy.deepcopy(POLICY)

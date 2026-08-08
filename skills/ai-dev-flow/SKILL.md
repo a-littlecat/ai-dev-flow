@@ -3,29 +3,29 @@ name: ai-dev-flow
 description: 按风险启用的 Git-first AI 开发治理内核。用于任务事实源、权限边界、独立审查、修复上限或验收与交付分离；Codex Goal 支持 governed_goal“启动受控目标”、auto_land“启动自动落地目标”和 auto_release“自动发版”等中文预设；低风险任务明确退出 Skill，完整语义按需读取 references/CODEX_GOAL_USAGE.md。
 ---
 
-# ai-dev-flow v0.8
+# ai-dev-flow（v0.10 开发线）
 
 `ai-dev-flow` 不是所有任务的必经流程。它先判断是否有净收益：低风险任务退出 Skill；只有需要持续留证或高风险控制时才启用治理。
 
 ## 必读顺序
 
 1. 完整读取本文件。
-2. 完整读取 [CORE.md](references/CORE.md)。其中 `POLICY_JSON` 是路由、Reviewer、repair 计数和超限授权的唯一规则源。
+2. 完整读取 [core.json](policy/core.json)。它是路由、Review 触发、安全和 unknown 分类的唯一规则源。
 3. 读取用户要求、项目 `AGENTS.md`、Git 状态和与任务直接相关的事实源。
-4. 先路由，再决定是否读取一份按需 reference。不要默认加载 `PROMPTS.md` 或整个 `references/`。
+4. 先路由，再按当前动作读取最少的 policy/reference；不要默认加载 Repair、`PROMPTS.md` 或整个 `references/`。
 
-默认运行时工作流输入只有本文件与 `CORE.md`。解析失败、输入未知或规则冲突时，按 `Blocked` 处理，不猜测。
+默认运行时工作流输入只有本文件与 `policy/core.json`。解析失败或规则冲突时为 `Blocked`；本地可发现的 unknown 先做只读检查并重新路由，仍未解析时最终也是 `Blocked`，不能进入 Lite/Tracked/Controlled 或授予动作资格。
 
 ## 第一步：路由
 
 把可观察事实整理为 policy 输入：任务等级、UA、请求动作、风险标记、是否有动作授权、是否有确定性验证覆盖、是否需要用户观察或真实环境证据。
 
-按 `CORE.md` 的顺序判断：
+按 `policy/core.json` 的顺序判断：
 
 1. 命中 `controlled` 条件则进入 `Controlled`。
 2. 完整满足 `lite` 条件则输出 `DoNotUseSkill`。
 3. 其他已知输入进入 `Tracked`。
-4. 信息不足或未知字段为 `Blocked`。
+4. discoverable unknown 先 `InspectAndResolve` 并重新路由；未解析、authority、external evidence 或 rule conflict unknown 的最终结果均为 `Blocked`。
 
 不确定时只能升级或阻塞，不能降级。
 
@@ -44,7 +44,7 @@ description: 按风险启用的 Git-first AI 开发治理内核。用于任务�
 
 Tracked 用于跨会话、范围较大或需要留证但尚未达到 Controlled 的任务：
 
-- 新任务按环境选择模板：大上下文模型且预期单会话内完成的 Tracked 任务可用 `references/TASK_TEMPLATE_BRIEF.md`；小上下文或能力较弱的模型、预期跨会话或有交接需求的任务一律使用完整 `references/TASK_TEMPLATE.md`；现有任务继续沿用原格式；
+- 新任务按任务形状选择模板：单会话、单执行者、范围明确、无交接/repair/真实环境/用户观察且非 Controlled 时可用 `references/TASK_TEMPLATE_BRIEF.md`；其他情况使用完整 `references/TASK_TEMPLATE.md`；模型能力不改变治理合同；现有任务继续沿用原格式；
 - TASK 是范围、状态和证据事实源，TASK_BOARD 只是投影；
 - 记录 base commit、允许/禁止范围、完成标准、验证、diff 和状态边界；
 - 仅在 policy 的 Tracked 风险标记命中时调用一个隔离、只读 Reviewer；未命中则跳过，不为流程而调用；
@@ -76,9 +76,11 @@ Tracked / Controlled 的最小闭环：
 
 ## Review 与 repair
 
-Reviewer 必须只读、与 Engineer/Repairer 上下文隔离，并默认由当前 Harness 自身建立原生 Reviewer 上下文；不得自动调用其他 Harness，只有用户明确指定时才允许跨 Harness。原生隔离/只读能力缺失时保持 `Blocked/Pending`，主上下文自检不能记为独立 Review；各环境映射见 `CORE.md`。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
+Reviewer 必须只读、与 Engineer/Repairer 上下文隔离，并默认由当前 Harness 自身建立原生 Reviewer 上下文；不得自动调用其他 Harness，只有用户明确指定时才允许跨 Harness。原生隔离/只读能力缺失时保持 `Blocked/Pending`，主上下文自检不能记为独立 Review。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
 
-Tracked / Controlled 默认有 2 轮 `AutoRepair`；第 3 轮只能由 `CORE.md` 的 progress gate 授予。3 是自主循环上限，不是 AI 永久禁修：`Stop` 后用户可授权单次 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`；后者在 `core_product` 连续 4 次、`harness` 连续 5 次无实质进展后再回到用户裁决，硬停止条件立即生效。预算和 streak 不因换 TASK、模型、chain 或 finding 改名清零，不可逆外部动作不得自动重试。只读 gate 只给机械资格，最终 Allowed 由持有真实对话/harness/项目证据的 Orchestrator 提升。
+普通 finding 按需读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：默认 2 轮 `AutoRepair`，有可测进展时可增加 1 轮，每轮 patch 后独立 Review，无进展则回到用户决定。
+
+receipt chain、trusted context、EscalatedRepair 和 Repair Campaign 不在默认路径。只有显式 auto_land/auto_release、长时间无人值守、Skill 自修改、安全、数据迁移、不可逆操作、正式发布或用户明确要求严格 Campaign 时，才读取 `policy/repair-campaign.json` 与 `references/REPAIR_CAMPAIGN.md`。严格 gate 只给机械资格，最终 Allowed 仍由持有真实上游证据的 Orchestrator 提升。
 
 ## 状态边界
 
@@ -98,13 +100,15 @@ Tracked / Controlled 默认有 2 轮 `AutoRepair`；第 3 轮只能由 `CORE.md`
 只有当前动作确实需要时，最多选择一份最相关文件：
 
 - 创建/更新 Tracked 或 Controlled TASK：`TASK_TEMPLATE.md`（符合单会话条件的 Tracked 任务可用 `TASK_TEMPLATE_BRIEF.md`）
+- 普通 finding：`policy/repair-basic.json` + `REPAIR_BASIC.md`
+- 显式严格自动化：`policy/repair-campaign.json` + `REPAIR_CAMPAIGN.md`
 - 需要完整执行细节：`WORKFLOW.md`
 - 独立代码审查：`CODE_REVIEW_CHECKLIST.md`
 - 用户动作等级：`ACCEPTANCE_GUIDE.md`
 - Git/diff 专项：`GIT_PRECHECK.md` 或 `DIFF_REVIEW.md`
 - v0.7 兼容/迁移：`V0.8_MIGRATION.md`
 
-其他旧指南是兼容资料，不在 v0.8 默认运行路径内。`PROMPTS.md` 仅供人工复制短提示，不是必读依赖。
+`CORE.md` 是旧入口说明，不是 canonical policy。其他旧指南是兼容资料，不在默认运行路径内；`PROMPTS.md` 仅供人工复制短提示。
 
 ## 交接输出
 
