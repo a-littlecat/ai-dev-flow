@@ -183,7 +183,7 @@ class PortableRuntimeIntegrationTests(unittest.TestCase):
                 self.assertEqual("adf/project-console/v1", console["schema_version"])
                 self.assertEqual(
                     "SINGLETON-001",
-                    console["human_attention"][0]["task_id"],
+                    console["ready_queue"][0]["task_id"],
                 )
                 self.assertEqual(1, len(list(runtime_root.glob("*/*/state.json"))))
             finally:
