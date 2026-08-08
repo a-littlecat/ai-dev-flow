@@ -10,6 +10,8 @@
 import type { Page } from "@playwright/test";
 import type {
   DashboardSnapshot,
+  ProjectConsole,
+  ConsoleItem,
   ErrorEnvelope,
   Provenance,
   SnapshotEvent,
@@ -54,6 +56,73 @@ export function mockReset(): Promise<void> {
 
 export function mockSetSnapshot(snapshot: DashboardSnapshot): Promise<void> {
   return post("/__mock__/snapshot", { snapshot });
+}
+
+export function mockSetConsole(console: ProjectConsole): Promise<void> {
+  return post("/__mock__/console", { console });
+}
+
+export function makeConsoleItem(overrides: Partial<ConsoleItem> = {}): ConsoleItem {
+  return {
+    task_id: "TASK-ALPHA",
+    title: "示例任务",
+    queue: "ready_queue",
+    actor: "agent",
+    session_id: null,
+    harness_id: null,
+    phase: null,
+    next_step: "继续执行任务",
+    why_now_codes: ["DEPENDENCIES_SATISFIED"],
+    blocking_task_ids: [],
+    unblocks_count: 0,
+    priority: "medium",
+    last_activity_at: null,
+    freshness: "fresh",
+    source_kinds: ["task", "git"],
+    branch: null,
+    worktree: null,
+    action_kind: "execute",
+    action_eligibility: "actionable",
+    action_kinds: ["execute"],
+    action_eligibilities: ["actionable"],
+    ...overrides,
+  };
+}
+
+export function makeProjectConsole(
+  snapshot: DashboardSnapshot,
+  overrides: Partial<ProjectConsole> = {},
+): ProjectConsole {
+  const base: ProjectConsole = {
+    schema_version: "adf/project-console/v1",
+    revision: snapshot.revision,
+    snapshot_revision: snapshot.revision,
+    generated_at: new Date().toISOString(),
+    state: "fresh",
+    freshness: {
+      task_facts_at: new Date(Date.now() - 8_000).toISOString(),
+      git_facts_at: new Date(Date.now() - 3_000).toISOString(),
+      runtime_facts_at: new Date(Date.now() - 12_000).toISOString(),
+    },
+    counts: { active_work: 0, human_attention: 0, ready_queue: 0, blocked: 0, stale_sessions: 0 },
+    active_work: [],
+    human_attention: [],
+    ready_queue: [],
+    blocked: [],
+    stale_sessions: [],
+    recent_changes: [],
+    ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一主任务" },
+    disclaimer: "Project Console 是只读投影。",
+  };
+  const result = { ...base, ...overrides };
+  result.counts = {
+    active_work: result.active_work.length,
+    human_attention: result.human_attention.length,
+    ready_queue: result.ready_queue.length,
+    blocked: result.blocked.length,
+    stale_sessions: result.stale_sessions.length,
+  };
+  return validateContract<ProjectConsole>("ProjectConsole", result);
 }
 
 export function mockSendEvent(event: SnapshotEvent): Promise<void> {

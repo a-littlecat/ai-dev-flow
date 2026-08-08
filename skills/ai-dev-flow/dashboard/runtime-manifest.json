@@ -40,14 +40,14 @@
     "contracts/dashboard-contracts-v1.schema.json": "f32c28847cccdefe683c0e875201505074b86e0060cfb2a6f9c23ea3cc3948f6",
     "contracts/project-console-v1.schema.json": "474aa39074ad53d4fea02b58879982f2fafdd0677f768ec49b8b043362da61c3",
     "contracts/runtime-session-v1.schema.json": "6bc95a4c631cf2b5a5fd00c854e338839114d4f047b6744166bfa92e9ae1299e",
-    "static/assets/index-CJKLBKmT.js": "c4fb097d8ede76cfba859f71497f219274427b7b67a22b75542c9c1e8811fdce",
-    "static/assets/index-PKl_O_go.css": "2a84592f3aefd57f972af3c2fef69648beb92423c661676453e4b4dac5be5b86",
-    "static/index.html": "75fdc8ddd1d91a4e3e31c32ca6862f778309e5c62169e02e76fd6203e32e7481"
+    "static/assets/index-DPjZkami.css": "f13d6a52fcaf5ef3a31329828e908f3a134c79d16ab6f0a34bf4f5cda05b47d0",
+    "static/assets/index-Nvhx6OTa.js": "7560c3df4789593ef9cf7b1adf0b9d7a347cfe93cc9063735722b62700c282ea",
+    "static/index.html": "d79f91c63175fdf265d5d318ce133f1508b8a27a7f30bb7111814190fcfc870a"
   },
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
   "skill_version": "0.9.2",
-  "source_fingerprint": "a06954a17f944313315220f26e6e8ed3f591494c8ae1db4d266eb66e0673b5e6",
+  "source_fingerprint": "b4fc12806354bd08d27b5f79a2dfddc998da010fa15e0d73775b6d3de70f86f0",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }

@@ -19,7 +19,7 @@ const schemaPath = path.resolve(frontendRoot, "../contracts/dashboard-contracts-
 const typesOutPath = path.join(frontendRoot, "src/generated/contracts.types.ts");
 const validatorsOutPath = path.join(frontendRoot, "src/generated/contracts.validators.ts");
 
-const ROOT_TYPES = ["DashboardSnapshot", "TaskDetail", "Health", "ErrorEnvelope", "SnapshotEvent"];
+const ROOT_TYPES = ["DashboardSnapshot", "TaskDetail", "Health", "ErrorEnvelope", "SnapshotEvent", "ProjectConsole"];
 const SCHEMA_ID = "ai-dev-flow/dashboard-contracts/v1";
 
 const BANNER = `/* eslint-disable */

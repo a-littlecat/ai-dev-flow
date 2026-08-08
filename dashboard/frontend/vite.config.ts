@@ -70,15 +70,17 @@ function mockBackendPlugin(): Plugin {
   const validateHealth = validator("Health");
   const validateEvent = validator("SnapshotEvent");
   const validateError = validator("ErrorEnvelope");
+  const validateConsole = validator("ProjectConsole");
 
   interface MockState {
     snapshot: Record<string, unknown> | null;
+    console: Record<string, unknown> | null;
     taskError: Record<string, unknown> | null;
     sseDown: boolean;
     truncateSnapshot: boolean;
     sseClients: Set<ServerResponse>;
   }
-  const state: MockState = { snapshot: null, taskError: null, sseDown: false, truncateSnapshot: false, sseClients: new Set() };
+  const state: MockState = { snapshot: null, console: null, taskError: null, sseDown: false, truncateSnapshot: false, sseClients: new Set() };
 
   const sendJson = (res: ServerResponse, status: number, payload: unknown, headers: Record<string, string> = {}) => {
     res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers });
@@ -147,6 +149,35 @@ function mockBackendPlugin(): Plugin {
     };
   };
 
+  const buildConsole = (): Record<string, unknown> | null => {
+    if (state.console) {
+      return state.console;
+    }
+    const snapshot = state.snapshot;
+    if (!snapshot) {
+      return null;
+    }
+    const generatedAt = String(snapshot.generated_at);
+    const revision = String(snapshot.revision);
+    return {
+      schema_version: "adf/project-console/v1",
+      revision,
+      snapshot_revision: revision,
+      generated_at: generatedAt,
+      state: snapshot.state,
+      freshness: { task_facts_at: generatedAt, git_facts_at: generatedAt, runtime_facts_at: generatedAt },
+      counts: { active_work: 0, human_attention: 0, ready_queue: 0, blocked: 0, stale_sessions: 0 },
+      active_work: [],
+      human_attention: [],
+      ready_queue: [],
+      blocked: [],
+      stale_sessions: [],
+      recent_changes: [],
+      ambiguity: { has_unique_primary: false, candidate_count: 0, message: "当前没有唯一主任务" },
+      disclaimer: "Project Console 是只读投影。",
+    };
+  };
+
   const sendEventFrame = (res: ServerResponse, payload: Record<string, unknown>): void => {
     res.write(`event: snapshot\nid: ${String(payload.revision)}\ndata: ${JSON.stringify(payload)}\n\n`);
   };
@@ -194,6 +225,29 @@ function mockBackendPlugin(): Plugin {
         return;
       }
       sendJson(res, 200, health);
+      return;
+    }
+    if (url === "/api/v1/console") {
+      const console = buildConsole();
+      if (!console) {
+        sendJson(res, 503, {
+          error: { code: "SNAPSHOT_UNAVAILABLE", details: { server_state: "starting" }, message: "快照尚不可用", provenance: [] },
+          revision: null,
+          schema_version: "ai-dev-flow/dashboard-error/v1",
+        });
+        return;
+      }
+      if (!validateConsole(console)) {
+        sendJson(res, 500, { ok: false, errors: validateConsole.errors });
+        return;
+      }
+      const etag = `"sha256-${String(console.revision)}"`;
+      if (req.headers["if-none-match"] === etag) {
+        res.writeHead(304);
+        res.end();
+        return;
+      }
+      sendJson(res, 200, console, { ETag: etag, "Cache-Control": "private, no-cache" });
       return;
     }
     if (url.startsWith("/api/v1/tasks/")) {
@@ -272,6 +326,7 @@ function mockBackendPlugin(): Plugin {
     const body = (await readBody(req)) as Record<string, unknown> | null;
     if (url === "/__mock__/reset") {
       state.snapshot = null;
+      state.console = null;
       state.taskError = null;
       state.sseDown = false;
       state.truncateSnapshot = false;
@@ -292,6 +347,16 @@ function mockBackendPlugin(): Plugin {
         return;
       }
       state.snapshot = payload as Record<string, unknown>;
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+    if (url === "/__mock__/console") {
+      const payload = body?.console;
+      if (!validateConsole(payload)) {
+        sendJson(res, 422, { ok: false, errors: validateConsole.errors });
+        return;
+      }
+      state.console = payload as Record<string, unknown>;
       sendJson(res, 200, { ok: true });
       return;
     }

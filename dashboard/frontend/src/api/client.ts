@@ -3,7 +3,7 @@
  * requests plus the SSE stream; it never reads the file system, never runs
  * Git and never writes anything back.
  */
-import type { DashboardSnapshot, ErrorEnvelope, Health, TaskDetail } from "../generated/contracts.types";
+import type { DashboardSnapshot, ErrorEnvelope, Health, ProjectConsole, TaskDetail } from "../generated/contracts.types";
 import { SchemaViolationError, tryParseErrorEnvelope, validateContract } from "./schema";
 
 export type ApiFailure =
@@ -61,6 +61,27 @@ async function getJson(
 export interface SnapshotReply {
   snapshot: DashboardSnapshot;
   etag: string | null;
+}
+
+export interface ConsoleReply {
+  console: ProjectConsole;
+  etag: string | null;
+}
+
+export async function fetchConsole(etag?: string): Promise<ApiResult<ConsoleReply | null>> {
+  const result = await getJson("/api/v1/console", etag);
+  if (result === "not-modified") {
+    return { ok: true, value: null };
+  }
+  if (!result.ok) {
+    return result;
+  }
+  try {
+    const console = validateContract<ProjectConsole>("ProjectConsole", result.value);
+    return { ok: true, value: { console, etag: result.etag ?? null } };
+  } catch (error) {
+    return { ok: false, failure: { kind: "schema", error: error as SchemaViolationError } };
+  }
 }
 
 export async function fetchSnapshot(etag?: string): Promise<ApiResult<SnapshotReply | null>> {

@@ -13,7 +13,7 @@
  * - `?fixture=<name>` loads a versioned contract fixture instead (dev/tests),
  *   still strictly validated, with SSE disabled and a visible fixture badge.
  */
-import { fetchFixtureSnapshot, fetchHealth, fetchSnapshot, fetchTaskDetail } from "./api/client";
+import { fetchConsole, fetchFixtureSnapshot, fetchHealth, fetchSnapshot, fetchTaskDetail } from "./api/client";
 import { SnapshotEventStream } from "./api/sse";
 import { AppStore } from "./state/store";
 import { filterTasks, resolveSelectionAfterFilter } from "./state/derive";
@@ -26,13 +26,16 @@ import { ActionCenter } from "./ui/actionCenter";
 import { Overlays } from "./ui/overlays";
 import { el } from "./ui/dom";
 import { SNAPSHOT_STATE_LABEL } from "./ui/labels";
+import { ProjectConsoleView } from "./ui/projectConsole";
 
 const HEALTH_POLL_MS = 4000;
+const CONSOLE_POLL_MS = 5000;
 
 class DashboardApp {
   private readonly store = new AppStore();
   private readonly statusBar: StatusBar;
   private readonly actionCenter: ActionCenter;
+  private readonly projectConsole: ProjectConsoleView;
   private readonly toolbar: Toolbar;
   private readonly graph: GraphView;
   private readonly detail: DetailPanel;
@@ -41,6 +44,7 @@ class DashboardApp {
   private readonly fixtureName: string | null;
   private readonly networkView: HTMLElement;
   private healthTimer: number | null = null;
+  private consoleTimer: number | null = null;
   private lastAnnouncedRevision: string | null = null;
   /**
    * Snapshot refreshes are serialized through a promise chain and tagged
@@ -51,16 +55,22 @@ class DashboardApp {
   private snapshotQueue: Promise<void> = Promise.resolve();
   /** Epoch guarding task-detail replies against out-of-order completion. */
   private detailEpoch = 0;
+  /** Console polling is single-flight; timer ticks coalesce into one trailing refresh. */
+  private consoleRefreshActive: Promise<void> | null = null;
+  private consoleRefreshQueued = false;
 
   constructor(mount: HTMLElement) {
     const params = new URLSearchParams(window.location.search);
     this.fixtureName = params.get("fixture");
-    if (params.get("view") === "network") {
+    if (params.get("view") === "network" || (this.fixtureName !== null && !params.has("view"))) {
       this.store.showFullNetwork();
+    } else if (params.get("view") === "legacy") {
+      this.store.showLegacy();
     }
 
     this.statusBar = new StatusBar(this.store);
     this.actionCenter = new ActionCenter(this.store);
+    this.projectConsole = new ProjectConsoleView(this.store);
     this.toolbar = new Toolbar(this.store);
     this.graph = new GraphView(this.store);
     this.detail = new DetailPanel(this.store);
@@ -73,7 +83,7 @@ class DashboardApp {
     this.networkView = el("section", "network-view");
     this.networkView.setAttribute("aria-label", "完整任务关系图");
     this.networkView.append(this.toolbar.root, workspace);
-    main.append(this.actionCenter.root, this.networkView);
+    main.append(this.projectConsole.root, this.actionCenter.root, this.networkView);
     layout.append(this.statusBar.root, this.overlays.root, main, this.overlays.drawerRoot, this.overlays.liveRegion);
     mount.append(layout);
 
@@ -85,12 +95,16 @@ class DashboardApp {
         changed.has("phaseError") ||
         changed.has("viewMode") ||
         changed.has("filters")
+        || changed.has("console")
       ) {
         this.statusBar.update(state);
         this.overlays.update(state);
       }
       if (changed.has("snapshot") || changed.has("phase") || changed.has("viewMode")) {
         this.actionCenter.update(state);
+      }
+      if (changed.has("snapshot") || changed.has("console") || changed.has("viewMode") || changed.has("connection")) {
+        this.projectConsole.update(state);
       }
       if (changed.has("viewMode")) {
         this.syncView(state);
@@ -174,12 +188,20 @@ class DashboardApp {
     const initial = this.store.get();
     this.statusBar.update(initial);
     this.actionCenter.update(initial);
+    this.projectConsole.update(initial);
     this.syncView(initial);
     this.overlays.update(initial);
   }
 
   private syncView(state: ReturnType<AppStore["get"]>): void {
     this.networkView.hidden = state.viewMode !== "network";
+    const url = new URL(window.location.href);
+    if (state.viewMode === "console") {
+      url.searchParams.delete("view");
+    } else {
+      url.searchParams.set("view", state.viewMode);
+    }
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     if (!this.networkView.hidden) {
       requestAnimationFrame(() => this.graph.fitToContent(false));
     }
@@ -190,6 +212,7 @@ class DashboardApp {
       await this.loadFixture();
     } else {
       await this.queueSnapshotRefresh(false);
+      this.consoleTimer = window.setInterval(() => void this.queueConsoleRefresh(), CONSOLE_POLL_MS);
     }
     // Fit the initial graph once content is laid out.
     requestAnimationFrame(() => this.graph.fitToContent(false));
@@ -244,6 +267,7 @@ class DashboardApp {
     if (result.ok) {
       if (result.value !== null) {
         this.store.setSnapshot(result.value.snapshot, result.value.etag ?? this.store.get().etag, null);
+        void this.queueConsoleRefresh();
       } else {
         // 304: the local snapshot is current, so the re-sync succeeded —
         // a protocol-error banner may be cleared (genuine failures stay).
@@ -260,6 +284,53 @@ class DashboardApp {
     // Snapshot unavailable (starting/degraded) or disconnected: poll health
     // and resume automatically when the backend recovers.
     this.scheduleHealthPolling();
+  }
+
+  private queueConsoleRefresh(): Promise<void> {
+    if (this.fixtureName) {
+      return Promise.resolve();
+    }
+    if (this.consoleRefreshActive) {
+      this.consoleRefreshQueued = true;
+      return this.consoleRefreshActive;
+    }
+    const refreshes = async (): Promise<void> => {
+      do {
+        this.consoleRefreshQueued = false;
+        await this.refreshConsole();
+      } while (this.consoleRefreshQueued);
+    };
+    const active = refreshes().finally(() => {
+      this.consoleRefreshActive = null;
+    });
+    this.consoleRefreshActive = active;
+    return active;
+  }
+
+  private async refreshConsole(): Promise<void> {
+    if (!this.store.get().snapshot) {
+      return;
+    }
+    this.store.setConsoleLoading();
+    const result = await fetchConsole(this.store.get().console.etag ?? undefined);
+    if (!result.ok) {
+      this.store.setConsoleFailure(result.failure);
+      return;
+    }
+    if (result.value === null) {
+      if (!this.store.setConsoleNotModified()) {
+        // A 304 only proves the request ETag is current. If the local
+        // Console belongs to an older Snapshot generation, retry without
+        // that stale ETag instead of leaving the default page spinning.
+        void this.queueConsoleRefresh();
+      }
+      return;
+    }
+    if (!this.store.setConsoleReady(result.value.console, result.value.etag)) {
+      // Snapshot and Console replies are generation-bound. Re-sync instead
+      // of showing a cross-revision queue or deriving a queue in the client.
+      void this.queueSnapshotRefresh(false);
+    }
   }
 
   private onSnapshotEvent(_revision: string, resetRequired: boolean): void {
