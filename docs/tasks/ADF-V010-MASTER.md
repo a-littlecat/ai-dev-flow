@@ -39,7 +39,7 @@
 
 - 完成标准：六个阶段按依赖顺序交付，并严格停在真实用户 UA 与显式发布授权门禁。
 - 验证命令或检查：逐阶段执行总合同指定测试、独立只读 Review、diff 检查和生命周期收据核对。
-- [ ] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
+- [x] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
 - [ ] PROJECT-CONSOLE-FE 自动化与 Review 通过，并停在真实用户 UA 门禁。
 - [ ] 用户真实 UA Passed 且明确同意后，才执行 LEGACY-RETIRE。
 - [ ] 用户显式发布授权后，才执行 RELEASE。
@@ -56,6 +56,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT 外部修复 Review Passed、Pushed `56c2aa7`、UA3 Pending；CAPABILITY-REVIEW 外部修复 Review Passed / Fresh Verification Passed / Committed `83ec457` / UA3 Pending。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：CORE-SPLIT 外部修复 Review Passed、Pushed `56c2aa7`、UA3 Pending；CAPABILITY-REVIEW 外部修复 Review Passed / Pushed `0e4c2ff` / UA3 Pending；RUNTIME-CONSOLE-BE 外部修复及 portable follow-up Review Passed / Committed `981079a` / UA3 Pending。未 merge PR / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
-- 下一步：回写 CAPABILITY-REVIEW 新 Review 收据并提交/push 当前修复，再以普通 merge 更新 Runtime Console stacked branch；不提前进入正式 UA 或 Project Console。
+- 下一步：推送 #16 并以普通 merge 更新 #17，完成前端外部修复、全量验证与新隔离 Review；仍不提前进入正式用户 UA。

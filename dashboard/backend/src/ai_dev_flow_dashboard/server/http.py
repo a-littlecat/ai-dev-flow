@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from ai_dev_flow_dashboard.core import canonical_bytes
 from ai_dev_flow_dashboard.core.schema_validator import validate_contract
 from ai_dev_flow_dashboard.snapshot import SnapshotCoordinator
+from ai_dev_flow_dashboard.runtime import RuntimeSessionStore
 
 from .api import ApiResponse, DashboardApi, known_route, task_id_from_path
 
@@ -38,12 +39,13 @@ class DashboardHttpServer(ThreadingHTTPServer):
         write_timeout_seconds: float = SSE_WRITE_TIMEOUT_SECONDS,
         max_event_bytes: int = SSE_MAX_EVENT_BYTES,
         on_sse_client_change: Callable[[bool], None] | None = None,
+        runtime_store: RuntimeSessionStore | None = None,
     ) -> None:
         host, _ = server_address
         if host != LOOPBACK_HOST:
             raise ValueError("dashboard server may bind only to 127.0.0.1")
         self.coordinator = coordinator
-        self.api = DashboardApi(coordinator)
+        self.api = DashboardApi(coordinator, runtime_store=runtime_store)
         self.static_assets = (
             _load_static_assets(Path(static_root).resolve())
             if static_root is not None
@@ -116,6 +118,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             elif path == "/api/v1/snapshot":
                 self._send(
                     self.server.api.snapshot(self.headers.get("If-None-Match"))
+                )
+            elif path == "/api/v1/console":
+                self._send(
+                    self.server.api.console(self.headers.get("If-None-Match"))
                 )
             elif path == "/api/v1/health":
                 self._send(self.server.api.health())
@@ -274,6 +280,7 @@ def create_local_server(
     write_timeout_seconds: float = SSE_WRITE_TIMEOUT_SECONDS,
     max_event_bytes: int = SSE_MAX_EVENT_BYTES,
     on_sse_client_change: Callable[[bool], None] | None = None,
+    runtime_store: RuntimeSessionStore | None = None,
 ) -> DashboardHttpServer:
     if host != LOOPBACK_HOST:
         raise ValueError("non-loopback dashboard binding is forbidden")
@@ -287,4 +294,5 @@ def create_local_server(
         write_timeout_seconds=write_timeout_seconds,
         max_event_bytes=max_event_bytes,
         on_sse_client_change=on_sse_client_change,
+        runtime_store=runtime_store,
     )

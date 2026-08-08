@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adf/runtime-session/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "session_id", "task_id", "harness_id", "phase", "next_step", "status_summary", "branch", "worktree", "started_at", "updated_at", "stale_after_seconds", "ended_at", "end_reason"],
+  "properties": {
+    "schema_version": {"const": "adf/runtime-session/v1"},
+    "project_id": {"type": "string", "pattern": "[0-9a-f]{64}"},
+    "session_id": {"type": "string", "pattern": "[A-Za-z0-9](?:[A-Za-z0-9._-]{0,127})"},
+    "task_id": {"type": "string", "pattern": "[A-Za-z0-9](?:[A-Za-z0-9._-]{0,127})"},
+    "harness_id": {"type": "string", "pattern": "[A-Za-z0-9](?:[A-Za-z0-9._-]{0,127})"},
+    "phase": {"type": "string", "enum": ["planning", "implementing", "validating", "reviewing", "repairing", "waiting_user", "blocked", "done"]},
+    "next_step": {"type": "string", "minLength": 1},
+    "status_summary": {"type": "string"},
+    "branch": {"type": ["string", "null"]},
+    "worktree": {"type": ["string", "null"]},
+    "started_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "stale_after_seconds": {"type": "integer", "minimum": 1},
+    "ended_at": {"type": ["string", "null"]},
+    "end_reason": {"type": ["string", "null"]}
+  }
+}

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ai_dev_flow_dashboard.core import validated_canonical_bytes
+from ai_dev_flow_dashboard.console import ConsoleBuilder
+from ai_dev_flow_dashboard.runtime import RuntimeSessionStore
 from ai_dev_flow_dashboard.snapshot import PublishedSnapshot, SnapshotCoordinator
 
 
@@ -27,8 +29,16 @@ class ApiResponse:
 
 
 class DashboardApi:
-    def __init__(self, coordinator: SnapshotCoordinator) -> None:
+    def __init__(
+        self,
+        coordinator: SnapshotCoordinator,
+        *,
+        runtime_store: RuntimeSessionStore | None = None,
+    ) -> None:
         self.coordinator = coordinator
+        self.console_builder = ConsoleBuilder(
+            runtime_store or RuntimeSessionStore(coordinator.project_root)
+        )
 
     def snapshot(self, if_none_match: str | None = None) -> ApiResponse:
         current = self.coordinator.current()
@@ -86,6 +96,26 @@ class DashboardApi:
 
     def health(self) -> ApiResponse:
         return self.json(200, self.coordinator.health())
+
+    def console(self, if_none_match: str | None = None) -> ApiResponse:
+        current = self.coordinator.current()
+        if current is None:
+            return self.error(
+                503,
+                "SNAPSHOT_UNAVAILABLE",
+                {"server_state": self._unavailable_server_state()},
+            )
+        payload = self.console_builder.build(current)
+        etag = f'"sha256-{payload["revision"]}"'
+        headers = [("ETag", etag)]
+        if if_none_match == etag:
+            return self._response(304, b"", headers)
+        return self._response(
+            200,
+            validated_canonical_bytes(payload),
+            headers,
+            content_type="application/json; charset=utf-8",
+        )
 
     def method_not_allowed(self, method: str) -> ApiResponse:
         return self.error(
@@ -184,6 +214,7 @@ class DashboardApi:
 def known_route(path: str) -> bool:
     return path in {
         "/api/v1/snapshot",
+        "/api/v1/console",
         "/api/v1/health",
         "/api/v1/events",
     } or path.startswith("/api/v1/tasks/")

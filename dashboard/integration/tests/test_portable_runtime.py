@@ -88,6 +88,10 @@ def _body(port: int, path: str) -> bytes:
         return response.read()
 
 
+def _json_body(port: int, path: str) -> dict[str, object]:
+    return json.loads(_body(port, path))
+
+
 def _wait_for_revision(port: int, previous: str) -> dict[str, object]:
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
@@ -174,6 +178,12 @@ class PortableRuntimeIntegrationTests(unittest.TestCase):
                 self.assertEqual(
                     ["SINGLETON-001"],
                     [item["task_id"] for item in _snapshot(port)["tasks"]],
+                )
+                console = _json_body(port, "/api/v1/console")
+                self.assertEqual("adf/project-console/v1", console["schema_version"])
+                self.assertEqual(
+                    "SINGLETON-001",
+                    console["ready_queue"][0]["task_id"],
                 )
                 self.assertEqual(1, len(list(runtime_root.glob("*/*/state.json"))))
             finally:

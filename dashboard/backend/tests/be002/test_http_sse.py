@@ -85,6 +85,22 @@ class HttpContractTests(ServerCase):
         self.assertEqual(b"", body)
         self.assertEqual("0", headers["Content-Length"])
 
+    def test_console_etag_304_schema_and_sensitive_field_exclusion(self):
+        status, headers, body = self.request("GET", "/api/v1/console")
+        self.assertEqual(200, status)
+        payload = json.loads(body)
+        validate_contract(payload)
+        self.assertEqual("adf/project-console/v1", payload["schema_version"])
+        text = body.decode("utf-8").casefold()
+        for forbidden in ("prompt", "token", "secret", "stdout", "environment", "shell"):
+            self.assertNotIn(forbidden, text)
+        status, second_headers, second_body = self.request(
+            "GET", "/api/v1/console", headers={"If-None-Match": headers["ETag"]}
+        )
+        self.assertEqual(304, status)
+        self.assertEqual(headers["ETag"], second_headers["ETag"])
+        self.assertEqual(b"", second_body)
+
     def test_optional_static_frontend_is_same_origin_and_read_only(self):
         self.server.shutdown()
         self.server.server_close()
@@ -134,6 +150,7 @@ class HttpContractTests(ServerCase):
             ("GET", "/api/v1/tasks/MISSING-001", 404),
             ("GET", "/api/v1/unknown", 404),
             ("POST", "/api/v1/snapshot", 405),
+            ("POST", "/api/v1/console", 405),
             ("PUT", "/api/v1/tasks/TEST-001", 405),
             ("GET", "/api/v1/health", 200),
         )
