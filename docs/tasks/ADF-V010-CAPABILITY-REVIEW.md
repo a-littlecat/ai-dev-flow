@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -49,6 +49,7 @@
 
 - `ADF-V010-STACKED-EXT-P2-SKILL-001`：外部复审指出 SKILL 的“最多一份 reference”与能力/Recipe 等必需多文件集合冲突。修复：改为读取当前动作的最小必需集合，并显式标记必需组合。
 - `ADF-V010-STACKED-EXT-P2-ADAPTER-001`：外部复审要求 Adapter 显式声明 `runtime_session_bridge`，不能与正式 Skill sync 混用。修复：新增独立枚举轴 `runtime_session_bridge`，并把正式同步说明重命名为 `formal_skill_sync_method`；loader、五份 Adapter、fixture、能力合同与测试同步更新。
+- `ADF-V010-EXT-R2-P1-002`：外部复审证明旧 `native/adapter` 只是名义声明，没有可执行桥接与生命周期 Hook。本阶段先将合同改为结构化 `command/manual/none`；`command` 必须同时持有真实入口与 `start/update/wait/end/heartbeat` 五个 Hook。#15 尚未引入 Runtime CLI，因此 Codex/OpenCode 均如实降级为 `none`；待 #16 提供实现后才可升级。当前 `Needs Fix / Review Pending / UA3 Pending`。
 - 当前外部修复：已吸收 #14 `56c2aa7`；fresh 全量验证已完成，当前等待 Round 3 定向刷新与新隔离只读 Review。历史 ER-1 Passed 不可替代当前 Review。
 - 外部修复 Round 1 Review：session=`019fe21b-8825-75e2-a9ba-fa19b3b2d729`，`Needs Fix 0/1/1/0`。P1 `ADF-V010-REVIEW-P1-001` 证明未验证普通映射可绕过 loader 获得 `R1`；P2 指出 BOARD/MASTER 仍可能误用历史 Passed。Round 2 已让 Recipe 入口重验完整 Adapter 合同，缺字段、未知字段或非法枚举一律 `R5`，并同步状态投影；等待 fresh 验证与新 Review。
 - 外部修复 Round 2 Review：session=`019fe221-d8d5-7a81-b7c4-4124794bbd95`，`Needs Fix 0/1/1/0`。P1 `ADF-V010-R2-P1-001` 证明列表/字典等不可哈希枚举会抛 `TypeError`；P2 指出 fresh 验证措辞漂移。Round 3 已先验证枚举值为字符串，并补不可哈希负例；fresh 全量证据已存在，等待定向刷新与新 Review。
