@@ -17,6 +17,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 import _workflow_contract as reader
 import _task_board as task_board
+from policy_loader import PolicyLoadError, load_policy_document
 
 
 # The private parser asks for the same normalized source path once per field and
@@ -133,6 +134,7 @@ READY_STATES = {"Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accep
 REVIEW_STATES = {"Review", "Needs Fix", "Accepted", "Closed"}
 PLACEHOLDERS = {"", "待填写", "待确认", "TBD", "N/A", "不适用", "待执行时填写", "待执行后填写", "待审查", "待复测"}
 TRANSITIONS = {("Draft","Ready"), ("Draft","Deferred"), ("Draft","Cancelled"), ("Ready","In Progress"), ("Ready","Blocked"), ("In Progress","Review"), ("In Progress","Blocked"), ("In Progress","Deferred"), ("Review","Needs Fix"), ("Review","Accepted"), ("Review","Blocked"), ("Needs Fix","In Progress"), ("Needs Fix","Review"), ("Accepted","Closed"), ("Blocked","Ready"), ("Blocked","Deferred"), ("Deferred","Ready"), ("Deferred","Cancelled")}
+CORE_POLICY_PATH = SCRIPT_DIR.parent / "policy" / "core.json"
 
 
 @dataclass(frozen=True)
@@ -209,6 +211,60 @@ def _has_ua_outcome(contract):
     return any(field.value.strip() not in PLACEHOLDERS for section in contract.sections if section.heading in {"用户动作等级 / 验收建议", "用户验收反馈 / 实机测试反馈"} for field in section.fields)
 
 
+@lru_cache(maxsize=1)
+def _review_policy_inputs():
+    policy = load_policy_document(CORE_POLICY_PATH)
+    controlled = policy["routes"]["controlled"]
+    return (
+        frozenset(controlled["task_classes"]),
+        controlled["ua_min"],
+        frozenset(controlled["risk_flags"]),
+        frozenset(policy["review"]["Tracked"]["trigger_risk_flags"]),
+    )
+
+
+def _scheduling_risk_flags(source_file):
+    if source_file is None:
+        return frozenset()
+    try:
+        text = pathlib.Path(source_file).read_text(encoding="utf-8", errors="strict")
+    except (OSError, UnicodeError):
+        return frozenset()
+    match = re.search(
+        r"^## Scheduling\s*$([\s\S]*?)(?=^## |\Z)",
+        text,
+        flags=re.MULTILINE,
+    )
+    if match is None:
+        return frozenset()
+    values = re.findall(
+        r"^- `risk_flags`: `([^`\r\n]+)`$",
+        match.group(1),
+        flags=re.MULTILINE,
+    )
+    if len(values) != 1 or values[0] == "none":
+        return frozenset()
+    return frozenset(values[0].split(";"))
+
+
+def _policy_requires_review(contract, source_file):
+    if contract.get("schema_version") != "adf/v0.10.0":
+        return False
+    try:
+        task_classes, ua_min, controlled_risks, tracked_risks = _review_policy_inputs()
+    except (OSError, UnicodeError, PolicyLoadError, KeyError, TypeError):
+        return True
+    ua_level = contract.get("ua_level") or ""
+    ua_number = int(ua_level[2:]) if re.fullmatch(r"UA[0-7]", ua_level) else -1
+    risks = _scheduling_risk_flags(source_file)
+    return (
+        contract.get("task_class") in task_classes
+        or ua_number >= ua_min
+        or bool(risks & (controlled_risks | tracked_risks))
+        or "real_env_signal" in (contract.get("overlays") or "").split(";")
+    )
+
+
 def _single_value_conflicts(contract):
     diagnostics = []
     for name in ("Base / Diff", "隔离位置", "回滚方式"):
@@ -240,6 +296,7 @@ def _validate(contract, *, require_commit=True, source_file=None):
     values = dict(contract.normalized)
     lifecycle = values.get("lifecycle")
     review = values.get("review_status")
+    review_requirement = values.get("review_requirement")
     ua_level = values.get("ua_level")
     ua_status = values.get("ua_status")
     authority = values.get("acceptance_authority")
@@ -285,8 +342,31 @@ def _validate(contract, *, require_commit=True, source_file=None):
     if state_bad:
         diagnostics.append(_diag(contract, "V_STATE_GUARD", "lifecycle", "当前 lifecycle 缺少必需正文、Outcome 或 Git 状态"))
 
-    if lifecycle in {"Accepted", "Closed"} and review != "Passed":
-        diagnostics.append(_diag(contract, "V_REVIEW_GUARD", "review_status", "Accepted/Closed 必须 Review Passed"))
+    if lifecycle in {"Accepted", "Closed"}:
+        review_blocked = (
+            review_requirement in {"Required", "Legacy Unspecified"}
+            and review != "Passed"
+        ) or (
+            review_requirement == "Not Required"
+            and review not in {"Not Run", "Passed"}
+        )
+        if review_blocked:
+            diagnostics.append(_diag(
+                contract,
+                "V_REVIEW_GUARD",
+                "review_status",
+                "Accepted/Closed 的 Review requirement/status 组合不满足完成门禁",
+            ))
+    if review_requirement == "Not Required" and _policy_requires_review(
+        contract,
+        source_file,
+    ):
+        diagnostics.append(_diag(
+            contract,
+            "V_REVIEW_REQUIREMENT_GUARD",
+            "review_requirement",
+            "canonical policy 输入要求独立 Review，不能声明 Not Required",
+        ))
     ua_bad = False
     if lifecycle in {"Accepted", "Closed"} and (ua_status not in {"Passed", "Not Required"} or authority not in {"User Confirmed", "Designated Acceptor Confirmed"}):
         ua_bad = True
@@ -356,12 +436,18 @@ def _expected_board_projection(contract, source_file, project_root):
     task_id = values.get("task_id")
     if not task_id or any(item.severity == "error" for item in contract.diagnostics):
         return None
+    review_status = values.get("review_status") or ""
+    if values.get("schema_version") == "adf/v0.7.0":
+        review_status = {
+            "Not Run": "Pending",
+            "Blocked": "Do Not Merge",
+        }.get(review_status, review_status)
     expected = (
         ("task_id", task_id),
         ("title", contract.title or ""),
         ("task_class", values.get("task_class") or ""),
         ("lifecycle", values.get("lifecycle") or ""),
-        ("review_status", values.get("review_status") or ""),
+        ("review_status", review_status),
         ("ua_level", values.get("ua_level") or ""),
         ("acceptance", f"{values.get('ua_status')} / {values.get('acceptance_authority')}"),
         ("delivery", f"commit={values.get('commit_status')};merge={values.get('merge_status')};merge_authority={values.get('merge_authority')}"),
@@ -475,6 +561,25 @@ def _transition_diagnostic(contract, code):
     return None
 
 
+def _review_transition_diagnostic(contract, history_reports, after_report):
+    if after_report.get("schema_version") != "adf/v0.10.0":
+        return None
+    after = after_report.get("review_status")
+    historical_states = {
+        report.get("review_status")
+        for report in history_reports
+        if report.get("schema_version") == "adf/v0.10.0"
+    }
+    if historical_states & {"In Review", "Needs Fix", "Blocked", "Passed"} and after == "Not Run":
+        return _diag(
+            contract,
+            "V_REVIEW_REGRESSION",
+            "review_status",
+            "Git 历史证明 Review 已开始或已有结论，不能回退为 Not Run",
+        )
+    return None
+
+
 def _path_chunks(paths, *, limit=200, character_limit=12000):
     chunks = []
     current = []
@@ -512,19 +617,30 @@ def _run_git_text(root, arguments, *, input_text=None):
 def _history_commits(root, relatives):
     commits = {}
     ambiguous = set()
-    for chunk in _path_chunks(relatives):
+    scopes = tuple(
+        sorted(
+            {
+                pathlib.PurePosixPath(relative).parent.as_posix()
+                for relative in relatives
+            }
+        )
+    )
+    for chunk in _path_chunks(scopes):
         output = _run_git_text(
             root,
             [
                 "log",
                 "--format=format:%x00COMMIT%x00%H%x00",
                 "--name-status",
+                "--find-renames",
+                "--find-copies",
+                "--find-copies-harder",
                 "-z",
                 "--",
                 *chunk,
             ],
         )
-        wanted = set(chunk)
+        wanted = set(relatives)
         fields = output.split("\0")
         current = None
         index = 0
@@ -549,21 +665,20 @@ def _history_commits(root, relatives):
                     raise ValueError("truncated rename history")
                 paths = (fields[index + 1], fields[index + 2])
                 for relative in paths:
-                    if relative in wanted and relative not in commits:
+                    if relative in wanted:
                         ambiguous.add(relative)
                 index += 3
                 continue
             relative = fields[index + 1]
-            if (
-                relative in wanted
-                and relative not in commits
-                and relative not in ambiguous
-            ):
-                commits[relative] = current
+            if relative in wanted and relative not in ambiguous:
+                commits.setdefault(relative, []).append(current)
             index += 2
     for relative in ambiguous:
-        commits.pop(relative, None)
-    return commits
+        commits[relative] = []
+    return {
+        relative: tuple(values)
+        for relative, values in commits.items()
+    }
 
 
 def _history_commit(root, relative):
@@ -623,7 +738,7 @@ def _git_transition_diagnostics(contracts, source_files):
     if not pairs:
         return {}
     unavailable = {
-        source_file: _transition_diagnostic(contract, "W_TRANSITION_UNVERIFIABLE")
+        source_file: (_transition_diagnostic(contract, "W_TRANSITION_UNVERIFIABLE"),)
         for contract, source_file in pairs
     }
     try:
@@ -671,20 +786,39 @@ def _git_transition_diagnostics(contracts, source_files):
 
         queries = []
         for relative in sorted(commits):
-            commit = commits[relative]
-            queries.extend((f"{commit}:{relative}", f"{commit}^:{relative}"))
-        blobs = _cat_file_batch(root, tuple(queries))
+            commit_chain = commits[relative]
+            if not commit_chain:
+                continue
+            latest = commit_chain[0]
+            queries.extend((f"{latest}:{relative}", f"{latest}^:{relative}"))
+            queries.extend(f"{commit}:{relative}" for commit in commit_chain)
+        blobs = _cat_file_batch(root, tuple(dict.fromkeys(queries)))
     except (OSError, UnicodeError, ValueError, subprocess.SubprocessError):
         return unavailable
 
     diagnostics = dict(unavailable)
     for relative, diagnostic in cached.items():
         diagnostics[by_relative[relative][1]] = diagnostic
-    for relative, commit in commits.items():
+    for relative, commit_chain in commits.items():
         contract, source_file = by_relative[relative]
+        if not commit_chain:
+            result = (
+                _diag(
+                    contract,
+                    "V_REVIEW_HISTORY_AMBIGUOUS",
+                    "review_status",
+                    "TASK Git 历史包含重命名或复制，无法证明 Review 历史完整，必须人工核验",
+                ),
+            )
+            diagnostics[source_file] = result
+            if len(_transition_cache) >= 4096:
+                _transition_cache.pop(next(iter(_transition_cache)))
+            _transition_cache[(contract, str(source_file), head)] = result
+            continue
         try:
-            current = blobs[f"{commit}:{relative}"]
-            previous = blobs[f"{commit}^:{relative}"]
+            latest = commit_chain[0]
+            current = blobs[f"{latest}:{relative}"]
+            previous = blobs[f"{latest}^:{relative}"]
             if current is None or previous is None:
                 raise ValueError("missing historical blob")
             before_report = _cached_reader_inspect(
@@ -708,18 +842,36 @@ def _git_transition_diagnostics(contracts, source_files):
             if historical_after != after:
                 raise ValueError("working tree differs from HEAD blob")
             code = _transition_code(before, after, True)
+            history_reports = tuple(
+                _cached_reader_inspect(
+                    blobs[f"{commit}:{relative}"].decode("utf-8"),
+                    str(source_file),
+                    False,
+                )
+                for commit in commit_chain
+                if blobs[f"{commit}:{relative}"] is not None
+            )
+            review_diagnostic = _review_transition_diagnostic(
+                contract,
+                history_reports,
+                after_report,
+            )
         except (UnicodeError, ValueError):
             code = "W_TRANSITION_UNVERIFIABLE"
+            review_diagnostic = None
         diagnostic = _transition_diagnostic(contract, code)
-        diagnostics[source_file] = diagnostic
+        result = tuple(
+            item for item in (diagnostic, review_diagnostic) if item is not None
+        )
+        diagnostics[source_file] = result
         if len(_transition_cache) >= 4096:
             _transition_cache.pop(next(iter(_transition_cache)))
-        _transition_cache[(contract, str(source_file), head)] = diagnostic
+        _transition_cache[(contract, str(source_file), head)] = result
     return diagnostics
 
 
 def _git_transition_diagnostic(contract, source_file):
-    return _git_transition_diagnostics((contract,), (source_file,)).get(source_file)
+    return _git_transition_diagnostics((contract,), (source_file,)).get(source_file, ())
 
 
 class WorkflowContract:
@@ -861,9 +1013,7 @@ class WorkflowContract:
                     )
             transitions = transitions_future.result()
         for source_file in paths:
-            transition = transitions.get(source_file)
-            if transition is not None:
-                diagnostics.append(transition)
+            diagnostics.extend(transitions.get(source_file, ()))
         if path.is_dir() and (path / "docs" / "PROJECT_OVERLAY.md").exists():
             diagnostics.append(reader._diagnostic("W_PROJECT_OVERLAY_UNEVALUATED", path / "docs" / "PROJECT_OVERLAY.md", 1, "发现 Project Overlay，但 CONTRACT-007 前不求值"))
         diagnostics.sort(key=lambda item: (item.path, item.line, item.column, item.code, item.message))

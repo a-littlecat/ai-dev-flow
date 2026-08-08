@@ -160,6 +160,9 @@ export const GRAPH_TASKS = ["TASK-ALPHA", "TASK-BETA", "TASK-GAMMA", "TASK-DELTA
  */
 export function buildGraphSnapshot(revisionSeed = 900): DashboardSnapshot {
   const alpha = makeTask("TASK-ALPHA", {
+    contract_schema_version: "adf/v0.10.0",
+    review_requirement: "Not Required",
+    review_state: "Not Run",
     lifecycle: "Ready",
     task_class: "A",
     module_locks: ["core"],

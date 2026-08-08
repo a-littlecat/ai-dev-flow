@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/a-littlecat/ai-dev-flow/schemas/workflow-contract.schema.json",
-  "title": "ai-dev-flow Workflow Contract adf/v0.7.0",
-  "description": "CanonicalContractInput before safe-default injection. This schema is not a Markdown sidecar, does not accept the Normalized View-only Not Recorded token, and does not validate provenance, body evidence, Git history, TASK_BOARD, or user identity.",
+  "title": "ai-dev-flow Workflow Contract adf/v0.7.0 and adf/v0.10.0",
+  "description": "CanonicalContractInput before safe-default injection. v0.7 remains compatible; v0.10 adds explicit review_requirement and normalized review states. This schema does not validate provenance, body evidence, Git history, TASK_BOARD, or user identity.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "adf/v0.7.0"
+      "enum": ["adf/v0.7.0", "adf/v0.10.0"]
     },
     "task_id": {
       "type": "string",
@@ -59,11 +59,16 @@
     "review_status": {
       "enum": [
         "Pending",
+        "Not Run",
         "In Review",
         "Passed",
         "Needs Fix",
-        "Do Not Merge"
+        "Do Not Merge",
+        "Blocked"
       ]
+    },
+    "review_requirement": {
+      "enum": ["Required", "Not Required"]
     },
     "ua_level": {
       "enum": [
@@ -165,6 +170,63 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": {"schema_version": {"const": "adf/v0.7.0"}},
+        "required": ["schema_version"]
+      },
+      "then": {
+        "not": {"required": ["review_requirement"]},
+        "properties": {
+          "review_status": {
+            "enum": ["Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"schema_version": {"const": "adf/v0.10.0"}},
+        "required": ["schema_version"]
+      },
+      "then": {
+        "required": ["review_requirement"],
+        "properties": {
+          "review_status": {
+            "enum": ["Not Run", "In Review", "Passed", "Needs Fix", "Blocked"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"schema_version": {"const": "adf/v0.10.0"}},
+        "required": ["schema_version"],
+        "anyOf": [
+          {
+            "properties": {"task_class": {"const": "D"}},
+            "required": ["task_class"]
+          },
+          {
+            "properties": {
+              "ua_level": {"enum": ["UA5", "UA6", "UA7"]}
+            },
+            "required": ["ua_level"]
+          },
+          {
+            "properties": {
+              "overlays": {"pattern": "(^|;)real_env_signal(;|$)"}
+            },
+            "required": ["overlays"]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "review_requirement": {"const": "Required"}
+        }
+      }
+    },
     {
       "if": {
         "properties": {
@@ -424,9 +486,6 @@
           "acceptance_authority"
         ],
         "properties": {
-          "review_status": {
-            "const": "Passed"
-          },
           "ua_level": {
             "enum": [
               "UA0",
@@ -453,6 +512,38 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {"enum": ["Accepted", "Closed"]},
+          "schema_version": {"const": "adf/v0.7.0"}
+        },
+        "required": ["lifecycle", "schema_version"]
+      },
+      "then": {"properties": {"review_status": {"const": "Passed"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {"enum": ["Accepted", "Closed"]},
+          "schema_version": {"const": "adf/v0.10.0"},
+          "review_requirement": {"const": "Required"}
+        },
+        "required": ["lifecycle", "schema_version", "review_requirement"]
+      },
+      "then": {"properties": {"review_status": {"const": "Passed"}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {"enum": ["Accepted", "Closed"]},
+          "schema_version": {"const": "adf/v0.10.0"},
+          "review_requirement": {"const": "Not Required"}
+        },
+        "required": ["lifecycle", "schema_version", "review_requirement"]
+      },
+      "then": {"properties": {"review_status": {"enum": ["Not Run", "Passed"]}}}
     },
     {
       "if": {
@@ -510,7 +601,8 @@
           "review_status": {
             "enum": [
               "Needs Fix",
-              "Do Not Merge"
+              "Do Not Merge",
+              "Blocked"
             ]
           }
         },

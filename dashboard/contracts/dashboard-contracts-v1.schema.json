@@ -132,6 +132,18 @@
           "type": ["string", "null"],
           "enum": ["Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge", null]
         },
+        "contract_schema_version": {
+          "type": ["string", "null"],
+          "enum": ["adf/v0.7.0", "adf/v0.10.0", null]
+        },
+        "review_requirement": {
+          "type": ["string", "null"],
+          "enum": ["Legacy Unspecified", "Required", "Not Required", null]
+        },
+        "review_state": {
+          "type": ["string", "null"],
+          "enum": ["Not Run", "In Review", "Passed", "Needs Fix", "Blocked", null]
+        },
         "ua_level": {
           "type": ["string", "null"],
           "enum": ["UA0", "UA1", "UA2", "UA3", "UA4", "UA5", "UA6", "UA7", "TBD", null]

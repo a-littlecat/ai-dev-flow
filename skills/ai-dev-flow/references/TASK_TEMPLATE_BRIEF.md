@@ -1,18 +1,19 @@
-# 单会话 Tracked TASK 简版模板
+# 单会话 Tracked TASK 简版模板（v0.10）
 
-> Skill 包 `0.9.2` 沿用。仅用于同时满足以下条件的 Tracked 任务：运行在大上下文模型上（完整任务与 diff 可留在会话内）、预期单会话内完成、无跨会话交接需求。其余 Tracked 任务与全部 Controlled 任务一律使用 `TASK_TEMPLATE.md`。Contract schema 仍为 `adf/v0.7.0`，不随模板简化而变化。
+> 仅用于单会话、单执行者、范围明确、无交接、无 Repair、无真实环境/用户观察且非 Controlled 的 Tracked 任务。模板选择只看任务形状，不看模型名称或上下文窗口。进入 Repair、范围/风险变化或跨会话时升级为 `TASK_TEMPLATE.md`。
 
 ```markdown
 # <TASK-ID>：<任务标题>
 
 ## Workflow Contract
 
-- `schema_version`: `adf/v0.7.0`
+- `schema_version`: `adf/v0.10.0`
 - `task_id`: `<TASK-ID>`
 - `task_type`: `<document|plan|code|review|repair|test>`
 - `task_class`: `<A|B|C>`
 - `lifecycle`: `<Draft|Ready|In Progress|Blocked|Review|Needs Fix|Accepted|Closed|Deferred|Cancelled>`
-- `review_status`: `<Pending|In Review|Passed|Needs Fix|Do Not Merge>`
+- `review_requirement`: `<Required|Not Required>`
+- `review_status`: `<Not Run|In Review|Passed|Needs Fix|Blocked>`
 - `ua_level`: `<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>`
 - `ua_status`: `<Not Required|Pending|Passed|Failed|Deferred|TBD>`
 
@@ -32,9 +33,10 @@
 
 - Base / Diff：<base..HEAD 或工作区范围>
 - 修改文件：<路径和作用>
-- 验证命令与结果：<命令、退出码、关键结果>
-- Review / UA：<稳定 finding ID、严重度、状态；或 Skipped by policy（review_status 保持 Pending）；UA 动作与结果>
+- 验证证据：<命令、退出码、关键结果>
+- Review findings：<稳定 finding ID、严重度、状态；未运行且 Not Required 时写 none>
+- UA 动作与结果：<等级、用户需做什么、Pending/Passed/Failed>
 - 剩余风险与下一步：<无或明确列出>
 ```
 
-写回规则与 `TASK_TEMPLATE.md` 相同：执行者不自批 Review；`Skipped by policy` 不等于 `Passed`，未做真实只读 Review 时 `review_status` 保持 `Pending`；进入 repair、范围/风险变化或出现跨会话需求时，升级回完整模板并记录 repair chain，换 TASK 不重置计数。
+写回规则与 `TASK_TEMPLATE.md` 相同：`review_requirement` 必须由 `policy/core.json` 路由结果派生；执行者不自批 Review；`Not Required + Not Run` 是合法未运行状态，不等于 `Passed`。自愿 Review 一旦开始或产生 finding，必须保留并处理真实状态。进入 Repair 时先升级完整模板，换 TASK 不重置同一 finding chain 的计数。

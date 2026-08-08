@@ -1,18 +1,19 @@
-# Tracked / Controlled TASK 模板
+# Tracked / Controlled TASK 模板（v0.10）
 
-> Skill 包 `0.9.2` 中，其他 Tracked 与全部 Controlled 任务使用本完整模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK；符合单会话条件的 Tracked 可改用 `TASK_TEMPLATE_BRIEF.md`。`adf/v0.7.0` Contract schema 保持兼容，不随 Skill 包版本变化。
+> 其他 Tracked 与全部 Controlled 任务使用本完整模板。Lite 的结果是 `DoNotUseSkill`，不创建 TASK；符合任务形状条件的 Tracked 可用 `TASK_TEMPLATE_BRIEF.md`。模型名称不参与模板选择。旧 v0.7 TASK 保持原格式与语义，不批量迁移。
 
 ```markdown
 # <TASK-ID>：<任务标题>
 
 ## Workflow Contract
 
-- `schema_version`: `adf/v0.7.0`
+- `schema_version`: `adf/v0.10.0`
 - `task_id`: `<TASK-ID>`
 - `task_type`: `<document|plan|code|review|repair|test>`
 - `task_class`: `<A|B|C|D>`
 - `lifecycle`: `<Draft|Ready|In Progress|Blocked|Review|Needs Fix|Accepted|Closed|Deferred|Cancelled>`
-- `review_status`: `<Pending|In Review|Passed|Needs Fix|Do Not Merge>`
+- `review_requirement`: `<Required|Not Required>`
+- `review_status`: `<Not Run|In Review|Passed|Needs Fix|Blocked>`
 - `ua_level`: `<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>`
 - `ua_status`: `<Not Required|Pending|Passed|Failed|Deferred|TBD>`
 - `commit_status`: `<Uncommitted|Committed|Not Applicable>`
@@ -46,27 +47,20 @@
 - [ ] <完成标准 2>：<验证命令/人工步骤/证据>
 - [ ] `git diff --check` 通过，diff 可归属当前 TASK。
 
-## Repair Chain Ledger（仅进入 repair 时填写）
+## Repair Ledger（仅进入 Repair 时填写）
 
-- Repair chain：<repair_chain_id、finding_ids、closure_contract_hash、allowed_files_hash>
-- Trigger Review 收据：<隔离/只读、chain/policy/finding 绑定、receipt_hash>
-- Attempt 收据链：<AR-*/ER-*、patch hash、前一收据 hash、独立复审与 receipt_hash；计数由此推导>
-- History anchor：<TASK 中的 attempt_count、head_receipt_hash、source_ref/source_text_sha256>
-- Trusted context：<由 harness/当前对话/只读项目快照独立确认的 expected head/count 与 Review/authority receipt hashes>
-- 第 3 轮 progress：<写入 AR-2 独立 Review 收据的 closure/blocking/severity/evidence before/after>
-- Escalated authority：<用户消息来源、chain/scope/target、默认一次或显式 attempt IDs、receipt_hash>
-- Campaign authority（可选）：<campaign_id、TASK、acceptance_contract_hash、profile、外层 scope manifest、authority receipt_hash>
-- Campaign state（可选）：<attempt_count、consecutive_no_progress、latest_outcome、history head、hard-stop snapshot hash、state receipt_hash、trusted attestation>
-- 非计数动作：<review/UA/诊断/测试重跑/收据同步/记录纠错>
-- 机械判定：<MechanicallyEligible|Stop|Blocked>；eligible_mode：<AutoRepair|ExtendRound3|EscalatedRepair>
-- Orchestrator 提升：<持有真实上游证据后记录 *Allowed；否则 Blocked>
+- Stable finding：<finding_id、severity、closure contract>
+- Attempt：<AR-1/AR-2/AR-3 或显式授权 attempt；patch 范围>
+- RED / GREEN / SIGNAL：<修复前失败、修复后通过、证据来源>
+- Review：<隔离/只读 Recipe、结论、finding 状态>
+- Strict campaign：<Not Enabled | `REPAIR_CAMPAIGN.md` 要求的外部 receipt/ledger reference>
 
 ## Outcome
 
 - Base / Diff：<base..HEAD 或工作区范围>
 - 修改文件：<路径和作用>
-- 验证命令与结果：<命令、退出码、关键结果>
-- Review findings：<稳定 ID、严重度、状态；或 Outcome 中记录 Skipped by policy，Contract 仍保持 Pending>
+- 验证证据：<命令、退出码、关键结果>
+- Review findings：<稳定 ID、严重度、状态；Not Required + Not Run 且无自愿 Review 时写 none>
 - UA 动作与结果：<等级、用户需做什么、Pending/Passed/Failed>
 - 状态边界：<未执行或未授权的 commit/merge/release/Closed>
 - 剩余风险：<无或明确列出>
@@ -75,13 +69,13 @@
 
 ## 写回规则
 
+- `review_requirement` 必须由 `policy/core.json` 路由结果派生，不得由执行者自由选择；Controlled 或命中 Tracked Review trigger 时必须为 `Required`。
 - 执行者更新 Outcome、验证和实际状态，不自批 Review。
-- `Skipped by policy` 不等于 `Passed`；没有真实只读 Review 时，`review_status` 保持 `Pending`。
+- `Not Required + Not Run` 不等于 `Passed`，只是当前完成门禁不强制 Review；`Required` 在 Accepted/Closed 前必须 `Passed`。
+- 自愿 Review 的 `In Review / Needs Fix / Blocked` 是真实事实，必须处理，不能因 requirement 为 Not Required 而删除。
 - Reviewer 只写 review 状态与 findings，不修改业务代码。
 - Repairer 只处理冻结 finding ID，并追加验证结果。
 - 同一 finding / closure contract 的新 TASK 继承原 `repair_chain_id` 和计数；更换 TASK 或模型不重置。
-- `Stop` 后用户可授权默认一次的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内的 `RepairCampaignAuthority`；后者按核心产品 4 次、Harness 5 次连续无进展阈值执行。
-- campaign 不因换 TASK、模型、chain 或 finding 改名清零；P0、安全、数据、越界、不可逆、外部副作用、oracle 放宽、未授权依赖或缺证据立即停止。
-- `repair_gate.py` 把 ledger 和 campaign state 视为不可信，只验证其与独立 trusted context 的结构/连续性；最终 Allowed 必须由持有真实上游证据的 Orchestrator 提升。
+- 严格 receipt chain、trusted context、EscalatedRepair 与 Campaign 的完整结构只在 `REPAIR_CAMPAIGN.md` 维护；TASK 只保存引用，不复制协议。
 - TASK 先更新，TASK_BOARD 后同步；不得用看板反向覆盖 TASK。
 - 旧 TASK 保持原格式，不为统一模板而批量迁移。

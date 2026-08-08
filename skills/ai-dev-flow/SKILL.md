@@ -48,7 +48,8 @@ Tracked 用于跨会话、范围较大或需要留证但尚未达到 Controlled 
 - TASK 是范围、状态和证据事实源，TASK_BOARD 只是投影；
 - 记录 base commit、允许/禁止范围、完成标准、验证、diff 和状态边界；
 - 仅在 policy 的 Tracked 风险标记命中时调用一个隔离、只读 Reviewer；未命中则跳过，不为流程而调用；
-- policy 跳过只表示“没有 Reviewer 调用”，不得伪装成 `review_status=Passed`；在 `adf/v0.7.0` 下保持 `Pending`，如要进入 Accepted / Closed 再完成真实只读 Review；
+- 新建 `adf/v0.10.0` TASK 时，未命中 Review trigger 写 `review_requirement=Not Required / review_status=Not Run`；命中则写 `Required / Not Run`。旧 `adf/v0.7.0` TASK 保持原合同和完成门禁，不批量迁移；
+- `Not Required` 只表示完成任务不强制补做 Reviewer，不禁止自愿 Review；一旦产生 `In Review / Needs Fix / Blocked`，必须按真实状态完成或处理 finding，不能改回 Not Run 来绕过；
 - 命中但缺少 Reviewer authority/capability 时保持 `Blocked`、合法升级或取得明确授权，不得自批为 Passed。
 
 ## Controlled：强制控制
@@ -76,7 +77,7 @@ Tracked / Controlled 的最小闭环：
 
 ## Review 与 repair
 
-Reviewer 必须只读、与 Engineer/Repairer 上下文隔离，并默认由当前 Harness 自身建立原生 Reviewer 上下文；不得自动调用其他 Harness，只有用户明确指定时才允许跨 Harness。原生隔离/只读能力缺失时保持 `Blocked/Pending`，主上下文自检不能记为独立 Review。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
+Reviewer 必须满足 `policy/core.json.independent_review`，并按 `REVIEW_RECIPES.md` 的 `R1 > R2 > R3 > R4 > R5` 选择：先检查能力，再选择 Recipe，不按 Harness 名称准入。不得自动跨 Harness，只有用户明确指定时才允许 R4。能力声明见 `CAPABILITY_REQUIREMENTS.md` 与 `adapters/*.json`；参数在调用前必须查看当前 `--help`。无法证明隔离/只读时进入 R5，保持 `Pending/Blocked`；主上下文自检不能记为独立 Review。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
 
 普通 finding 按需读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：默认 2 轮 `AutoRepair`，有可测进展时可增加 1 轮，每轮 patch 后独立 Review，无进展则回到用户决定。
 
@@ -97,13 +98,14 @@ receipt chain、trusted context、EscalatedRepair 和 Repair Campaign 不在默�
 
 ## 按需 reference
 
-只有当前动作确实需要时，最多选择一份最相关文件：
+只有当前动作确实需要时，读取满足该动作所需的最小 reference 集合。单一主题通常只读一份；下列明确标注的必需组合必须共同读取，不能为了“一份”限制而漏掉合同：
 
 - 创建/更新 Tracked 或 Controlled TASK：`TASK_TEMPLATE.md`（符合单会话条件的 Tracked 任务可用 `TASK_TEMPLATE_BRIEF.md`）
 - 普通 finding：`policy/repair-basic.json` + `REPAIR_BASIC.md`
 - 显式严格自动化：`policy/repair-campaign.json` + `REPAIR_CAMPAIGN.md`
 - 需要完整执行细节：`WORKFLOW.md`
 - 独立代码审查：`CODE_REVIEW_CHECKLIST.md`
+- Harness 能力与 Review 选择（必需组合）：`CAPABILITY_REQUIREMENTS.md` + `REVIEW_RECIPES.md`；需要具体适配信息时再读对应的一份 `adapters/*.json`
 - 用户动作等级：`ACCEPTANCE_GUIDE.md`
 - Git/diff 专项：`GIT_PRECHECK.md` 或 `DIFF_REVIEW.md`
 - v0.7 兼容/迁移：`V0.8_MIGRATION.md`

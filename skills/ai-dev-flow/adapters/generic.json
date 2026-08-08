@@ -1,0 +1,20 @@
+{
+  "adapter_id": "generic",
+  "verified_at": "2026-08-08",
+  "skill_loading": "markdown",
+  "read_files": true,
+  "write_files": true,
+  "run_commands": true,
+  "git": true,
+  "context_isolation": "none",
+  "write_isolation": "readonly_copy",
+  "subagents": "none",
+  "approval_gate": "manual",
+  "runtime_hooks": "none",
+  "session_events": "manual",
+  "runtime_session_bridge": "manual",
+  "preferred_review_recipe": "R5",
+  "fallback_review_recipe": "R5",
+  "formal_skill_sync_method": "manual project-local copy after explicit authority",
+  "version_sensitive_notes": "Generic declaration only; verify the active Harness and construct a read-only copy before R3."
+}

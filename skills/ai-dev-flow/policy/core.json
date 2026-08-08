@@ -67,6 +67,14 @@
     },
     "missing_authority_or_capability": "Blocked"
   },
+  "independent_review": {
+    "context_isolation": "required",
+    "frozen_diff_input": "required",
+    "stable_finding_ids": "required",
+    "write_isolation": {
+      "one_of": ["native_read_only", "sandbox_read_only", "readonly_copy"]
+    }
+  },
   "safety": {
     "allowed_action_authority": "Allowed",
     "require_real_environment_evidence": true,

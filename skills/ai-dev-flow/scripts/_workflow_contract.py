@@ -56,10 +56,15 @@ class ReaderReport:
         return dict(self.normalized).get(key, default)
 
 
-CORE_FIELDS = (
+V07_CORE_FIELDS = (
     "schema_version", "task_id", "task_type", "task_class", "lifecycle",
     "review_status", "ua_level", "ua_status",
 )
+V010_CORE_FIELDS = (
+    "schema_version", "task_id", "task_type", "task_class", "lifecycle",
+    "review_requirement", "review_status", "ua_level", "ua_status",
+)
+CORE_FIELDS = V010_CORE_FIELDS
 CONDITIONAL_FIELDS = (
     "ua_evidence", "acceptance_authority", "close_authority", "commit_status",
     "merge_status", "merge_authority", "overlays", "extensions_optional",
@@ -67,11 +72,12 @@ CONDITIONAL_FIELDS = (
 )
 KNOWN_FIELDS = frozenset(CORE_FIELDS + CONDITIONAL_FIELDS)
 ENUMS = {
-    "schema_version": frozenset(("adf/v0.7.0",)),
+    "schema_version": frozenset(("adf/v0.7.0", "adf/v0.10.0")),
     "task_type": frozenset(("document", "plan", "code", "review", "repair", "test")),
     "task_class": frozenset(("A", "B", "C", "D")),
     "lifecycle": frozenset(("Draft", "Ready", "In Progress", "Blocked", "Review", "Needs Fix", "Accepted", "Closed", "Deferred", "Cancelled")),
-    "review_status": frozenset(("Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge")),
+    "review_requirement": frozenset(("Required", "Not Required")),
+    "review_status": frozenset(("Not Run", "In Review", "Passed", "Needs Fix", "Blocked")),
     "ua_level": frozenset(("UA0", "UA1", "UA2", "UA3", "UA4", "UA5", "UA6", "UA7", "TBD")),
     "ua_status": frozenset(("Not Required", "Pending", "Passed", "Failed", "Deferred", "TBD")),
     "acceptance_authority": frozenset(("None", "User Confirmed", "Designated Acceptor Confirmed")),
@@ -79,6 +85,14 @@ ENUMS = {
     "commit_status": frozenset(("Not Applicable", "Uncommitted", "Committed")),
     "merge_status": frozenset(("Not Applicable", "Unmerged", "Merged", "Deferred")),
     "merge_authority": frozenset(("None", "User Authorized", "Denied")),
+}
+V07_REVIEW_STATUS = frozenset(("Pending", "In Review", "Passed", "Needs Fix", "Do Not Merge"))
+REVIEW_STATUS_V07_TO_INTERNAL = {
+    "Pending": "Not Run",
+    "In Review": "In Review",
+    "Passed": "Passed",
+    "Needs Fix": "Needs Fix",
+    "Do Not Merge": "Blocked",
 }
 DEFAULT_FIELDS = (
     ("acceptance_authority", "None"), ("close_authority", "None"),
@@ -218,6 +232,20 @@ def _finish(values: Dict[str, Optional[str]], provenance: List[Provenance], diag
     title = _title(lines, values.get("task_id"), path, diagnostics)
     has_error = any(item.code.startswith("E_") for item in diagnostics)
     if not has_error:
+        schema = values.get("schema_version")
+        if schema in {None, "adf/v0.7.0"}:
+            source_review = values.get("review_status")
+            if source_review in REVIEW_STATUS_V07_TO_INTERNAL:
+                values["review_status"] = REVIEW_STATUS_V07_TO_INTERNAL[source_review]
+            values["review_requirement"] = "Legacy Unspecified"
+            provenance.append(Provenance(
+                "review_requirement",
+                _source_path(path),
+                "Workflow Contract" if schema else "Legacy",
+                0,
+                "Legacy Unspecified",
+                "default",
+            ))
         for field, value in DEFAULT_FIELDS:
             if field not in values:
                 values[field] = value
@@ -255,10 +283,16 @@ def _canonical(path: Path, lines: List[str], validate_filename: bool) -> ReaderR
             continue
         values[key] = value
         provenance.append(Provenance(key, _source_path(path), "Workflow Contract", index + 1, value, "canonical"))
-    for key in CORE_FIELDS:
+    schema = values.get("schema_version")
+    required_fields = V010_CORE_FIELDS if schema == "adf/v0.10.0" else V07_CORE_FIELDS
+    for key in required_fields:
         if key not in values:
             diagnostics.append(_diagnostic("E_PARSE", path, headings[0] + 1, f"缺少核心字段 {key}"))
+    if schema == "adf/v0.7.0" and "review_requirement" in values:
+        diagnostics.append(_diagnostic("E_PARSE", path, next(p.line for p in provenance if p.field == "review_requirement"), "v0.7 Contract 不接受 review_requirement"))
     for key, allowed in ENUMS.items():
+        if key == "review_status" and schema == "adf/v0.7.0":
+            allowed = V07_REVIEW_STATUS
         if key in values and values[key] not in allowed:
             related = tuple(p for p in provenance if p.field == key)
             diagnostics.append(_diagnostic("E_UNKNOWN_VALUE", path, related[0].line, f"{key} 值不在枚举中", related=related))
