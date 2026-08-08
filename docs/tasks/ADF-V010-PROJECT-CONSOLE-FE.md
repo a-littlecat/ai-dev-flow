@@ -11,7 +11,7 @@
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
-- `commit_status`: `Committed da82235 + receipt cd728eb`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
