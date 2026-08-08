@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -62,7 +62,7 @@
 
 ## Outcome
 
-- Base / Diff：base=7f2686f1492496adf2a71e2d981772502c7097e9;diff=7f2686f1492496adf2a71e2d981772502c7097e9..9ac594d
+- Base / Diff：历史 base=7f2686f1492496adf2a71e2d981772502c7097e9；外部修复 diff=9a8642a..bed3ac9。
 - 隔离位置：`codex/v010-core-split` / `D:/open-source/ai-dev-flow-wt/v010-core-split`。
 - 回滚方式：提交前丢弃本 TASK 精确 diff；提交后 revert 阶段 commit，不改写历史。
 - 修改文件：治理入口与兼容说明、三份 canonical JSON policy、严格只读 loader、Repair gate、相关 README/测试，以及本阶段 TASK/看板事实源；`dashboard/**` 无 diff。
@@ -70,6 +70,6 @@
 - Review findings：Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`R001/R002` Closed。
 - 外部 stacked 复审：`ADF-V010-STACKED-EXT-P1-002` Round 4 已实现；fresh Skill `104/104`（含动态 attempt ID 定向 `1/1`）、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；新隔离 Review `Passed (0/0/0/0)`。backend 首轮出现一次 deterministic snapshot 瞬态失败，单测与全量重跑均通过，未修改 Dashboard。
 - UA 动作与结果：UA3 Pending，不由自动验证代替。
-- 状态边界：External Repair Review Passed / UA3 Pending；历史提交已推送，当前修复尚未提交。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：External Repair Review Passed / Repair Committed bed3ac9 / UA3 Pending；push 尚未执行。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：UA3 仍为 Pending；Review 通过不授权 merge、release、正式 Skill 同步或 Closed。
-- 下一步：提交并推送当前修复，再以普通 merge 更新现有上层 stacked 分支。历史实现提交 `9ac594d` 已推送，但不代表当前 Round 4 已提交。
+- 下一步：推送当前修复收据，再以普通 merge 更新现有上层 stacked 分支。
