@@ -62,7 +62,7 @@
 
 ## Outcome
 
-- Base / Diff：历史 base=7f2686f1492496adf2a71e2d981772502c7097e9；外部修复 diff=9a8642a..bed3ac9。
+- Base / Diff：base=9a8642a;diff=9a8642a..bed3ac9
 - 隔离位置：`codex/v010-core-split` / `D:/open-source/ai-dev-flow-wt/v010-core-split`。
 - 回滚方式：提交前丢弃本 TASK 精确 diff；提交后 revert 阶段 commit，不改写历史。
 - 修改文件：治理入口与兼容说明、三份 canonical JSON policy、严格只读 loader、Repair gate、相关 README/测试，以及本阶段 TASK/看板事实源；`dashboard/**` 无 diff。
