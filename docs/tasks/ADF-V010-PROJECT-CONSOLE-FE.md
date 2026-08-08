@@ -11,7 +11,7 @@
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
-- `commit_status`: `Committed da82235`
+- `commit_status`: `Committed da82235 + receipt cd728eb`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -61,6 +61,6 @@
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `202/202`（skip 2）、Skill `113/113`；frontend codegen/typecheck/lint/build、Vitest `102/102`、Playwright `106/106`；真实便携 Dashboard health=`ready/ready/fresh` 且三视图真实浏览器往返通过；Runtime bundle `43/43`；真实状态矩阵通过。integration 完整套件 `51/52`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，拒绝当前 stacked 重构差异；无运行态失败。workflow lint `errors=0/violations=0/warnings=1`，唯一 warning 为提交前 lifecycle 历史不可验证。
 - Review findings：Round 1 `0/2/2/0`，Round 2 `0/1/0/0`，两轮 AutoRepair 后最终 Review `Passed 0/0/0/0`。
-- 状态边界：Candidate Ready / Review Passed / UA5 Pending user_only / Committed da82235 / Unmerged / Not Released / Not Closed。
+- 状态边界：Candidate Ready / Review Passed / UA5 Pending user_only / Committed da82235 + receipt cd728eb / Pushed / Draft PR #17 / Unmerged / Not Released / Not Closed。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
-- 下一步：提交本收据并推送本阶段 Draft PR 后停止，等待真实用户 UA；不得提前执行 LEGACY-RETIRE。
+- 下一步：停止自动推进，等待真实用户 UA；不得提前执行 LEGACY-RETIRE。
