@@ -2,14 +2,14 @@
 
 > - 快照日期：2026-08-08
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT External Repair Review Passed，Pushed 56c2aa7，UA3 Pending / CAPABILITY-REVIEW External Repair Pending / 后续四阶段等待下层更新`
+> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT Pushed 56c2aa7，UA3 Pending / CAPABILITY-REVIEW External Repair Review Passed，当前修复待提交 / 后续四阶段等待下层更新`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
 ## 当前执行任务（2026-08-08）
 
 - `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。CORE-SPLIT 外部复审修复已推送；CAPABILITY-REVIEW 正在吸收下层并处理外部复审。Project Console 真实用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
 - `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。fresh Skill `104/104`、backend `174/174`、新隔离 Review `0/0/0/0` 已通过；未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
-- `ADF-V010-CAPABILITY-REVIEW`：`External Review Needs Fix / Controlled / Repair In Progress / Review Pending / UA3 Pending / Draft PR #15 / Unmerged`。正在修正 SKILL reference 集合语义与 Adapter runtime_session_bridge 边界；历史 Passed 收据不可用于当前修复。
+- `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / Controlled / Repair Round 3 / Fresh Verification Passed / UA3 Pending / Current Repair Uncommitted / Draft PR #15 / Unmerged`。Adapter 任意 Mapping fail-closed 矩阵与合法 R1-R4 已由新隔离 Review 通过；不授权 merge、正式 Skill sync、Accepted 或 Closed。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

@@ -12,8 +12,9 @@
   "approval_gate": "native",
   "runtime_hooks": "plugin",
   "session_events": "adapter",
+  "runtime_session_bridge": "adapter",
   "preferred_review_recipe": "R3",
   "fallback_review_recipe": "R5",
-  "runtime_sync_method": "explicit governed Skill sync only",
+  "formal_skill_sync_method": "explicit governed Skill sync only",
   "version_sensitive_notes": "CLI 1.18.4 was present; current help did not prove a true read-only sandbox, so re-check help and use a read-only copy."
 }

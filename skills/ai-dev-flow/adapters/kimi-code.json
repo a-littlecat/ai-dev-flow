@@ -12,8 +12,9 @@
   "approval_gate": "native",
   "runtime_hooks": "none",
   "session_events": "manual",
+  "runtime_session_bridge": "manual",
   "preferred_review_recipe": "R3",
   "fallback_review_recipe": "R5",
-  "runtime_sync_method": "explicit governed Skill sync only",
+  "formal_skill_sync_method": "explicit governed Skill sync only",
   "version_sensitive_notes": "CLI 0.31.1 was present; current help did not prove a true read-only sandbox, so use an orchestrator-owned read-only copy."
 }

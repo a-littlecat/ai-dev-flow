@@ -12,8 +12,9 @@
   "approval_gate": "manual",
   "runtime_hooks": "none",
   "session_events": "manual",
+  "runtime_session_bridge": "manual",
   "preferred_review_recipe": "R1",
   "fallback_review_recipe": "R5",
-  "runtime_sync_method": "fixture only",
+  "formal_skill_sync_method": "fixture only",
   "version_sensitive_notes": "Synthetic adapter proving that data-only onboarding does not modify core policy or recipe code."
 }

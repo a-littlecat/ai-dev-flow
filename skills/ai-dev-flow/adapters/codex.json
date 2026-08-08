@@ -12,8 +12,9 @@
   "approval_gate": "native",
   "runtime_hooks": "native",
   "session_events": "native",
+  "runtime_session_bridge": "native",
   "preferred_review_recipe": "R2",
   "fallback_review_recipe": "R3",
-  "runtime_sync_method": "explicit governed Skill sync only",
+  "formal_skill_sync_method": "explicit governed Skill sync only",
   "version_sensitive_notes": "Verified against codex exec help; re-check --ephemeral and --sandbox syntax before every invocation."
 }
