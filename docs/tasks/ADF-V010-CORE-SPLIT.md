@@ -6,11 +6,11 @@
 - `task_id`: `ADF-V010-CORE-SPLIT`
 - `task_type`: `code`
 - `task_class`: `D`
-- `lifecycle`: `In Progress`
+- `lifecycle`: `Review`
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -57,13 +57,13 @@
 
 ## Outcome
 
-- Base / Diff：base=7f2686f1492496adf2a71e2d981772502c7097e9
+- Base / Diff：base=7f2686f1492496adf2a71e2d981772502c7097e9;diff=7f2686f1492496adf2a71e2d981772502c7097e9..9ac594d
 - 隔离位置：`codex/v010-core-split` / `D:/open-source/ai-dev-flow-wt/v010-core-split`。
 - 回滚方式：提交前丢弃本 TASK 精确 diff；提交后 revert 阶段 commit，不改写历史。
 - 修改文件：治理入口与兼容说明、三份 canonical JSON policy、严格只读 loader、Repair gate、相关 README/测试，以及本阶段 TASK/看板事实源；`dashboard/**` 无 diff。
-- 验证命令与结果：Stage 1 Skill `99/99`、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=63`、`git diff --check` 均通过；安全约束定向测试 `53/53` 通过；Dashboard tracked diff 为空，核心 policy 具体 Harness/模型名匹配 `0`。Stage 0 frontend Vitest `95/95`、Playwright `96/96` 通过；Integration 基线 `1 failure + 1 error` 均在 Dashboard 禁止修改范围，已在 Master 记录。
+- 验证证据：Stage 1 Skill `99/99`、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=63`、`git diff --check` 均通过；安全约束定向测试 `53/53` 通过；Dashboard tracked diff 为空，核心 policy 具体 Harness/模型名匹配 `0`。Stage 0 frontend Vitest `95/95`、Playwright `96/96` 通过；Integration 基线 `1 failure + 1 error` 均在 Dashboard 禁止修改范围，已在 Master 记录。
 - Review findings：Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`R001/R002` Closed。
 - UA 动作与结果：UA3 Pending，不由自动验证代替。
-- 状态边界：未 commit / push / PR / merge / release / Closed。
+- 状态边界：实现提交 `9ac594d` 已形成；尚未 push / PR / merge / release / Closed。
 - 剩余风险：UA3 仍为 Pending；Review 通过不授权 merge、release、正式 Skill 同步或 Closed。
-- 下一步：形成 CORE-SPLIT 阶段提交、推送阶段分支并创建 Draft PR；随后从该提交建立 CAPABILITY-REVIEW stacked branch/worktree。
+- 下一步：提交本收据，推送阶段分支并创建 Draft PR；随后从阶段 HEAD 建立 CAPABILITY-REVIEW stacked branch/worktree。
