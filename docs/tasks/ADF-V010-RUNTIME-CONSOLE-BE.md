@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 - `merge_status`: `Unmerged`
 
 ## 目标与边界
@@ -64,13 +64,13 @@
 
 ## Outcome
 
-- Base / Diff：base=d0a4281;diff=d0a4281..working-tree
+- Base / Diff：base=d0a4281;diff=d0a4281..46a16b7
 - 隔离位置：`codex/v010-runtime-console-be` / `D:/open-source/ai-dev-flow-wt/v010-runtime-console-be`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CAPABILITY-REVIEW 历史。
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
 - 验证证据：外部修复 fresh be003 `21/21`（skip 2）、backend `204/204`（skip 2）、Skill `119/119`、Runtime bundle `43/43`、codegen check 与 `git diff --check` 已通过；frontend 与 integration 待在上层 UI 合并后执行完整验证。完整 integration 已知边界为 `51/52`，唯一 artifact guard 失败不得误报为全绿。
 - Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮外部修复后的新隔离只读 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`，无开放 finding。
-- Delivery：implementation=`f7f3a63`；receipt=`587bdc1`；branch `codex/v010-runtime-console-be` 已推送；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
-- 状态边界：External Repair Review Passed / UA3 Pending / Current Repair Uncommitted / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- Delivery：初始 implementation=`f7f3a63`、receipt=`587bdc1`；外部修复 implementation=`46a16b7`；branch `codex/v010-runtime-console-be` 待推送当前收据；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
+- 状态边界：External Repair Review Passed / UA3 Pending / External Repair Committed `46a16b7` / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
 - 下一步：提交/push #16，再以普通 merge 更新 #17。禁止提前进入正式用户 UA。
