@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Needs Fix`
+- `review_status`: `Passed`
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
@@ -24,7 +24,7 @@
 ## 依赖与授权
 
 - 前置依赖：RUNTIME-CONSOLE-BE 阶段完成。
-- Base commit：`ab0f8fd`（普通 merge 吸收 RUNTIME-CONSOLE-BE follow-up `626e65d` 后的当前 stacked repair base；原始 #17 实现基线 `95bc31d` 保留在历史收据）。
+- Base commit：`8944a84`（普通 merge 吸收当前 RUNTIME-CONSOLE-BE 本轮 head；历史 repair base 仅保留在旧收据中）。
 - 已有 authority：依赖满足后的实现、自动验证、真实浏览器检查、只读 Review、commit、push、Draft PR。
 - 验收合同：`requires_user_observation=true`；`acceptance_authority=user_only`；`designated_acceptor_allowed=false`。这些是 v0.10 阶段合同要求，在当前 v0.7 Contract 中以正文冻结，不能伪写成当前已获得的 authority。
 - 未授权动作：代替用户 UA、Accepted、Closed、Legacy 删除、merge、release、正式 Skill 同步。
@@ -57,17 +57,19 @@
 - Review session `019fe259-ae28-7772-a8d8-3bdd29501821` 为 `Needs Fix 0/1/1/0`：`P1-003` 指出 `ACTIVE_RUNTIME_SESSION` 缺用户文案，`P2-003` 指出当前 stacked repair base 落后。修复：补齐活跃会话文案，并由单测直接读取 ConsoleBuilder 源码、覆盖其全部 7 个固定原因码；当前 base/diff 更新为 `ab0f8fd..working-tree`。等待修复后新隔离 Review。
 - 修复后新隔离只读 Review session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`；`P1-003`、`P2-003` 均 Closed，无开放 finding。Reviewer 复核 7/7 ConsoleBuilder 固定码、ActionEngine 已知原因码、浏览器报告、43/43 Runtime bundle 与当前 stacked ancestry；未代替用户 UA。
 - `ADF-V010-EXT-R2-P1-001`：前端 Ready 区改用 `ready_ambiguity`，文案只描述 Ready 最高排名并列，不再把 active/human 写成“唯一主候选”。Ready 卡片收敛为“可以作为下一项开始 / 尚未授权自动执行 / 开始执行任务”，手动按钮只打开任务路由，不安静授予自动执行 authority。
-- 本轮 P3：Clipboard API 与 `execCommand` 都失败时，卡片内显示只读、可选择的完整文本，并把焦点恢复到触发按钮；Playwright 使用真实 DOM 回归覆盖最终失败路径。当前 `Needs Fix / Review Pending / UA5 Pending user_only`，历史 Passed 收据不适用于本轮 diff。
+- 本轮 P3：Clipboard API 与 `execCommand` 都失败时，卡片内显示只读、可选择的完整文本，并把焦点恢复到触发按钮；Playwright 使用真实 DOM 回归覆盖最终失败路径。历史 Passed 收据未被用于本轮 diff。
+- 本轮 fresh 验证：backend `207/207`（skip 2）、Skill `119/119`、Vitest `109/109`、Playwright `109/109`、Runtime bundle `43/43`、当前 TASK workflow lint `0 errors / 0 violations / 1 warning`（收据提交前 lifecycle 转换历史不可验）。full integration 因新增 `adf.py` 预检回归从历史 `51/52` 增为当前 `52/53`，唯一失败仍是冻结 artifact guard，`baseline_preserved=true`；不误报全绿。
+- 本轮新隔离只读 Review session `019fe37b-1090-7241-80be-52c29ee4ab7` 审查 `31ad2f7..6e89697`，结论 `Passed 0/0/0/0`，无开放 finding。当前 `Review Passed / UA5 Pending user_only`；不授予 merge/release/正式 Skill 同步/Legacy Retire/Accepted/Closed。
 
 ## Outcome
 
-- Base / Diff：base=ab0f8fd;diff=ab0f8fd..5213d0b。
+- Base / Diff：base=31ad2f7;diff=31ad2f7..6e89697。
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
-- 验证证据：backend `204/204`（skip 2）、Skill `119/119`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `108/108`；visible/hidden 轮询、Clipboard 降级、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.13 integration 完整套件 `51/52`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，拒绝当前 stacked 重构差异；无运行态失败。workflow lint `errors=0/violations=0/warnings=1`，唯一 warning 为提交前 lifecycle 历史不可验证。
-- Review findings：外部修复首轮 session `019fe259-ae28-7772-a8d8-3bdd29501821` 为 `Needs Fix 0/1/1/0`；修复后 session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`，全部稳定 finding Closed。
-- Delivery：初始 implementation=`da82235`、receipt=`cd728eb`；外部修复 implementation=`5213d0b`、receipt=本次事实收据提交；branch `codex/v010-project-console-fe` 待推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
-- 状态边界：External Repair Review Passed / UA5 Pending user_only / External Repair Committed `5213d0b` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- 验证证据：backend `207/207`（skip 2）、Skill `119/119`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.13 integration 历史为 `51/52`，新增预检用例后当前为 `52/53`；唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。当前 TASK workflow lint `errors=0/violations=0/warnings=1`，警告仅为收据提交前 lifecycle 历史不可验。
+- Review findings：本轮最终 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`，无开放 finding；历史 Review 仅保留为收据，未替代本轮。
+- Delivery：本轮 implementation/current reviewed head=`6e89697`；branch `codex/v010-project-console-fe` 已推送该实现 head，本事实收据提交同步推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
+- 状态边界：External Repair Review Passed / UA5 Pending user_only / Pushed implementation `6e89697` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
-- 下一步：仅提交/push #17，并停在 `UA5 Pending user_only`，等待用户在真实 CADCat 与两个真实 Harness 任务上主动开始验收；不得提前执行 LEGACY-RETIRE。
+- 下一步：交付分支已推送；严格停在 `UA5 Pending user_only`，等待用户在真实 CADCat 与两个真实 Harness 任务上验收；不得提前执行 LEGACY-RETIRE。

@@ -1,17 +1,17 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-08
+> - 快照日期：2026-08-09
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
 > - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 外部修复已推送且 UA Pending / PROJECT-CONSOLE-FE 外部修复 Review Passed、UA Pending / 后续两阶段禁止启动`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
-## 当前执行任务（2026-08-08）
+## 当前执行任务（2026-08-09）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 外部修复已通过新隔离 Review 并推送；#17 外部修复已通过新隔离 Review 并提交，待推送后停在用户 UA 门禁。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#17 本轮修复均已提交并推送；#15=`93e1b5d`、#16=`8944a84`、#17 reviewed implementation=`6e89697`。交付分支均已推送，当前只剩用户 UA5 门禁。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
 - `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。
-- `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 0e4c2ff / Draft PR #15 / Unmerged`。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Follow-up Review Passed / Controlled / UA3 Pending / Pushed 626e65d / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；portable integration 已同步验证 Ready 进入 `ready_queue`，follow-up Review session `019fe250-5410-7743-a734-2758ad74ebb7` 为 `Passed 0/0/0/0`。
-- `ADF-V010-PROJECT-CONSOLE-FE`：`External Repair Review Passed / Controlled / UA5 Pending user_only / Committed 5213d0b / Draft PR #17 / Unmerged`。可见 2s/隐藏 10s/失败指数退避、status_summary、why-now 用户文案与 clipboard 降级已通过 fresh 验证；Review session `019fe25f-c7bd-7ad3-8d94-91b42f2b3118` 为 `Passed 0/0/0/0`。等待用户在真实 CADCat 与两个真实 Harness 任务上主动验收。
+- `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 93e1b5d / Draft PR #15 / Unmerged`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Review Passed / Controlled / UA3 Pending / Pushed 8944a84 / Draft PR #16 / Unmerged`。`ready_ambiguity`、Runtime bridge、共用 bundle preflight 与真实 Codex/Kimi 链路已通过；Review session `019fe369-bbb2-7de3-b9f9-724dfe22ea6f` 为 `Passed 0/0/0/0`。
+- `ADF-V010-PROJECT-CONSOLE-FE`：`External Repair Review Passed / Controlled / UA5 Pending user_only / Pushed implementation 6e89697 / Draft PR #17 / Unmerged`。Ready 语义与 Clipboard 最终降级已通过 fresh 验证；Review session `019fe37b-1090-7241-80be-52c29ee4ab7d` 为 `Passed 0/0/0/0`。full integration 历史 `51/52`、当前 `52/53`，唯一失败为冻结 artifact guard 且 `baseline_preserved=true`。等待用户在真实 CADCat 与两个真实 Harness 任务上验收。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
