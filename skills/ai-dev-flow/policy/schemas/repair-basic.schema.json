@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-policy-schema-version": "adf/repair-basic/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "finding_id_required", "base_auto_rounds", "optional_progress_rounds", "independent_review_after_patch", "progress_gate", "on_budget_exhausted"],
+  "properties": {
+    "schema_version": {"const": "adf/repair-basic/v1"},
+    "finding_id_required": {"const": true},
+    "base_auto_rounds": {"type": "integer", "minimum": 1},
+    "optional_progress_rounds": {"type": "integer", "minimum": 0},
+    "independent_review_after_patch": {"const": true},
+    "progress_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["require_red_to_green", "forbid_green_to_red", "forbid_new_blocking_finding", "severity_must_not_increase"],
+      "properties": {
+        "require_red_to_green": {"const": true},
+        "forbid_green_to_red": {"const": true},
+        "forbid_new_blocking_finding": {"const": true},
+        "severity_must_not_increase": {"const": true}
+      }
+    },
+    "on_budget_exhausted": {"enum": ["UserDecisionRequired", "Stop", "Blocked"]}
+  }
+}
