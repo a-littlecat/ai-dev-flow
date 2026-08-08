@@ -6,7 +6,8 @@
     {"$ref": "#/$defs/TaskDetail"},
     {"$ref": "#/$defs/Health"},
     {"$ref": "#/$defs/ErrorEnvelope"},
-    {"$ref": "#/$defs/SnapshotEvent"}
+    {"$ref": "#/$defs/SnapshotEvent"},
+    {"$ref": "#/$defs/ProjectConsole"}
   ],
   "$defs": {
     "Sha256": {
@@ -683,6 +684,99 @@
       "additionalProperties": false,
       "required": ["incident_id"],
       "properties": {"incident_id": {"type": "string"}}
+    },
+    "ConsoleFreshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_facts_at", "git_facts_at", "runtime_facts_at"],
+      "properties": {
+        "task_facts_at": {"type": "string"},
+        "git_facts_at": {"type": "string"},
+        "runtime_facts_at": {"type": "string"}
+      }
+    },
+    "ConsoleCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active_work", "human_attention", "ready_queue", "blocked", "stale_sessions"],
+      "properties": {
+        "active_work": {"type": "integer", "minimum": 0},
+        "human_attention": {"type": "integer", "minimum": 0},
+        "ready_queue": {"type": "integer", "minimum": 0},
+        "blocked": {"type": "integer", "minimum": 0},
+        "stale_sessions": {"type": "integer", "minimum": 0}
+      }
+    },
+    "ConsoleItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "title", "queue", "actor", "session_id", "harness_id", "phase", "next_step", "why_now_codes", "blocking_task_ids", "unblocks_count", "priority", "last_activity_at", "freshness", "source_kinds", "branch", "worktree", "action_kind", "action_eligibility", "action_kinds", "action_eligibilities"],
+      "properties": {
+        "task_id": {"type": ["string", "null"]},
+        "title": {"type": "string"},
+        "queue": {"type": "string", "enum": ["active_work", "human_attention", "ready_queue", "blocked", "stale_sessions"]},
+        "actor": {"type": "string", "enum": ["agent", "user"]},
+        "session_id": {"$ref": "#/$defs/NullableString"},
+        "harness_id": {"$ref": "#/$defs/NullableString"},
+        "phase": {"type": ["string", "null"], "enum": ["planning", "implementing", "validating", "reviewing", "repairing", "waiting_user", "blocked", "done", null]},
+        "next_step": {"type": "string"},
+        "why_now_codes": {"$ref": "#/$defs/StringArray"},
+        "blocking_task_ids": {"$ref": "#/$defs/StringArray"},
+        "unblocks_count": {"type": "integer", "minimum": 0},
+        "priority": {"type": "string", "enum": ["high", "medium", "low"]},
+        "last_activity_at": {"$ref": "#/$defs/NullableString"},
+        "freshness": {"type": "string", "enum": ["fresh", "stale", "partial", "live", "ended", "invalid"]},
+        "source_kinds": {"type": "array", "items": {"type": "string", "enum": ["task", "git", "runtime"]}, "minItems": 1, "uniqueItems": true},
+        "branch": {"$ref": "#/$defs/NullableString"},
+        "worktree": {"$ref": "#/$defs/NullableString"},
+        "action_kind": {"type": "string"},
+        "action_eligibility": {"type": "string", "enum": ["actionable", "blocked", "needs_authority", "unknown", "not_applicable"]},
+        "action_kinds": {"$ref": "#/$defs/StringArray"},
+        "action_eligibilities": {"type": "array", "items": {"type": "string", "enum": ["actionable", "blocked", "needs_authority", "unknown", "not_applicable"]}, "uniqueItems": true}
+      }
+    },
+    "ConsoleRecentChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "session_id", "kind", "at"],
+      "properties": {
+        "task_id": {"type": ["string", "null"]},
+        "session_id": {"type": ["string", "null"]},
+        "kind": {"type": "string", "enum": ["task_snapshot", "runtime_session"]},
+        "at": {"type": "string"}
+      }
+    },
+    "ConsoleAmbiguity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["has_unique_primary", "candidate_count", "message"],
+      "properties": {
+        "has_unique_primary": {"type": "boolean"},
+        "candidate_count": {"type": "integer", "minimum": 0},
+        "message": {"type": "string"}
+      }
+    },
+    "ProjectConsole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "revision", "snapshot_revision", "generated_at", "state", "freshness", "counts", "active_work", "human_attention", "ready_queue", "blocked", "stale_sessions", "recent_changes", "ambiguity", "disclaimer"],
+      "properties": {
+        "schema_version": {"const": "adf/project-console/v1"},
+        "revision": {"$ref": "#/$defs/Sha256"},
+        "snapshot_revision": {"$ref": "#/$defs/Sha256"},
+        "generated_at": {"type": "string"},
+        "state": {"type": "string", "enum": ["fresh", "stale", "partial"]},
+        "freshness": {"$ref": "#/$defs/ConsoleFreshness"},
+        "counts": {"$ref": "#/$defs/ConsoleCounts"},
+        "active_work": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
+        "human_attention": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
+        "ready_queue": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
+        "blocked": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
+        "stale_sessions": {"type": "array", "items": {"$ref": "#/$defs/ConsoleItem"}},
+        "recent_changes": {"type": "array", "items": {"$ref": "#/$defs/ConsoleRecentChange"}},
+        "ambiguity": {"$ref": "#/$defs/ConsoleAmbiguity"},
+        "disclaimer": {"type": "string"}
+      }
     },
     "SnapshotEvent": {
       "type": "object",
