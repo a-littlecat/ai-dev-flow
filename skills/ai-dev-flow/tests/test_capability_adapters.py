@@ -34,8 +34,13 @@ class CapabilityAdapterTests(unittest.TestCase):
         self.assertEqual("R3", self.select(by_id["opencode"]))
         self.assertEqual("R5", self.select(by_id["generic"]))
         self.assertEqual("R5", self.select(by_id["zcode"]))
-        self.assertEqual("none", by_id["codex"]["runtime_session_bridge"]["type"])
-        self.assertEqual("none", by_id["opencode"]["runtime_session_bridge"]["type"])
+        self.assertEqual("command", by_id["codex"]["runtime_session_bridge"]["type"])
+        self.assertEqual("command", by_id["opencode"]["runtime_session_bridge"]["type"])
+        self.assertEqual("command", by_id["kimi-code"]["runtime_session_bridge"]["type"])
+        self.assertEqual(
+            {"start", "update", "wait", "end", "heartbeat"},
+            set(by_id["codex"]["runtime_session_bridge"]["hooks"]),
+        )
         self.assertNotEqual(
             by_id["codex"]["runtime_session_bridge"],
             by_id["codex"]["formal_skill_sync_method"],

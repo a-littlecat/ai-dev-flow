@@ -1,15 +1,16 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-09
+> - 快照日期：2026-08-10
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#15 External Review Passed / UA3 Pending`
+> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#15 External Review Passed / #16 GPT Pro Needs Fix / P1 repaired pending re-review / UA3 Pending`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
 ## 当前执行任务（2026-08-09）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#15 已通过 Kimi/Grok 外部复审；继续更新和复审 #16-#17。Project Console 真实用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。final Kimi/Grok=`Passed 0/0/0/0`；未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
-- `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #15 / Unmerged`。final Kimi/Grok=`Passed 0/0/0/0`；Adapter 如实保持 #15 的 `none/manual` 边界，真实 command bridge 属 #16。未授权 merge、正式 Skill sync、Accepted 或 Closed。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Needs Fix / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#15 已通过外部复审；#16 的 GPT Pro P1 已修复但等待新冻结 head 复审。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。
+- `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #15 / Unmerged`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`GPT Pro Needs Fix 0/1/0/0 / final implementation 5970ff5 / final Codex isolated pre-review Passed 0/0/0/0 / GPT Pro re-review Pending / Controlled / UA3 Pending / branch pushed / Draft PR #16 / Unmerged`。`done` 已改为 end-only，Store/Schema/Builder/CLI 四层 fail-closed、空终态字段及真实磁盘无效会话可读原因码回归通过；等待 GPT Pro 对最终冻结 head 关闭 finding，当前不得进入 UA。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

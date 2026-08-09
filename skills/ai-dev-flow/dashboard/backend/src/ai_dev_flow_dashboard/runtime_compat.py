@@ -13,7 +13,9 @@ from typing import Iterable, Mapping
 
 SKILL_ROOT_ENV = "AI_DEV_FLOW_SKILL_ROOT"
 SUPPORTED_SKILL_SERIES = (0, 9)
-SUPPORTED_WORKFLOW_SCHEMA = "adf/v0.7.0"
+SUPPORTED_WORKFLOW_SCHEMA = "adf/v0.10.0"
+SUPPORTED_WORKFLOW_SCHEMAS = ("adf/v0.7.0", SUPPORTED_WORKFLOW_SCHEMA)
+PACKAGED_WORKFLOW_SCHEMA = "adf/v0.7.0"
 SUPPORTED_SCHEDULING_SCHEMA = "ai-dev-flow/scheduling/v1"
 _VERSION_RE = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _CANONICAL_FIELD_RE = re.compile(r"^- `([^`\r\n]+)`: `([^`\r\n]*)`$")
@@ -38,6 +40,7 @@ class SkillRuntime:
     root: Path
     version: str
     workflow_schema: str
+    workflow_schemas: tuple[str, ...]
     scheduling_schema: str
     fingerprint: str
 
@@ -67,7 +70,9 @@ def verify_runtime_bundle(skill_root: str | Path) -> None:
         "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
         "skill_version": (root / "VERSION").read_text(encoding="utf-8-sig").strip(),
         "supported_skill_series": "0.9.x",
-        "workflow_contract_schema": SUPPORTED_WORKFLOW_SCHEMA,
+        # Stage-2 source compatibility can lead the last formally generated
+        # installed bundle. Its manifest remains the authority for that bundle.
+        "workflow_contract_schema": PACKAGED_WORKFLOW_SCHEMA,
         "scheduling_schema": SUPPORTED_SCHEDULING_SCHEMA,
     }
     for key, expected in expected_identity.items():
@@ -228,22 +233,27 @@ def validate_skill_runtime(skill_root: str | Path) -> SkillRuntime:
     schema_path = root / "schemas" / "workflow-contract.schema.json"
     try:
         schema = json.loads(schema_path.read_text(encoding="utf-8-sig"))
-        workflow_schema = schema["properties"]["schema_version"]["const"]
+        schema_identity = schema["properties"]["schema_version"]
+        if "const" in schema_identity:
+            workflow_schemas = (schema_identity["const"],)
+        else:
+            workflow_schemas = tuple(schema_identity["enum"])
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise RuntimeCompatibilityError(
             "Workflow Contract schema identity cannot be read"
         ) from exc
-    if workflow_schema != SUPPORTED_WORKFLOW_SCHEMA:
+    if workflow_schemas != SUPPORTED_WORKFLOW_SCHEMAS:
         raise RuntimeCompatibilityError(
             "unsupported Workflow Contract schema "
-            f"{workflow_schema!r}; expected {SUPPORTED_WORKFLOW_SCHEMA!r}"
+            f"{workflow_schemas!r}; expected {SUPPORTED_WORKFLOW_SCHEMAS!r}"
         )
 
     fingerprint = skill_fingerprint(root)
     return SkillRuntime(
         root=root,
         version=version,
-        workflow_schema=workflow_schema,
+        workflow_schema=SUPPORTED_WORKFLOW_SCHEMA,
+        workflow_schemas=workflow_schemas,
         scheduling_schema=SUPPORTED_SCHEDULING_SCHEMA,
         fingerprint=fingerprint,
     )
@@ -271,17 +281,17 @@ def validate_project_schemas(project_root: str | Path, runtime: SkillRuntime) ->
             raise RuntimeCompatibilityError(
                 f"TASK schema declarations cannot be read: {path.name}"
             ) from exc
-        for heading, expected_key, expected_value, declaration_optional in (
+        for heading, expected_key, expected_values, declaration_optional in (
             (
                 "Workflow Contract",
                 "schema_version",
-                runtime.workflow_schema,
+                runtime.workflow_schemas,
                 False,
             ),
             (
                 "Scheduling",
                 "scheduling_schema",
-                runtime.scheduling_schema,
+                (runtime.scheduling_schema,),
                 True,
             ),
         ):
@@ -307,10 +317,10 @@ def validate_project_schemas(project_root: str | Path, runtime: SkillRuntime) ->
                 raise RuntimeCompatibilityError(
                     f"{label} declaration must appear exactly once in {path.name}"
                 )
-            if values[0] != expected_value:
+            if values[0] not in expected_values:
                 raise RuntimeCompatibilityError(
                     f"unsupported {label} {values[0]!r} in {path.name}; "
-                    f"expected {expected_value!r}"
+                    f"expected one of {expected_values!r}"
                 )
 
 

@@ -39,7 +39,8 @@
 
 - 完成标准：六个阶段按依赖顺序交付，并严格停在真实用户 UA 与显式发布授权门禁。
 - 验证命令或检查：逐阶段执行总合同指定测试、独立只读 Review、diff 检查和生命周期收据核对。
-- [ ] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
+- [x] CORE-SPLIT、CAPABILITY-REVIEW 依序完成阶段验证、Review 和提交边界。
+- [ ] RUNTIME-CONSOLE-BE 已修复 GPT Pro P1，等待新冻结范围外部复审关闭 finding。
 - [ ] PROJECT-CONSOLE-FE 自动化与 Review 通过，并停在真实用户 UA 门禁。
 - [ ] 用户真实 UA Passed 且明确同意后，才执行 LEGACY-RETIRE。
 - [ ] 用户显式发布授权后，才执行 RELEASE。
@@ -56,6 +57,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 Internal Isolated Review Passed / External Review Passed / UA3 Pending；阶段分支均已推送，Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14) 与 [#15](https://github.com/a-littlecat/ai-dev-flow/pull/15) 保持 Open / Unmerged。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 的 GPT Pro 冻结复审为 `Needs Fix 0/1/0/0`，P1 及两轮原因码集成回归已在最终 implementation `5970ff5` 修复，最终 Codex 短范围预检 `Passed 0/0/0/0`；GPT Pro 仍须对新 head 关闭原 finding，故 Overall External Re-review 仍 Needs Fix / UA3 Pending。用户已明确取消 Kimi 当前复审要求。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16) 保持 Open / Unmerged。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
-- 下一步：等待 #14-#15 新的跨 Harness 外部只读复审；不提前进入正式 UA。
+- 下一步：推送并冻结 #16 修复后的完整 head，完成 GPT Pro 外部只读复审；不提前进入正式 UA。

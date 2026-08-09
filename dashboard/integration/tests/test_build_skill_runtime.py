@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,10 +25,8 @@ def _copy_inputs(target: Path) -> None:
     )
     contracts = target / "dashboard" / "contracts"
     contracts.mkdir(parents=True)
-    shutil.copyfile(
-        REPO_ROOT / "dashboard" / "contracts" / "dashboard-contracts-v1.schema.json",
-        contracts / "dashboard-contracts-v1.schema.json",
-    )
+    for source in sorted((REPO_ROOT / "dashboard" / "contracts").glob("*.schema.json")):
+        shutil.copyfile(source, contracts / source.name)
     frontend = target / "dashboard" / "frontend"
     frontend.mkdir(parents=True)
     for name in (
@@ -76,6 +76,131 @@ def _tree_bytes(root: Path) -> dict[str, bytes]:
 
 
 class SkillRuntimeBuildTests(unittest.TestCase):
+    def test_installed_layout_supports_session_status_and_status_watch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            installed_skill = root / "installed" / "ai-dev-flow"
+            shutil.copytree(
+                REPO_ROOT / "skills" / "ai-dev-flow",
+                installed_skill,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            project = root / "project"
+            task_dir = project / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            shutil.copyfile(
+                REPO_ROOT / "docs" / "tasks" / "ADF-V010-RUNTIME-CONSOLE-BE.md",
+                task_dir / "ADF-V010-RUNTIME-CONSOLE-BE.md",
+            )
+            subprocess.run(
+                ["git", "-C", str(project), "init", "-b", "main"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(project), "add", "."],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(project),
+                    "-c",
+                    "user.name=Runtime Test",
+                    "-c",
+                    "user.email=runtime@example.invalid",
+                    "commit",
+                    "-m",
+                    "runtime fixture",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            runtime_root = root / "runtime"
+            wrapper = installed_skill / "scripts" / "adf.py"
+            common = [
+                "--project-root",
+                str(project),
+                "--runtime-root",
+                str(runtime_root),
+                "--format",
+                "json",
+            ]
+            started = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    "-X",
+                    "utf8",
+                    str(wrapper),
+                    "session",
+                    "start",
+                    *common,
+                    "--session",
+                    "installed-layout",
+                    "--task",
+                    "ADF-V010-RUNTIME-CONSOLE-BE",
+                    "--harness",
+                    "integration",
+                    "--phase",
+                    "validating",
+                    "--next-step",
+                    "verify installed layout",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+            )
+            self.assertEqual(0, started.returncode, started.stderr)
+            self.assertEqual("installed-layout", json.loads(started.stdout)["session_id"])
+            status_command = [
+                sys.executable,
+                "-u",
+                "-B",
+                "-X",
+                "utf8",
+                str(wrapper),
+                "status",
+                *common,
+                "--skill-root",
+                str(installed_skill),
+            ]
+            status = subprocess.run(
+                status_command,
+                cwd=root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=30,
+            )
+            self.assertEqual(0, status.returncode, status.stderr)
+            self.assertEqual("adf/project-console/v1", json.loads(status.stdout)["schema_version"])
+            watch = subprocess.Popen(
+                [*status_command, "--watch", "--interval", "0.05"],
+                cwd=root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+            )
+            try:
+                first_line = watch.stdout.readline() if watch.stdout else ""
+                self.assertEqual(
+                    "adf/project-console/v1",
+                    json.loads(first_line)["schema_version"],
+                )
+            finally:
+                watch.terminate()
+                watch.wait(timeout=10)
+                if watch.stdout:
+                    watch.stdout.close()
+                if watch.stderr:
+                    watch.stderr.close()
+
     def test_build_and_check_fail_before_bundle_work_when_codegen_is_stale(self):
         failure = subprocess.CalledProcessError(1, ["npm", "run", "codegen:check"])
         for action in (
@@ -245,7 +370,7 @@ class SkillRuntimeBuildTests(unittest.TestCase):
                 )
                 self.assertEqual("", status)
 
-                self.assertEqual(37, len(results["true"]))
+                self.assertEqual(44, len(results["true"]))
             self.assertEqual(results["true"], results["false"])
 
 

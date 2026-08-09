@@ -179,6 +179,9 @@ class TaskNode:
     task_type: str | None
     task_class: str | None
     lifecycle: str | None
+    contract_schema_version: str | None
+    review_requirement: str | None
+    review_state: str | None
     review_status: str | None
     ua_level: str | None
     ua_status: str | None

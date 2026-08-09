@@ -48,7 +48,7 @@ def _canonical_payload(source: Path) -> bytes:
 def _source_fingerprint() -> str:
     sources = [
         *sorted(BACKEND_SOURCE.rglob("*.py")),
-        CONTRACT_SOURCE,
+        *sorted(CONTRACT_SOURCE.parent.glob("*.schema.json")),
         ATTRIBUTES_SOURCE,
         FRONTEND_ROOT / "index.html",
         FRONTEND_ROOT / "package.json",
@@ -76,7 +76,8 @@ def _desired_files() -> dict[str, Path]:
             continue
         relative = source.relative_to(BACKEND_SOURCE).as_posix()
         files[f"backend/src/ai_dev_flow_dashboard/{relative}"] = source
-    files["contracts/dashboard-contracts-v1.schema.json"] = CONTRACT_SOURCE
+    for source in sorted(CONTRACT_SOURCE.parent.glob("*.schema.json")):
+        files[f"contracts/{source.name}"] = source
     if not (FRONTEND_DIST / "index.html").is_file():
         raise BundleError("frontend dist is missing; run the frontend build first")
     for source in sorted(FRONTEND_DIST.rglob("*")):

@@ -88,6 +88,10 @@ def _body(port: int, path: str) -> bytes:
         return response.read()
 
 
+def _json_body(port: int, path: str) -> dict[str, object]:
+    return json.loads(_body(port, path))
+
+
 def _wait_for_revision(port: int, previous: str) -> dict[str, object]:
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
@@ -107,6 +111,70 @@ def _stop(process: subprocess.Popen[str]) -> None:
 
 @unittest.skipUnless(os.name == "nt", "portable runtime uses the Windows read lease")
 class PortableRuntimeIntegrationTests(unittest.TestCase):
+    def test_portable_entry_points_fail_closed_for_missing_or_tampered_runtime_manifest(self):
+        for entry_point in ("adf.py", "dashboard.py"):
+            for kind in ("missing-manifest", "tampered-runtime"):
+                with self.subTest(entry_point=entry_point, kind=kind), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    installed_skill = root / "installed" / "ai-dev-flow"
+                    shutil.copytree(
+                        SOURCE_SKILL,
+                        installed_skill,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                    )
+                    project = _create_external_project(root / "project", "PREFLIGHT-001")
+                    if kind == "missing-manifest":
+                        (installed_skill / "dashboard" / "runtime-manifest.json").unlink()
+                        expected = "manifest cannot be read"
+                    else:
+                        target = (
+                            installed_skill
+                            / "dashboard"
+                            / "backend"
+                            / "src"
+                            / "ai_dev_flow_dashboard"
+                            / "cli.py"
+                        )
+                        target.write_bytes(target.read_bytes() + b"\n# tampered\n")
+                        expected = "runtime file changed"
+                    runtime_root = root / "runtime"
+                    if entry_point == "adf.py":
+                        arguments = [
+                            "session",
+                            "list",
+                            "--project-root",
+                            str(project),
+                            "--runtime-root",
+                            str(runtime_root),
+                            "--format",
+                            "json",
+                        ]
+                    else:
+                        arguments = [
+                            "--project-root",
+                            str(project),
+                            "--runtime-root",
+                            str(runtime_root),
+                            "--no-open",
+                        ]
+                    result = subprocess.run(
+                        [
+                            sys.executable,
+                            "-B",
+                            str(installed_skill / "scripts" / entry_point),
+                            *arguments,
+                        ],
+                        cwd=root,
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                        timeout=20,
+                    )
+                    self.assertEqual(2, result.returncode)
+                    self.assertIn(expected, result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                    self.assertFalse(runtime_root.exists())
+
     def test_same_project_second_instance_is_rejected_and_first_remains_available(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -174,6 +242,12 @@ class PortableRuntimeIntegrationTests(unittest.TestCase):
                 self.assertEqual(
                     ["SINGLETON-001"],
                     [item["task_id"] for item in _snapshot(port)["tasks"]],
+                )
+                console = _json_body(port, "/api/v1/console")
+                self.assertEqual("adf/project-console/v1", console["schema_version"])
+                self.assertEqual(
+                    "SINGLETON-001",
+                    console["ready_queue"][0]["task_id"],
                 )
                 self.assertEqual(1, len(list(runtime_root.glob("*/*/state.json"))))
             finally:

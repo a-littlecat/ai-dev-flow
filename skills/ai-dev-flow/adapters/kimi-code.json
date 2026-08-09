@@ -12,9 +12,19 @@
   "approval_gate": "native",
   "runtime_hooks": "none",
   "session_events": "manual",
-  "runtime_session_bridge": {"type": "manual", "command": null, "hooks": {}},
+  "runtime_session_bridge": {
+    "type": "command",
+    "command": "{python} -B {skill_root}/scripts/adf.py",
+    "hooks": {
+      "start": "session start --project-root {project_root} --session {session_id} --task {task_id} --harness kimi-code --phase {phase} --next-step {next_step} --status-summary {status_summary}",
+      "update": "session update --project-root {project_root} --session {session_id} --phase {phase} --next-step {next_step} --status-summary {status_summary}",
+      "wait": "session wait --project-root {project_root} --session {session_id} --reason {reason}",
+      "end": "session end --project-root {project_root} --session {session_id} --reason {reason}",
+      "heartbeat": "session heartbeat --project-root {project_root} --session {session_id}"
+    }
+  },
   "preferred_review_recipe": "R3",
   "fallback_review_recipe": "R5",
   "formal_skill_sync_method": "explicit governed Skill sync only",
-  "version_sensitive_notes": "CLI 0.31.1 was present; current help did not prove a true read-only sandbox, so use an orchestrator-owned read-only copy."
+  "version_sensitive_notes": "CLI 0.34.0 completed the command bridge lifecycle E2E on 2026-08-09; read-only Review still requires an orchestrator-owned copy."
 }

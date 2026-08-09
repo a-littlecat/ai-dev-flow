@@ -114,7 +114,8 @@ class ActionEngine:
                 continue
 
             lifecycle = task.lifecycle
-            review = task.review_status
+            review = task.review_state
+            review_requirement = task.review_requirement
             if (
                 task.scheduling_state in {"absent", "legacy_inferred"}
                 and lifecycle in {"Ready", "In Progress"}
@@ -131,7 +132,7 @@ class ActionEngine:
                 )
             elif lifecycle in {"Closed", "Cancelled"}:
                 result.append(self._make(task, "none", "not_applicable", "none", "not_required", "TERMINAL_STATE"))
-            elif review in {"Needs Fix", "Do Not Merge"} or lifecycle == "Needs Fix":
+            elif review in {"Needs Fix", "Blocked"} or lifecycle == "Needs Fix":
                 result.append(
                     self._make(
                         task,
@@ -218,7 +219,13 @@ class ActionEngine:
                         "CONTINUE_AUTHORITY_UNSUPPORTED",
                     )
                 )
-            elif lifecycle == "Review" and review in {"Pending", "In Review"}:
+            elif lifecycle == "Review" and (
+                review == "In Review"
+                or (
+                    review == "Not Run"
+                    and review_requirement in {"Required", "Legacy Unspecified"}
+                )
+            ):
                 result.append(
                     self._make(
                         task,
@@ -229,7 +236,10 @@ class ActionEngine:
                         "REVIEW_AUTHORITY_UNSUPPORTED",
                     )
                 )
-            elif lifecycle == "Review" and review == "Passed" and task.ua_status in {"Pending", "TBD"}:
+            elif lifecycle == "Review" and (
+                review == "Passed"
+                or (review_requirement == "Not Required" and review == "Not Run")
+            ) and task.ua_status in {"Pending", "TBD"}:
                 result.append(
                     self._make(
                         task,
@@ -240,7 +250,10 @@ class ActionEngine:
                         "USER_DECISION_PENDING",
                     )
                 )
-            elif lifecycle == "Review" and review == "Passed" and task.ua_status in {"Passed", "Not Required"}:
+            elif lifecycle == "Review" and (
+                review == "Passed"
+                or (review_requirement == "Not Required" and review == "Not Run")
+            ) and task.ua_status in {"Passed", "Not Required"}:
                 result.append(
                     self._make(
                         task,
