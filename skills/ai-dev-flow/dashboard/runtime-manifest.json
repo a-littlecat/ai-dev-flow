@@ -5,7 +5,7 @@
     "backend/src/ai_dev_flow_dashboard/__main__.py": "143ce6510795b3d15e1707bded9228a8e55787b6e280cba72e4082500a4eee23",
     "backend/src/ai_dev_flow_dashboard/cli.py": "61844b6c69885173d792f811c32d9e735c3d54efee71a589b63fea4fa40497de",
     "backend/src/ai_dev_flow_dashboard/console/__init__.py": "dcc9db4d94ee7212a702b16af3fec6b11e0bdb6b4c9a7643e1b700a0069a8e42",
-    "backend/src/ai_dev_flow_dashboard/console/builder.py": "cb9ca355acc424565d9b3da47f12db25e3142665164c02594f2a307df4a7ac79",
+    "backend/src/ai_dev_flow_dashboard/console/builder.py": "ab0991512d5a4255837899a0c7d5765fd8d1c9344f229c24b081bdaa3113d8d1",
     "backend/src/ai_dev_flow_dashboard/core/__init__.py": "b54cd738d717c76b7d474f45209cdf546a4d1ee2121342d33f39a13701b5dd58",
     "backend/src/ai_dev_flow_dashboard/core/actions.py": "343e21ad4cdc7cee3c3075b0c2a7a2b626d2ba7a70f1129b57fed2b153600294",
     "backend/src/ai_dev_flow_dashboard/core/benchmark.py": "db4025b31260d943123229f1c10635dd76f3ead677c86f289d9cafeb3add03ec",
@@ -47,7 +47,7 @@
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
   "skill_version": "0.9.2",
-  "source_fingerprint": "edfa6c6353afb830cab5e3c087119a56ecc20ae36863fa37fb09480c695f1b7e",
+  "source_fingerprint": "6af4e6c6844b7a5924cfb05a10793e687017a765d0502db45ac478e122a1fc4c",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }
