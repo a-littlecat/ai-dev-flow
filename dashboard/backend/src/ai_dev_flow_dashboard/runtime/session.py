@@ -253,7 +253,7 @@ class RuntimeSessionStore:
                 payload = self._read_path(path)
                 result.append({**payload, "freshness": self._freshness(payload)})
             except (OSError, UnicodeError, json.JSONDecodeError, RuntimeSessionError):
-                result.append(self._invalid(path.stem, "INVALID_SESSION"))
+                result.append(self._invalid(path.stem, "INVALID_RUNTIME_SESSION"))
         return sorted(
             result,
             key=lambda item: (item.get("updated_at") or "", item["session_id"]),

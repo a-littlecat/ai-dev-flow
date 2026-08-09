@@ -26,7 +26,7 @@
     "backend/src/ai_dev_flow_dashboard/git_snapshot/runner.py": "1c40f1f0dbd47a62ed4c678d52ce5efc3a4025bb83187c33a42236cfb9746670",
     "backend/src/ai_dev_flow_dashboard/portable.py": "2081b07315db8e669475b376608c8066aa6a004b6a4f34256c1e93d651be32d4",
     "backend/src/ai_dev_flow_dashboard/runtime/__init__.py": "c1a0aa5910ec57f995762df125ed7f3dfcb38e68ad44dc5651b5170f49d61687",
-    "backend/src/ai_dev_flow_dashboard/runtime/session.py": "c00201b4e74ecdcce7945b783d6df45f9ae671facdc52742be96bf7ccaa62bb8",
+    "backend/src/ai_dev_flow_dashboard/runtime/session.py": "77ccf7cd61979f78040c71c707d9090e06d57396c56830431a8f5bd6b8149cc7",
     "backend/src/ai_dev_flow_dashboard/runtime_compat.py": "a1d512c04b84162ec5947504da3338accfcbf6ae2c42694939a9c37f9eb89e71",
     "backend/src/ai_dev_flow_dashboard/server/__init__.py": "8140b19e5809d8e755da46f878ec42e304bb31dc8b92eb51e5458b1a79023d35",
     "backend/src/ai_dev_flow_dashboard/server/api.py": "cba264fae3290283ae4971914a37fad4877c2fed8b53bb7651258f835fca4551",
@@ -47,7 +47,7 @@
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
   "skill_version": "0.9.2",
-  "source_fingerprint": "6af4e6c6844b7a5924cfb05a10793e687017a765d0502db45ac478e122a1fc4c",
+  "source_fingerprint": "9cddb1bb8a66421bc1fb3ffabf2a9caeb46367d8f73bf0e32de1d869bf8f9091",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }
