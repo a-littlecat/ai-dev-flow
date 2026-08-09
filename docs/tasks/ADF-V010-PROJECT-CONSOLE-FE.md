@@ -66,13 +66,13 @@
 
 ## Outcome
 
-- Base / Diff：base=31ad2f7;diff=31ad2f7..6e89697。
+- Base / Diff：base=869a8d3;diff=869a8d3..3fbdf9d
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `204 passed / 2 skipped / 1 known baseline failed`，唯一失败为 Windows non-recursive native event 基线；Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。
 - Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Kimi/Grok 旧 head 定向 spot review 仅为诊断证据，更新后跨 Harness 完整外部复审仍 Pending。
-- Delivery：本轮 implementation/current reviewed head=`6e89697`；branch `codex/v010-project-console-fe` 已推送该实现 head，本事实收据提交同步推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
+- Delivery：本轮 current implementation head=`3fbdf9d`，branch `codex/v010-project-console-fe` 已推送且远端对齐；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。当前外部复审尚未形成完整双 Harness receipt，不称 reviewed head。
 - 状态边界：Stacked Update Fresh Validation Complete / External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
 - 下一步：先对更新后的 #14-#17 分别完成跨 Harness 外部只读复审；无开放 P0/P1 后才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。

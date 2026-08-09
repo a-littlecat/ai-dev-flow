@@ -40,7 +40,7 @@
 - 完成标准：六个阶段按依赖顺序交付，并严格停在真实用户 UA 与显式发布授权门禁。
 - 验证命令或检查：逐阶段执行总合同指定测试、独立只读 Review、diff 检查和生命周期收据核对。
 - [x] CORE-SPLIT、CAPABILITY-REVIEW、RUNTIME-CONSOLE-BE 依序完成阶段验证、Review 和提交边界。
-- [x] PROJECT-CONSOLE-FE 自动化与 Review 通过，并停在真实用户 UA 门禁。
+- [x] PROJECT-CONSOLE-FE 自动化与 same-Harness 内部 Review 通过；跨 Harness 外部复审仍 Pending，并停在真实用户 UA 门禁。
 - [ ] 用户真实 UA Passed 且明确同意后，才执行 LEGACY-RETIRE。
 - [ ] 用户显式发布授权后，才执行 RELEASE。
 - [ ] 每阶段 `git diff --check` 通过，diff 可归属对应 TASK。
@@ -56,6 +56,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 为 Grok External Re-review Passed / Kimi quota blocked / Overall External Re-review Pending / UA3 Pending；PROJECT-CONSOLE-FE 已普通 merge 吸收 #16 修复，仍为 External Re-review Pending / UA5 Pending user_only。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)、[#17](https://github.com/a-littlecat/ai-dev-flow/pull/17) 均保持 Open / Unmerged。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
+- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 为 Grok External Re-review Passed / Kimi quota blocked / Overall External Re-review Pending / UA3 Pending；PROJECT-CONSOLE-FE 已普通 merge 吸收 #16 修复并 Pushed `3fbdf9d`，仍为 External Re-review Pending / UA5 Pending user_only。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)、[#17](https://github.com/a-littlecat/ai-dev-flow/pull/17) 均保持 Open / Unmerged。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
 - 剩余风险：Kimi 当前配额阻塞，#16/#17 尚缺绑定当前 head 的 Kimi 终局 receipt；旧 head spot review 不能替代。
 - 下一步：重建并验证 #17 Runtime bundle，完成 Grok fresh 外部复审；Kimi 配额恢复后补齐 #16/#17 fresh receipt。全部外部复审完成前不建议进入 UA5，不得启动 Legacy Retire。
