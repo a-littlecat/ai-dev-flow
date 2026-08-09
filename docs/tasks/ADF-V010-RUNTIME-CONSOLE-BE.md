@@ -43,7 +43,7 @@
 - [x] `session` / `status --watch` 与 API 共用同一 Console Builder。
 - [x] `/console` schema、ETag/304、loopback/method allowlist 和敏感字段排除通过。
 - [x] Queue 分组与排序正确；多候选不伪造唯一主任务；Snapshot v1 兼容。
-- [x] 外部复审修复后的全量相关测试与新独立只读 Review 通过。
+- [x] 外部 findings 修复后的全量相关测试与 same-Harness 内部隔离只读 Review 通过；跨 Harness 外部复审仍 Pending。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
 
@@ -75,8 +75,8 @@
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CAPABILITY-REVIEW 历史。
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
 - 验证证据：外部修复 fresh be003 `21/21`（skip 2）、backend `204/204`（skip 2）、Skill `119/119`、Runtime bundle `43/43`、codegen check 与 `git diff --check` 已通过；frontend 与 integration 待在上层 UI 合并后执行完整验证。完整 integration 已知边界为 `51/52`，唯一 artifact guard 失败不得误报为全绿。
-- Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮外部修复后的新隔离只读 Review session `019fe236-302c-7371-a686-17336916a8fd` 为 `Passed 0/0/0/0`，无开放 finding。
-- Delivery：初始 implementation=`f7f3a63`、receipt=`587bdc1`；外部修复 implementation=`46a16b7`、receipt=`21ea7ed`；follow-up=`981079a`；branch `codex/v010-runtime-console-be` 待推送当前收据；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
-- 状态边界：External Repair Follow-up Review Passed / UA3 Pending / Follow-up Committed `981079a` / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮 findings 修复后的 same-Harness 内部隔离 Review sessions 均为 `Passed`；跨 Harness 外部复审仍 Pending。
+- Delivery：本轮 reviewed implementation=`8944a84`；branch `codex/v010-runtime-console-be`；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
+- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Reviewed implementation `8944a84` / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：提交/push #16 follow-up，再以普通 merge 更新 #17，并在 #17 用 Python 3.13 重跑 full integration。禁止提前进入正式用户 UA。
+- 下一步：普通 merge 更新 #17 后，等待新的跨 Harness 外部只读复审。禁止提前进入正式用户 UA。

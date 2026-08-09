@@ -2,15 +2,15 @@
 
 > - 快照日期：2026-08-08
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT #14 与 CAPABILITY-REVIEW #15 外部修复已推送，UA Pending / RUNTIME-CONSOLE-BE External Repair In Progress / 后续阶段等待下层更新`
+> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 Internal Isolated Review Passed / External Re-review Pending / UA Pending`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
 ## 当前执行任务（2026-08-08）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14/#15 外部修复已推送；#16 外部修复已通过新隔离 Review 并提交，待推送与向上更新 #17。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`External Repair Review Passed / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。
-- `ADF-V010-CAPABILITY-REVIEW`：`External Repair Review Passed / UA3 Pending / Pushed 0e4c2ff / Draft PR #15 / Unmerged`。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`External Repair Follow-up Review Passed / Controlled / UA3 Pending / Committed 981079a / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、Runtime 时间/目录、status_summary、ambiguity 与 active_work 排序 finding 已关闭；portable integration 已同步验证 Ready 进入 `ready_queue`，follow-up Review session `019fe250-5410-7743-a734-2758ad74ebb7` 为 `Passed 0/0/0/0`。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 修复均已通过 same-Harness 内部隔离 Review，跨 Harness 外部复审仍 Pending。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Pushed 397acae / Draft PR #14 / Unmerged`。
+- `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Pushed b864b04 / Draft PR #15 / Unmerged`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`Internal Isolated Repair Review Passed / External Re-review Pending / Controlled / UA3 Pending / Reviewed implementation 8944a84 / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、ready_ambiguity、Runtime bridge 与 bundle preflight 已通过 fresh 验证及 same-Harness 内部隔离 Review。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

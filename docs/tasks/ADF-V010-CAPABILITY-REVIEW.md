@@ -43,7 +43,7 @@
 - [x] v0.7 TASK 继续解析且不改义；v0.10 TASK 支持 `Required` / `Not Required`。
 - [x] Not Required 可合法完成；Required 在 Accepted/Closed 前仍需 Passed。
 - [x] Brief/Full 选择不依赖模型名；Dashboard 合同、codegen 与兼容测试通过。
-- [x] 外部复审修复后的全量相关测试、workflow lint、`git diff --check` 和新独立只读 Review 通过。
+- [x] 外部 findings 修复后的全量相关测试、workflow lint、`git diff --check` 和 same-Harness 内部隔离只读 Review 通过；跨 Harness 外部复审仍 Pending。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
 
@@ -85,6 +85,6 @@
 - 范围适配：`policy_loader.py` 与 `schemas/workflow-contract.schema.json` 未列在最初允许清单，但分别是 CORE-SPLIT 新增严格 loader 与现有 RuntimeCompatibility 的直接事实源；为保持 core policy 可加载和双版本 schema 可启动而做最小改动，不扩展到 Runtime/Project Console。
 - 验证证据：Round 2 fresh Adapter 定向 `6/6`、Skill `119/119`、backend `182/182`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；Round 1 后 frontend codegen check/typecheck/lint/Vitest `95/95`/build/Playwright `96/96` 已通过，Round 2 未改前端。首次组合 `npm run verify` 仅因工具 124 秒硬超时无终态，随后拆分组件全部通过。stack full integration 已知为 `51/52`，唯一 artifact guard 失败须在上层全部更新后复跑。
 - Review findings：Round 1 `Needs Fix 0/4/0/0`；Round 2/3/4 依次收敛 `R002`；用户授权 ER-1 后，session `019fe130-43df-7551-b44c-659b67ba9fe6` 为 `Passed 0/0/0/0`，`R001`～`R004` 全部 Closed。
-- 状态边界：External Repair Review Passed / Fresh Verification Passed / Repair Committed `83ec457` / UA3 Pending / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / Fresh Verification Passed / Pushed `93e1b5d` / UA3 Pending / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：生产依赖树存在基线 `fast-uri` high advisory，`package-lock.json` 本阶段未改；正式发布前应在 RELEASE 阶段单独评估兼容升级。集成套件两项历史债务仍未在本阶段修复。
 - 下一步：push #15 当前修复，再以普通 merge 更新 #16。禁止提前进入正式 UA。
