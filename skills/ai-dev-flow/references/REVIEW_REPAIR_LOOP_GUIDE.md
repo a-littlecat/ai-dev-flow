@@ -60,7 +60,7 @@
 - 验证命令。
 - 验证结果。
 - 是否需要再审查。
-- 是否进入用户裁决，以及是否获得单次 `EscalatedRepair` 或连续 `RepairCampaignAuthority`。
+- 是否进入用户裁决，以及是否获得次数受 authority receipt 约束的 `EscalatedRepair` 或连续 `RepairCampaignAuthority`。
 
 ## 停止条件
 

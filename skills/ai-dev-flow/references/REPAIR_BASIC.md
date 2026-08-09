@@ -18,7 +18,7 @@ next: Continue
 
 - 一轮是一次针对冻结 finding 的 patch 到下一次独立 Review。
 - 只读 Review、诊断、原样重跑测试、TASK/看板收据同步不计轮次。
-- 默认两轮；只有 RED→GREEN、无 GREEN→RED、无新阻断 finding、严重度不升时才可增加一轮。
+- 基础预算与可选额外轮次读取 `policy/repair-basic.json`；只有 Policy 声明的 progress 条件全部满足时才可使用额外轮次。
 - 每次 patch 后必须独立 Review；预算耗尽或无进展时回到用户决定。
 - 普通路径不要求 receipt chain、trusted context、history head、attestation hash 或 campaign state。
 - merge、push、release、删除、外部同步、Accepted 和 Closed 仍需要各自 authority。

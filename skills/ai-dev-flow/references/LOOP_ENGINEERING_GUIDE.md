@@ -90,7 +90,7 @@ execute_task -> validation -> review_task -> repair_task -> review_task -> accep
 - 验证无法判断。
 - diff 归属不清。
 - 工作区已有来源不明的未提交改动。
-- P0/P1 反复出现且两轮内无法修复。
+- P0/P1 反复出现且在适用 repair Policy 的基础预算内无法修复。
 - 需要用户决策。
 
 ## Loop 最大循环次数
