@@ -83,7 +83,9 @@ test("real backend responses drive every abnormal UI state and recover", async (
   page,
   request,
 }) => {
-  await page.goto("/");
+  // Project Console is the v0.10 default; this graph-specific matrix keeps
+  // exercising the retained diagnostic surface through its explicit route.
+  await page.goto("/?view=network");
   await expect(page.locator(statusBar)).toContainText("快照：不完整");
   await expect(page.locator(".stale-strip-partial")).toContainText("SOURCE_UNAVAILABLE");
 
@@ -183,7 +185,7 @@ test("an expired SSE event id reaches the real reset branch and clears view stat
     resetFrameReceived = true;
   });
 
-  await page.goto("/");
+  await page.goto("/?view=network");
   await expect(page.locator(statusBar)).toContainText("快照：新鲜");
   await page.locator('.node[data-task-id="STACK-001"]').click();
   await expect(page.locator('.node[data-task-id="STACK-001"]')).toHaveClass(
@@ -200,8 +202,6 @@ test("an expired SSE event id reaches the real reset branch and clears view stat
   await expect(page.locator('.node[data-task-id="STACK-001"]')).not.toHaveClass(
     /node-selected/,
   );
-  await expect(page.locator(".detail-hint")).toContainText(
-    "在关系图中选择一个节点查看完整详情",
-  );
+  await expect(page.locator(".detail-title")).toHaveText("任务详情");
   await expect(page.locator(".focus-banner")).toHaveCount(0);
 });

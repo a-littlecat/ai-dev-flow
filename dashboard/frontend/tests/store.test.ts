@@ -9,7 +9,7 @@ import { AppStore } from "../src/state/store";
 import { emptyFilters } from "../src/state/derive";
 import type { ErrorEnvelope, TaskDetail } from "../src/generated/contracts.types";
 import { validateContract } from "../src/api/schema";
-import { makeAction, makeAssessment, makeSnapshot, makeTask, sha } from "./support";
+import { makeAction, makeAssessment, makeProjectConsole, makeSnapshot, makeTask, sha } from "./support";
 
 function twoTaskSnapshot(revision = sha(900)) {
   return makeSnapshot({
@@ -74,6 +74,65 @@ describe("AppStore snapshot handling", () => {
     const store = new AppStore();
     store.setSnapshot(twoTaskSnapshot(), null, "fresh");
     expect(store.get().fixtureName).toBe("fresh");
+  });
+});
+
+describe("AppStore Project Console generation guards", () => {
+  it("defaults to console and exposes explicit network and legacy modes", () => {
+    const store = new AppStore();
+    expect(store.get().viewMode).toBe("console");
+    store.showFullNetwork();
+    expect(store.get().viewMode).toBe("network");
+    store.showLegacy();
+    expect(store.get().viewMode).toBe("legacy");
+    store.showConsole();
+    expect(store.get().viewMode).toBe("console");
+  });
+
+  it("rejects a console reply from another snapshot revision", () => {
+    const store = new AppStore();
+    store.setSnapshot(twoTaskSnapshot(sha(900)), null, null);
+    expect(store.setConsoleReady(makeProjectConsole(sha(899)), "old-etag")).toBe(false);
+    expect(store.get().console.data).toBeNull();
+    expect(store.setConsoleReady(makeProjectConsole(sha(900)), "new-etag")).toBe(true);
+    expect(store.get().console.etag).toBe("new-etag");
+  });
+
+  it("retains last-good console data and marks it stale on disconnect", () => {
+    const store = new AppStore();
+    store.setSnapshot(twoTaskSnapshot(sha(900)), null, null);
+    const console = makeProjectConsole(sha(900));
+    store.setConsoleReady(console, "etag");
+    store.setConsoleFailure({ kind: "network", message: "lost" });
+    expect(store.get().console.status).toBe("stale");
+    expect(store.get().console.data).toBe(console);
+    expect(store.get().console.message).toContain("保留上次数据");
+  });
+
+  it("invalidates a console ETag when the snapshot generation changes", () => {
+    const store = new AppStore();
+    store.setSnapshot(twoTaskSnapshot(sha(900)), null, null);
+    const previous = makeProjectConsole(sha(900));
+    store.setConsoleReady(previous, "console-etag");
+
+    store.setSnapshot(twoTaskSnapshot(sha(901)), null, null);
+
+    expect(store.get().console.data).toBe(previous);
+    expect(store.get().console.status).toBe("stale");
+    expect(store.get().console.etag).toBeNull();
+    expect(store.get().console.message).toContain("项目事实已更新");
+    expect(store.setConsoleNotModified()).toBe(false);
+  });
+
+  it("accepts 304 only when console and snapshot generations still match", () => {
+    const store = new AppStore();
+    store.setSnapshot(twoTaskSnapshot(sha(900)), null, null);
+    store.setConsoleReady(makeProjectConsole(sha(900)), "console-etag");
+    store.setConsoleFailure({ kind: "network", message: "lost" });
+
+    expect(store.setConsoleNotModified()).toBe(true);
+    expect(store.get().console.status).toBe("ready");
+    expect(store.get().console.message).toBeNull();
   });
 });
 

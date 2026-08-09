@@ -18,7 +18,7 @@ export class ActionCenter {
   }
 
   update(state: AppState): void {
-    this.root.hidden = state.viewMode !== "overview";
+    this.root.hidden = state.viewMode !== "legacy";
     if (this.root.hidden) {
       return;
     }

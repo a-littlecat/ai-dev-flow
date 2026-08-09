@@ -4,7 +4,9 @@
  * success — so callers surface a visible error and enter health-check/retry.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchSnapshot, fetchTaskDetail } from "../src/api/client";
+import { fetchConsole, fetchSnapshot, fetchTaskDetail } from "../src/api/client";
+import { makeProjectConsole } from "./support";
+import { sha } from "./makers";
 
 function stubBodyReadFailure(): void {
   vi.stubGlobal(
@@ -58,5 +60,35 @@ describe("API client body-read failures", () => {
     if (!result.ok) {
       expect(result.failure.kind).toBe("network");
     }
+  });
+
+  it("sends the console ETag and maps 304 to retained local data", async () => {
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => ({
+      status: 304,
+      ok: false,
+      headers: new Headers(),
+      text: async () => "",
+      requestHeaders: init.headers,
+    }));
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+    const result = await fetchConsole('"sha256-old"');
+    expect(result).toEqual({ ok: true, value: null });
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({ "If-None-Match": '"sha256-old"' });
+  });
+
+  it("strictly validates a Project Console response", async () => {
+    const payload = makeProjectConsole(sha(700));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 200,
+        ok: true,
+        headers: new Headers({ ETag: '"sha256-console"' }),
+        text: async () => JSON.stringify(payload),
+      })) as unknown as typeof fetch,
+    );
+    const result = await fetchConsole();
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value?.console.snapshot_revision).toBe(sha(700));
   });
 });

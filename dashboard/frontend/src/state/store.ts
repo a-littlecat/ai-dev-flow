@@ -8,6 +8,7 @@ import type { DashboardSnapshot, ErrorEnvelope, Health, TaskDetail } from "../ge
 import { derive, emptyFilters, type DerivedData, type FilterState, type HighlightMode } from "./derive";
 import type { ApiFailure } from "../api/client";
 import type { SseStatus } from "../api/sse";
+import { consoleFailureMessage, initialConsoleState, type ConsoleState } from "./console";
 
 export type Phase = "loading" | "ready" | "error";
 
@@ -18,7 +19,7 @@ export interface Viewport {
 }
 
 export type FocusMode = "all" | "context" | "upstream" | "downstream";
-export type ViewMode = "overview" | "network";
+export type ViewMode = "console" | "network" | "legacy";
 
 export interface DetailState {
   status: "idle" | "loading" | "ready" | "error";
@@ -37,6 +38,7 @@ export interface AppState {
   health: Health | null;
   connection: SseStatus | "disconnected" | "fixture";
   fixtureName: string | null;
+  console: ConsoleState;
   viewMode: ViewMode;
   selectedTaskId: string | null;
   detail: DetailState;
@@ -103,7 +105,8 @@ export class AppStore {
       health: null,
       connection: "disconnected",
       fixtureName: null,
-      viewMode: "overview",
+      viewMode: "console",
+      console: initialConsoleState(),
       selectedTaskId: null,
       detail: { status: "idle", taskId: null, data: null, error: null },
       panelCollapsed: prefs.panelCollapsed ?? false,
@@ -156,6 +159,15 @@ export class AppStore {
       this.state.selectedTaskId && snapshot.tasks.some((task) => task.task_id === this.state.selectedTaskId)
         ? this.state.selectedTaskId
         : null;
+    const consoleState =
+      this.state.console.data && this.state.console.data.snapshot_revision !== snapshot.revision
+        ? {
+            ...this.state.console,
+            status: "stale" as const,
+            etag: null,
+            message: "项目事实已更新，正在重新读取 Project Console…",
+          }
+        : this.state.console;
     this.update({
       phase: "ready",
       phaseError: null,
@@ -163,6 +175,7 @@ export class AppStore {
       derived: derive(snapshot),
       etag,
       fixtureName,
+      console: consoleState,
       selectedTaskId,
       revisionCounter: isNew ? this.state.revisionCounter + 1 : this.state.revisionCounter,
       ...(selectedTaskId === null
@@ -199,12 +212,51 @@ export class AppStore {
     this.update({ health });
   }
 
-  showOverview(): void {
-    this.update({ viewMode: "overview" });
+  showConsole(): void {
+    this.update({ viewMode: "console" });
+  }
+
+  showLegacy(): void {
+    this.update({ viewMode: "legacy" });
   }
 
   showFullNetwork(): void {
     this.update({ viewMode: "network", focus: { mode: "all", taskId: null } });
+  }
+
+  setConsoleLoading(): void {
+    this.update({
+      console: {
+        ...this.state.console,
+        status: this.state.console.data ? this.state.console.status : "loading",
+      },
+    });
+  }
+
+  setConsoleReady(data: ConsoleState["data"], etag: string | null): boolean {
+    if (!data || data.snapshot_revision !== this.state.snapshot?.revision) {
+      return false;
+    }
+    this.update({ console: { status: "ready", data, etag, message: null } });
+    return true;
+  }
+
+  setConsoleNotModified(): boolean {
+    if (!this.state.console.data || this.state.console.data.snapshot_revision !== this.state.snapshot?.revision) {
+      return false;
+    }
+    this.update({ console: { ...this.state.console, status: "ready", message: null } });
+    return true;
+  }
+
+  setConsoleFailure(failure: ApiFailure): void {
+    this.update({
+      console: {
+        ...this.state.console,
+        status: this.state.console.data ? "stale" : "error",
+        message: consoleFailureMessage(failure),
+      },
+    });
   }
 
   openTaskRoute(taskId: string): void {
