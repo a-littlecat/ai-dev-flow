@@ -39,7 +39,7 @@
     "backend/src/ai_dev_flow_dashboard/snapshot/watcher.py": "b11f54eeec5d6d8106aa7a58cbad2c53566dd6a60d1b4fd2fdf0c2fec6e4c797",
     "contracts/dashboard-contracts-v1.schema.json": "39cfc66651a063722fb64ee0e7bb8a3d6dc413846b94aaa7c38e5beb04f1258f",
     "contracts/project-console-v1.schema.json": "474aa39074ad53d4fea02b58879982f2fafdd0677f768ec49b8b043362da61c3",
-    "contracts/runtime-session-v1.schema.json": "cf3b078a8c4b90a47e3a99ffcd5b1549d3cc96d8b4023fe479579555372753dd",
+    "contracts/runtime-session-v1.schema.json": "386447b15f89817459cc3c517b34ef87d81c2a89112395f5cb263e80ad5437f8",
     "static/assets/index-CJKLBKmT.js": "c4fb097d8ede76cfba859f71497f219274427b7b67a22b75542c9c1e8811fdce",
     "static/assets/index-PKl_O_go.css": "2a84592f3aefd57f972af3c2fef69648beb92423c661676453e4b4dac5be5b86",
     "static/index.html": "75fdc8ddd1d91a4e3e31c32ca6862f778309e5c62169e02e76fd6203e32e7481"
@@ -47,7 +47,7 @@
   "scheduling_schema": "ai-dev-flow/scheduling/v1",
   "schema_version": "ai-dev-flow/dashboard-runtime-bundle/v1",
   "skill_version": "0.9.2",
-  "source_fingerprint": "c49a7a2b8f015f1aabd234a0f75422c98d35ccd9a6c1db5d60883cf7c3f7d60a",
+  "source_fingerprint": "edfa6c6353afb830cab5e3c087119a56ecc20ae36863fa37fb09480c695f1b7e",
   "supported_skill_series": "0.9.x",
   "workflow_contract_schema": "adf/v0.7.0"
 }

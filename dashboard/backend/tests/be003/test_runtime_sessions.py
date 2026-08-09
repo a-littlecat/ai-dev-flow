@@ -102,8 +102,25 @@ class RuntimeSessionStoreTests(unittest.TestCase):
         schema = REPO_ROOT / "dashboard" / "contracts" / "runtime-session-v1.schema.json"
         inconsistent_active = {**active, "end_reason": "unexpected"}
         inconsistent_done = {**active, "phase": "done"}
-        for payload in (inconsistent_active, inconsistent_done):
-            with self.subTest(phase=payload["phase"]):
+        empty_terminal_time = {
+            **active,
+            "phase": "done",
+            "ended_at": "",
+            "end_reason": "completed",
+        }
+        empty_terminal_reason = {
+            **active,
+            "phase": "done",
+            "ended_at": active["updated_at"],
+            "end_reason": "",
+        }
+        for label, payload in (
+            ("active-with-reason", inconsistent_active),
+            ("done-without-terminal-fields", inconsistent_done),
+            ("done-with-empty-time", empty_terminal_time),
+            ("done-with-empty-reason", empty_terminal_reason),
+        ):
+            with self.subTest(case=label):
                 with self.assertRaises(RuntimeSessionError):
                     self.store._validate(payload)
                 with self.assertRaises(ValidationError):
