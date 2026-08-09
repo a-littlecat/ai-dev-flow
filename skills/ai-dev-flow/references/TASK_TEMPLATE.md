@@ -53,8 +53,8 @@
 - Attempt 收据链：<AR-*/ER-*、patch hash、前一收据 hash、独立复审与 receipt_hash；计数由此推导>
 - History anchor：<TASK 中的 attempt_count、head_receipt_hash、source_ref/source_text_sha256>
 - Trusted context：<由 harness/当前对话/只读项目快照独立确认的 expected head/count 与 Review/authority receipt hashes>
-- 第 3 轮 progress：<写入 AR-2 独立 Review 收据的 closure/blocking/severity/evidence before/after>
-- Escalated authority：<用户消息来源、chain/scope/target、默认一次或显式 attempt IDs、receipt_hash>
+- 额外轮次 progress：<写入前一独立 Review 收据的 closure/blocking/severity/evidence before/after>
+- Escalated authority：<用户消息来源、chain/scope/target、授权 attempt IDs、receipt_hash>
 - Campaign authority（可选）：<campaign_id、TASK、acceptance_contract_hash、profile、外层 scope manifest、authority receipt_hash>
 - Campaign state（可选）：<attempt_count、consecutive_no_progress、latest_outcome、history head、hard-stop snapshot hash、state receipt_hash、trusted attestation>
 - 非计数动作：<review/UA/诊断/测试重跑/收据同步/记录纠错>
@@ -80,7 +80,7 @@
 - Reviewer 只写 review 状态与 findings，不修改业务代码。
 - Repairer 只处理冻结 finding ID，并追加验证结果。
 - 同一 finding / closure contract 的新 TASK 继承原 `repair_chain_id` 和计数；更换 TASK 或模型不重置。
-- `Stop` 后用户可授权默认一次的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内的 `RepairCampaignAuthority`；后者按核心产品 4 次、Harness 5 次连续无进展阈值执行。
+- `Stop` 后用户可授权次数受 authority receipt 约束的 `EscalatedRepair`，或授权同一 TASK/验收合同/外层范围内的 `RepairCampaignAuthority`；后者按 `policy/repair-campaign.json` 中适用 profile 的连续无进展阈值执行。
 - campaign 不因换 TASK、模型、chain 或 finding 改名清零；P0、安全、数据、越界、不可逆、外部副作用、oracle 放宽、未授权依赖或缺证据立即停止。
 - `repair_gate.py` 把 ledger 和 campaign state 视为不可信，只验证其与独立 trusted context 的结构/连续性；最终 Allowed 必须由持有真实上游证据的 Orchestrator 提升。
 - TASK 先更新，TASK_BOARD 后同步；不得用看板反向覆盖 TASK。

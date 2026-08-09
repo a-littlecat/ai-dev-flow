@@ -8,7 +8,7 @@
 ## 当前执行任务（2026-08-09）
 
 - `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。总合同拆成六个串行阶段；CORE-SPLIT 已通过 same-Harness 内部隔离 Review，跨 Harness 外部复审发现 P2/P3 后正在修复并等待重审。Project Console 真实用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Needs Fix / External Re-review Pending / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。原 P1/P2 已关闭；`385a4ec` 外审为 Kimi `0/0/0/2`、Grok `0/0/0/0`，两个有效 P3（`contains` Schema 错误分类、兼容文档旧事实源指针）已修复并等待新 head 重审。backend `173/174` 的 Windows 文件事件失败在无 Dashboard diff 的既有工作区同样可复现，记录为当前基线边界。精确 branch head 以 PR/Git ref 为准，避免在提交内容中循环记录自身哈希。未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
+- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Needs Fix / External Re-review Pending / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。原 P1/P2 已关闭；`bc7fd13` Kimi/Grok 共同 P3 `V010-CS-EXT6-001`（兼容文档仍复制固定 repair 数字）已修复，等待新 head 重审。backend `173/174` 的 Windows 文件事件失败在无 Dashboard diff 的既有工作区同样可复现，记录为当前基线边界。精确 branch head 以 PR/Git ref 为准，避免在提交内容中循环记录自身哈希。未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

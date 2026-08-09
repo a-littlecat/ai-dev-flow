@@ -102,7 +102,7 @@
 - 写代码 subagent 缺少任务编号、角色、模式、修改范围或验证方式。
 - 多个写代码 subagents 的工作区隔离、文件锁、模块锁或 diff 归属无法确认。
 - Loop 达到自主最大轮次但仍未满足停止条件：进入用户裁决，不得自动续跑。
-- Review-Repair Loop 第 2 轮后 progress gate 不通过，或第 3 轮后仍存在 P0/P1；如用户明确授权，可按冻结边界执行有限 `EscalatedRepair`。
+- Review-Repair Loop 基础预算耗尽后 progress gate 不通过，或 Policy 允许的额外轮次后仍存在 P0/P1；如用户明确授权，可按冻结边界执行次数受 authority receipt 约束的 `EscalatedRepair`。
 - 当前 harness 不支持所需能力，且无法安全降级。
 - Memory 候选内容包含敏感信息、本机路径或未确认事实。
 - GitHub Issue 映射涉及公开敏感信息。

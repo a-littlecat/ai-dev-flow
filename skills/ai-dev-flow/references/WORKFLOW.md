@@ -9,7 +9,7 @@
 - [TASK 写入](#3-task-写入规则)
 - [执行与验证](#4-执行流程)
 - [Reviewer](#5-reviewer-闸门)
-- [Repair](#6-repair-与第-3-轮)
+- [Repair](#6-repair自主上限与用户授权升级)
 - [Git 与交付](#7-git-与交付)
 - [UA 与状态](#8-ua-与状态)
 - [兼容能力](#9-兼容能力)
@@ -21,7 +21,7 @@
 | 结果 | TASK | Reviewer | repair |
 |---|---|---|---|
 | `DoNotUseSkill` | 不创建 | 不调用 | 不进入 loop |
-| `Tracked` | 新建或沿用 | 风险命中才调用 | `AutoRepair` 基础 2 轮；`Stop` 后可授权单次或 campaign 升级 |
+| `Tracked` | 新建或沿用 | 风险命中才调用 | `AutoRepair` 预算读取适用 repair Policy；`Stop` 后可授权有界次数或 campaign 升级 |
 | `Controlled` | 必须有 | enforcement point 前强制 | 同上，且禁止重试外部副作用 |
 | `Blocked` | 记录阻塞（如已有 TASK） | 不得自批 | 不猜测继续 |
 
@@ -132,12 +132,12 @@ latest_review.progress:
 decision: ExtendRound3 / Stop
 ```
 
-第 3 轮后自主 loop 必须 `Stop`。这不是 AI 永久禁修：进入用户裁决后，用户可在查看证据/风险后选择：
+适用 repair Policy 允许的额外轮次后，自主 loop 必须 `Stop`。这不是 AI 永久禁修：进入用户裁决后，用户可在查看证据/风险后选择：
 
-- 默认一次、绑定当前 chain/finding/closure/实际文件的 `EscalatedRepair`；
+- 次数由 authority receipt 绑定到当前 chain/finding/closure/实际文件的 `EscalatedRepair`；
 - 绑定 TASK、验收合同和外层 scope manifest 的 `RepairCampaignAuthority`。campaign 中每个 patch 仍建独立 chain/attempt、冻结实际文件并独立复审；不是无界循环。
 
-campaign streak 与 hard-stop snapshot 由 trusted context attested state receipt 锚定，不因换 TASK、模型、chain 或 finding 改名清零。有实质进展时清零；核心产品连续 4 次、Harness 连续 5 次无实质进展后进入用户裁决。P0、安全、数据、越界、不可逆、外部副作用、放宽 oracle、未授权依赖或缺少证据立即阻断，不等待阈值。delivery/Accepted/Closed authority 始终独立。
+campaign streak 与 hard-stop snapshot 由 trusted context attested state receipt 锚定，不因换 TASK、模型、chain 或 finding 改名清零。有实质进展时清零；达到 `policy/repair-campaign.json` 中适用 profile 的连续无进展阈值后进入用户裁决。Policy 声明的 hard-stop 立即阻断，不等待阈值。delivery/Accepted/Closed authority 始终独立。
 
 可用 `scripts/repair_gate.py` 对不可信 ledger、campaign state receipt 与独立 trusted context 做只读比较。脚本只返回 `MechanicallyEligible`，持有真实当前对话、harness 或只读项目证据的 Orchestrator 才能提升为最终 `*Allowed`；缺 trusted context 固定 `Blocked`。其通过不替代 Review 或 UA。
 

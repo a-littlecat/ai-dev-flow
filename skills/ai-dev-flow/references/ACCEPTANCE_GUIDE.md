@@ -215,9 +215,9 @@
 - `AutoRepair` 的基础预算与额外轮次以适用的 `policy/repair-basic.json` 或 `policy/repair-campaign.json` 为准；只有逐 finding progress gate 全部通过时才允许额外轮次。
 - 每轮 repair 前必须说明本轮假设、证据、拟修改文件和验证方式。
 - 每轮 repair 后必须重新进入 `review_task`。
-- 两轮后 progress gate 不通过时必须 `Stop` 并进入用户裁决，不得继续猜测修改。用户可选择补证据、缩小范围、人工实现，或明确授权默认一次的有界 `EscalatedRepair`。
+- 基础预算耗尽且 progress gate 不通过时必须 `Stop` 并进入用户裁决，不得继续猜测修改。用户可选择补证据、缩小范围、人工实现，或明确授权由 authority receipt 绑定次数的有界 `EscalatedRepair`。
 - 如果无法在 agent 环境中复现，必须补充日志、诊断命令、mock、截图说明或用户实机复测步骤。
-- 第 3 轮后仍未 GREEN 时自主 loop 必须停止；同一 finding/closure contract 换 TASK 或模型不重置。明确授权的 `EscalatedRepair` 失败后回到 `Stop`，不得自动重复。
+- 适用 repair Policy 允许的额外轮次后仍未 GREEN 时自主 loop 必须停止；同一 finding/closure contract 换 TASK 或模型不重置。明确授权的 `EscalatedRepair` 失败后回到 `Stop`，不得自动重复。
 - 用户授权 `EscalatedRepair` 时必须冻结干净基线、RED/GREEN、目标、允许文件、次数和独立 Reviewer；不可逆外部副作用仍不得自动重试。
 
 验收失败反馈必须记录到 TASK 文件的“用户验收反馈 / 实机测试反馈”区块；只在聊天中处理不算完成。

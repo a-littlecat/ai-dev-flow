@@ -37,7 +37,7 @@ python -B -X utf8 skills/ai-dev-flow/scripts/repair_gate.py --policy-digest --fo
 
 - 只读，不修改 TASK、代码、Git 或外部系统。
 - 退出码：`0` 为机械资格成立（仍需 Orchestrator 提升），`1` 为 `Stop`，`2` 为输入/安全门禁 `Blocked`。
-- ledger 使用 `ai-dev-flow/repair-ledger-v1`；计数从连续 attempt/Review receipt 链推导，第 3 轮比较结构化 before/after，升级授权绑定 chain/scope/target/attempt。字段由 `TASK_TEMPLATE.md` 和 `CORE.md` 定义。
+- ledger 使用 `ai-dev-flow/repair-ledger-v1`；计数从连续 attempt/Review receipt 链推导，额外轮次比较结构化 before/after，升级授权绑定 chain/scope/target/attempt。字段形状由 `TASK_TEMPLATE.md` 描述，决策读取适用 repair Policy JSON。
 - trusted context 使用 `ai-dev-flow/repair-trusted-context-v1`，独立提供 expected history head/count 和已确认的 Review/authority receipt；缺少时固定 `Blocked`。
 - policy digest 是规范化 JSON policy 的 SHA256，可用于安装副本策略一致性检查；旧 Markdown `POLICY_JSON` 仅作 deprecated 迁移输入。
 - receipt 只能机械验证结构、hash 和绑定，不能密码学证明消息发送者身份；该真实性必须由当前对话、harness 或项目事实源提供。
