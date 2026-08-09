@@ -1,6 +1,6 @@
 # ai-dev-flow v0.8 按需工作流
 
-> 本文件不是默认必读。先按 `SKILL.md + CORE.md` 路由；只有 Tracked / Controlled 需要更完整执行细节时才读取。
+> 本文件不是默认必读。先按 `SKILL.md + policy/core.json` 路由；只有 Tracked / Controlled 需要更完整执行细节时才读取。
 
 ## 导航
 
@@ -16,7 +16,7 @@
 
 ## 1. 路由结果
 
-`CORE.md` 的 `POLICY_JSON` 是唯一决策源，本文件不复制风险触发列表。
+`policy/core.json` 是唯一路由与 Review 决策源，本文件不复制风险触发列表。
 
 | 结果 | TASK | Reviewer | repair |
 |---|---|---|---|
@@ -88,7 +88,7 @@ Tracked / Controlled 仍可使用以下动作名，但不要求每轮声明角�
 
 ## 5. Reviewer 闸门
 
-Reviewer 是否需要由 `CORE.md` policy 决定：
+Reviewer 是否需要由 `policy/core.json` 决定：
 
 - Tracked 未命中风险时跳过，记录 `Skipped by policy`。
 - `Skipped by policy` 只写入 Outcome，不得写成 `review_status=Passed`；v0.7 Contract 保持 `Pending`，需要进入 Accepted / Closed 时再完成真实只读 Review。
@@ -96,7 +96,7 @@ Reviewer 是否需要由 `CORE.md` policy 决定：
 - Controlled 在 acceptance recommendation、delivery、merge、release 前强制 Review。
 - 缺少独立 Reviewer authority/capability 时为 `Blocked`；不能由 Engineer 自批。
 
-Reviewer 来源按 `CORE.md` 的 `reviewer_selection` 决定：
+Reviewer 来源按 `policy/core.json` 的 `reviewer_selection` 决定：
 
 1. 默认只使用当前 Harness 的原生隔离 Reviewer。Kimi Code 用 Kimi 原生 `Agent` 新上下文，Codex 用 Codex 自身只读 subagent 或只读 `codex exec`，OpenCode 用自身禁写 Task reviewer。
 2. 同一主上下文切换角色只是 self-review，不能记为独立 Review；原生 Reviewer 缺少上下文或写权限隔离时保持 `Blocked/Pending`。
@@ -115,7 +115,7 @@ Reviewer 输入至少包括 TASK、base/diff、验证证据、项目规则和允
 
 一轮 repair 只计“针对冻结 finding 的 patch → 验证 → 下一次独立复审”。只读 Review、无 patch 的 UA、诊断取证、原样重跑测试、TASK/看板收据同步和纯记录纠错不计轮次。
 
-预算绑定 `repair_chain_id + finding_ids + closure_contract_hash`；换 TASK 或模型不重置。`AutoRepair` 基础预算为 2，第 2 轮后只有 `CORE.md` policy 的 progress 条件全部满足才允许第 3 轮。记录建议结构：
+预算绑定 `repair_chain_id + finding_ids + closure_contract_hash`；换 TASK 或模型不重置。普通修复以 `policy/repair-basic.json` 为准，严格修复活动以 `policy/repair-campaign.json` 为准；只有适用 Policy 的 progress 条件全部满足才允许额外轮次。记录建议结构：
 
 ```text
 repair_chain: <stable id + finding/closure/allowed-files hashes>

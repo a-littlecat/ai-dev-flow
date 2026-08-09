@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -45,7 +45,7 @@
 - [x] `repair_gate.py` 支持 JSON policy，且不重复硬编码完整 policy。
 - [x] 现有 route 与 Repair fixture、新 JSON与旧 Markdown 兼容测试全部通过。
 - [x] Skill 全量测试、workflow lint 和 `git diff --check` 通过；Dashboard 无 diff。
-- [x] 外部 findings 修复后的 same-Harness 内部隔离只读 Review 无开放 P0/P1；跨 Harness 外部复审仍 Pending。
+- [x] 外部 findings 修复后的 same-Harness 内部隔离只读 Review 无开放 P0/P1；跨 Harness 外部复审发现 P2/P3 后已进入修复，重审 Pending。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
 
@@ -54,6 +54,7 @@
 - 外部修复 Round 2 Reviewer：same-Harness native isolated Codex CLI，只读、ephemeral；结论 `Needs Fix`，P0/P1/P2/P3=`0/1/2/0`。P1 证明 `required_true_fields/required_false_fields` 可删除安全成员并在重绑 digest 后获得 `MechanicallyEligible`，且 `$ref` 兄弟关键字可能被忽略；P2 指出未跟踪缓存污染范围证明与 TASK/BOARD 测试计数不一致。Round 3 已锁定这些安全成员与 `$ref`/legacy optional 使用上下文、统一计数，并把 9 个可再生缓存目录可恢复地移出 Worktree；等待新 Review。
 - 外部修复 Round 3 Reviewer：same-Harness native isolated Codex CLI，只读、ephemeral；session=`019fe1fc-dc17-7621-9e7c-8a2cf8460dc0`；结论 `Needs Fix`，P0/P1/P2/P3=`0/2/0/0`。P1 证明 `repair_gate.py` 的固定 `AR-3` 无法随普通轮次值演进，并指出看板顶层仍残留历史 `Review Passed`。Round 4 已将下一 attempt ID 改为按 `used + 1` 派生并补 gate 回归测试，同时统一 TASK/BOARD 当前状态；等待新 Review。
 - 外部修复 Round 4 Reviewer：same-Harness native isolated Codex CLI，只读、ephemeral；session=`019fe20a-1be4-7542-91b6-f9a2f218f9ce`；结论 `Passed`，P0/P1/P2/P3=`0/0/0/0`。`ADF-V010-STACKED-EXT-P1-002` 与状态 finding 均 Closed；该 Review 不代表 UA、commit、push、merge、release、正式 Skill 同步、Accepted 或 Closed。
+- 跨 Harness 外部复审（分支头 `397acae`）：Kimi session=`session_24441a41-432e-47cc-9f22-25b384b5ed7b`，结论 `Passed`，P0/P1/P2/P3=`0/0/1/3`；Grok session=`019fe5f0-70d5-7b62-b9b7-f24d57e1629e`，结论 `Passed`，P0/P1/P2/P3=`0/0/1/2`。共同或有效 findings：部分 canonical 成员集合可被 Schema 接受为子集、兼容文档仍把 `CORE.md` 写成事实源、受信任循环 `$ref` 未 fail-closed、测试 helper 固定 `AR-3`、分支头收据陈旧。已修复前四项并增加回归测试；分支头改由 PR/Git 外部引用提供，避免在提交内容中循环记录自身哈希。等待两 Harness 对新提交重审。
 - `ADF-V010-CORE-SPLIT-R001`（P1）：Round 1 指出 loader 只校验顶层；Round 2 指出安全关键固定值与完整成员集合仍未校验。第二次修复后，三份新 policy、rc2/rc3 兼容 policy 与内存 gate 共用完整嵌套字段、类型、枚举、固定安全值和跨字段约束，并有 JSON/Markdown/内存表驱动负例；Round 3 `Closed`。
 - `ADF-V010-CORE-SPLIT-R002`（P2）：Round 1 指出 `InspectAndResolve` 可能改变旧版未知输入 fail-closed 语义。修复：限定为进入 route 前的只读解析动作，所有权限、外部证据、规则冲突及最终未解析输入仍为 `Blocked`，并增加兼容测试；Round 2 `Closed`，Round 3 无回归。
 - Round 1 Reviewer：same-Harness native isolated Codex CLI，只读、ephemeral；session=`019fe0b5-4f63-7503-a23a-3264ec35956b`；结论 `Needs Fix`，P0/P1/P2/P3=`0/1/1/0`。
@@ -68,8 +69,8 @@
 - 修改文件：治理入口与兼容说明、三份 canonical JSON policy、严格只读 loader、Repair gate、相关 README/测试，以及本阶段 TASK/看板事实源；`dashboard/**` 无 diff。
 - 验证证据：Stage 1 Skill `99/99`、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=63`、`git diff --check` 均通过；安全约束定向测试 `53/53` 通过；Dashboard tracked diff 为空，核心 policy 具体 Harness/模型名匹配 `0`。Stage 0 frontend Vitest `95/95`、Playwright `96/96` 通过；Integration 基线 `1 failure + 1 error` 均在 Dashboard 禁止修改范围，已在 Master 记录。
 - Review findings：Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`R001/R002` Closed。
-- 外部 stacked finding 修复：`ADF-V010-STACKED-EXT-P1-002` Round 4 已实现；fresh Skill `104/104`（含动态 attempt ID 定向 `1/1`）、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；same-Harness 内部隔离 Review `Passed (0/0/0/0)`。backend 首轮出现一次 deterministic snapshot 瞬态失败，单测与全量重跑均通过，未修改 Dashboard；跨 Harness 外部复审仍 Pending。
+- 外部 stacked finding 修复：原 P1 已关闭；本轮 Kimi/Grok 外部复审未发现 P0/P1，但发现 Schema 完整成员集合、循环 `$ref`、兼容文档与测试 helper 的 P2/P3。修复后定向 `44/44`、Skill 全量 `105/105` 已通过。backend `173/174`：`test_non_recursive_request_ignores_nested_file_changes` 在 #14 与无 Dashboard diff 的既有工作区均可复现，属于当前 Windows/Python 3.13 基线边界，本阶段未修改 `dashboard/**`；两 Harness 重审 Pending。
 - UA 动作与结果：UA3 Pending，不由自动验证代替。
-- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / Pushed `56c2aa7` / UA3 Pending。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：Internal Isolated Repair Review Passed / External Review Needs Fix / External Re-review Pending / branch pushed（精确 head 以 PR/Git ref 为准）/ UA3 Pending。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：UA3 仍为 Pending；Review 通过不授权 merge、release、正式 Skill 同步或 Closed。
-- 下一步：等待新的跨 Harness 外部只读复审；不得由内部 Review 推导 UA、merge 或其他后续生命周期动作。
+- 下一步：完成 fresh 验证并由 Kimi、Grok 对新提交分别执行跨 Harness 外部只读复审；不得由测试或内部 Review 推导 UA、merge 或其他后续生命周期动作。

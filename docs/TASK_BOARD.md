@@ -1,14 +1,14 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-08
+> - 快照日期：2026-08-09
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT Internal Isolated Review Passed / External Re-review Pending / UA3 Pending / Pushed 56c2aa7`
+> - 当前阶段：`ADF-V010-MASTER In Progress / CORE-SPLIT Internal Isolated Review Passed / External Review Needs Fix / External Re-review Pending / UA3 Pending / branch pushed`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
-## 当前执行任务（2026-08-08）
+## 当前执行任务（2026-08-09）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。总合同拆成六个串行阶段；CORE-SPLIT 修复已推送并通过 same-Harness 内部隔离 Review，跨 Harness 外部复审仍 Pending。Project Console 真实用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Re-review Pending / Controlled / UA3 Pending / Pushed 56c2aa7 / Draft PR #14 / Unmerged`。`ADF-V010-STACKED-EXT-P1-002` 修复已将 policy 结构/枚举与不可弱化安全不变量迁到受信任 JSON Schema，Python 不再复制 canonical 风险数组和当前值；Repair gate 下一 attempt ID 随有效预算派生。fresh Skill `104/104`、backend `174/174`、same-Harness 内部隔离 Review `0/0/0/0` 已通过。未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。总合同拆成六个串行阶段；CORE-SPLIT 已通过 same-Harness 内部隔离 Review，跨 Harness 外部复审发现 P2/P3 后正在修复并等待重审。Project Console 真实用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Needs Fix / External Re-review Pending / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。原 P1 已关闭；本轮修复 Schema 完整成员集合、循环 `$ref` fail-closed、兼容文档事实源与测试 helper 固定 attempt ID，定向 `44/44`、Skill 全量 `105/105` 已通过。backend `173/174` 的 Windows 文件事件失败在无 Dashboard diff 的既有工作区同样可复现，记录为当前基线边界；Kimi/Grok 重审 Pending。精确 branch head 以 PR/Git ref 为准，避免在提交内容中循环记录自身哈希。未授权 merge、release、正式 Skill 同步、Accepted 或 Closed。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 

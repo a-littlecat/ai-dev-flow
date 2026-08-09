@@ -278,9 +278,10 @@ def add_attempt(
     chain = ledger["repair_chain"]
     patch_hash = repair_gate.canonical_hash({"patch": attempt_id})
     if gate_decision is None:
+        attempt_number = int(attempt_id.split("-", 1)[1])
         gate_decision = (
             "AutoRepairAllowed"
-            if mode == "AutoRepair" and attempt_id != "AR-3"
+            if mode == "AutoRepair" and attempt_number <= POLICY["repair"]["base_auto_rounds"]
             else ("ExtendRound3" if mode == "AutoRepair" else "EscalatedRepairAllowed")
         )
     record = {

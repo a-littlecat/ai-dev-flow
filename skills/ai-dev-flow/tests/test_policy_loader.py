@@ -194,10 +194,17 @@ class PolicyLoaderTests(unittest.TestCase):
         )
         mutations = (
             lambda value: value["repair"]["history"].update({"require_trusted_context": False}),
+            lambda value: value["repair"]["non_counting_actions"].remove("review_only"),
+            lambda value: value["repair"]["chain_identity_fields"].remove("finding_ids"),
+            lambda value: value["repair"]["record_only_finding"]["default_severity"].remove("P2"),
+            lambda value: value["repair"]["record_only_finding"]["p1_only_if"].remove("can_hide_blocking_finding"),
             lambda value: value["repair"]["campaign"]["hard_stop_flags"].remove("test_oracle_weakened"),
             lambda value: value["repair"]["campaign"]["authority_must_bind"].remove("task_id"),
             lambda value: value["repair"]["required_true_fields"].remove("authority_frozen"),
             lambda value: value["repair"]["required_false_fields"].remove("external_side_effect"),
+            lambda value: value["repair"]["mechanical_decisions"].remove("Blocked"),
+            lambda value: value["repair"]["promotion_decisions"].remove("ExtendRound3"),
+            lambda value: value["repair"]["eligible_modes"].remove("EscalatedRepair"),
         )
         for index, change in enumerate(mutations):
             value = copy.deepcopy(campaign)
@@ -284,6 +291,48 @@ class PolicyLoaderTests(unittest.TestCase):
                 schema.write_text(json.dumps(no_ref), encoding="utf-8")
                 with self.assertRaises(policy_loader.PolicyLoadError):
                     policy_loader.validate_policy_value({"schema_version": "test/v1"})
+        finally:
+            policy_loader.SCHEMA_ROOT = original_root
+            policy_loader.SCHEMA_REGISTRY = original_registry
+
+    def test_schema_reference_cycles_fail_closed(self):
+        original_root = policy_loader.SCHEMA_ROOT
+        original_registry = policy_loader.SCHEMA_REGISTRY
+        try:
+            with tempfile.TemporaryDirectory() as temp:
+                root = pathlib.Path(temp) / "schemas"
+                root.mkdir()
+                first = root / "first.json"
+                second = root / "second.json"
+                first.write_text(json.dumps({
+                    "x-policy-schema-version": "test/first",
+                    "type": "object",
+                    "required": ["schema_version", "loop"],
+                    "properties": {
+                        "schema_version": {"const": "test/first"},
+                        "loop": {"$ref": "second.json#/properties/loop"},
+                    },
+                    "additionalProperties": False,
+                }), encoding="utf-8")
+                second.write_text(json.dumps({
+                    "x-policy-schema-version": "test/second",
+                    "type": "object",
+                    "properties": {
+                        "loop": {"$ref": "first.json#/properties/loop"},
+                    },
+                }), encoding="utf-8")
+                registry = root / "registry.json"
+                registry.write_text(json.dumps({
+                    "schema_version": "adf/policy-schema-registry/v1",
+                    "entries": [
+                        {"policy_schema_version": "test/first", "path": "first.json", "legacy_optional_ref": None, "legacy_optional_required": []},
+                        {"policy_schema_version": "test/second", "path": "second.json", "legacy_optional_ref": None, "legacy_optional_required": []},
+                    ],
+                }), encoding="utf-8")
+                policy_loader.SCHEMA_ROOT = root
+                policy_loader.SCHEMA_REGISTRY = registry
+                with self.assertRaisesRegex(policy_loader.PolicyLoadError, "cyclic schema reference"):
+                    policy_loader.validate_policy_value({"schema_version": "test/first", "loop": {}})
         finally:
             policy_loader.SCHEMA_ROOT = original_root
             policy_loader.SCHEMA_REGISTRY = original_registry

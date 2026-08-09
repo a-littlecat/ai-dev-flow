@@ -63,7 +63,7 @@ def _json_type_matches(value, expected):
     }.get(expected, False)
 
 
-def _validate_schema(value, schema, path="$", *, schema_source="schema"):
+def _validate_schema(value, schema, path="$", *, schema_source="schema", reference_stack=()):
     """Validate the JSON Schema subset used by shipped policy schemas."""
 
     if not isinstance(schema, dict):
@@ -75,13 +75,22 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
     if not isinstance(branches, list):
         raise PolicyLoadError(f"invalid {schema_source}: {path}.allOf must be an array")
     for branch in branches:
-        _validate_schema(value, branch, path, schema_source=schema_source)
+        _validate_schema(
+            value,
+            branch,
+            path,
+            schema_source=schema_source,
+            reference_stack=reference_stack,
+        )
     reference = schema.get("$ref")
     if reference is not None:
         allowed_siblings = {"$ref", "x-optional-required"}
         if set(schema) - allowed_siblings:
             raise PolicyLoadError(f"unsupported $ref sibling keywords in {schema_source}")
         resolved, resolved_source = _resolve_schema_reference(reference, schema_source)
+        reference_key = (resolved_source, reference.split("#", 1)[1])
+        if reference_key in reference_stack:
+            raise PolicyLoadError(f"cyclic schema reference in {schema_source}: {reference}")
         if "x-optional-required" in schema:
             optional = schema["x-optional-required"]
             if (
@@ -102,7 +111,13 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
                 raise PolicyLoadError(f"x-optional-required names are not required by {reference}")
             resolved = dict(resolved)
             resolved["required"] = [item for item in required if item not in optional]
-        _validate_schema(value, resolved, path, schema_source=resolved_source)
+        _validate_schema(
+            value,
+            resolved,
+            path,
+            schema_source=resolved_source,
+            reference_stack=reference_stack + (reference_key,),
+        )
         return
     if "x-optional-required" in schema:
         raise PolicyLoadError(f"x-optional-required requires $ref in {schema_source}")
@@ -135,7 +150,13 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
         for name, item in value.items():
             child = properties.get(name)
             if child is not None:
-                _validate_schema(item, child, f"{path}.{name}", schema_source=schema_source)
+                _validate_schema(
+                    item,
+                    child,
+                    f"{path}.{name}",
+                    schema_source=schema_source,
+                    reference_stack=reference_stack,
+                )
 
     if isinstance(value, list):
         minimum = schema.get("minItems")
@@ -148,13 +169,25 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
         item_schema = schema.get("items")
         if item_schema is not None:
             for index, item in enumerate(value):
-                _validate_schema(item, item_schema, f"{path}[{index}]", schema_source=schema_source)
+                _validate_schema(
+                    item,
+                    item_schema,
+                    f"{path}[{index}]",
+                    schema_source=schema_source,
+                    reference_stack=reference_stack,
+                )
         contains = schema.get("contains")
         if contains is not None:
             matches = 0
             for item in value:
                 try:
-                    _validate_schema(item, contains, path, schema_source=schema_source)
+                    _validate_schema(
+                        item,
+                        contains,
+                        path,
+                        schema_source=schema_source,
+                        reference_stack=reference_stack,
+                    )
                 except PolicyLoadError:
                     continue
                 matches += 1
@@ -286,11 +319,8 @@ def _cross_field_constraints(value):
         containers.append(repair)
     for container in containers:
         base = container.get("base_auto_rounds")
-        optional = container.get("optional_progress_rounds")
         maximum = container.get("autonomous_max_rounds")
         if isinstance(base, int) and not isinstance(base, bool):
-            if isinstance(optional, int) and not isinstance(optional, bool) and base + optional < base:
-                raise PolicyLoadError("optional repair rounds cannot reduce the base budget")
             if isinstance(maximum, int) and not isinstance(maximum, bool) and maximum < base:
                 raise PolicyLoadError("autonomous_max_rounds cannot be lower than base_auto_rounds")
         required_true = container.get("required_true_fields")
