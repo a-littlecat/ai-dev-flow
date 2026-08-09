@@ -10,7 +10,7 @@
 - `ADF-V010-MASTER`：`In Progress / Controlled / Review Needs Fix / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#15 已通过外部复审；#16 的 GPT Pro P1 已修复但等待新冻结 head 复审。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
 - `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。
 - `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #15 / Unmerged`。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`GPT Pro Needs Fix 0/1/0/0 / final implementation a8cbc4a / terminal fix Codex isolated pre-review Passed 0/0/0/0 / GPT Pro re-review Pending / Controlled / UA3 Pending / local receipt not yet pushed / Draft PR #16 / Unmerged`。`done` 已改为 end-only，Store/Schema/Builder/CLI 四层 fail-closed、空终态字段及可读原因码集成回归通过；等待最终收据 head 推送并由 GPT Pro 关闭 finding，当前不得进入 UA。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`GPT Pro Needs Fix 0/1/0/0 / final implementation 5970ff5 / final Codex P2 repaired pending short re-review / GPT Pro re-review Pending / Controlled / UA3 Pending / local receipt not yet pushed / Draft PR #16 / Unmerged`。`done` 已改为 end-only，Store/Schema/Builder/CLI 四层 fail-closed、空终态字段及真实磁盘无效会话可读原因码回归通过；等待短范围预检和最终收据 head 推送，当前不得进入 UA。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
