@@ -70,9 +70,9 @@ TASK 是细粒度事实源，TASK_BOARD 是索引和投影。当前 Skill 包版
 - Controlled 在验收建议、delivery、merge、release 前强制 Review。
 - Reviewer 默认由当前 Harness 自身建立原生只读隔离上下文；不得自动跨 Harness，只有用户明确指定时才允许。
 - Reviewer 只审查，Repairer 只处理稳定 finding ID。
-- 普通 finding 才读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：基础预算 2 轮，有进展时最多增加 1 轮，每次 patch 后独立 Review。
+- 普通 finding 才读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：基础预算与可选额外轮次均读取 canonical Policy，每次 patch 后独立 Review。
 - receipt chain、trusted context、EscalatedRepair 与 Campaign 只在显式严格场景读取 `policy/repair-campaign.json` 与 `references/REPAIR_CAMPAIGN.md`。
-- 严格 campaign 保留 4/5 次无进展阈值和 hard stop；外部副作用不得自动重试。
+- 严格 campaign 的 profile 无进展阈值与 hard stop 读取 `policy/repair-campaign.json`；外部副作用不得自动重试。
 
 ## 按需文档
 

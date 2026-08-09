@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Pending`
 - `ua_level`: `UA5`
 - `ua_status`: `Pending`
 - `acceptance_authority`: `None`
@@ -24,7 +24,7 @@
 ## 依赖与授权
 
 - 前置依赖：RUNTIME-CONSOLE-BE 阶段完成。
-- Base commit：`8944a84`（普通 merge 吸收当前 RUNTIME-CONSOLE-BE 本轮 head；历史 repair base 仅保留在旧收据中）。
+- Base commit：`869a8d3`（普通 merge 吸收当前 RUNTIME-CONSOLE-BE 分支 head；历史 repair base 仅保留在旧收据中）。
 - 已有 authority：依赖满足后的实现、自动验证、真实浏览器检查、只读 Review、commit、push、Draft PR。
 - 验收合同：`requires_user_observation=true`；`acceptance_authority=user_only`；`designated_acceptor_allowed=false`。这些是 v0.10 阶段合同要求，在当前 v0.7 Contract 中以正文冻结，不能伪写成当前已获得的 authority。
 - 未授权动作：代替用户 UA、Accepted、Closed、Legacy 删除、merge、release、正式 Skill 同步。
@@ -62,15 +62,17 @@
 - 本轮新隔离只读 Review session `019fe37b-1090-7241-80be-52c29ee4ab7` 审查 `31ad2f7..6e89697`，结论 `Passed 0/0/0/0`，无开放 finding。当前 `Review Passed / UA5 Pending user_only`；不授予 merge/release/正式 Skill 同步/Legacy Retire/Accepted/Closed。
 - `ADF-V010-EXT-R3-P1-001`（状态记录）：旧 TASK/Board 把 same-Harness 内部隔离 Review 写成 `External Repair Review Passed`，可能掩盖用户明确要求的跨 Harness 外部复审门禁。Kimi 定向 spot session `session_3deac4cb-3aaf-437c-8624-621f302f78bb` 报告 `0/0/0/1`，Grok 4.5 定向 spot session `019fe5df-6236-7093-bd06-825728d1af0f` 报告 `0/0/0/0`；两者均基于旧 head `1263f9a` 且未覆盖完整 stack/全部轮询实现，因此只作为诊断证据，不记为完整 External Review Passed。本次纯记录修正关闭错误措辞，不计 repair 轮次；新 head 外部复审仍 Pending。
 
+- Stacked update：普通 merge 吸收 #16 当前分支 head `869a8d3`，包含真实 In Progress `continue + needs_authority → active_work` 修复及双入口 preflight 集成。合并后 fresh 验证为 frontend codegen/typecheck/lint/build、Vitest `109/109`、隔离重跑 Playwright `109/109`、Skill `121/121`、Runtime bundle `43/43`；Codex bundled Python 3.12 full integration `52/53`，唯一失败仍为冻结 artifact guard 且 `baseline_preserved=true`。backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event。Kimi 当前 403 配额阻塞，故当前 head 外部复审保持 Pending。
+
 ## Outcome
 
 - Base / Diff：base=31ad2f7;diff=31ad2f7..6e89697。
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
-- 验证证据：backend `207/207`（skip 2）、Skill `119/119`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.13 integration 历史为 `51/52`，新增预检用例后当前为 `52/53`；唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。当前 TASK workflow lint `errors=0/violations=0/warnings=1`，警告仅为收据提交前 lifecycle 历史不可验。
+- 验证证据：backend `204 passed / 2 skipped / 1 known baseline failed`，唯一失败为 Windows non-recursive native event 基线；Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。
 - Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Kimi/Grok 旧 head 定向 spot review 仅为诊断证据，更新后跨 Harness 完整外部复审仍 Pending。
 - Delivery：本轮 implementation/current reviewed head=`6e89697`；branch `codex/v010-project-console-fe` 已推送该实现 head，本事实收据提交同步推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
-- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / UA5 Pending user_only / Reviewed implementation `6e89697` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- 状态边界：Stacked Update Fresh Validation Complete / External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
 - 下一步：先对更新后的 #14-#17 分别完成跨 Harness 外部只读复审；无开放 P0/P1 后才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。

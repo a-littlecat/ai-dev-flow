@@ -31,6 +31,10 @@ class PolicyLoadError(ValueError):
     pass
 
 
+class PolicySchemaError(PolicyLoadError):
+    """Trusted schema or registry is invalid, rather than a policy value mismatch."""
+
+
 class LegacyPolicyWarning(FutureWarning):
     pass
 
@@ -63,25 +67,34 @@ def _json_type_matches(value, expected):
     }.get(expected, False)
 
 
-def _validate_schema(value, schema, path="$", *, schema_source="schema"):
+def _validate_schema(value, schema, path="$", *, schema_source="schema", reference_stack=()):
     """Validate the JSON Schema subset used by shipped policy schemas."""
 
     if not isinstance(schema, dict):
-        raise PolicyLoadError(f"invalid {schema_source}: {path} schema must be an object")
+        raise PolicySchemaError(f"invalid {schema_source}: {path} schema must be an object")
     unknown_keywords = set(schema) - SCHEMA_KEYWORDS
     if unknown_keywords:
-        raise PolicyLoadError(f"invalid {schema_source}: unknown schema keywords {sorted(unknown_keywords)}")
+        raise PolicySchemaError(f"invalid {schema_source}: unknown schema keywords {sorted(unknown_keywords)}")
     branches = schema.get("allOf", [])
     if not isinstance(branches, list):
-        raise PolicyLoadError(f"invalid {schema_source}: {path}.allOf must be an array")
+        raise PolicySchemaError(f"invalid {schema_source}: {path}.allOf must be an array")
     for branch in branches:
-        _validate_schema(value, branch, path, schema_source=schema_source)
+        _validate_schema(
+            value,
+            branch,
+            path,
+            schema_source=schema_source,
+            reference_stack=reference_stack,
+        )
     reference = schema.get("$ref")
     if reference is not None:
         allowed_siblings = {"$ref", "x-optional-required"}
         if set(schema) - allowed_siblings:
-            raise PolicyLoadError(f"unsupported $ref sibling keywords in {schema_source}")
+            raise PolicySchemaError(f"unsupported $ref sibling keywords in {schema_source}")
         resolved, resolved_source = _resolve_schema_reference(reference, schema_source)
+        reference_key = (resolved_source, reference.split("#", 1)[1])
+        if reference_key in reference_stack:
+            raise PolicySchemaError(f"cyclic schema reference in {schema_source}: {reference}")
         if "x-optional-required" in schema:
             optional = schema["x-optional-required"]
             if (
@@ -90,41 +103,49 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
                 or any(not isinstance(item, str) for item in optional)
                 or len(optional) != len(set(optional))
             ):
-                raise PolicyLoadError(f"invalid x-optional-required in {schema_source}")
+                raise PolicySchemaError(f"invalid x-optional-required in {schema_source}")
             entry = _trusted_schema_entry(schema_source)
             if (
                 reference != entry.get("legacy_optional_ref")
                 or optional != entry.get("legacy_optional_required", [])
             ):
-                raise PolicyLoadError(f"unapproved x-optional-required in {schema_source}")
+                raise PolicySchemaError(f"unapproved x-optional-required in {schema_source}")
             required = resolved.get("required", [])
             if any(item not in required for item in optional):
-                raise PolicyLoadError(f"x-optional-required names are not required by {reference}")
+                raise PolicySchemaError(f"x-optional-required names are not required by {reference}")
             resolved = dict(resolved)
             resolved["required"] = [item for item in required if item not in optional]
-        _validate_schema(value, resolved, path, schema_source=resolved_source)
+        _validate_schema(
+            value,
+            resolved,
+            path,
+            schema_source=resolved_source,
+            reference_stack=reference_stack + (reference_key,),
+        )
         return
     if "x-optional-required" in schema:
-        raise PolicyLoadError(f"x-optional-required requires $ref in {schema_source}")
+        raise PolicySchemaError(f"x-optional-required requires $ref in {schema_source}")
     expected = schema.get("type")
     if expected is not None:
         choices = expected if isinstance(expected, list) else [expected]
         if not choices or any(not isinstance(item, str) for item in choices):
-            raise PolicyLoadError(f"invalid {schema_source}: {path}.type")
+            raise PolicySchemaError(f"invalid {schema_source}: {path}.type")
         if not any(_json_type_matches(value, item) for item in choices):
             raise PolicyLoadError(f"{path} must have JSON type {' or '.join(choices)}")
     if "const" in schema and value != schema["const"]:
         raise PolicyLoadError(f"{path} must equal the schema const")
     if "enum" in schema:
         choices = schema["enum"]
-        if not isinstance(choices, list) or value not in choices:
+        if not isinstance(choices, list) or not choices:
+            raise PolicySchemaError(f"invalid {schema_source}: {path}.enum")
+        if value not in choices:
             raise PolicyLoadError(f"{path} contains an invalid enum value")
 
     if isinstance(value, dict):
         properties = schema.get("properties", {})
         required = schema.get("required", [])
         if not isinstance(properties, dict) or not isinstance(required, list):
-            raise PolicyLoadError(f"invalid {schema_source}: {path} object keywords")
+            raise PolicySchemaError(f"invalid {schema_source}: {path} object keywords")
         missing = [name for name in required if name not in value]
         if missing:
             raise PolicyLoadError(f"{path} is missing required fields: {sorted(missing)}")
@@ -135,7 +156,13 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
         for name, item in value.items():
             child = properties.get(name)
             if child is not None:
-                _validate_schema(item, child, f"{path}.{name}", schema_source=schema_source)
+                _validate_schema(
+                    item,
+                    child,
+                    f"{path}.{name}",
+                    schema_source=schema_source,
+                    reference_stack=reference_stack,
+                )
 
     if isinstance(value, list):
         minimum = schema.get("minItems")
@@ -148,25 +175,39 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
         item_schema = schema.get("items")
         if item_schema is not None:
             for index, item in enumerate(value):
-                _validate_schema(item, item_schema, f"{path}[{index}]", schema_source=schema_source)
+                _validate_schema(
+                    item,
+                    item_schema,
+                    f"{path}[{index}]",
+                    schema_source=schema_source,
+                    reference_stack=reference_stack,
+                )
         contains = schema.get("contains")
         if contains is not None:
             matches = 0
             for item in value:
                 try:
-                    _validate_schema(item, contains, path, schema_source=schema_source)
+                    _validate_schema(
+                        item,
+                        contains,
+                        path,
+                        schema_source=schema_source,
+                        reference_stack=reference_stack,
+                    )
+                except PolicySchemaError:
+                    raise
                 except PolicyLoadError:
                     continue
                 matches += 1
             minimum_contains = schema.get("minContains", 1)
             maximum_contains = schema.get("maxContains")
             if not isinstance(minimum_contains, int) or minimum_contains < 0:
-                raise PolicyLoadError(f"invalid {schema_source}: {path}.minContains")
+                raise PolicySchemaError(f"invalid {schema_source}: {path}.minContains")
             if matches < minimum_contains:
                 raise PolicyLoadError(f"{path} does not contain enough required values")
             if maximum_contains is not None:
                 if not isinstance(maximum_contains, int) or maximum_contains < minimum_contains:
-                    raise PolicyLoadError(f"invalid {schema_source}: {path}.maxContains")
+                    raise PolicySchemaError(f"invalid {schema_source}: {path}.maxContains")
                 if matches > maximum_contains:
                     raise PolicyLoadError(f"{path} contains too many matching values")
 
@@ -185,27 +226,27 @@ def _validate_schema(value, schema, path="$", *, schema_source="schema"):
 
 def _resolve_schema_reference(reference, schema_source):
     if not isinstance(reference, str) or "#" not in reference:
-        raise PolicyLoadError(f"invalid schema reference in {schema_source}: {reference!r}")
+        raise PolicySchemaError(f"invalid schema reference in {schema_source}: {reference!r}")
     filename, fragment = reference.split("#", 1)
     source = pathlib.Path(schema_source).resolve()
     target_source = (source if not filename else source.parent / filename).resolve()
     trusted_paths = {pathlib.Path(item["path"]).resolve() for item in _registry_entries()}
     if target_source not in trusted_paths:
-        raise PolicyLoadError(f"schema reference escapes the trusted registry: {reference}")
+        raise PolicySchemaError(f"schema reference escapes the trusted registry: {reference}")
     try:
         target = json.loads(target_source.read_text(encoding="utf-8", errors="strict"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise PolicyLoadError(f"cannot resolve policy schema reference {reference}: {exc}") from exc
+        raise PolicySchemaError(f"cannot resolve policy schema reference {reference}: {exc}") from exc
     if fragment:
         if not fragment.startswith("/"):
-            raise PolicyLoadError(f"invalid schema fragment in {reference}")
+            raise PolicySchemaError(f"invalid schema fragment in {reference}")
         for raw_segment in fragment[1:].split("/"):
             segment = raw_segment.replace("~1", "/").replace("~0", "~")
             if not isinstance(target, dict) or segment not in target:
-                raise PolicyLoadError(f"unresolved schema fragment in {reference}")
+                raise PolicySchemaError(f"unresolved schema fragment in {reference}")
             target = target[segment]
     if not isinstance(target, dict):
-        raise PolicyLoadError(f"schema reference does not resolve to an object: {reference}")
+        raise PolicySchemaError(f"schema reference does not resolve to an object: {reference}")
     return target, str(target_source)
 
 
@@ -286,11 +327,8 @@ def _cross_field_constraints(value):
         containers.append(repair)
     for container in containers:
         base = container.get("base_auto_rounds")
-        optional = container.get("optional_progress_rounds")
         maximum = container.get("autonomous_max_rounds")
         if isinstance(base, int) and not isinstance(base, bool):
-            if isinstance(optional, int) and not isinstance(optional, bool) and base + optional < base:
-                raise PolicyLoadError("optional repair rounds cannot reduce the base budget")
             if isinstance(maximum, int) and not isinstance(maximum, bool) and maximum < base:
                 raise PolicyLoadError("autonomous_max_rounds cannot be lower than base_auto_rounds")
         required_true = container.get("required_true_fields")

@@ -50,7 +50,7 @@
 ## Repair Ledger（仅进入 Repair 时填写）
 
 - Stable finding：<finding_id、severity、closure contract>
-- Attempt：<AR-1/AR-2/AR-3 或显式授权 attempt；patch 范围>
+- Attempt：<AR-n / ER-n 或显式授权 attempt；patch 范围>
 - RED / GREEN / SIGNAL：<修复前失败、修复后通过、证据来源>
 - Review：<隔离/只读 Recipe、结论、finding 状态>
 - Strict campaign：<Not Enabled | `REPAIR_CAMPAIGN.md` 要求的外部 receipt/ledger reference>

@@ -70,9 +70,14 @@ class ConsoleBuilderTests(unittest.TestCase):
 
     def test_task_only_active_ready_blocked_sorting_and_ambiguity(self):
         snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="low")
+        node = support.task("TEST-001", lifecycle="In Progress", priority="low")
+        snapshot["actions"] = list(primitive(ActionEngine().recommend((node,), (), ())))
         active = ConsoleBuilder(self.store).build(self.published(snapshot))
-        self.assertEqual(
-            ["TASK_IN_PROGRESS_WITHOUT_LIVE_SESSION"],
+        self.assertEqual("continue", active["active_work"][0]["action_kind"])
+        self.assertEqual("needs_authority", active["active_work"][0]["action_eligibility"])
+        self.assertEqual(0, active["counts"]["human_attention"])
+        self.assertIn(
+            "TASK_IN_PROGRESS_WITHOUT_LIVE_SESSION",
             active["active_work"][0]["why_now_codes"],
         )
         self.assertEqual("任务正在进行", active["active_work"][0]["status_summary"])
