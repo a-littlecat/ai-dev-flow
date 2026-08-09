@@ -69,13 +69,13 @@
 
 ## Outcome
 
-- Base / Diff：base=3f9865fa53e4a5e89e6e05475d997b627e6ff3ea;diff=3f9865f..c09e59a
+- Base / Diff：base=798ad2d481d97871ee3d10f038ee005f747750a6;diff=798ad2d..02fcce6
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `210/210`（skip 2）、Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 frozen artifact guard，报告 `baseline_preserved=true`，无运行态失败。
-- Review findings：GPT Pro 对旧 #17 差异为 `Passed 0/0/0/0`，但完整 stack 因旧 #16 P1 被阻断；新 base/head 的 Codex 隔离预检与 GPT Pro 外部复审仍 Pending，旧收据不沿用。
-- Delivery：本轮 current implementation head=`c09e59a1688dcd8f5d43b93c7fb6173a051ee1df`，branch `codex/v010-project-console-fe` 尚未推送本轮 stack 更新；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。最终复审 head 以包含本收据的后续冻结提交为准。
-- 状态边界：GPT Pro prior diff Passed / Updated Stack Re-review Pending / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- Review findings：GPT Pro 对旧 #17 差异为 `Passed 0/0/0/0`，但完整 stack 因旧 #16 P1 被阻断；最终 Codex 短范围预检中 #16 `3f9865f..7bd4bb6` 与 #17 `7bd4bb6..02fcce6` 均为 `Passed 0/0/0/0`，无开放 finding。GPT Pro 对最终新 head 的外部复审仍 Pending，旧收据不沿用。
+- Delivery：本轮 current implementation head=`02fcce62b50da9aaffae613974ebc5db09ea8d03`，branch `codex/v010-project-console-fe` 已推送并以最终远端 head 冻结；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。最终完整 SHA 由 GitHub PR head 与复审提示词绑定，不把 implementation SHA 冒充最终 reviewed head。
+- 状态边界：GPT Pro prior diff Passed / Updated Stack Codex Pre-review Passed / GPT Pro Re-review Pending / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
 - 下一步：由 GPT Pro 对 #16/#17 最终冻结远端完整 head 完成外部只读复审；与既有 Grok Passed 共同满足门禁后，才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。

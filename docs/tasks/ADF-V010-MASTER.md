@@ -59,4 +59,4 @@
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
 - 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 的 GPT Pro 旧冻结复审为 `Needs Fix 0/1/0/0`，P1 和两轮原因码集成回归已在 `5970ff5` 修复、最终 Codex 隔离预检 `Passed 0/0/0/0`、远端 head=`798ad2d`；PROJECT-CONSOLE-FE 的旧差异为 GPT Pro `Passed 0/0/0/0`，更新 stack 的 Codex 隔离预检也为 `Passed 0/0/0/0`，但仍须 GPT Pro 新复审。#16 UA3 Pending，#17 UA5 Pending user_only。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)、[#17](https://github.com/a-littlecat/ai-dev-flow/pull/17) 均保持 Open / Unmerged。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
 - 剩余风险：GPT Pro 尚未绑定 #16/#17 更新后的冻结远端完整 head 给出终局 receipt；旧 head Passed 或固定版本确认失败不能替代。
-- 下一步：推送并冻结 #17 新 head，再由 GPT Pro 对 #16/#17 做外部只读复审；不提前进入正式 UA，不得启动 Legacy Retire。
+- 下一步：以 #16/#17 已推送的最终远端 head 生成固定范围提示词，由 GPT Pro 做外部只读复审；不提前进入正式 UA，不得启动 Legacy Retire。
