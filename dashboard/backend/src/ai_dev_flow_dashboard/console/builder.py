@@ -51,6 +51,16 @@ class ConsoleBuilder:
                 continue
             if session["freshness"] == "ended":
                 continue
+            if session.get("phase") == "done":
+                invalid = {
+                    **session,
+                    "freshness": "invalid",
+                    "error_codes": ["INVALID_SESSION"],
+                }
+                queues["stale_sessions"].append(
+                    self._session_item(invalid, task, "stale_sessions")
+                )
+                continue
             if task is None:
                 queues["blocked"].append(
                     self._session_item(session, None, "blocked")
@@ -66,7 +76,7 @@ class ConsoleBuilder:
                 queues["blocked"].append(
                     self._item(task, actions, session, "blocked", ("RUNTIME_BLOCKED",), unblocks[task_id])
                 )
-            elif session["phase"] != "done":
+            else:
                 queues["active_work"].append(
                     self._item(task, actions, session, "active_work", ("ACTIVE_RUNTIME_SESSION",), unblocks[task_id])
                 )
