@@ -56,6 +56,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT Review Passed / Pushed `56c2aa7` / UA3 Pending；CAPABILITY-REVIEW 本轮 Review Passed / Pushed `93e1b5d` / UA3 Pending；RUNTIME-CONSOLE-BE 本轮 Review Passed / Pushed `8944a84` / UA3 Pending；PROJECT-CONSOLE-FE 本轮 Review Passed / Pushed implementation `6e89697` / UA5 Pending user_only。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
-- 剩余风险：必须保持 stacked branch 与独立收据，避免后续阶段污染前置阶段。
-- 下一步：交付分支均已推送；停在真实用户 UA 门禁，等待用户在 CADCat 与两个真实 Harness 任务上验收；不启动 Legacy Retire。
+- 状态边界：CORE-SPLIT Internal Isolated Review Passed / External Re-review Pending / Pushed `397acae` / UA3 Pending；CAPABILITY-REVIEW Internal Isolated Review Passed / External Re-review Pending / Pushed `b864b04` / UA3 Pending；RUNTIME-CONSOLE-BE Internal Isolated Review Passed / External Re-review Pending / Pushed `a45c915` / UA3 Pending；PROJECT-CONSOLE-FE Internal Isolated Review Passed / External Re-review Pending / reviewed implementation `6e89697` / UA5 Pending user_only。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
+- 剩余风险：Kimi/Grok 旧 head 定向 spot review 均未覆盖完整 stack 和全部轮询证据，不能替代新的分 PR 外部复审。
+- 下一步：对更新后的 #14-#17 分别执行跨 Harness 外部只读复审；全部无开放 P0/P1 后才建议用户开始 UA5。不得启动 Legacy Retire。

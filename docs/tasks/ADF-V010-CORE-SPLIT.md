@@ -45,7 +45,7 @@
 - [x] `repair_gate.py` 支持 JSON policy，且不重复硬编码完整 policy。
 - [x] 现有 route 与 Repair fixture、新 JSON与旧 Markdown 兼容测试全部通过。
 - [x] Skill 全量测试、workflow lint 和 `git diff --check` 通过；Dashboard 无 diff。
-- [x] 外部复审修复后的新隔离只读 Review 无开放 P0/P1。
+- [x] 外部 findings 修复后的 same-Harness 内部隔离只读 Review 无开放 P0/P1；跨 Harness 外部复审仍 Pending。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
 
@@ -68,8 +68,8 @@
 - 修改文件：治理入口与兼容说明、三份 canonical JSON policy、严格只读 loader、Repair gate、相关 README/测试，以及本阶段 TASK/看板事实源；`dashboard/**` 无 diff。
 - 验证证据：Stage 1 Skill `99/99`、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=63`、`git diff --check` 均通过；安全约束定向测试 `53/53` 通过；Dashboard tracked diff 为空，核心 policy 具体 Harness/模型名匹配 `0`。Stage 0 frontend Vitest `95/95`、Playwright `96/96` 通过；Integration 基线 `1 failure + 1 error` 均在 Dashboard 禁止修改范围，已在 Master 记录。
 - Review findings：Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；`R001/R002` Closed。
-- 外部 stacked 复审：`ADF-V010-STACKED-EXT-P1-002` Round 4 已实现；fresh Skill `104/104`（含动态 attempt ID 定向 `1/1`）、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；新隔离 Review `Passed (0/0/0/0)`。backend 首轮出现一次 deterministic snapshot 瞬态失败，单测与全量重跑均通过，未修改 Dashboard。
+- 外部 stacked finding 修复：`ADF-V010-STACKED-EXT-P1-002` Round 4 已实现；fresh Skill `104/104`（含动态 attempt ID 定向 `1/1`）、backend `174/174`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；same-Harness 内部隔离 Review `Passed (0/0/0/0)`。backend 首轮出现一次 deterministic snapshot 瞬态失败，单测与全量重跑均通过，未修改 Dashboard；跨 Harness 外部复审仍 Pending。
 - UA 动作与结果：UA3 Pending，不由自动验证代替。
-- 状态边界：External Repair Review Passed / Repair Committed bed3ac9 / UA3 Pending；push 尚未执行。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
+- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / Pushed `56c2aa7` / UA3 Pending。未 merge / release / 正式 Skill 同步 / Accepted / Closed。
 - 剩余风险：UA3 仍为 Pending；Review 通过不授权 merge、release、正式 Skill 同步或 Closed。
-- 下一步：推送当前修复收据，再以普通 merge 更新现有上层 stacked 分支。
+- 下一步：等待新的跨 Harness 外部只读复审；不得由内部 Review 推导 UA、merge 或其他后续生命周期动作。

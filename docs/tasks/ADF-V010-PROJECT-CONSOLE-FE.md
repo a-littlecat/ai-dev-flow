@@ -44,7 +44,7 @@
 - [x] 默认 console；network 与 legacy 保持可用。
 - [x] human attention 优先，live/declared/stale 明确区分，多候选不伪造唯一行动。
 - [x] 数据来源、新鲜度、错误/stale 状态有可访问文本；前端不重新排序。
-- [x] 外部复审修复后的 `npm run verify`、真实浏览器、集成测试与新独立只读 Review 通过。
+- [x] 外部 findings 修复后的 `npm run verify`、真实浏览器、集成测试与 same-Harness 内部隔离只读 Review 通过；跨 Harness 完整外部复审仍 Pending。
 - [ ] 在真实 CADCat 上完成总合同第 10.11 节用户验收；用户未确认前保持 UA Pending。
 
 ## Repair Chain Ledger（仅进入 repair 时填写）
@@ -60,6 +60,7 @@
 - 本轮 P3：Clipboard API 与 `execCommand` 都失败时，卡片内显示只读、可选择的完整文本，并把焦点恢复到触发按钮；Playwright 使用真实 DOM 回归覆盖最终失败路径。历史 Passed 收据未被用于本轮 diff。
 - 本轮 fresh 验证：backend `207/207`（skip 2）、Skill `119/119`、Vitest `109/109`、Playwright `109/109`、Runtime bundle `43/43`、当前 TASK workflow lint `0 errors / 0 violations / 1 warning`（收据提交前 lifecycle 转换历史不可验）。full integration 因新增 `adf.py` 预检回归从历史 `51/52` 增为当前 `52/53`，唯一失败仍是冻结 artifact guard，`baseline_preserved=true`；不误报全绿。
 - 本轮新隔离只读 Review session `019fe37b-1090-7241-80be-52c29ee4ab7` 审查 `31ad2f7..6e89697`，结论 `Passed 0/0/0/0`，无开放 finding。当前 `Review Passed / UA5 Pending user_only`；不授予 merge/release/正式 Skill 同步/Legacy Retire/Accepted/Closed。
+- `ADF-V010-EXT-R3-P1-001`（状态记录）：旧 TASK/Board 把 same-Harness 内部隔离 Review 写成 `External Repair Review Passed`，可能掩盖用户明确要求的跨 Harness 外部复审门禁。Kimi 定向 spot session `session_3deac4cb-3aaf-437c-8624-621f302f78bb` 报告 `0/0/0/1`，Grok 4.5 定向 spot session `019fe5df-6236-7093-bd06-825728d1af0f` 报告 `0/0/0/0`；两者均基于旧 head `1263f9a` 且未覆盖完整 stack/全部轮询实现，因此只作为诊断证据，不记为完整 External Review Passed。本次纯记录修正关闭错误措辞，不计 repair 轮次；新 head 外部复审仍 Pending。
 
 ## Outcome
 
@@ -68,8 +69,8 @@
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `207/207`（skip 2）、Skill `119/119`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.13 integration 历史为 `51/52`，新增预检用例后当前为 `52/53`；唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。当前 TASK workflow lint `errors=0/violations=0/warnings=1`，警告仅为收据提交前 lifecycle 历史不可验。
-- Review findings：本轮最终 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`，无开放 finding；历史 Review 仅保留为收据，未替代本轮。
+- Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Kimi/Grok 旧 head 定向 spot review 仅为诊断证据，更新后跨 Harness 完整外部复审仍 Pending。
 - Delivery：本轮 implementation/current reviewed head=`6e89697`；branch `codex/v010-project-console-fe` 已推送该实现 head，本事实收据提交同步推送；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。
-- 状态边界：External Repair Review Passed / UA5 Pending user_only / Pushed implementation `6e89697` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / UA5 Pending user_only / Reviewed implementation `6e89697` / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
-- 下一步：交付分支已推送；严格停在 `UA5 Pending user_only`，等待用户在真实 CADCat 与两个真实 Harness 任务上验收；不得提前执行 LEGACY-RETIRE。
+- 下一步：先对更新后的 #14-#17 分别完成跨 Harness 外部只读复审；无开放 P0/P1 后才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。
