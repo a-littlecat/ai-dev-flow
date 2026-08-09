@@ -12,16 +12,16 @@
       "required": ["repair_round_definition", "non_counting_actions", "chain_identity_fields", "ledger_schema", "evidence_trust_boundary", "record_only_finding", "base_auto_rounds", "autonomous_max_rounds", "history", "required_true_fields", "required_false_fields", "round_3_progress", "task_change_resets_budget", "model_change_resets_budget", "post_stop", "campaign", "mechanical_decisions", "promotion_decisions", "promotion_requires_trusted_orchestrator", "eligible_modes"],
       "properties": {
         "repair_round_definition": {"enum": ["patch_to_next_independent_review"]},
-        "non_counting_actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["diagnostic_evidence_only", "record_only_correction", "review_only", "task_or_board_receipt_sync", "test_rerun_without_patch", "ua_without_patch"]}},
-        "chain_identity_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["repair_chain_id", "finding_ids", "closure_contract_hash", "allowed_files_hash"]}},
+        "non_counting_actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["diagnostic_evidence_only", "record_only_correction", "review_only", "task_or_board_receipt_sync", "test_rerun_without_patch", "ua_without_patch"]}, "allOf": [{"contains": {"const": "diagnostic_evidence_only"}}, {"contains": {"const": "record_only_correction"}}, {"contains": {"const": "review_only"}}, {"contains": {"const": "task_or_board_receipt_sync"}}, {"contains": {"const": "test_rerun_without_patch"}}, {"contains": {"const": "ua_without_patch"}}]},
+        "chain_identity_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["repair_chain_id", "finding_ids", "closure_contract_hash", "allowed_files_hash"]}, "allOf": [{"contains": {"const": "repair_chain_id"}}, {"contains": {"const": "finding_ids"}}, {"contains": {"const": "closure_contract_hash"}}, {"contains": {"const": "allowed_files_hash"}}]},
         "ledger_schema": {"type": "string", "minLength": 1},
         "evidence_trust_boundary": {"enum": ["ledger_is_untrusted_trusted_context_is_supplied_by_project_or_harness"]},
         "record_only_finding": {
           "type": "object", "additionalProperties": false,
           "required": ["default_severity", "p1_only_if"],
           "properties": {
-            "default_severity": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["P0", "P1", "P2", "P3"]}},
-            "p1_only_if": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["can_authorize_unsafe_action", "can_hide_blocking_finding"]}}
+            "default_severity": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["P0", "P1", "P2", "P3"]}, "allOf": [{"contains": {"const": "P2"}}, {"contains": {"const": "P3"}}]},
+            "p1_only_if": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["can_authorize_unsafe_action", "can_hide_blocking_finding"]}, "allOf": [{"contains": {"const": "can_authorize_unsafe_action"}}, {"contains": {"const": "can_hide_blocking_finding"}}]}
           }
         },
         "base_auto_rounds": {"type": "integer", "minimum": 1},
@@ -106,10 +106,10 @@
             "delivery_authority_separate": {"const": true}
           }
         },
-        "mechanical_decisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["MechanicallyEligible", "Stop", "Blocked"]}},
-        "promotion_decisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["AutoRepairAllowed", "ExtendRound3", "EscalatedRepairAllowed"]}},
+        "mechanical_decisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["MechanicallyEligible", "Stop", "Blocked"]}, "allOf": [{"contains": {"const": "MechanicallyEligible"}}, {"contains": {"const": "Stop"}}, {"contains": {"const": "Blocked"}}]},
+        "promotion_decisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["AutoRepairAllowed", "ExtendRound3", "EscalatedRepairAllowed"]}, "allOf": [{"contains": {"const": "AutoRepairAllowed"}}, {"contains": {"const": "ExtendRound3"}}, {"contains": {"const": "EscalatedRepairAllowed"}}]},
         "promotion_requires_trusted_orchestrator": {"const": true},
-        "eligible_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["AutoRepair", "ExtendRound3", "EscalatedRepair"]}}
+        "eligible_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["AutoRepair", "ExtendRound3", "EscalatedRepair"]}, "allOf": [{"contains": {"const": "AutoRepair"}}, {"contains": {"const": "ExtendRound3"}}, {"contains": {"const": "EscalatedRepair"}}]}
       }
     }
   }

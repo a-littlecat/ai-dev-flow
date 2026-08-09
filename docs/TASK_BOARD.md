@@ -1,16 +1,16 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-08
+> - 快照日期：2026-08-09
 > - 当前模式：v0.10.0 分阶段架构重构；v0.9.2 历史收据继续保留
-> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#16 Internal Isolated Review Passed / External Re-review Pending / UA Pending`
+> - 当前阶段：`ADF-V010-MASTER In Progress / #14-#15 External Review Passed / #16 Internal Isolated Review Passed / External Re-review Pending / UA3 Pending`
 > - 当前方案：`docs/tasks/ADF-V010-MASTER.md`
 
-## 当前执行任务（2026-08-08）
+## 当前执行任务（2026-08-09）
 
-- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#16 修复均已通过 same-Harness 内部隔离 Review，跨 Harness 外部复审仍 Pending。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
-- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Pushed 397acae / Draft PR #14 / Unmerged`。
-- `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Pushed b864b04 / Draft PR #15 / Unmerged`。
-- `ADF-V010-RUNTIME-CONSOLE-BE`：`Internal Isolated Repair Review Passed / External Re-review Pending / Controlled / UA3 Pending / Reviewed implementation 8944a84 / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、ready_ambiguity、Runtime bridge 与 bundle preflight 已通过 fresh 验证及 same-Harness 内部隔离 Review。
+- `ADF-V010-MASTER`：`In Progress / Controlled / Review Pending / UA5 Pending / Unmerged / Not Released / Not Closed`。#14-#15 已通过 Kimi/Grok 外部复审；#16 已更新 #15 并等待跨 Harness 外部复审。正式用户 UA 前禁止 Legacy Retire，显式发布授权前禁止 tag、Release 和正式 Skill 同步。
+- `ADF-V010-CORE-SPLIT`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #14 / Unmerged`。
+- `ADF-V010-CAPABILITY-REVIEW`：`Internal Isolated Repair Review Passed / External Review Passed / Controlled / UA3 Pending / branch pushed / Draft PR #15 / Unmerged`。
+- `ADF-V010-RUNTIME-CONSOLE-BE`：`Internal Isolated Repair Review Passed / External Re-review Pending / Controlled / UA3 Pending / branch pushed / Draft PR #16 / Unmerged`。真实 ActionEngine→ConsoleBuilder、ready_ambiguity、Runtime bridge 与 bundle preflight 已通过 fresh 验证及 same-Harness 内部隔离 Review，等待 Kimi/Grok 外部复审。
 - `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main`；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，独立复审 `0/0/0/0`；不允许 tag、release、deploy、删除、外部 Skill 同步或 Closed。
 - 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
 
@@ -190,8 +190,8 @@ REL-002 Closed / main@0422887
 - Lite 是默认，但必须有覆盖全部关键完成标准的确定性验证；容易回滚不能替代验证，需要用户观察或真实环境证据时升级 Tracked。
 - Lite 不建 TASK、不调用独立 Reviewer、不进入 repair loop。
 - 首版自动审核只实现确定性闸门：Lite 禁止，Tracked 风险触发，Controlled 交付前强制；Tracked 命中门禁但缺 Reviewer 时必须 Blocked、合法升级或取得明确授权，不能静默跳过。
-- Tracked / Controlled `AutoRepair` 基础预算为 2；逐 finding RED→GREEN、无回归且证据覆盖增加时可增加第 3 轮。3 是自主 loop 上限；`Stop` 后用户可明确授权有界 `EscalatedRepair`，换 TASK/模型不重置 chain。
-- 可选 `RepairCampaignAuthority` 在同一 TASK、验收合同和外层范围内连续处理新 chain；核心产品连续 4 次无实质进展、Harness 连续 5 次无实质进展后才进入用户裁决，硬停止条件立即生效。
+- Tracked / Controlled `AutoRepair` 的基础预算、额外轮次和自主上限读取适用 repair Policy；`Stop` 后用户可明确授权次数受 authority receipt 约束的 `EscalatedRepair`，换 TASK/模型不重置 chain。
+- 可选 `RepairCampaignAuthority` 在同一 TASK、验收合同和外层范围内连续处理新 chain；达到 `policy/repair-campaign.json` 中适用 profile 的连续无进展阈值后进入用户裁决，硬停止条件立即生效。
 - 当前模型真实任务对照前先冻结样本与计量协议并做零额度回放；通过后只做可整体回退的最小原型，使用当前执行会话所用模型、一个 Lite 任务、最多 3 次执行；不接入额外模型供应商，全面收缩必须等待对照通过。
 - 首版候选实施任务不超过 3 个，验收前不创建。
 - 如果不能把工作流输入、模型调用和用户流程问题至少降低 50%，或出现更多 P0/P1、权限越界、状态误报，则停止 v0.8 扩建。
@@ -206,8 +206,8 @@ REL-002 Closed / main@0422887
 - 瘦身方案仍要求首版执行超过 3 个任务。
 - Lite 绕过 authority、真实环境、数据、发布或不可逆动作门禁。
 - 自动审核扩张为通用调度平台、数据库、模型 Adapter，或在低风险任务上产生无理由调用。
-- 第 3 轮缺少 progress 证据、自主 loop 突破上限、`EscalatedRepair` 缺少有限用户授权/冻结信号，或用于自动重试不可逆外部动作。
-- campaign streak 可被换 chain/TASK/模型清零，4 / 5 阈值未按 profile 执行，或 P0、安全、数据、越界、不可逆、oracle 放宽等硬停止被延迟。
+- 额外轮次缺少 progress 证据、自主 loop 突破 Policy 上限、`EscalatedRepair` 缺少有限用户授权/冻结信号，或用于自动重试不可逆外部动作。
+- campaign streak 可被换 chain/TASK/模型清零，适用 profile 阈值未按 canonical Policy 执行，或 P0、安全、数据、越界、不可逆、oracle 放宽等硬停止被延迟。
 - 任一模型成为核心依赖，或模型更换重置额度/repair 计数。
 - 需要自动调度器、数据库、遥测或计费系统才能证明收益。
 - `DASHBOARD-001` 把 Snapshot、TASK_BOARD 或浏览器提升为事实源，提供写接口，自动启动 agent/Worktree，或把“并行候选”显示为已授权并行。

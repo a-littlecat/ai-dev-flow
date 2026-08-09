@@ -55,6 +55,7 @@
 - 外部修复 Round 1 Review：session=`019fe21b-8825-75e2-a9ba-fa19b3b2d729`，`Needs Fix 0/1/1/0`。P1 `ADF-V010-REVIEW-P1-001` 证明未验证普通映射可绕过 loader 获得 `R1`；P2 指出 BOARD/MASTER 仍可能误用历史 Passed。Round 2 已让 Recipe 入口重验完整 Adapter 合同，缺字段、未知字段或非法枚举一律 `R5`，并同步状态投影；等待 fresh 验证与新 Review。
 - 外部修复 Round 2 Review：session=`019fe221-d8d5-7a81-b7c4-4124794bbd95`，`Needs Fix 0/1/1/0`。P1 `ADF-V010-R2-P1-001` 证明列表/字典等不可哈希枚举会抛 `TypeError`；P2 指出 fresh 验证措辞漂移。Round 3 已先验证枚举值为字符串，并补不可哈希负例；fresh 全量证据已存在，等待定向刷新与新 Review。
 - 外部修复 Round 3 Review：session=`019fe225-d887-7640-96de-d704d7f6c6ed`，`Passed 0/0/0/0`；Adapter 入口 `98/98` 内存矩阵、合法 R1-R4、#14 Schema 与双版本 Contract 兼容均通过。Review 不代表 UA、commit、push、merge、release、正式 Skill 同步、Accepted 或 Closed。
+- 最终跨 Harness 外部重审（分支头 `6669dda`）：Kimi session=`session_9dad519c-4c96-4198-9f0a-88c5031aae79` 与 Grok session=`019fe6d2-917d-77d1-a2d9-2b020ad96c79` 均为 `Passed`，P0/P1/P2/P3=`0/0/0/0`。两者确认 capability-driven Recipe、Adapter fail-closed、v0.7/v0.10 双版本语义、最小必需 reference 集合、bridge/sync 独立轴与 compact TASK ledger 均满足合同；#15 无 Runtime CLI 时 Codex/OpenCode 维持 `none` 是正确边界。该 Review 不代表 UA、PR merge、release、正式 Skill 同步、Accepted 或 Closed。
 
 - Attempt AR-1：处理 `ADF-V010-CAP-R001`～`R004`（均 P1）；Reviewer session `019fe100-05e5-7033-83a6-d65aed40c428`，Round 1=`Needs Fix 0/4/0/0`。
 - RED：Controlled/高 UA 可声明 Not Required；Review 历史可回退 Not Run；R4 仅凭授权；TASK 未写回最终 backend 全量结果。
@@ -85,6 +86,6 @@
 - 范围适配：`policy_loader.py` 与 `schemas/workflow-contract.schema.json` 未列在最初允许清单，但分别是 CORE-SPLIT 新增严格 loader 与现有 RuntimeCompatibility 的直接事实源；为保持 core policy 可加载和双版本 schema 可启动而做最小改动，不扩展到 Runtime/Project Console。
 - 验证证据：Round 2 fresh Adapter 定向 `6/6`、Skill `119/119`、backend `182/182`、workflow lint `errors=0 / violations=0 / warnings=1`、`git diff --check` 已通过；Round 1 后 frontend codegen check/typecheck/lint/Vitest `95/95`/build/Playwright `96/96` 已通过，Round 2 未改前端。首次组合 `npm run verify` 仅因工具 124 秒硬超时无终态，随后拆分组件全部通过。stack full integration 已知为 `51/52`，唯一 artifact guard 失败须在上层全部更新后复跑。
 - Review findings：Round 1 `Needs Fix 0/4/0/0`；Round 2/3/4 依次收敛 `R002`；用户授权 ER-1 后，session `019fe130-43df-7551-b44c-659b67ba9fe6` 为 `Passed 0/0/0/0`，`R001`～`R004` 全部 Closed。
-- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / Fresh Verification Passed / Pushed `93e1b5d` / UA3 Pending / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- 状态边界：Internal Isolated Repair Review Passed / External Review Passed / Fresh Verification Passed / branch pushed（精确 head 以 PR/Git ref 为准）/ UA3 Pending / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：生产依赖树存在基线 `fast-uri` high advisory，`package-lock.json` 本阶段未改；正式发布前应在 RELEASE 阶段单独评估兼容升级。集成套件两项历史债务仍未在本阶段修复。
-- 下一步：push #15 当前修复，再以普通 merge 更新 #16。禁止提前进入正式 UA。
+- 下一步：以普通 merge 更新 #16 并执行其 Kimi/Grok 外部复审。禁止提前进入正式 UA。

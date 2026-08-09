@@ -79,7 +79,7 @@ Tracked / Controlled 的最小闭环：
 
 Reviewer 必须满足 `policy/core.json.independent_review`，并按 `REVIEW_RECIPES.md` 的 `R1 > R2 > R3 > R4 > R5` 选择：先检查能力，再选择 Recipe，不按 Harness 名称准入。不得自动跨 Harness，只有用户明确指定时才允许 R4。能力声明见 `CAPABILITY_REQUIREMENTS.md` 与 `adapters/*.json`；参数在调用前必须查看当前 `--help`。无法证明隔离/只读时进入 R5，保持 `Pending/Blocked`；主上下文自检不能记为独立 Review。Reviewer 输出稳定 finding ID、P0～P3 和 `Passed / Needs Fix / Blocked`。
 
-普通 finding 按需读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：默认 2 轮 `AutoRepair`，有可测进展时可增加 1 轮，每轮 patch 后独立 Review，无进展则回到用户决定。
+普通 finding 按需读取 `policy/repair-basic.json` 与 `references/REPAIR_BASIC.md`：基础预算与可选额外轮次均读取 canonical Policy，每轮 patch 后独立 Review，无进展则回到用户决定。
 
 receipt chain、trusted context、EscalatedRepair 和 Repair Campaign 不在默认路径。只有显式 auto_land/auto_release、长时间无人值守、Skill 自修改、安全、数据迁移、不可逆操作、正式发布或用户明确要求严格 Campaign 时，才读取 `policy/repair-campaign.json` 与 `references/REPAIR_CAMPAIGN.md`。严格 gate 只给机械资格，最终 Allowed 仍由持有真实上游证据的 Orchestrator 提升。
 
