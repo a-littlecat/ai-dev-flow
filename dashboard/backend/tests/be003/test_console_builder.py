@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,7 +11,7 @@ from ai_dev_flow_dashboard.console import ConsoleBuilder
 from ai_dev_flow_dashboard.core.actions import ActionEngine
 from ai_dev_flow_dashboard.core.models import primitive
 from ai_dev_flow_dashboard.core.schema_validator import validate_contract
-from ai_dev_flow_dashboard.runtime import RuntimeSessionStore
+from ai_dev_flow_dashboard.runtime import RuntimeSessionError, RuntimeSessionStore
 from be002 import support
 
 
@@ -67,6 +68,51 @@ class ConsoleBuilderTests(unittest.TestCase):
         console = ConsoleBuilder(self.store).build(self.published(snapshot))
         self.assertEqual(0, console["counts"]["active_work"])
         self.assertEqual(1, console["counts"]["stale_sessions"])
+
+    def test_inconsistent_done_record_is_invalid_and_ready_task_stays_visible(self):
+        snapshot = support.snapshot_with_task(lifecycle="Ready")
+        node = support.task("TEST-001", lifecycle="Ready")
+        snapshot["actions"] = list(primitive(ActionEngine().recommend((node,), (), ())))
+        self.store.start(
+            session_id="inconsistent-done",
+            task_id="TEST-001",
+            harness_id="codex",
+            phase="implementing",
+            next_step="work",
+        )
+        path = self.store.sessions_dir / "inconsistent-done.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phase"] = "done"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+
+        console = ConsoleBuilder(self.store).build(self.published(snapshot))
+
+        self.assertEqual(1, console["counts"]["stale_sessions"])
+        self.assertEqual(1, console["counts"]["ready_queue"])
+        self.assertEqual("TEST-001", console["ready_queue"][0]["task_id"])
+        with self.assertRaisesRegex(RuntimeSessionError, "terminal state is inconsistent"):
+            self.store.heartbeat("inconsistent-done")
+
+    def test_builder_defense_does_not_assign_live_done_session(self):
+        snapshot = support.snapshot_with_task(lifecycle="Ready")
+        node = support.task("TEST-001", lifecycle="Ready")
+        snapshot["actions"] = list(primitive(ActionEngine().recommend((node,), (), ())))
+        session = self.store.start(
+            session_id="defensive-done",
+            task_id="TEST-001",
+            harness_id="codex",
+            phase="implementing",
+            next_step="work",
+        )
+        with unittest.mock.patch.object(
+            self.store,
+            "list",
+            return_value=[{**session, "phase": "done", "freshness": "live"}],
+        ):
+            console = ConsoleBuilder(self.store).build(self.published(snapshot))
+
+        self.assertEqual(1, console["counts"]["stale_sessions"])
+        self.assertEqual(1, console["counts"]["ready_queue"])
 
     def test_task_only_active_ready_blocked_sorting_and_ambiguity(self):
         snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="low")

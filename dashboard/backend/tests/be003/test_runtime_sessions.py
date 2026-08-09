@@ -13,7 +13,7 @@ from unittest import mock
 
 from be001.support import REPO_ROOT
 from ai_dev_flow_dashboard.cli import main as cli_main
-from ai_dev_flow_dashboard.core.schema_validator import validate_contract
+from ai_dev_flow_dashboard.core.schema_validator import ValidationError, validate_contract
 from ai_dev_flow_dashboard.runtime import RuntimeSessionError, RuntimeSessionStore
 
 
@@ -72,9 +72,59 @@ class RuntimeSessionStoreTests(unittest.TestCase):
         self.assertEqual("validating", updated["phase"])
         self.assertEqual("waiting_user", waited["phase"])
         self.assertEqual("done", ended["phase"])
+        validate_contract(
+            ended,
+            schema_path=REPO_ROOT / "dashboard" / "contracts" / "runtime-session-v1.schema.json",
+        )
         self.assertEqual(ended, repeated)
         self.assertFalse(list(self.store.sessions_dir.glob("*.tmp")))
         self.assertEqual("ended", self.store.list()[0]["freshness"])
+
+    def test_done_is_end_only_and_terminal_invariant_is_shared_with_schema(self):
+        with self.assertRaisesRegex(RuntimeSessionError, "reserved for session end"):
+            self.store.start(
+                session_id="start-done",
+                task_id="TEST-001",
+                harness_id="codex",
+                phase="done",
+                next_step="none",
+            )
+        active = self.store.start(
+            session_id="update-done",
+            task_id="TEST-001",
+            harness_id="codex",
+            phase="implementing",
+            next_step="work",
+        )
+        with self.assertRaisesRegex(RuntimeSessionError, "reserved for session end"):
+            self.store.update("update-done", phase="done")
+
+        schema = REPO_ROOT / "dashboard" / "contracts" / "runtime-session-v1.schema.json"
+        inconsistent_active = {**active, "end_reason": "unexpected"}
+        inconsistent_done = {**active, "phase": "done"}
+        empty_terminal_time = {
+            **active,
+            "phase": "done",
+            "ended_at": "",
+            "end_reason": "completed",
+        }
+        empty_terminal_reason = {
+            **active,
+            "phase": "done",
+            "ended_at": active["updated_at"],
+            "end_reason": "",
+        }
+        for label, payload in (
+            ("active-with-reason", inconsistent_active),
+            ("done-without-terminal-fields", inconsistent_done),
+            ("done-with-empty-time", empty_terminal_time),
+            ("done-with-empty-reason", empty_terminal_reason),
+        ):
+            with self.subTest(case=label):
+                with self.assertRaises(RuntimeSessionError):
+                    self.store._validate(payload)
+                with self.assertRaises(ValidationError):
+                    validate_contract(payload, schema_path=schema)
 
     def test_stale_invalid_json_time_and_cross_project_binding(self):
         self.store.start(
@@ -351,7 +401,51 @@ class RuntimeCliTests(unittest.TestCase):
                 "implementing",
                 json.loads(heartbeat_output.call_args.args[0])["phase"],
             )
-            self.assertEqual(2, cli_main(["session", "update", *common, "--session", "missing", "--phase", "done"]))
+            self.assertEqual(
+                2,
+                cli_main(
+                    [
+                        "session",
+                        "start",
+                        *common,
+                        "--session",
+                        "cli-done",
+                        "--task",
+                        "TEST-001",
+                        "--harness",
+                        "generic",
+                        "--phase",
+                        "done",
+                        "--next-step",
+                        "none",
+                    ]
+                ),
+            )
+            self.assertEqual(
+                2,
+                cli_main(
+                    [
+                        "session",
+                        "update",
+                        *common,
+                        "--session",
+                        "cli-one",
+                        "--phase",
+                        "done",
+                    ]
+                ),
+            )
+            store = RuntimeSessionStore(project, runtime_root=runtime)
+            path = store.sessions_dir / "cli-one.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["phase"] = "done"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(
+                2,
+                cli_main(
+                    ["session", "heartbeat", *common, "--session", "cli-one"]
+                ),
+            )
 
     def test_status_cli_uses_console_builder(self):
         with tempfile.TemporaryDirectory() as runtime:

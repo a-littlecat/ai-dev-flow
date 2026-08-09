@@ -20,5 +20,21 @@
     "stale_after_seconds": {"type": "integer", "minimum": 1},
     "ended_at": {"type": ["string", "null"]},
     "end_reason": {"type": ["string", "null"]}
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "phase": {"const": "done"},
+        "ended_at": {"type": "string", "minLength": 1},
+        "end_reason": {"type": "string", "minLength": 1}
+      }
+    },
+    {
+      "properties": {
+        "phase": {"enum": ["planning", "implementing", "validating", "reviewing", "repairing", "waiting_user", "blocked"]},
+        "ended_at": {"const": null},
+        "end_reason": {"const": null}
+      }
+    }
+  ]
 }

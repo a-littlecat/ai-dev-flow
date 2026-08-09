@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Pending`
+- `review_status`: `Needs Fix`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -60,6 +60,9 @@
 - 同轮 P2/P3：原空 actions 的 In Progress 断言已替换为真实 ActionEngine 链路；portable preflight 集成现同时参数化 `adf.py` 与 `dashboard.py`，两入口的 missing manifest 与 tampered runtime 均在创建 Runtime 前 exit 2。修复后 fresh Console Builder `12/12`、portable runtime `4/4`、Skill `121/121`、bundle `43/43`、target lint `0/0/0` 通过；backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event 用例。当前等待 GPT Pro 对冻结远端完整 head 复审，不沿用旧 Passed 收据。
 - 修复提交 `71c452644c750639515139000c26ab746ae07679` 的 Grok fresh 外部只读复审 session `019fe6e3-b6ad-7aa0-bb63-cfd8248f6601` 为 `Passed 0/0/0/0`，Reviewer 亲自完成真实 ActionEngine 队列探针、两入口四种 preflight 失败探针及 be003 定向测试。Kimi 在同一 head 完成静态检查并确认合同差异仅为换行后，因本计费周期额度耗尽返回 403，未能形成终局 receipt，明确不计通过；因此整体 External Re-review 仍 Pending。
 - Reviewer authority 更新：用户明确取消 Kimi 复审要求，改由 GPT Pro 作为第二外部 Reviewer。既有 Kimi 403 仅保留为历史事实，不再是当前门禁；GPT Pro 必须绑定当前远端完整 commit SHA 并输出 Passed / Needs Fix / Blocked，固定版本确认失败不计 Review。
+- `ADF-V010-PR16-P1-001`：GPT Pro 对冻结范围 `8922238cff30d85d66919740d2c714e2a6aca39d..5483bfc33c0d51c8116a35f0f03d74203d7d3c85` 给出 `Needs Fix 0/1/0/0`。公开 CLI 原可写入 `phase=done / ended_at=null / end_reason=null`，Builder 随后仍把 task 加入 `assigned`，导致 TASK 从全部队列消失；`heartbeat` 还能续活该隐藏态。PR #17 自身差异在 `5483bfc..95b43ba` 获得 `Passed 0/0/0/0`，但完整 stack 继承此 P1，故不进入 UA。
+- 修复提交 `4c8dcb7114fe0d8fcf3053846a3794cedf14fd09`：`done` 改为仅允许 `end()` 产生；CLI `start/update --phase done` 均 exit 2；Store 与 Runtime Session Schema 同时约束终态字段；Builder 对异常 live/done 增加第二道 invalid 投影且不写入 `assigned`；真实 ActionEngine + 磁盘篡改回归证明异常会话进入 `stale_sessions` 的同时 Ready TASK 仍进入 `ready_queue`，公开 heartbeat exit 2。fresh backend `210/210`（skip 2）、Skill `121/121`、build/portable integration `12/12`、定向 `27/27`（skip 2）与 Runtime bundle `43/43` 全部通过；GPT Pro 对新冻结 head 的外部复审仍 Pending，本记录不自行关闭 finding。
+- Codex 隔离预检首次审查 `5483bfc..4c8dcb7` 为 `Needs Fix 0/1/0/0`：Schema 的 `ended_at` 只约束 string，空字符串仍可通过，和 Store 不一致。`26c6d43088e5a51c59aae1e4bfb905df24410383` 为 `ended_at` 增加 `minLength=1`，并分别覆盖空时间、空原因和合法 end 产物；第二次冻结预检 `5483bfc..26c6d43` 为 `Passed 0/0/0/0`，实际检查 source/bundle 一致、manifest 43 files 和公开链路。该预检不冒充 GPT Pro，外部 finding 仍等待 GPT Pro 关闭。
 
 - Attempt AR-1：独立只读 Review Round 1 为 `Needs Fix 0/5/0/0`；Reviewer 进程未向 Harness 暴露可引用 session id，收据标记为 `harness-not-exposed`。
 - RED：目录在检查前可经 symlink/Junction 逃逸；未来时间戳可长期保持 live；并发 start 存在覆盖窗口；Queue Engine 会压缩同任务多动作并使用非正式 eligibility；规范 Skill Runtime 尚未包含 Stage 3 后端与合同。
@@ -78,9 +81,9 @@
 - 隔离位置：`codex/v010-runtime-console-be` / `D:/open-source/ai-dev-flow-wt/v010-runtime-console-be`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 CAPABILITY-REVIEW 历史。
 - 修改文件：新增 Runtime Session store、Console Builder、通用 CLI/Skill 包装、Console/API 合同与 be003 测试；扩展 loopback `/api/v1/console` 和 runtime bundle 文件数合同；仅机械更新生成类型/校验器，不实现 Project Console UI。
-- 验证证据：外部修复 fresh be003 `21/21`（skip 2）、backend `204/204`（skip 2）、Skill `119/119`、Runtime bundle `43/43`、codegen check 与 `git diff --check` 已通过；frontend 与 integration 待在上层 UI 合并后执行完整验证。完整 integration 已知边界为 `51/52`，唯一 artifact guard 失败不得误报为全绿。
-- Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮 findings 修复后的 same-Harness 内部隔离 Review sessions 均为 `Passed`；跨 Harness 外部复审仍 Pending。
-- Delivery：本轮 reviewed implementation=`8944a84`；branch `codex/v010-runtime-console-be`；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
-- 状态边界：Grok External Re-review Passed / GPT Pro Re-review Pending / Overall External Re-review Pending / UA3 Pending / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- 验证证据：本轮 terminal-state 修复 fresh 定向 `27/27`（skip 2）、backend `210/210`（skip 2）、Skill `121/121`、build/portable integration `12/12`、Runtime bundle `43/43`、codegen/build 与 `git diff --check` 已通过；frontend 与 full integration 在 #17 吸收新 #16 head 后复跑。历史 full integration 失败边界不得误报为全绿。
+- Review findings：GPT Pro 当前结论为 `Needs Fix 0/1/0/0`，开放 finding=`ADF-V010-PR16-P1-001`；实现已按四层终态不变量修复。Codex 隔离预检最终为 `Passed 0/0/0/0`，但外部关闭权仍属于 GPT Pro 对新冻结范围的复审。
+- Delivery：本轮最终 implementation=`26c6d43088e5a51c59aae1e4bfb905df24410383`；branch `codex/v010-runtime-console-be`；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。最终 GPT Pro 复审 head 以包含本收据的后续冻结提交为准，不把 implementation SHA 冒充最终 reviewed head。
+- 状态边界：Grok 历史 External Re-review Passed / GPT Pro Needs Fix / Overall External Re-review Needs Fix / UA3 Pending / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：由 GPT Pro 对冻结远端完整 head 做外部只读复审；与既有 Grok Passed 共同满足外部门禁后，才建议进入正式用户 UA。禁止提前进入正式用户 UA。
+- 下一步：推送包含本收据的新冻结完整 head，并由 GPT Pro 对新 base/head 做外部只读复审；在其关闭 P1 前不得进入正式用户 UA。

@@ -30,6 +30,7 @@ PHASES = frozenset(
         "done",
     }
 )
+MUTABLE_PHASES = PHASES - {"done"}
 SESSION_ID_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,127})")
 TOKEN_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,127})")
 FIELDS = frozenset(
@@ -159,7 +160,7 @@ class RuntimeSessionStore:
             "session_id": session_id,
             "task_id": self._token(task_id, "task_id"),
             "harness_id": self._token(harness_id, "harness_id"),
-            "phase": self._phase(phase),
+            "phase": self._mutable_phase(phase),
             "next_step": _plain_text(next_step, "next_step"),
             "status_summary": _plain_text(status_summary, "status_summary", allow_empty=True),
             "branch": self._optional_text(branch, "branch"),
@@ -195,7 +196,7 @@ class RuntimeSessionStore:
             if payload["ended_at"] is not None:
                 raise RuntimeSessionError("ended session cannot be updated")
             if phase is not None:
-                payload["phase"] = self._phase(phase)
+                payload["phase"] = self._mutable_phase(phase)
             if next_step is not None:
                 payload["next_step"] = _plain_text(next_step, "next_step")
             if status_summary is not None:
@@ -307,10 +308,12 @@ class RuntimeSessionStore:
             raise RuntimeSessionError("runtime timestamp is too far in the future")
         if updated < started:
             raise RuntimeSessionError("updated_at precedes started_at")
-        if payload["ended_at"] is None:
-            if payload["end_reason"] is not None:
-                raise RuntimeSessionError("active session cannot have end_reason")
-        else:
+        is_done = payload["phase"] == "done"
+        has_terminal_time = payload["ended_at"] is not None
+        has_terminal_reason = payload["end_reason"] is not None
+        if is_done != has_terminal_time or is_done != has_terminal_reason:
+            raise RuntimeSessionError("runtime terminal state is inconsistent")
+        if is_done:
             ended = _parse_timestamp(payload["ended_at"])
             if ended > latest_allowed:
                 raise RuntimeSessionError("runtime end timestamp is too far in the future")
@@ -446,6 +449,12 @@ class RuntimeSessionStore:
     def _phase(value: Any) -> str:
         if value not in PHASES:
             raise RuntimeSessionError("phase is invalid")
+        return value
+
+    @staticmethod
+    def _mutable_phase(value: Any) -> str:
+        if value not in MUTABLE_PHASES:
+            raise RuntimeSessionError("phase=done is reserved for session end")
         return value
 
     @staticmethod
