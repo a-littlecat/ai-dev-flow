@@ -35,7 +35,7 @@ Bug 诊断（`bug_diagnosis`）用于根因不清、反馈失败、回归疑似�
 - 证据不足，无法判断是否属于当前 TASK 范围。
 - 需要用户真实环境、真实账号、真实设备或真实文件才能继续。
 - 修复需要扩大范围、改架构、新增依赖或改变已确认状态。
-- 第 2 轮后未通过 `CORE.md` progress gate，或第 3 轮后仍未 GREEN。
+- 基础预算耗尽后未通过适用 repair Policy 的 progress gate，或额外轮次后仍未 GREEN。
 - 没有测试缝隙，需要转架构巡检（`architecture_review`）或拆出测试缝隙任务。
 
 ## 临时诊断日志规则

@@ -1,0 +1,10 @@
+{
+  "schema_version": "adf/policy-schema-registry/v1",
+  "entries": [
+    {"policy_schema_version": "adf/policy-core/v1", "path": "core.schema.json", "legacy_optional_ref": null, "legacy_optional_required": []},
+    {"policy_schema_version": "adf/repair-basic/v1", "path": "repair-basic.schema.json", "legacy_optional_ref": null, "legacy_optional_required": []},
+    {"policy_schema_version": "adf/repair-campaign/v1", "path": "repair-campaign.schema.json", "legacy_optional_ref": null, "legacy_optional_required": []},
+    {"policy_schema_version": "ai-dev-flow/v0.8-policy-rc2", "path": "legacy-rc2.schema.json", "legacy_optional_ref": "repair-campaign.schema.json#/properties/repair", "legacy_optional_required": ["campaign"]},
+    {"policy_schema_version": "ai-dev-flow/v0.8-policy-rc3", "path": "legacy-rc3.schema.json", "legacy_optional_ref": null, "legacy_optional_required": []}
+  ]
+}

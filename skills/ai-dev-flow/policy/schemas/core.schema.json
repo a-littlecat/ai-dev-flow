@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-policy-schema-version": "adf/policy-core/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "unknown_input", "routes", "review", "safety"],
+  "properties": {
+    "schema_version": {"const": "adf/policy-core/v1"},
+    "unknown_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discoverable", "authority", "external_evidence", "rule_conflict", "unresolved_final"],
+      "properties": {
+        "discoverable": {"enum": ["InspectAndResolve", "Blocked"]},
+        "authority": {"enum": ["Blocked"]},
+        "external_evidence": {"enum": ["Blocked"]},
+        "rule_conflict": {"enum": ["Blocked"]},
+        "unresolved_final": {"enum": ["Blocked"]}
+      }
+    },
+    "routes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controlled", "lite", "fallback"],
+      "properties": {
+        "controlled": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["task_classes", "ua_min", "risk_flags", "requested_actions", "when_delivery_action", "when_real_environment_required"],
+          "properties": {
+            "task_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["A", "B", "C", "D"]}},
+            "ua_min": {"type": "integer", "minimum": 0},
+            "risk_flags": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["architecture", "business_files_gt_3", "build_or_deploy_config", "core_execution_path", "core_writer_path", "data_migration", "delivery", "explicit_independent_review", "external_sync", "historical_p1", "irreversible_action", "parallel_writers", "public_api", "real_environment", "release", "security", "shared_component", "tests_do_not_cover_oracle"]}},
+            "requested_actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["acceptance_recommendation", "delivery", "merge", "release"]}},
+            "when_delivery_action": {"type": "boolean"},
+            "when_real_environment_required": {"type": "boolean"}
+          }
+        },
+        "lite": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["task_classes", "requires_action_authority", "requires_deterministic_coverage", "requires_user_observation", "disallowed_risk_flags"],
+          "properties": {
+            "task_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["A", "B", "C", "D"]}},
+            "requires_action_authority": {"enum": ["Allowed", "Denied", "Unknown"]},
+            "requires_deterministic_coverage": {"type": "boolean"},
+            "requires_user_observation": {"type": "boolean"},
+            "disallowed_risk_flags": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["architecture", "business_files_gt_3", "build_or_deploy_config", "core_execution_path", "core_writer_path", "data_migration", "delivery", "explicit_independent_review", "external_sync", "historical_p1", "irreversible_action", "parallel_writers", "public_api", "real_environment", "release", "security", "shared_component", "tests_do_not_cover_oracle"]}}
+          }
+        },
+        "fallback": {"enum": ["Tracked", "Controlled", "DoNotUseSkill"]}
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Lite", "Tracked", "Controlled", "missing_authority_or_capability"],
+      "properties": {
+        "Lite": {"enum": ["Skipped", "NotRequired"]},
+        "Tracked": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["trigger_risk_flags", "otherwise"],
+          "properties": {
+            "trigger_risk_flags": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["architecture", "business_files_gt_3", "build_or_deploy_config", "core_execution_path", "core_writer_path", "data_migration", "delivery", "explicit_independent_review", "external_sync", "historical_p1", "irreversible_action", "parallel_writers", "public_api", "real_environment", "release", "security", "shared_component", "tests_do_not_cover_oracle"]}},
+            "otherwise": {"enum": ["Skipped", "Required"]}
+          }
+        },
+        "Controlled": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "enforcement_points"],
+          "properties": {
+            "required": {"type": "boolean"},
+            "enforcement_points": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["acceptance_recommendation", "delivery", "merge", "release"]}}
+          }
+        },
+        "missing_authority_or_capability": {"enum": ["Blocked", "Pending"]}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_action_authority", "require_real_environment_evidence", "delivery_requires_controlled", "missing_required_evidence"],
+      "properties": {
+        "allowed_action_authority": {"enum": ["Allowed", "Denied", "Unknown"]},
+        "require_real_environment_evidence": {"type": "boolean"},
+        "delivery_requires_controlled": {"type": "boolean"},
+        "missing_required_evidence": {"enum": ["Blocked", "Pending"]}
+      }
+    }
+  }
+}

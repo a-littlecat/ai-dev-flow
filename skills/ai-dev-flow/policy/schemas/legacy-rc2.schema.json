@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-policy-schema-version": "ai-dev-flow/v0.8-policy-rc2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "unknown_input", "routes", "review", "safety", "repair"],
+  "properties": {
+    "schema_version": {"const": "ai-dev-flow/v0.8-policy-rc2"},
+    "unknown_input": {"enum": ["Blocked", "InspectAndResolve"]},
+    "routes": {"$ref": "core.schema.json#/properties/routes"},
+    "review": {"$ref": "core.schema.json#/properties/review"},
+    "safety": {"$ref": "core.schema.json#/properties/safety"},
+    "repair": {"$ref": "repair-campaign.schema.json#/properties/repair", "x-optional-required": ["campaign"]}
+  }
+}

@@ -1,12 +1,12 @@
 # ai-dev-flow v0.8 短提示词
 
-> 可选人工复制材料，不是 Skill 默认依赖。正常使用只需描述目标；agent 应读取 `SKILL.md + CORE.md` 自行路由。
+> 可选人工复制材料，不是 Skill 默认依赖。正常使用只需描述目标；agent 应读取 `SKILL.md + policy/core.json` 自行路由。
 
 ## 路由
 
 ```text
 请按 ai-dev-flow v0.8 先判断 DoNotUseSkill / Tracked / Controlled / Blocked。
-以 CORE.md 的 POLICY_JSON 为唯一路由依据，说明结论和关键证据；低风险结果为 DoNotUseSkill 时停止加载其余 Skill 文档。
+以 `policy/core.json` 为唯一路由依据，说明结论和关键证据；低风险结果为 DoNotUseSkill 时停止加载其余 Skill 文档。
 ```
 
 ## 创建 Tracked / Controlled TASK
@@ -35,7 +35,7 @@
 
 ```text
 请只修复以下稳定 finding ID：<粘贴 finding>。
-记录 repair_chain、连续 AR/ER + Review receipts 和外部 trusted context；不得通过换 TASK、模型或重写 ledger 清零。修复后运行指定验证并重新进入只读 Review；AutoRepair 基础 2 轮，第 3 轮只能由 CORE.md progress gate 授予。
+记录 repair_chain、连续 AR/ER + Review receipts 和外部 trusted context；不得通过换 TASK、模型或重写 ledger 清零。修复后运行指定验证并重新进入只读 Review；普通修复读取 `policy/repair-basic.json`，严格修复活动读取 `policy/repair-campaign.json`，额外轮次只能由适用 Policy 的 progress gate 授予。
 自主 loop Stop 后，等待用户裁决；用户明确授权时把 authority receipt 与真实对话/harness/项目证据绑定。只读 gate 的 MechanicallyEligible 需由 Orchestrator 提升为最终 Allowed；失败回 Stop，不要求用户必须亲自写代码。
 ```
 

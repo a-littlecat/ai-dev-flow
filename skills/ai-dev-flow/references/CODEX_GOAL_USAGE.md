@@ -76,7 +76,7 @@ Codex 原生 Goal 负责持续执行、预算、续跑和 `Active / Complete / B
 - 达到当前 repair campaign 的连续无进展阈值；
 - 用户撤销 Goal 或 authority。
 
-普通测试失败、范围内 Review finding、可归属的合并冲突、CI 重跑和基础 repair 轮次耗尽，不单独中断 `auto_land`；仍沿用 `CORE.md` 的 campaign 与独立 Review 规则。
+普通测试失败、范围内 Review finding、可归属的合并冲突、CI 重跑和基础 repair 轮次耗尽，不单独中断 `auto_land`；仍沿用 `policy/repair-campaign.json` 与 `policy/core.json` 的 campaign 和独立 Review 规则。
 
 ## 推荐启动语句
 

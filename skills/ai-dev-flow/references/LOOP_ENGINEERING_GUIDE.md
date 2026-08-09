@@ -62,8 +62,8 @@ execute_task -> validation -> review_task -> repair_task -> review_task -> accep
 用途：
 
 - 针对 Review 后的 Needs Fix。
-- `AutoRepair` 基础预算为 2 轮；仅 `CORE.md` progress gate 全部通过时允许第 3 轮，3 为自主 loop 上限。
-- `Stop` 后由用户裁决，可明确授权默认一次的 `EscalatedRepair`；授权失败后不得自动连跑。
+- `AutoRepair` 的基础预算与额外轮次以适用的 `policy/repair-basic.json` 或 `policy/repair-campaign.json` 为准；仅 progress gate 全部通过时允许额外轮次。
+- `Stop` 后由用户裁决，可明确授权由 authority receipt 绑定次数的 `EscalatedRepair`；授权失败后不得自动连跑。
 - P0/P1 必须修。
 - P2 可转后续任务。
 - P3 不阻塞。
@@ -90,23 +90,23 @@ execute_task -> validation -> review_task -> repair_task -> review_task -> accep
 - 验证无法判断。
 - diff 归属不清。
 - 工作区已有来源不明的未提交改动。
-- P0/P1 反复出现且两轮内无法修复。
+- P0/P1 反复出现且在适用 repair Policy 的基础预算内无法修复。
 - 需要用户决策。
 
 ## Loop 最大循环次数
 
 - `triage_loop`：默认 1 轮，只读。
 - `goal_loop`：默认 1 个任务闭环。
-- `review_repair_loop`：`AutoRepair` 基础 2 轮；严格进展时可有第 3 轮；其后自主 loop 停止。
+- `review_repair_loop`：基础与额外轮次读取适用 repair Policy；其后自主 loop 停止。
 - `status_loop`：默认 1 轮，只读。
 
-第 3 轮只由 `CORE.md` progress gate 自动授予并记录原因；更换 TASK 或模型不重置 repair chain。用户确认不能让自主 loop 自动突破上限，但可另行授予有界 `EscalatedRepair`，默认一次。
+额外轮次只由适用 repair Policy 的 progress gate 自动授予并记录原因；更换 TASK 或模型不重置 repair chain。用户确认不能让自主 loop 自动突破上限，但可另行授予有界 `EscalatedRepair`，具体次数以绑定的 authority receipt 为准。
 
 ## 用户裁决条件
 
 - 风险等级无法判断。
 - 需要合并、发布、删除、重构、依赖变更或架构决策。
-- 第 2 轮后 progress gate 不通过，或第 3 轮后仍有 P0/P1。
+- 基础预算耗尽后 progress gate 不通过，或 Policy 允许的额外轮次后仍有 P0/P1。
 - 验证环境无法由 agent 复现。
 - 用户动作等级为 UA7。
 

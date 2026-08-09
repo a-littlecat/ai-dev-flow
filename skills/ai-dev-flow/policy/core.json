@@ -1,0 +1,76 @@
+{
+  "schema_version": "adf/policy-core/v1",
+  "unknown_input": {
+    "discoverable": "InspectAndResolve",
+    "authority": "Blocked",
+    "external_evidence": "Blocked",
+    "rule_conflict": "Blocked",
+    "unresolved_final": "Blocked"
+  },
+  "routes": {
+    "controlled": {
+      "task_classes": ["D"],
+      "ua_min": 5,
+      "risk_flags": [
+        "architecture",
+        "data_migration",
+        "delivery",
+        "external_sync",
+        "irreversible_action",
+        "parallel_writers",
+        "real_environment",
+        "release",
+        "security"
+      ],
+      "requested_actions": ["acceptance_recommendation", "delivery", "merge", "release"],
+      "when_delivery_action": true,
+      "when_real_environment_required": true
+    },
+    "lite": {
+      "task_classes": ["A", "B"],
+      "requires_action_authority": "Allowed",
+      "requires_deterministic_coverage": true,
+      "requires_user_observation": false,
+      "disallowed_risk_flags": [
+        "business_files_gt_3",
+        "build_or_deploy_config",
+        "core_execution_path",
+        "core_writer_path",
+        "explicit_independent_review",
+        "historical_p1",
+        "public_api",
+        "shared_component",
+        "tests_do_not_cover_oracle"
+      ]
+    },
+    "fallback": "Tracked"
+  },
+  "review": {
+    "Lite": "Skipped",
+    "Tracked": {
+      "trigger_risk_flags": [
+        "business_files_gt_3",
+        "build_or_deploy_config",
+        "core_execution_path",
+        "core_writer_path",
+        "explicit_independent_review",
+        "historical_p1",
+        "public_api",
+        "shared_component",
+        "tests_do_not_cover_oracle"
+      ],
+      "otherwise": "Skipped"
+    },
+    "Controlled": {
+      "required": true,
+      "enforcement_points": ["acceptance_recommendation", "delivery", "merge", "release"]
+    },
+    "missing_authority_or_capability": "Blocked"
+  },
+  "safety": {
+    "allowed_action_authority": "Allowed",
+    "require_real_environment_evidence": true,
+    "delivery_requires_controlled": true,
+    "missing_required_evidence": "Blocked"
+  }
+}
