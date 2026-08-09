@@ -56,7 +56,7 @@
 - 绕过审查直接标记完成。
 - 用户 UA4 / UA5 / UA6 / UA7 验收失败后，agent 直接猜测修改业务代码。
 - 没有复现步骤、期望结果、实际结果或日志 / 证据时，继续扩大修复范围。
-- 第 2 轮后未通过 `CORE.md` progress gate 仍继续 `AutoRepair`，或自主 loop 突破第 3 轮上限。
+- 未通过适用 repair Policy 的 progress gate 仍继续额外 `AutoRepair`，或自主 loop 突破 Policy 轮次上限。
 - 把用户授权 `EscalatedRepair` 解释成无限重试、清零历史，或省略冻结基线/RED-GREEN/目标/独立复审。
 - 将用户实机验收失败直接等同于新需求并顺手实现。
 - 未经过验收失败反馈闸门就把任务从失败反馈直接标记为 Accepted 或 Closed。
@@ -102,7 +102,7 @@
 - 写代码 subagent 缺少任务编号、角色、模式、修改范围或验证方式。
 - 多个写代码 subagents 的工作区隔离、文件锁、模块锁或 diff 归属无法确认。
 - Loop 达到自主最大轮次但仍未满足停止条件：进入用户裁决，不得自动续跑。
-- Review-Repair Loop 第 2 轮后 progress gate 不通过，或第 3 轮后仍存在 P0/P1；如用户明确授权，可按冻结边界执行有限 `EscalatedRepair`。
+- Review-Repair Loop 基础预算耗尽后 progress gate 不通过，或 Policy 允许的额外轮次后仍存在 P0/P1；如用户明确授权，可按冻结边界执行次数受 authority receipt 约束的 `EscalatedRepair`。
 - 当前 harness 不支持所需能力，且无法安全降级。
 - Memory 候选内容包含敏感信息、本机路径或未确认事实。
 - GitHub Issue 映射涉及公开敏感信息。
