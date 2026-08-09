@@ -62,8 +62,8 @@
 - 本轮新隔离只读 Review session `019fe37b-1090-7241-80be-52c29ee4ab7` 审查 `31ad2f7..6e89697`，结论 `Passed 0/0/0/0`，无开放 finding。当前 `Review Passed / UA5 Pending user_only`；不授予 merge/release/正式 Skill 同步/Legacy Retire/Accepted/Closed。
 - `ADF-V010-EXT-R3-P1-001`（状态记录）：旧 TASK/Board 把 same-Harness 内部隔离 Review 写成 `External Repair Review Passed`，可能掩盖用户明确要求的跨 Harness 外部复审门禁。Kimi 定向 spot session `session_3deac4cb-3aaf-437c-8624-621f302f78bb` 报告 `0/0/0/1`，Grok 4.5 定向 spot session `019fe5df-6236-7093-bd06-825728d1af0f` 报告 `0/0/0/0`；两者均基于旧 head `1263f9a` 且未覆盖完整 stack/全部轮询实现，因此只作为诊断证据，不记为完整 External Review Passed。本次纯记录修正关闭错误措辞，不计 repair 轮次；新 head 外部复审仍 Pending。
 
-- Stacked update：普通 merge 吸收 #16 当前分支 head `869a8d3`，包含真实 In Progress `continue + needs_authority → active_work` 修复及双入口 preflight 集成。合并后 fresh 验证为 frontend codegen/typecheck/lint/build、Vitest `109/109`、隔离重跑 Playwright `109/109`、Skill `121/121`、Runtime bundle `43/43`；Codex bundled Python 3.12 full integration `52/53`，唯一失败仍为冻结 artifact guard 且 `baseline_preserved=true`。backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event。Kimi 当前 403 配额阻塞，故当前 head 外部复审保持 Pending。
-- Grok fresh 外部只读复审 session `019fe700-4986-7d00-a0b0-035a7455ac71` 绑定 implementation `3fbdf9d` 与 docs receipt head `3a8f137`，终局为 `Passed 0/0/0/0`；九项 closure matrix 全部 Closed，并明确 UA5 Pending。Kimi 对同一范围再次返回计费周期额度耗尽 403，未形成终局 receipt，不能计通过；整体 External Re-review 因此仍 Pending。
+- Stacked update：普通 merge 吸收 #16 implementation，包含真实 In Progress `continue + needs_authority → active_work` 修复及双入口 preflight 集成。合并后 fresh 验证为 frontend codegen/typecheck/lint/build、Vitest `109/109`、隔离重跑 Playwright `109/109`、Skill `121/121`、Runtime bundle `43/43`；Codex bundled Python 3.12 full integration `52/53`，唯一失败仍为冻结 artifact guard 且 `baseline_preserved=true`。backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event。
+- Grok fresh 外部只读复审 session `019fe700-4986-7d00-a0b0-035a7455ac71` 绑定 implementation `3fbdf9d` 与 docs receipt head `3a8f137`，终局为 `Passed 0/0/0/0`；九项 closure matrix 全部 Closed，并明确 UA5 Pending。用户现已取消 Kimi 当前复审要求，改由 GPT Pro 作为第二外部 Reviewer；GPT Pro 必须绑定治理更新后的冻结远端完整 head，固定版本确认失败不计 Review。
 
 ## Outcome
 
@@ -72,8 +72,8 @@
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
 - 验证证据：backend `204 passed / 2 skipped / 1 known baseline failed`，唯一失败为 Windows non-recursive native event 基线；Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。
-- Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Grok fresh 外部 session `019fe700-4986-7d00-a0b0-035a7455ac71` 为 `Passed 0/0/0/0`；Kimi quota blocked、无当前 head 终局 receipt，故整体外部复审仍 Pending。
+- Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Grok fresh 外部 session `019fe700-4986-7d00-a0b0-035a7455ac71` 为 `Passed 0/0/0/0`；GPT Pro 尚无绑定最终冻结 head 的终局 receipt，故整体外部复审仍 Pending。
 - Delivery：本轮 current implementation head=`3fbdf9d`，branch `codex/v010-project-console-fe` 已推送且远端对齐；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。当前外部复审尚未形成完整双 Harness receipt，不称 reviewed head。
-- 状态边界：Grok External Re-review Passed / Kimi Re-review Blocked by Quota / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- 状态边界：Grok External Re-review Passed / GPT Pro Re-review Pending / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
-- 下一步：先对更新后的 #14-#17 分别完成跨 Harness 外部只读复审；无开放 P0/P1 后才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。
+- 下一步：由 GPT Pro 对 #16/#17 最终冻结远端完整 head 完成外部只读复审；与既有 Grok Passed 共同满足门禁后，才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。
