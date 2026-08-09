@@ -188,6 +188,58 @@ class ActionEngineTests(unittest.TestCase):
                 )
                 self.assertEqual(expected, actual)
 
+    def test_v010_not_required_not_run_can_reach_user_decision(self):
+        item = self.recommendation(
+            task(
+                "TASK",
+                lifecycle="Review",
+                contract_schema_version="adf/v0.10.0",
+                review_requirement="Not Required",
+                review_state="Not Run",
+                review_status="Pending",
+                ua_status="Pending",
+            )
+        )[0]
+        self.assertEqual("user_decision", item.action_kind)
+        self.assertEqual("USER_DECISION_PENDING", item.reason_codes[0])
+
+    def test_v010_required_not_run_still_requires_review(self):
+        item = self.recommendation(
+            task(
+                "TASK",
+                lifecycle="Review",
+                contract_schema_version="adf/v0.10.0",
+                review_requirement="Required",
+                review_state="Not Run",
+                review_status="Pending",
+            )
+        )[0]
+        self.assertEqual("review", item.action_kind)
+        self.assertEqual("REVIEW_AUTHORITY_UNSUPPORTED", item.reason_codes[0])
+
+    def test_review_regression_diagnostic_blocks_not_required_acceptance_action(self):
+        diagnostic = Diagnostic(
+            "f" * 64,
+            "V_REVIEW_REGRESSION",
+            "violation",
+            "review cannot return to Not Run",
+            ("TASK",),
+            (provenance("review_status", "Not Run"),),
+        )
+        item = self.recommendation(
+            task(
+                "TASK",
+                lifecycle="Review",
+                contract_schema_version="adf/v0.10.0",
+                review_requirement="Not Required",
+                review_state="Not Run",
+                review_status="Pending",
+            ),
+            (diagnostic,),
+        )[0]
+        self.assertEqual("none", item.action_kind)
+        self.assertEqual("CONTRACT_STATE_INVALID", item.reason_codes[0])
+
     def test_merged_returns_independent_release_and_close_recommendations(self):
         node = task(
             "TASK",

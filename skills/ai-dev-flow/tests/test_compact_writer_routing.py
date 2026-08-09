@@ -41,14 +41,14 @@ class V08SlimRuntimeTests(unittest.TestCase):
             ROOT / "README.md",
             ROOT / "README.en.md",
             SKILL_ROOT / "README.md",
-            REFERENCES / "TASK_TEMPLATE.md",
             REFERENCES / "V0.8_MIGRATION.md",
         ):
             with self.subTest(path=path.name):
                 text = read(path)
                 self.assertIn("0.9.2", text)
                 self.assertIn("adf/v0.7.0", text)
-        self.assertNotIn("adf/v0.8.0", read(REFERENCES / "TASK_TEMPLATE.md"))
+        self.assertIn("adf/v0.10.0", read(REFERENCES / "TASK_TEMPLATE.md"))
+        self.assertIn("adf/v0.10.0", read(REFERENCES / "TASK_TEMPLATE_BRIEF.md"))
 
     def test_public_lint_examples_use_supported_arguments(self):
         for path in (ROOT / "README.md", ROOT / "README.en.md", SKILL_ROOT / "README.md"):
@@ -215,35 +215,56 @@ class V08SlimRuntimeTests(unittest.TestCase):
         steps = re.findall(r"^[1-3]\. ", migration, flags=re.MULTILINE)
         self.assertEqual(len(steps), 3)
 
-    def test_task_template_uses_only_v07_contract_enums(self):
+    def test_full_task_template_uses_v010_review_contract(self):
         template = read(REFERENCES / "TASK_TEMPLATE.md")
         expected = (
             "<document|plan|code|review|repair|test>",
-            "<Pending|In Review|Passed|Needs Fix|Do Not Merge>",
+            "<Required|Not Required>",
+            "<Not Run|In Review|Passed|Needs Fix|Blocked>",
             "<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>",
             "<Not Required|Pending|Passed|Failed|Deferred|TBD>",
             "<Not Applicable|Unmerged|Merged|Deferred>",
         )
         for value in expected:
             self.assertIn(value, template)
-        self.assertIn("`Skipped by policy` 不等于 `Passed`", template)
-        self.assertIn("`review_status` 保持 `Pending`", template)
+        self.assertIn("`Not Required + Not Run` 不等于 `Passed`", template)
+        self.assertIn("Strict campaign", template)
+        self.assertIn("`REPAIR_CAMPAIGN.md`", template)
+        self.assertNotIn("receipt_chain", template)
 
-    def test_brief_template_is_tracked_only_and_v07_compatible(self):
+    def test_v010_schema_binds_visible_controlled_inputs_to_required_review(self):
+        schema = json.loads(read(SKILL_ROOT / "schemas" / "workflow-contract.schema.json"))
+        guards = [
+            item
+            for item in schema["allOf"]
+            if item.get("then", {}).get("properties", {}).get(
+                "review_requirement"
+            ) == {"const": "Required"}
+        ]
+        self.assertEqual(1, len(guards))
+        serialized = json.dumps(guards[0], ensure_ascii=False)
+        for value in ("D", "UA5", "UA6", "UA7", "real_env_signal"):
+            with self.subTest(value=value):
+                self.assertIn(value, serialized)
+
+    def test_brief_template_is_shape_routed_and_v010_compatible(self):
         template = read(REFERENCES / "TASK_TEMPLATE_BRIEF.md")
         for value in (
-            "adf/v0.7.0",
+            "adf/v0.10.0",
             "<document|plan|code|review|repair|test>",
             "<A|B|C>",
-            "<Pending|In Review|Passed|Needs Fix|Do Not Merge>",
+            "<Required|Not Required>",
+            "<Not Run|In Review|Passed|Needs Fix|Blocked>",
             "<UA0|UA1|UA2|UA3|UA4|UA5|UA6|UA7|TBD>",
             "<Not Required|Pending|Passed|Failed|Deferred|TBD>",
-            "`review_status` 保持 `Pending`",
+            "`Not Required + Not Run`",
         ):
             with self.subTest(value=value):
                 self.assertIn(value, template)
-        self.assertIn("全部 Controlled 任务一律使用 `TASK_TEMPLATE.md`", template)
-        self.assertIn("跨会话需求时，升级回完整模板", template)
+        self.assertIn("非 Controlled", template)
+        self.assertIn("模型名称", template)
+        self.assertIn("进入 Repair", template)
+        self.assertIn("升级为 `TASK_TEMPLATE.md`", template)
 
     def test_active_documents_are_materially_smaller_than_v07(self):
         frozen_v07_lines = {

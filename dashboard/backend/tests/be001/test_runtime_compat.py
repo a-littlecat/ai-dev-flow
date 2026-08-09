@@ -107,7 +107,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 (root / "scripts" / name).write_text("", encoding="utf-8")
             (root / "VERSION").write_text("1.0.0\n", encoding="utf-8")
             (root / "schemas" / "workflow-contract.schema.json").write_text(
-                json.dumps({"properties": {"schema_version": {"const": "adf/v0.7.0"}}}),
+                json.dumps({"properties": {"schema_version": {"enum": ["adf/v0.7.0", "adf/v0.10.0"]}}}),
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(
@@ -125,6 +125,14 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 "unsupported Workflow Contract schema",
             ):
                 validate_skill_runtime(root)
+
+    def test_runtime_exposes_current_and_compatible_workflow_schemas(self):
+        runtime = validate_skill_runtime(SKILL_ROOT)
+        self.assertEqual("adf/v0.10.0", runtime.workflow_schema)
+        self.assertEqual(
+            ("adf/v0.7.0", "adf/v0.10.0"),
+            runtime.workflow_schemas,
+        )
 
     def test_project_schema_preflight_checks_explicit_versions_and_legacy_unknowns(self):
         runtime = validate_skill_runtime(SKILL_ROOT)
@@ -211,6 +219,13 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 "- `schema_version`: `adf/v0.7.0`\n\n"
                 "## Scheduling\n\n"
                 "- `priority`: `high`\n",
+                encoding="utf-8",
+                newline="\n",
+            )
+            validate_project_schemas(Path(directory), runtime)
+            path.write_text(
+                "## Workflow Contract\n\n"
+                "- `schema_version`: `adf/v0.10.0`\n",
                 encoding="utf-8",
                 newline="\n",
             )

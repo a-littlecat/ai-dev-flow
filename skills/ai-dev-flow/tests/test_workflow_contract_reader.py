@@ -56,6 +56,35 @@ class WorkflowContractReaderTests(unittest.TestCase):
             with self.assertRaises((AttributeError, TypeError)):
                 report.normalized[0] = ("task_id", "changed")
 
+    def test_v07_review_is_mapped_without_migrating_source(self):
+        source = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        source = source.replace("`Passed`", "`Pending`", 1)
+        report = self.reader.inspect_text(source, pathlib.Path("FIX-V07.md"), validate_filename=False)
+        self.assertEqual("adf/v0.7.0", report.get("schema_version"))
+        self.assertEqual("Legacy Unspecified", report.get("review_requirement"))
+        self.assertEqual("Not Run", report.get("review_status"))
+        self.assertNotIn("review_requirement", source)
+
+    def test_v010_requires_explicit_review_contract_and_normalizes_directly(self):
+        source = (FIXTURES / "valid" / "task-a-document.md").read_text(encoding="utf-8")
+        source = source.replace("adf/v0.7.0", "adf/v0.10.0")
+        source = source.replace(
+            "- `review_status`: `Passed`",
+            "- `review_requirement`: `Not Required`\n- `review_status`: `Not Run`",
+        )
+        report = self.reader.inspect_text(source, pathlib.Path("FIX-V010.md"), validate_filename=False)
+        self.assertEqual([], [item.code for item in report.diagnostics])
+        self.assertEqual("Not Required", report.get("review_requirement"))
+        self.assertEqual("Not Run", report.get("review_status"))
+
+        missing = source.replace("- `review_requirement`: `Not Required`\n", "")
+        invalid = self.reader.inspect_text(missing, pathlib.Path("FIX-V010-MISSING.md"), validate_filename=False)
+        self.assertIn("E_PARSE", [item.code for item in invalid.diagnostics])
+
+        old_status = source.replace("`Not Run`", "`Pending`")
+        invalid = self.reader.inspect_text(old_status, pathlib.Path("FIX-V010-OLD.md"), validate_filename=False)
+        self.assertIn("E_UNKNOWN_VALUE", [item.code for item in invalid.diagnostics])
+
     def test_reader_level_projection_metadata_and_sections(self):
         _, path = self.reader_fixture("FIX-VALID-A")
         report = self.reader.inspect_task(path, validate_filename=False)
@@ -116,6 +145,7 @@ class WorkflowContractReaderTests(unittest.TestCase):
             path.write_text(text, encoding="utf-8")
             report = self.reader.inspect_task(path)
             self.assertEqual(report.get("review_status"), "Passed")
+            self.assertEqual(report.get("review_requirement"), "Legacy Unspecified")
             review_sources = [p for p in report.provenance if p.field == "review_status"]
             self.assertEqual(len(review_sources), 2)
             self.assertEqual([d.code for d in report.diagnostics], ["W_LEGACY_INFERRED"])

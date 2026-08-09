@@ -3,7 +3,7 @@
   "x-policy-schema-version": "adf/policy-core/v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "unknown_input", "routes", "review", "safety"],
+  "required": ["schema_version", "unknown_input", "routes", "review", "independent_review", "safety"],
   "properties": {
     "schema_version": {"const": "adf/policy-core/v1"},
     "unknown_input": {
@@ -76,6 +76,24 @@
           }
         },
         "missing_authority_or_capability": {"enum": ["Blocked", "Pending"]}
+      }
+    },
+    "independent_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context_isolation", "frozen_diff_input", "stable_finding_ids", "write_isolation"],
+      "properties": {
+        "context_isolation": {"const": "required"},
+        "frozen_diff_input": {"const": "required"},
+        "stable_finding_ids": {"const": "required"},
+        "write_isolation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["one_of"],
+          "properties": {
+            "one_of": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["native_read_only", "sandbox_read_only", "readonly_copy"]}}
+          }
+        }
       }
     },
     "safety": {

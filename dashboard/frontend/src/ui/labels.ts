@@ -24,6 +24,20 @@ export const REVIEW_LABEL: Record<string, string> = {
   "Do Not Merge": "禁止合并",
 };
 
+export const REVIEW_REQUIREMENT_LABEL: Record<string, string> = {
+  "Legacy Unspecified": "旧合同未声明（沿用强制门禁）",
+  Required: "必须独立评审",
+  "Not Required": "不强制评审",
+};
+
+export const REVIEW_STATE_LABEL: Record<string, string> = {
+  "Not Run": "未运行",
+  "In Review": "评审中",
+  Passed: "评审通过",
+  "Needs Fix": "需修复",
+  Blocked: "已阻塞",
+};
+
 export const UA_STATUS_LABEL: Record<string, string> = {
   "Not Required": "无需验收",
   Pending: "待用户验收",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -82,6 +83,363 @@ class ContractGatewayIntegrationTests(unittest.TestCase):
                 report = gateway.inspect(frozen)
             self.assertEqual(["TEST-001"], [item.task_id for item in report.contracts])
             self.assertFalse((root / "skills").exists())
+
+    def test_dashboard_normalizes_v010_review_state_without_breaking_v1_wire(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            (task_dir / "TEST-010.md").write_text(
+                "\n".join(
+                    (
+                        "# TEST-010：v0.10",
+                        "",
+                        "## Workflow Contract",
+                        "",
+                        "- `schema_version`: `adf/v0.10.0`",
+                        "- `task_id`: `TEST-010`",
+                        "- `task_type`: `document`",
+                        "- `task_class`: `B`",
+                        "- `lifecycle`: `Review`",
+                        "- `review_requirement`: `Not Required`",
+                        "- `review_status`: `Not Run`",
+                        "- `ua_level`: `UA3`",
+                        "- `ua_status`: `Pending`",
+                        "- `commit_status`: `Uncommitted`",
+                        "- `merge_status`: `Unmerged`",
+                        "",
+                        "## 目标与边界",
+                        "",
+                        "- 目标：验证 v0.10 Dashboard 兼容投影",
+                        "- 非目标：不验证发布流程",
+                        "- 允许修改：none",
+                        "- 禁止修改：none",
+                        "",
+                        "## 完成标准与验证",
+                        "",
+                        "- 完成标准：内部 Review 状态与 v1 wire 同时正确",
+                        "- 验证命令或检查：DashboardCore deterministic inspection",
+                        "",
+                        "## Outcome",
+                        "",
+                        "- Base / Diff：base=abc;diff=def",
+                        "- 修改文件：none",
+                        "- 验证证据：deterministic fixture",
+                        "- Review findings：none",
+                        "",
+                    )
+                ),
+                encoding="utf-8",
+                newline="\n",
+            )
+            result = DashboardCore(
+                root,
+                skill_root=REPO_ROOT / "skills" / "ai-dev-flow",
+            ).inspect()
+            node = result.tasks[0]
+            self.assertEqual("adf/v0.10.0", node.contract_schema_version)
+            self.assertEqual("Not Required", node.review_requirement)
+            self.assertEqual("Not Run", node.review_state)
+            self.assertEqual("Pending", node.review_status)
+            self.assertEqual(
+                "user_decision",
+                result.actions[0].action_kind,
+                (result.actions[0], result.diagnostics),
+            )
+
+    def test_dashboard_blocks_three_step_review_history_regression(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            path = task_dir / "TEST-HISTORY.md"
+            base = """# TEST-HISTORY：review history
+
+## Workflow Contract
+
+- `schema_version`: `adf/v0.10.0`
+- `task_id`: `TEST-HISTORY`
+- `task_type`: `document`
+- `task_class`: `B`
+- `lifecycle`: `Review`
+- `review_requirement`: `Not Required`
+- `review_status`: `In Review`
+- `ua_level`: `UA0`
+- `ua_status`: `Not Required`
+- `acceptance_authority`: `User Confirmed`
+- `commit_status`: `Uncommitted`
+- `merge_status`: `Unmerged`
+
+## 目标与边界
+
+- 目标：history guard
+- 非目标：none
+- 允许修改：none
+- 禁止修改：none
+
+## 完成标准与验证
+
+- 完成标准：guard remains active
+- 验证命令或检查：DashboardCore
+
+## Outcome
+
+- Base / Diff：base=abc;diff=def
+- 修改文件：none
+- 验证证据：first
+- Review findings：none
+"""
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+            path.write_text(base, encoding="utf-8", newline="\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = base.replace("`Review`", "`Accepted`").replace(
+                "`In Review`",
+                "`Not Run`",
+            )
+            path.write_text(hidden, encoding="utf-8", newline="\n")
+            subprocess.run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            path.write_text(
+                hidden.replace("- 验证证据：first", "- 验证证据：ordinary edit"),
+                encoding="utf-8",
+                newline="\n",
+            )
+            subprocess.run(
+                ["git", "commit", "-am", "ordinary edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            result = DashboardCore(
+                root,
+                skill_root=REPO_ROOT / "skills" / "ai-dev-flow",
+            ).inspect()
+        self.assertIn(
+            "V_REVIEW_REGRESSION",
+            {item.code for item in result.diagnostics},
+        )
+        self.assertEqual("none", result.actions[0].action_kind)
+        self.assertEqual("CONTRACT_STATE_INVALID", result.actions[0].reason_codes[0])
+
+    def test_dashboard_blocks_review_history_hidden_by_task_rename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            old_path = task_dir / "TEST-HISTORY-OLD.md"
+            new_path = task_dir / "TEST-HISTORY-RENAMED.md"
+            base = """# TEST-HISTORY-OLD：review history
+
+## Workflow Contract
+
+- `schema_version`: `adf/v0.10.0`
+- `task_id`: `TEST-HISTORY-OLD`
+- `task_type`: `document`
+- `task_class`: `B`
+- `lifecycle`: `Review`
+- `review_requirement`: `Not Required`
+- `review_status`: `In Review`
+- `ua_level`: `UA0`
+- `ua_status`: `Not Required`
+- `acceptance_authority`: `User Confirmed`
+- `commit_status`: `Uncommitted`
+- `merge_status`: `Unmerged`
+
+## 目标与边界
+
+- 目标：history guard
+- 非目标：none
+- 允许修改：none
+- 禁止修改：none
+
+## 完成标准与验证
+
+- 完成标准：guard remains active
+- 验证命令或检查：DashboardCore
+
+## Outcome
+
+- Base / Diff：base=abc;diff=def
+- 修改文件：none
+- 验证证据：first
+- Review findings：none
+"""
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+            old_path.write_text(base, encoding="utf-8", newline="\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = base.replace("`Review`", "`Accepted`").replace(
+                "`In Review`", "`Not Run`"
+            )
+            old_path.write_text(hidden, encoding="utf-8", newline="\n")
+            subprocess.run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "mv", old_path.relative_to(root), new_path.relative_to(root)],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = hidden.replace("TEST-HISTORY-OLD", "TEST-HISTORY-RENAMED")
+            new_path.write_text(hidden, encoding="utf-8", newline="\n")
+            subprocess.run(
+                ["git", "commit", "-am", "rename task"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            new_path.write_text(
+                hidden.replace("- 验证证据：first", "- 验证证据：ordinary edit"),
+                encoding="utf-8",
+                newline="\n",
+            )
+            subprocess.run(
+                ["git", "commit", "-am", "ordinary edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            result = DashboardCore(
+                root,
+                skill_root=REPO_ROOT / "skills" / "ai-dev-flow",
+            ).inspect()
+        self.assertIn(
+            "V_REVIEW_HISTORY_AMBIGUOUS",
+            {item.code for item in result.diagnostics},
+        )
+        self.assertEqual("none", result.actions[0].action_kind)
+        self.assertEqual("CONTRACT_STATE_INVALID", result.actions[0].reason_codes[0])
+
+    def test_dashboard_blocks_review_history_hidden_by_unchanged_source_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_dir = root / "docs" / "tasks"
+            task_dir.mkdir(parents=True)
+            old_path = task_dir / "TEST-COPY-OLD.md"
+            new_path = task_dir / "TEST-COPY-NEW.md"
+            base = """# TEST-COPY-OLD：review history
+
+## Workflow Contract
+
+- `schema_version`: `adf/v0.10.0`
+- `task_id`: `TEST-COPY-OLD`
+- `task_type`: `document`
+- `task_class`: `B`
+- `lifecycle`: `Review`
+- `review_requirement`: `Not Required`
+- `review_status`: `In Review`
+- `ua_level`: `UA0`
+- `ua_status`: `Not Required`
+- `acceptance_authority`: `User Confirmed`
+- `commit_status`: `Uncommitted`
+- `merge_status`: `Unmerged`
+
+## 目标与边界
+
+- 目标：copy history guard
+- 非目标：none
+- 允许修改：none
+- 禁止修改：none
+
+## 完成标准与验证
+
+- 完成标准：guard remains active
+- 验证命令或检查：DashboardCore
+
+## Outcome
+
+- Base / Diff：base=abc;diff=def
+- 修改文件：none
+- 验证证据：first
+- Review findings：none
+"""
+            for command in (
+                ["git", "init"],
+                ["git", "config", "user.email", "test@example.invalid"],
+                ["git", "config", "user.name", "Test"],
+            ):
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+            old_path.write_text(base, encoding="utf-8", newline="\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "review started"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            hidden = base.replace("`Review`", "`Accepted`").replace(
+                "`In Review`", "`Not Run`"
+            )
+            old_path.write_text(hidden, encoding="utf-8", newline="\n")
+            subprocess.run(
+                ["git", "commit", "-am", "hide review"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            new_path.write_text(old_path.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "copy unchanged task"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            copied = hidden.replace("TEST-COPY-OLD", "TEST-COPY-NEW").replace(
+                "- 验证证据：first", "- 验证证据：ordinary edit"
+            )
+            new_path.write_text(copied, encoding="utf-8", newline="\n")
+            subprocess.run(
+                ["git", "commit", "-am", "ordinary copied task edit"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            result = DashboardCore(
+                root,
+                skill_root=REPO_ROOT / "skills" / "ai-dev-flow",
+            ).inspect()
+        copied_task = next(task for task in result.tasks if task.task_id == "TEST-COPY-NEW")
+        copied_action = next(action for action in result.actions if action.task_id == copied_task.task_id)
+        self.assertIn(
+            "V_REVIEW_HISTORY_AMBIGUOUS",
+            {
+                item.code
+                for item in result.diagnostics
+                if copied_task.task_id in item.task_ids
+            },
+        )
+        self.assertEqual("none", copied_action.action_kind)
+        self.assertEqual("CONTRACT_STATE_INVALID", copied_action.reason_codes[0])
 
     def test_gateway_source_does_not_import_private_reader(self):
         source = (
