@@ -333,9 +333,40 @@ class PolicyLoaderTests(unittest.TestCase):
                 policy_loader.SCHEMA_REGISTRY = registry
                 with self.assertRaisesRegex(policy_loader.PolicyLoadError, "cyclic schema reference"):
                     policy_loader.validate_policy_value({"schema_version": "test/first", "loop": {}})
+
+                first.write_text(json.dumps({
+                    "x-policy-schema-version": "test/first",
+                    "type": "object",
+                    "required": ["schema_version", "loop"],
+                    "properties": {
+                        "schema_version": {"const": "test/first"},
+                        "loop": {
+                            "type": "array",
+                            "contains": {"$ref": "second.json#/properties/loop"},
+                        },
+                    },
+                    "additionalProperties": False,
+                }), encoding="utf-8")
+                second.write_text(json.dumps({
+                    "x-policy-schema-version": "test/second",
+                    "type": "object",
+                    "properties": {
+                        "loop": {"$ref": "second.json#/properties/loop"},
+                    },
+                }), encoding="utf-8")
+                with self.assertRaisesRegex(policy_loader.PolicySchemaError, "cyclic schema reference"):
+                    policy_loader.validate_policy_value({"schema_version": "test/first", "loop": ["item"]})
         finally:
             policy_loader.SCHEMA_ROOT = original_root
             policy_loader.SCHEMA_REGISTRY = original_registry
+
+    def test_contains_does_not_mask_schema_definition_errors(self):
+        schema = {
+            "type": "array",
+            "contains": {"unsafeCustomKeyword": True},
+        }
+        with self.assertRaisesRegex(policy_loader.PolicySchemaError, "unknown schema keywords"):
+            policy_loader._validate_schema(["item"], schema)
 
 
 if __name__ == "__main__":

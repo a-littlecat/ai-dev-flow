@@ -56,7 +56,7 @@
 - 绕过审查直接标记完成。
 - 用户 UA4 / UA5 / UA6 / UA7 验收失败后，agent 直接猜测修改业务代码。
 - 没有复现步骤、期望结果、实际结果或日志 / 证据时，继续扩大修复范围。
-- 第 2 轮后未通过 `CORE.md` progress gate 仍继续 `AutoRepair`，或自主 loop 突破第 3 轮上限。
+- 未通过适用 repair Policy 的 progress gate 仍继续额外 `AutoRepair`，或自主 loop 突破 Policy 轮次上限。
 - 把用户授权 `EscalatedRepair` 解释成无限重试、清零历史，或省略冻结基线/RED-GREEN/目标/独立复审。
 - 将用户实机验收失败直接等同于新需求并顺手实现。
 - 未经过验收失败反馈闸门就把任务从失败反馈直接标记为 Accepted 或 Closed。

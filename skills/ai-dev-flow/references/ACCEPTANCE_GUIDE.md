@@ -212,7 +212,7 @@
 修复限制：
 
 - 一轮 repair 只计冻结 finding 的 patch 到下一次独立复审；诊断、复审、无 patch UA、原样重跑测试、TASK/看板同步和记录纠错不计。
-- `AutoRepair` 基础预算为 2 轮；只有 `CORE.md` 的逐 finding progress gate 全部通过时才允许第 3 轮，3 为自主 loop 上限。
+- `AutoRepair` 的基础预算与额外轮次以适用的 `policy/repair-basic.json` 或 `policy/repair-campaign.json` 为准；只有逐 finding progress gate 全部通过时才允许额外轮次。
 - 每轮 repair 前必须说明本轮假设、证据、拟修改文件和验证方式。
 - 每轮 repair 后必须重新进入 `review_task`。
 - 两轮后 progress gate 不通过时必须 `Stop` 并进入用户裁决，不得继续猜测修改。用户可选择补证据、缩小范围、人工实现，或明确授权默认一次的有界 `EscalatedRepair`。

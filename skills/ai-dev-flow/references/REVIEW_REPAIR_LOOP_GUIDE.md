@@ -29,7 +29,7 @@
 ## 基本规则
 
 - 一轮 repair 只计“冻结 finding 的 patch 到下一次独立复审”；只读 Review、无 patch UA、诊断、测试重跑、收据同步和记录纠错不计。
-- `AutoRepair` 基础预算为 2 轮；只有 `CORE.md` progress gate 全部通过时才允许第 3 轮，3 为自主 loop 上限。
+- `AutoRepair` 的基础预算与额外轮次以适用的 `policy/repair-basic.json` 或 `policy/repair-campaign.json` 为准；只有 progress gate 全部通过时才允许额外轮次。
 - 达到 `Stop` 后进入用户裁决；用户可授权默认一次的 `EscalatedRepair`，或授权 TASK/验收合同/外层 scope-bound 的 `RepairCampaignAuthority`。
 - campaign 在核心产品连续 4 次、Harness 连续 5 次无实质进展后再回到用户裁决；P0、安全、数据、越界、不可逆、外部副作用或放宽 oracle 等硬停止立即生效。
 - 同一 finding / closure contract 继承 `repair_chain_id` 和计数；换 TASK 或模型不重置。
