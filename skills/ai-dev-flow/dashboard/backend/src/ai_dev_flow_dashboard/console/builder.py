@@ -102,7 +102,7 @@ class ConsoleBuilder:
                 queues["ready_queue"].append(
                     self._item(task, actions, None, "ready_queue", reason_codes, unblocks[task_id])
                 )
-            elif "user_decision" in action_kinds or "needs_authority" in eligibilities:
+            elif "user_decision" in action_kinds:
                 queues["human_attention"].append(
                     self._item(task, actions, None, "human_attention", reason_codes, unblocks[task_id])
                 )
@@ -116,6 +116,10 @@ class ConsoleBuilder:
                         ("TASK_IN_PROGRESS_WITHOUT_LIVE_SESSION",),
                         unblocks[task_id],
                     )
+                )
+            elif "needs_authority" in eligibilities:
+                queues["human_attention"].append(
+                    self._item(task, actions, None, "human_attention", reason_codes, unblocks[task_id])
                 )
 
         queues["human_attention"].sort(key=self._human_key)

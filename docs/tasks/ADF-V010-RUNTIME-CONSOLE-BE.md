@@ -7,7 +7,7 @@
 - `task_type`: `code`
 - `task_class`: `D`
 - `lifecycle`: `Review`
-- `review_status`: `Passed`
+- `review_status`: `Pending`
 - `ua_level`: `UA3`
 - `ua_status`: `Pending`
 - `commit_status`: `Committed`
@@ -56,6 +56,8 @@
 - `ADF-V010-EXT-R2-P1-002`：新增按需 `RUNTIME_SESSION_USAGE.md`、显式 heartbeat CLI、结构化 command bridge 与五个 Hook；Codex session `019fe35f-012a-7460-af50-493f3b3f646a` 与 Kimi Code session `session_9844ef5a-b477-450a-a622-3a597815aac5` 均亲自执行 9 条命令，实际观测 `active_work → active_work → human_attention → ended`。OpenCode 在命令执行前因本机 CodingPlan 过期 exit 1，不记为通过证据。
 - 本轮 P2：`adf.py` 与 `dashboard.py` 共用同一 Runtime Bundle manifest/SHA256 预检，缺 manifest 与篡改 runtime 均在 import/写 Runtime 前 exit 2；Ready 文案收敛为“可以作为下一项开始 / 尚未授权自动执行 / 开始执行任务”；`source_kinds` 只保留实际参与当前卡片的 TASK/Git/Runtime。历史 Passed 收据未被用于本轮 diff。
 - 本轮新隔离只读 Review：首次进程 184 秒超时无结论，不计通过；重跑 session `019fe369-bbb2-7de3-b9f9-724dfe22ea6f` 在 `sandbox=read-only` 中审查 base `626e65d` 到当前完整 diff，结论 `Passed 0/0/0/0`。当前状态改为 `Review Passed / UA3 Pending`；Review 不授予 merge/release/同步/Accepted/Closed。
+- `ADF-V010-EXT-R3-P1-001`：Grok 外部只读复审 session `019fe6d7-ffa2-7272-92a8-e24ee5779860` 发现真实 `ActionEngine` 对无 live session 的 In Progress 任务返回 `continue + needs_authority`，旧 Builder 在 lifecycle 分支前按通用 `needs_authority` 错送 `human_attention`。修复为显式 `user_decision` 仍优先进入人工注意、In Progress 无 session 进入 `active_work`，其余缺 authority 再进入 `human_attention`；回归直接使用真实 ActionEngine 并断言 `continue + needs_authority / active_work=1 / human_attention=0`。
+- 同轮 P2/P3：原空 actions 的 In Progress 断言已替换为真实 ActionEngine 链路；portable preflight 集成现同时参数化 `adf.py` 与 `dashboard.py`，两入口的 missing manifest 与 tampered runtime 均在创建 Runtime 前 exit 2。修复后 fresh Console Builder `12/12`、portable runtime `4/4`、Skill `121/121`、bundle `43/43`、target lint `0/0/0` 通过；backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event 用例。当前等待 Kimi/Grok 对新提交复审，不沿用旧 Passed 收据。
 
 - Attempt AR-1：独立只读 Review Round 1 为 `Needs Fix 0/5/0/0`；Reviewer 进程未向 Harness 暴露可引用 session id，收据标记为 `harness-not-exposed`。
 - RED：目录在检查前可经 symlink/Junction 逃逸；未来时间戳可长期保持 live；并发 start 存在覆盖窗口；Queue Engine 会压缩同任务多动作并使用非正式 eligibility；规范 Skill Runtime 尚未包含 Stage 3 后端与合同。
@@ -77,6 +79,6 @@
 - 验证证据：外部修复 fresh be003 `21/21`（skip 2）、backend `204/204`（skip 2）、Skill `119/119`、Runtime bundle `43/43`、codegen check 与 `git diff --check` 已通过；frontend 与 integration 待在上层 UI 合并后执行完整验证。完整 integration 已知边界为 `51/52`，唯一 artifact guard 失败不得误报为全绿。
 - Review findings：历史 Round 1 `Needs Fix 0/5/0/0`；Round 2 session `019fe16a-c367-7173-8584-504ea776483b` 为 `Needs Fix 0/1/2/0`；Round 3 session `019fe173-997c-7ea1-af34-37c61d437857` 为 `Passed 0/0/0/0`。本轮 findings 修复后的 same-Harness 内部隔离 Review sessions 均为 `Passed`；跨 Harness 外部复审仍 Pending。
 - Delivery：本轮 reviewed implementation=`8944a84`；branch `codex/v010-runtime-console-be`；Draft PR [#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)，base=`codex/v010-capability-review`。
-- 状态边界：Internal Isolated Repair Review Passed / External Re-review Pending / UA3 Pending / Reviewed implementation `8944a84` / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
+- 状态边界：External Review Needs Fix 已修复 / Fresh External Re-review Pending / UA3 Pending / Draft PR #16 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed。
 - 剩余风险：runtime 状态不能覆盖 TASK/Git 或授予动作权限。
-- 下一步：普通 merge 更新 #17 后，等待新的跨 Harness 外部只读复审。禁止提前进入正式用户 UA。
+- 下一步：先完成 Kimi/Grok 对当前修复提交的跨 Harness 外部只读复审；通过后再普通 merge 更新 #17。禁止提前进入正式用户 UA。
