@@ -41,7 +41,7 @@
 - 验证命令或检查：逐阶段执行总合同指定测试、独立只读 Review、diff 检查和生命周期收据核对。
 - [x] CORE-SPLIT、CAPABILITY-REVIEW 依序完成阶段验证、Review 和提交边界。
 - [ ] RUNTIME-CONSOLE-BE 已修复 GPT Pro P1 并推送，等待新冻结范围外部复审关闭 finding。
-- [ ] PROJECT-CONSOLE-FE 已吸收新 #16 head并完成 fresh 全量验证，等待新 stack 隔离预检与外部复审，并停在真实用户 UA 门禁。
+- [ ] PROJECT-CONSOLE-FE 已吸收新 #16 head、完成 fresh 全量验证与 Codex 隔离预检，等待 GPT Pro 新 stack 外部复审，并停在真实用户 UA 门禁。
 - [ ] 用户真实 UA Passed 且明确同意后，才执行 LEGACY-RETIRE。
 - [ ] 用户显式发布授权后，才执行 RELEASE。
 - [ ] 每阶段 `git diff --check` 通过，diff 可归属对应 TASK。
@@ -57,6 +57,6 @@
 - 验证命令与结果：Stage 0 backend `174/174`、Skill `91/91`、frontend Vitest `95/95`、Playwright `96/96`、codegen/typecheck/lint/build 通过；Stage 1 Skill `99/99`、backend `174/174`、workflow lint `0/0/63`、diff/scope 检查通过。Integration 基线 `51` 项为 `1 failure + 1 error`，均为 `origin/main@7f2686f` 的 Dashboard 既有失败。
 - Review findings：CORE-SPLIT Round 3 `Passed`，P0/P1/P2/P3=`0/0/0/0`；Master 整体 Review 仍 Pending。
 - UA 动作与结果：Project Console 真实 UA 为用户专属，当前 Pending。
-- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 的 GPT Pro 旧冻结复审为 `Needs Fix 0/1/0/0`，P1 和两轮原因码集成回归已在 `5970ff5` 修复、远端 head=`7bd4bb6`，最新 Codex P2 等待短范围关闭；PROJECT-CONSOLE-FE 的旧差异为 GPT Pro `Passed 0/0/0/0`，但更新后的 stack 仍须新复审。#16 UA3 Pending，#17 UA5 Pending user_only。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)、[#17](https://github.com/a-littlecat/ai-dev-flow/pull/17) 均保持 Open / Unmerged。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
+- 状态边界：CORE-SPLIT 与 CAPABILITY-REVIEW 均为 External Review Passed / UA3 Pending；RUNTIME-CONSOLE-BE 的 GPT Pro 旧冻结复审为 `Needs Fix 0/1/0/0`，P1 和两轮原因码集成回归已在 `5970ff5` 修复、最终 Codex 隔离预检 `Passed 0/0/0/0`、远端 head=`798ad2d`；PROJECT-CONSOLE-FE 的旧差异为 GPT Pro `Passed 0/0/0/0`，更新 stack 的 Codex 隔离预检也为 `Passed 0/0/0/0`，但仍须 GPT Pro 新复审。#16 UA3 Pending，#17 UA5 Pending user_only。Draft PR [#14](https://github.com/a-littlecat/ai-dev-flow/pull/14)、[#15](https://github.com/a-littlecat/ai-dev-flow/pull/15)、[#16](https://github.com/a-littlecat/ai-dev-flow/pull/16)、[#17](https://github.com/a-littlecat/ai-dev-flow/pull/17) 均保持 Open / Unmerged。未 merge PR / release / 正式 Skill 同步 / Legacy Retire / Accepted / Closed。
 - 剩余风险：GPT Pro 尚未绑定 #16/#17 更新后的冻结远端完整 head 给出终局 receipt；旧 head Passed 或固定版本确认失败不能替代。
-- 下一步：完成 #16/#17 最终隔离预检，推送并冻结 #17 新 head，再由 GPT Pro 做外部只读复审；不提前进入正式 UA，不得启动 Legacy Retire。
+- 下一步：推送并冻结 #17 新 head，再由 GPT Pro 对 #16/#17 做外部只读复审；不提前进入正式 UA，不得启动 Legacy Retire。
