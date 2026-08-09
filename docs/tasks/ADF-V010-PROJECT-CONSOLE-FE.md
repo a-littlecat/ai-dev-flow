@@ -64,16 +64,18 @@
 
 - Stacked update：普通 merge 吸收 #16 implementation，包含真实 In Progress `continue + needs_authority → active_work` 修复及双入口 preflight 集成。合并后 fresh 验证为 frontend codegen/typecheck/lint/build、Vitest `109/109`、隔离重跑 Playwright `109/109`、Skill `121/121`、Runtime bundle `43/43`；Codex bundled Python 3.12 full integration `52/53`，唯一失败仍为冻结 artifact guard 且 `baseline_preserved=true`。backend full `204 passed / 2 skipped / 1 known baseline failed`，唯一失败仍为未触及的 Windows non-recursive native event。
 - Grok fresh 外部只读复审 session `019fe700-4986-7d00-a0b0-035a7455ac71` 绑定 implementation `3fbdf9d` 与 docs receipt head `3a8f137`，终局为 `Passed 0/0/0/0`；九项 closure matrix 全部 Closed，并明确 UA5 Pending。用户现已取消 Kimi 当前复审要求，改由 GPT Pro 作为第二外部 Reviewer；GPT Pro 必须绑定治理更新后的冻结远端完整 head，固定版本确认失败不计 Review。
+- GPT Pro 冻结复审确认 #16 `8922238..5483bfc` 为 `Needs Fix 0/1/0/0`（`ADF-V010-PR16-P1-001`），#17 旧差异 `5483bfc..95b43ba` 自身为 `Passed 0/0/0/0`；但 #17 完整 stack 继承 #16 P1，因此明确禁止启动 UA5。旧 #17 Passed 仅属于旧 base/head，不能替代更新 stack 的新复审。
+- Stacked terminal-state repair：两次普通 merge 吸收 #16 最终远端 head `3f9865f`。首次吸收后 fresh Vitest `108/109` 暴露 Builder 新固定机器码未纳入前端映射；问题回到 #16 修复为复用 `INVALID_RUNTIME_SESSION` 后再次 merge。最终 frontend verify 的 codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`，backend `210/210`（skip 2）、Skill `121/121`、Runtime bundle `43/43` 均通过。full integration `52/53`，唯一失败仍为 frozen artifact guard，且 `baseline_preserved=true`；无第二个运行态失败，不误报全绿。
 
 ## Outcome
 
-- Base / Diff：base=869a8d3;diff=869a8d3..3fbdf9d
+- Base / Diff：base=3f9865fa53e4a5e89e6e05475d997b627e6ff3ea;diff=3f9865f..c09e59a
 - 隔离位置：`codex/v010-project-console-fe` / `D:/open-source/ai-dev-flow-wt/v010-project-console-fe`。
 - 回滚方式：提交前丢弃本阶段精确 diff；提交后 revert 本阶段 commit，不改写 RUNTIME-CONSOLE-BE 历史。
 - 修改文件：新增 console API/state/view、默认 Console 与 network/legacy 三视图路由、合同 codegen、前端/浏览器测试及 43 文件规范 Runtime bundle；Legacy 文件保留。
-- 验证证据：backend `204 passed / 2 skipped / 1 known baseline failed`，唯一失败为 Windows non-recursive native event 基线；Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 冻结 artifact guard，报告 `baseline_preserved=true`，无运行态失败。
-- Review findings：same-Harness 内部隔离 session `019fe37b-1090-7241-80be-52c29ee4ab7` 为 `Passed 0/0/0/0`；Grok fresh 外部 session `019fe700-4986-7d00-a0b0-035a7455ac71` 为 `Passed 0/0/0/0`；GPT Pro 尚无绑定最终冻结 head 的终局 receipt，故整体外部复审仍 Pending。
-- Delivery：本轮 current implementation head=`3fbdf9d`，branch `codex/v010-project-console-fe` 已推送且远端对齐；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。当前外部复审尚未形成完整双 Harness receipt，不称 reviewed head。
-- 状态边界：Grok External Re-review Passed / GPT Pro Re-review Pending / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
+- 验证证据：backend `210/210`（skip 2）、Skill `121/121`；frontend codegen/typecheck/lint/build、Vitest `109/109`、Playwright `109/109`；visible/hidden 轮询、Clipboard 最终失败、Ready 语义、status/why-now 文案、真实便携 Dashboard 与真实异常 state-matrix 均通过；Runtime bundle `43/43`。Python 3.12 integration 当前为 `52/53`，唯一失败为 Stage 0 frozen artifact guard，报告 `baseline_preserved=true`，无运行态失败。
+- Review findings：GPT Pro 对旧 #17 差异为 `Passed 0/0/0/0`，但完整 stack 因旧 #16 P1 被阻断；新 base/head 的 Codex 隔离预检与 GPT Pro 外部复审仍 Pending，旧收据不沿用。
+- Delivery：本轮 current implementation head=`c09e59a1688dcd8f5d43b93c7fb6173a051ee1df`，branch `codex/v010-project-console-fe` 尚未推送本轮 stack 更新；Draft PR [#17](https://github.com/a-littlecat/ai-dev-flow/pull/17)，base=`codex/v010-runtime-console-be`。最终复审 head 以包含本收据的后续冻结提交为准。
+- 状态边界：GPT Pro prior diff Passed / Updated Stack Re-review Pending / Overall External Re-review Pending / UA5 Pending user_only / Draft PR #17 / Unmerged / Not Released / Not Synced / Not Accepted / Not Closed / Legacy Retire Not Started。
 - 剩余风险：自动化、真实浏览器 Design QA 和独立 Review 不能替代用户用 CADCat 与两个真实 Harness 任务完成日常入口体验验收。
 - 下一步：由 GPT Pro 对 #16/#17 最终冻结远端完整 head 完成外部只读复审；与既有 Grok Passed 共同满足门禁后，才建议用户开始真实 CADCat 与两个 Harness 任务的 UA5。不得提前执行 LEGACY-RETIRE。
