@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from ai_dev_flow_dashboard.console import ConsoleBuilder
 from ai_dev_flow_dashboard.core.actions import ActionEngine
@@ -104,7 +105,7 @@ class ConsoleBuilderTests(unittest.TestCase):
             phase="implementing",
             next_step="work",
         )
-        with unittest.mock.patch.object(
+        with mock.patch.object(
             self.store,
             "list",
             return_value=[{**session, "phase": "done", "freshness": "live"}],
@@ -113,6 +114,10 @@ class ConsoleBuilderTests(unittest.TestCase):
 
         self.assertEqual(1, console["counts"]["stale_sessions"])
         self.assertEqual(1, console["counts"]["ready_queue"])
+        self.assertEqual(
+            ["INVALID_RUNTIME_SESSION"],
+            console["stale_sessions"][0]["why_now_codes"],
+        )
 
     def test_task_only_active_ready_blocked_sorting_and_ambiguity(self):
         snapshot = support.snapshot_with_task(lifecycle="In Progress", priority="low")

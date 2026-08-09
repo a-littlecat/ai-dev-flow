@@ -55,7 +55,7 @@ class ConsoleBuilder:
                 invalid = {
                     **session,
                     "freshness": "invalid",
-                    "error_codes": ["INVALID_SESSION"],
+                    "error_codes": ["INVALID_RUNTIME_SESSION"],
                 }
                 queues["stale_sessions"].append(
                     self._session_item(invalid, task, "stale_sessions")
