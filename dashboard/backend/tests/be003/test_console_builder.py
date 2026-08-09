@@ -90,6 +90,10 @@ class ConsoleBuilderTests(unittest.TestCase):
 
         self.assertEqual(1, console["counts"]["stale_sessions"])
         self.assertEqual(1, console["counts"]["ready_queue"])
+        self.assertEqual(
+            ["INVALID_RUNTIME_SESSION"],
+            console["stale_sessions"][0]["why_now_codes"],
+        )
         self.assertEqual("TEST-001", console["ready_queue"][0]["task_id"])
         with self.assertRaisesRegex(RuntimeSessionError, "terminal state is inconsistent"):
             self.store.heartbeat("inconsistent-done")
