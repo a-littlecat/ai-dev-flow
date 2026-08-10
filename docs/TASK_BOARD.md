@@ -180,6 +180,7 @@ REL-002 Closed / main@0422887
 | DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
 | WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
 | REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Closed | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | PR #9 Merged `f50c7c7` / Released `v0.9.2` / Local Sync Verified / Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
+| PROGRESS-VISIBILITY-001 | 统一跨 Worktree 进展可见性并瘦身任务看板 | C | In Progress | 高 | 高 | 用户 2026-08-10 验收通过并授权实施；v0.10 线暂停扩展 | Passed（用户裁决口径） | UA6 Pending（两周实测） | Baseline Committed / 实施中 | [PROGRESS-VISIBILITY-001](tasks/PROGRESS-VISIBILITY-001.md) |
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
