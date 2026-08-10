@@ -719,8 +719,8 @@ class PollingWatcherTests(unittest.TestCase):
             )
 
             class StaticCore:
-                def inspect(self, *, worktrees=None):
-                    del worktrees
+                def inspect(self, *, worktrees=None, extra=None):
+                    del worktrees, extra
                     return CoreResult(
                         manifest_sha256=project_source_digest(root),
                         tasks=(support.task("TEST-001", branch_hint="codex/test"),),

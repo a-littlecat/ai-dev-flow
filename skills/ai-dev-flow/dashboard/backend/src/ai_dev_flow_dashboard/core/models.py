@@ -115,6 +115,11 @@ class CoreContract:
     normalized: tuple[tuple[str, str | None], ...]
     diagnostics: tuple[Diagnostic, ...]
     provenance: tuple[Provenance, ...]
+    # Canonical absolute path of the contributing linked Worktree; None means
+    # the main workspace. `stale` marks last-known-good content whose source
+    # Worktree/file is currently lost.
+    worktree_root: str | None = None
+    stale: bool = False
 
     def get(self, field: str, default: str | None = None) -> str | None:
         return dict(self.normalized).get(field, default)
@@ -199,6 +204,9 @@ class TaskNode:
     freshness: str
     diagnostic_ids: tuple[str, ...]
     provenance: tuple[Provenance, ...]
+    # Canonical absolute path of the contributing linked Worktree; None means
+    # the task content comes from the main workspace.
+    worktree_root: str | None = None
 
 
 @dataclass(frozen=True)
@@ -272,3 +280,20 @@ class CoreResult:
 
     def to_dict(self) -> dict[str, Any]:
         return primitive(self)
+
+
+@dataclass(frozen=True)
+class WorktreeTaskItem:
+    """One linked-Worktree TASK selected for publication by the aggregator."""
+
+    contract: CoreContract
+    source: FrozenTaskInput
+    stale: bool = False
+
+
+@dataclass(frozen=True)
+class WorktreeExtra:
+    """Selected linked-Worktree tasks merged into one core inspection."""
+
+    items: tuple[WorktreeTaskItem, ...]
+    diagnostics: tuple[Diagnostic, ...]

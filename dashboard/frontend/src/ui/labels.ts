@@ -219,6 +219,23 @@ export const WORKTREE_REQ_LABEL: Record<string, string> = {
   unknown: "Worktree 要求未知",
 };
 
+/**
+ * Task source marking: which working tree the task content was read from.
+ * `worktree_root` is null for the main workspace.
+ */
+export function taskSourceLabel(task: { worktree_root?: string | null }): string {
+  return task.worktree_root ? `Worktree：${task.worktree_root}` : "主工作区";
+}
+
+/** Compact source tag for dense rows and graph nodes. */
+export function taskSourceShort(task: { worktree_root?: string | null }): string {
+  if (!task.worktree_root) {
+    return "主工作区";
+  }
+  const segments = task.worktree_root.split(/[\\/]/).filter(Boolean);
+  return `WT：${segments[segments.length - 1] ?? task.worktree_root}`;
+}
+
 export const CONDITION_EVAL_LABEL: Record<string, string> = {
   satisfied: "已满足",
   unsatisfied: "未满足",

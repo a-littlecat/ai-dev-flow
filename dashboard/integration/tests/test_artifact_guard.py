@@ -26,11 +26,11 @@ class AcceptedArtifactGuardTests(unittest.TestCase):
         self.assertFalse(report["accepted_ok"], report)
         self.assertTrue(report["baseline_preserved"], report)
         self.assertTrue(report["candidate_consistent"], report)
-        self.assertEqual(107, report["file_count"])
+        self.assertEqual(116, report["file_count"])
         self.assertEqual(100, report["expected_file_count"])
-        self.assertEqual(32, len(report["candidate_paths"]))
+        self.assertEqual(57, len(report["candidate_paths"]))
         self.assertEqual(
-            "ffd32972e9992c441cb8f7d1087827fc5f00045f872bae85e377975beb26455d",
+            "d489f8243ddc470775cc9d43637e08ac68f5fe4eb3ccbeca6a4df0237baeaf4d",
             report["candidate_root_digest"],
         )
         self.assertEqual([], report["candidate_mismatches"])

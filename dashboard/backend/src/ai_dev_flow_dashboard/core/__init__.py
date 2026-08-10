@@ -13,6 +13,11 @@ from .schema_validator import (
     validated_canonical_bytes,
 )
 from .scheduling import SchedulingParser
+from .worktree_tasks import (
+    StaleTaskRecord,
+    WorktreeAggregation,
+    WorktreeTaskAggregator,
+)
 
 __all__ = [
     "ContractGateway",
@@ -20,7 +25,10 @@ __all__ = [
     "FrozenInputChangedError",
     "FrozenInputLoader",
     "SchedulingParser",
+    "StaleTaskRecord",
     "ValidationError",
+    "WorktreeAggregation",
+    "WorktreeTaskAggregator",
     "contract_schema_digest",
     "contract_schema_path",
     "canonical_bytes",

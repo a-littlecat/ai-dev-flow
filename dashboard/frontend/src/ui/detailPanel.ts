@@ -39,6 +39,7 @@ import {
   SEVERITY_LABEL,
   shortSha,
   TASK_TYPE_LABEL,
+  taskSourceLabel,
   UA_STATUS_LABEL,
   WORKTREE_REQ_LABEL,
 } from "./labels";
@@ -114,6 +115,7 @@ export class DetailPanel {
       ["并行意图", label(PARALLEL_INTENT_LABEL, task.parallel_intent)],
       ["Worktree 要求", label(WORKTREE_REQ_LABEL, task.worktree_requirement)],
       ["分支提示", task.branch_hint ?? "无"],
+      ["来源", taskSourceLabel(task)],
       ["数据新鲜度", task.freshness],
     ];
     axes.append(defTable(rows));

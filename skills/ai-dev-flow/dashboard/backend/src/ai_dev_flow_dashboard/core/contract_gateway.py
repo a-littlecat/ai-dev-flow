@@ -25,6 +25,10 @@ class ContractGatewayError(RuntimeError):
 
 
 _MODULE_LOAD_LOCK = threading.RLock()
+# The public facade keeps module-global parse state (_project_task_paths), so
+# concurrent inspections (main workspace plus linked Worktrees) must serialize
+# the actual inspect call.
+_INSPECT_LOCK = threading.RLock()
 
 
 def _provenance(item: Any) -> Provenance:
@@ -117,13 +121,14 @@ class ContractGateway:
         if not getattr(frozen.lease_guard, "active", False):
             raise ContractGatewayError("public Workflow Contract inspection requires an active input lease")
         module = self._load_public_module()
-        report = module.WorkflowContract.inspect(
-            self.project_root,
-            frozen_task_texts={
-                item.path: item.text
-                for item in frozen.tasks
-            },
-        )
+        with _INSPECT_LOCK:
+            report = module.WorkflowContract.inspect(
+                self.project_root,
+                frozen_task_texts={
+                    item.path: item.text
+                    for item in frozen.tasks
+                },
+            )
 
         raw_contracts = tuple(getattr(report, "contracts", ()))
         expected_sources = tuple(sorted(item.source_path for item in frozen.tasks))

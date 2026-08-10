@@ -175,6 +175,10 @@ parallel_intent: ("serial" | "consider" | "unknown" | null)
 worktree_requirement: ("required" | "optional" | "forbidden" | "unknown" | null)
 branch_hint: NullableString
 freshness: ("fresh" | "stale" | "partial")
+/**
+ * Canonical absolute path of the linked Worktree this task's content was read from; null means the main workspace. Optional for v1 compatibility.
+ */
+worktree_root?: (string | null)
 diagnostic_ids: Sha256[]
 provenance: Provenance[]
 }
@@ -185,7 +189,7 @@ heading: NullableString
 field: NullableString
 line: number
 raw_value: NullableString
-source_type: ("canonical" | "legacy_inferred" | "derived" | "git" | "default")
+source_type: ("canonical" | "legacy_inferred" | "derived" | "git" | "default" | "worktree")
 }
 
 export interface ActionRecommendation {

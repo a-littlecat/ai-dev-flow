@@ -32,7 +32,7 @@
         "raw_value": {"$ref": "#/$defs/NullableString"},
         "source_type": {
           "type": "string",
-          "enum": ["canonical", "legacy_inferred", "derived", "git", "default"]
+          "enum": ["canonical", "legacy_inferred", "derived", "git", "default", "worktree"]
         }
       }
     },
@@ -179,6 +179,10 @@
         },
         "branch_hint": {"$ref": "#/$defs/NullableString"},
         "freshness": {"type": "string", "enum": ["fresh", "stale", "partial"]},
+        "worktree_root": {
+          "type": ["string", "null"],
+          "description": "Canonical absolute path of the linked Worktree this task's content was read from; null means the main workspace. Optional for v1 compatibility."
+        },
         "diagnostic_ids": {
           "type": "array",
           "items": {"$ref": "#/$defs/Sha256"}

@@ -31,7 +31,8 @@ class SequenceCore:
         self.values = list(values)
         self.worktree_inputs = []
 
-    def inspect(self, *, worktrees=None):
+    def inspect(self, *, worktrees=None, extra=None):
+        del extra
         self.worktree_inputs.append(dict(worktrees or {}))
         value = self.values.pop(0) if len(self.values) > 1 else self.values[0]
         if isinstance(value, Exception):
@@ -59,7 +60,8 @@ class CachedDeferredCore:
     def lease_frozen(self):
         yield SimpleNamespace(manifest_sha256=self.result.manifest_sha256)
 
-    def inspect_frozen_deferred(self, frozen):
+    def inspect_frozen_deferred(self, frozen, extra=None):
+        del extra
         self.inspect_calls += 1
         return self.result, {}
 

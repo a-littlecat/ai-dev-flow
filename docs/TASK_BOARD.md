@@ -1,109 +1,17 @@
 # ai-dev-flow 任务看板
 
-> - 快照日期：2026-08-01
-> - 当前模式：v0.9.2 历史债务、依赖安全、runtime 与本机同步收口
-> - 当前阶段：`REL-005 Closed / Review Passed / UA7 Passed / PR #9/#10 Merged / Released v0.9.2 / Local Sync Verified / Branch Cleanup Verified`
-> - 当前方案：`docs/tasks/REL-005-release-v092-maintenance.md`
+> 任务状态表为生成区，请勿手改（由 `skills/ai-dev-flow/scripts/board_generator.py` 维护）；生成区标记范围外为人工维护区。
+> - 快照日期：2026-08-10
+> - 当前模式：PROGRESS-VISIBILITY-001 实施（跨 worktree 进展可见性 + 看板生成器）
+> - 当前阶段：`PROGRESS-VISIBILITY-001 In Progress / Review Passed（用户裁决口径） / UA6 Pending`
+> - 当前方案：`docs/tasks/PROGRESS-VISIBILITY-001.md`
 
-## 当前执行任务（2026-08-01）
+## 当前执行任务（2026-08-10）
 
-- `DASHBOARD-ACTION-CENTER-001`：`Accepted / Controlled / Goal Complete / Review Passed / UA6 Passed / Committed b2098f8 / PR #11 Merged 2354530 / Receipt PR #12 Merged d947265 / Runtime Rebuilt / Local Sync Verified / Local Browser Verified`。默认任务执行工作台、任务路线与完整关系图已落入远端 `main` 并同步到本机现存 Skill；Round 3 fresh 验证为 Vitest `95/95`、Playwright `96/96`，runtime manifest `36` 个文件，源/安装目录缺失、额外、SHA256 差异=`0/0/0`，独立复审 `0/0/0/0`。本次 runtime 与收据变更不属于既有 `b2098f8` / PR #11 / PR #12 收据，本轮交付以当前分支新增 Git 提交为准；不执行 tag、release、formal deploy 或 Closed。
-- 承接 `DASHBOARD-FOCUS-ASSESSMENT-001` 的已知未提交前端改动；不吸收其他未知 diff，不修改后端关系/并行判定或 Contract/schema。
+- `PROGRESS-VISIBILITY-001`：`In Progress / Controlled / Review Passed（用户裁决口径） / UA6 Pending / Baseline Committed 733dc14 / Unmerged / Not Released`。在独立 Worktree `ai-dev-flow-wt/progress-visibility-001` 实施；merge、push、release、本机 Skill 安装目录同步、Closed 未授权。
+- v0.10 线（`ADF-V010-*`，4 个 `codex/v010-*` worktree）按用户 2026-08-10 裁定暂停扩展，其任务状态由仪表盘跨 worktree 聚合观察。
 
 ## 当前授权边界
-
-用户于 2026-07-31 在比较受控 Goal、交付 Goal、Goal 适配器和零状态组合后，明确确认采用更自动的 `Auto-Land Goal`，允许自动 commit、merge、push、PR/CI，并要求“触发词增加中文”。`GOAL-USAGE-001` 已通过 PR #2 合并到 `main`；未执行 tag、release 或 deploy。
-
-旧 `UNATTENDED-RUN-001` 是未提交、未合并的独立 Worktree 候选；本任务以原生 Goal 零状态组合替代其自定义状态机方向，但保留旧 Worktree，不吸收、不删除其 diff。
-
-用户进一步明确回复“性能验收通过，并启动自动落地目标：提交、合并页面修复和性能优化，重建运行时后同步本机 Skill。并关闭任务，删除分支。”该授权覆盖 `DASHBOARD-EDGE-LABEL-001` 与 `DASHBOARD-IDLE-PERF-001` 的验收写回、精确提交、推送、集成、runtime 重建、本机 Skill 同步、Closed 写回和完全合并后任务分支删除；不包含 tag、release、deploy、强制推送、历史改写或覆盖主工作区用户改动。
-
-用户明确指出原 PLAN-001 只扩展 Review-Repair Loop，并未完成项目瘦身；随后授权修改或推翻 PLAN-001，只要最终满足“前沿模型使用 Skill 有净正收益、避免无效额度与负优化”的需求。
-
-用户随后要求补齐两项缺口：首版应有轻量自动审核流程；两轮修复后如果仍在持续收敛，不应仅因次数耗尽就要求用户接管。
-
-独立 Review 随后记录 4 项 P1；用户明确要求“修改”，因此授权第 1 轮有限 `repair_task` 只处理 Lite 验证边界、Tracked Reviewer 降级路径、收益验证/实施顺序和可复现净收益协议。该授权不包含实施、创建 `LEAN-*`、代替独立复审或任何 delivery 动作。
-
-独立复审关闭全部 4 项 P1 后，用户于 2026-07-19 明确确认“审核及验收通过”。该确认写回为 Review Passed、UA2 Passed 和 `Accepted`，不扩展为创建/执行 `LEAN-*`、commit、merge、push、release、本机同步或 `Closed` 授权。
-
-用户随后于 2026-07-19 明确要求“提交”，因此仅授权把 RFC、PLAN-001 和本看板形成 Accepted Git baseline；该授权不包含 merge、push、release、本机同步、`Closed` 或后续 `LEAN-*` 实施。
-
-用户随后要求统一澄清模型来源表述。本轮只使用“当前执行模型真实任务对照”和“额外模型供应商”两个术语，明确独立 Reviewer 可以使用同一平台/模型的隔离上下文；不改变三次上限、评估门禁或授权边界。用户随后再次明确要求“提交”，因此仅授权把该三文件澄清形成独立 commit。
-
-用户于 2026-07-19 进一步明确要求“按 PLAN-001 串行执行 LEAN-001～003”。该授权允许创建并顺序执行最多 3 个 LEAN TASK、在专用实施分支形成逐任务 commit，并在计划规定的确定性门禁触发时使用隔离只读 Reviewer；不授权并行写代码、merge、push、release、本机 Skill 同步或 `Closed`。若阶段 A、阶段 B 或全面实施门禁失败，串行链必须在失败点停止，不能为了执行到 LEAN-003 而改写阈值或证据。
-
-`LEAN-002` 随后因实际原型未绑定 stage A、平台不暴露精确 backend model/call ID 而被整体 Review 阻断。用户在理解原因后明确要求继续完成 v0.8；该新指令授权同一 `LEAN-002` 创建 `V08-LEAN-EVAL-003`、先修复两项 P1，再在新协议 Review 通过后执行一个新的三次替代周期。V002 不改、不混用；新授权不包含第三个周期、额外 provider、merge、push、release、本机同步或 `Closed`。
-
-用户于 2026-07-19 明确回复“继续，我已确认。完成上述操作”，完成 `LEAN-003` UA3；随后明确要求“合并推送发布，并且同步本机 skill”。当前授权包括：形成验收/发布候选提交，合并到 `main`，推送 `main`，创建并推送 annotated tag `v0.8.0`，创建正式 GitHub Release，以及同步已确认存在的本机 Skill 副本。该授权不包含 `Closed`、删除分支、改写历史或其他项目的外部操作。
-
-用户随后于 2026-07-19 明确要求“关闭并删除分支”。该指令授权把 `LEAN-003` 从 Accepted 流转为 Closed，并删除已确认完全合并的本地 `codex/lean-v08-slimming` 分支；远端不存在同名分支。该授权不包含其他分支、tag、Release 或历史改写。
-
-用户于 2026-07-21 明确要求审查其提供的 `.agents` Skill 源目录更新；确认无问题后同步到本项目和本机其他 Skill 位置，并推送远端。该授权覆盖 `SYNC-001` 的内容审查、已存在目标的文件同步、精确 commit 和 `main` push；不包含 tag、GitHub Release、删除未知附加文件或创建不存在的安装目录。Review 发现已发布 `v0.8.0` 与新增内容不能共用版本身份，因此 repair 将工作树身份收口为未发布 `0.8.1`，不制造发布事实。
-
-用户于 2026-07-24 在复盘修改轮数边界和“超限后即使授权 AI 也拒绝”的问题后明确要求实施。`REPAIR-ESCALATION-001` 获准在独立 Worktree 修改 Skill policy、只读判定器、测试和直接冲突文档；独立 Review 通过后可同步已存在的本机 Skill 副本和 CADCat 流程规则。用户随后明确回复“验收通过，提交并推送”，因此 UA2 记为 Passed，并授权精确 commit 当前任务 diff、推送 `codex/repair-escalation-001` 分支；该授权不包含 merge、tag、Release、删除、历史改写或 `Closed`。
-
-用户于 2026-07-27 进一步确认连续无实质进展阈值采用“核心产品 4 次、Harness 5 次”，并明确要求按新方案修改。`REPAIR-CAMPAIGN-001` 获准在 `REPAIR-ESCALATION-001` Accepted baseline 上实现任务级连续修复授权、只读 gate、测试和直接冲突文档；不授权 commit、push、merge、release、本机同步、Accepted 或 Closed。
-
-用户随后在收到同 Harness 原生隔离 Reviewer、核心 4 次 / Harness 5 次阈值、CAD AutoTest 单一计数权及“尚未同步生效”的 UA2 摘要后明确回复“通过”。该确认写回为 Review Passed、UA2 Passed 和 `Accepted`；不扩展为 commit、push、merge、tag、Release、本机 Skill 同步或 `Closed` 授权。
-
-用户随后明确回复“提交并推送，同时同步本机 Skill”。该指令授权精确提交本任务 diff、推送当前 `codex/repair-campaign-001` 分支，并同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本；不授权 merge、tag、Release、删除、创建不存在的安装目录、其他项目/服务同步或 `Closed`。
-
-用户在确认任务分支已推送、本机 Skill 已同步、但尚未 merge / tag / Release 后明确回复“同步并发版”。该指令授权把当前任务分支合并到 `main`、推送 `main`、创建并推送 annotated tag `v0.8.3`、创建正式非 draft/非 prerelease GitHub Release，并按正式发布源复核现有本机 Skill；不授权删除分支、历史改写、其他项目/服务同步或 `Closed`。
-
-用户于 2026-07-28 明确要求建立本地任务关系仪表盘任务：本地使用，以观察完整任务关系为首要目标；前端只冻结总体产品要求和风格推荐，具体实施交给 Kimi；后端必须写清楚。本轮 authority 只允许创建 `DASHBOARD-001` 并同步本看板，不授权前端/后端实现、增加依赖、创建后续实施 TASK、commit、merge、push、release、外部同步或 `Closed`。
-
-用户随后要求“审核 DASHBOARD-001”。该指令授权当前 Codex Harness 执行隔离、只读 Review 并把 findings / Review 状态写回 TASK 与看板；不授权修复 findings、进入 UA2、Accepted、实现、commit、merge、push、release 或 `Closed`。
-
-用户在收到 5 个 P1、1 个 P2 和“Kimi 只读是前端运行时边界，不限制 Kimi 承担后端开发”的说明后明确回复“授权”。该指令仅授权 `DASHBOARD-001` Repair Round 1：修订冻结 findings、验证、隔离只读复审和 TASK/看板收据同步；不授权实施、创建后续 TASK、UA2、Accepted、commit、merge、push、release 或 `Closed`。
-
-用户在最终 Review Passed 和后续开发顺序说明后明确回复“确认，并创建文档”。该指令授权记录 `DASHBOARD-001` UA2 Passed / Accepted，并创建 `DASHBOARD-BE-001`、`DASHBOARD-BE-002`、`DASHBOARD-FE-001`、`DASHBOARD-INTEGRATE-001` 四份 Draft TASK；不授权执行任务、增加依赖、创建 Worktree、Review 子任务、commit、merge、push、release 或 `Closed`。
-
-用户随后明确要求“审核四份 DASHBOARD 实施任务，如有问题进行修复，直至通过可执行的程度。然后新开对话框执行 BE-001，审核并通过达到可验收程度”。该指令授权四份 TASK 的隔离 Review、有限 repair 和收据同步；规划通过后只授权在新对话执行 `DASHBOARD-BE-001`，并停在 `Review Passed / UA3 Pending`，不代替用户验收。
-
-用户进一步明确“规划文件我授权你可以提交”。该指令仅授权精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成后续 Worktree 可引用的 Git baseline；不授权 push、merge、release、删除、历史改写或代码提交。
-
-用户在 `DASHBOARD-INTEGRATE-001` 完成真实页面 UA6、独立 Review、提交与本地合并后，明确要求继续执行已说明的收口方案。该指令授权 `REL-003` 将当前开发线收口为 `v0.9.0`，同步实盘确认已存在的本机 `ai-dev-flow` Skill，推送 `main` 与 annotated tag `v0.9.0`，并创建正式 GitHub Release；不授权删除分支/Worktree、强制推送、历史改写、创建未知本机目录或 `Closed`。
-
-`DASHBOARD-PORTABLE-001` 最终独立 Review 仅剩 `DASHBOARD-PORTABLE-RVW-P1-002` 开放。用户于 2026-07-30 在收到“创建 repair TASK、只修 `.pyc/__pycache__` 导入前校验缺口、补测试、完整验证并持续独立 Review 到无 P0/P1”的精确范围后回复“授权”。该指令授权 `DASHBOARD-PORTABLE-REPAIR-001` 的 scope-bound Repair Campaign；不授权新增依赖、改变只读/安全边界、UA6 代验收、Accepted、commit、merge、push、release、本机 Skill 同步或 `Closed`。
-
-用户于 2026-07-31 提供 CADCat 实际页面截图，确认关系文字仍被任务卡片遮挡，并在收到根因和独立前端修复建议后明确回复“确认”。该指令授权 `DASHBOARD-EDGE-LABEL-001` 在独立 Worktree 内补充碰撞 oracle、修复关系文字几何布局、运行前端验证、启动本机验收页并执行隔离只读 Review；不授权吸收或覆盖主仓库未提交前端改动，也不授权 commit、merge、push、release、外部同步、Accepted 或 `Closed`。Round 3 Review 发现 `EDGE-LABEL-RVW-P2-004` 后停止自动修复，用户再次回复“确认”，单次授权仅处理该 finding 的 chain-bound `EscalatedRepair`。Round 8 Review Passed 后，用户明确确认“界面修复验收通过”，仅据此记录 UA5 Passed / Accepted；commit、merge、push、release 和 `Closed` 仍未授权。
-
-本轮允许：
-
-- 重写 PLAN-001 和对应 RFC；
-- 更新本看板；
-- 移除同一未提交规划集中被新方案取代的原 Loop RFC、9 个 `LOOP-*` Draft 和临时 PLAN-002。
-- 精确提交上述三文件，形成 PLAN-001 Accepted Git baseline。
-- 精确提交上述三文件的模型术语澄清。
-- 创建并串行执行 `LEAN-001`～`003`，每项保持独立任务合同、diff、验证、Review 和 commit；后项只能在前项门禁通过后开始。
-- 写回 `LEAN-003` UA3 Passed / Accepted，并完成已明确授权的 merge、push、`v0.8.0` tag、GitHub Release 和本机 Skill 同步。
-- 写回 `LEAN-003` Closed，并在关闭收据提交后安全删除已完全合并的本地实施分支。
-- 在独立 Worktree 实现 `REPAIR-CAMPAIGN-001` 的 campaign policy、4 / 5 次连续无进展阈值、硬停止和兼容测试。
-- 精确提交并推送 `REPAIR-CAMPAIGN-001` 当前任务分支，同步实盘确认存在的本机 `ai-dev-flow` 与 `cad-dotnet-autotest` Skill 副本，并写回校验收据。
-- 将已验收任务分支合并并推送到 `main`，创建并推送 `v0.8.3` annotated tag 与正式 GitHub Release，并按发布源复核现有本机 Skill。
-- 创建 `DASHBOARD-001`，冻结本地关系图优先产品要求、Kimi 前端交接边界和详细只读后端合同，并同步本看板。
-- 对 `DASHBOARD-001` 执行隔离、只读 Review，并同步 Review 收据与状态。
-- 仅在 `docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md` 和 `docs/TASK_BOARD.md` 内修订 `P1-001～005`、`P2-006`、Kimi 角色歧义，运行验证并执行隔离只读复审。
-- 写回 `DASHBOARD-001` 的用户 UA2 确认与 Accepted 状态，创建四份后续 Draft TASK 文档并同步本看板。
-- 审核并有限修复四份 DASHBOARD 实施 TASK，复审通过后将合同推进到 Ready。
-- 精确提交 `DASHBOARD-001`、四份实施 TASK 和本看板，形成规划 Git baseline。
-- 在规划 baseline 形成后，新开对话并在独立 Worktree 实施 `DASHBOARD-BE-001`，运行验证和独立 Review/repair，停在可供用户 UA3 的状态。
-- 在独立 Worktree 实施 `GOAL-USAGE-001`，只增加 Codex 原生 Goal 治理预设、中文触发与测试；不修改 CORE policy、repair gate 或 Contract schema。
-- `GOAL-USAGE-001` 已完成 Review、UA、commit、push 与 merge；release / deploy 保持未授权。
-- 在独立 Worktree 实施 `DASHBOARD-EDGE-LABEL-001`，只处理关系文字与任务卡片遮挡；已由用户 UA5 验收通过并形成候选提交 `38f5940`。
-- 在独立 Worktree 实施 `DASHBOARD-IDLE-PERF-001`，以 Windows 原生文件事件、空闲暂停与单实例降低常驻 CPU；已由用户 UA6 验收通过并形成候选提交 `2963353`。
-
-本轮不允许：
-
-- 在 `LEAN-001` 阶段修改 `skills/ai-dev-flow/**`、现行行为或执行当前模型真实任务对照；
-- 绕过阶段门禁提前创建或执行后续 `LEAN-*`；
-- 接入或调用额外模型供应商，或在本计划阶段执行当前模型真实任务对照；
-- 不删除其他分支、tag 或 Release，不强制删除未合并分支，不改写已提交历史，不执行额外版本发布或同步未确认的本机目录。
-- 不在 `REPAIR-CAMPAIGN-001` 中删除分支、改写历史、创建不存在的安装目录、同步其他项目/服务或记录 Closed。
-- 不在 `DASHBOARD-001` 规划阶段实现前端/后端、增加依赖、创建项目级 `PRODUCT.md` / `DESIGN.md`、自动写回 TASK、自动启动并行 agent 或创建后续实施 TASK。
-- 不把本轮 repair authority 扩大为前端/后端实施、创建后续 TASK、进入 UA2、记录 Accepted、commit、merge、push、release 或 `Closed`。
-- 不把“确认，并创建文档”扩大为执行四份 Draft TASK、创建/切换 Worktree、安装依赖、启动服务、独立 Review、commit、merge、push、release 或 `Closed`。
-- 不把本轮新增授权扩大为执行 BE-002、FE-001 或 INTEGRATE-001，也不替代用户 UA3，不执行 push、merge、release、删除、历史改写或 `Closed`。
 
 ## 真相源与状态规则
 
@@ -141,46 +49,48 @@ REL-002 Closed / main@0422887
 
 ## 当前任务
 
-| 任务 | 名称 | 等级 | 状态 | 优先级 | 风险 | 前置依赖 | Review | UA | 执行组织 | 任务文件 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| REL-001 | 收口 v0.6 发布身份 | B | Closed | 高 | 高 | 无 | 通过 / 无 P0-P3 | UA7 已通过 | 已合并 / 已关闭 | [REL-001](tasks/REL-001-close-v06-release-identity.md) |
-| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Closed | 高 | 高 | REL-001 Accepted baseline `752b11f` | 通过 / 无 P0-P3 | UA2 已通过 | 已合并 / 已关闭 | [CONTRACT-001](tasks/CONTRACT-001-workflow-contract-semantics.md) |
-| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Closed | 高 | 中 | CONTRACT-001 Accepted `28e74f8` | 通过 / 无 P0-P1 | UA3 已通过 | 已合并 / 已关闭 | [CONTRACT-002](tasks/CONTRACT-002-golden-fixtures.md) |
-| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Closed | 高 | 高 | CONTRACT-002 Accepted `f7d870d` | 通过 / 无 P0-P1 | UA3 已通过 | 已合并 / 已关闭 | [CONTRACT-003](tasks/CONTRACT-003-readonly-contract-readers.md) |
-| CONTRACT-004 | 实现只读 workflow_lint | C | Closed | 高 | 高 | CONTRACT-003 Accepted `95ec566` | 通过 / 无 P0-P1 | UA4 已通过 | 已合并 / 已关闭 | [CONTRACT-004](tasks/CONTRACT-004-workflow-lint-cli.md) |
-| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Closed | 中 | 高 | CONTRACT-004 Accepted `7f0f7e5` | 通过 / 无 P0-P3 | UA6 已通过 | 已合并 / 已关闭 | [CONTRACT-005](tasks/CONTRACT-005-compact-template-writer-routing.md) |
-| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Closed | 中 | 高 | CONTRACT-004、005 Accepted | 通过 / 无 P0-P3 | UA6 已通过 | 已合并 / 已关闭 | [CONTRACT-006](tasks/CONTRACT-006-task-board-projection.md) |
-| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | 高 | 高 | CONTRACT-001～006 Accepted | Passed / 无 P0-P3 | UA3 Passed | Released `v0.7.0` / Closed | [REL-002](tasks/REL-002-close-v07-release-identity-and-sync.md) |
-| PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Closed | 高 | 高 | REL-002 Closed；Base `0422887` | 通过 / 无 P0-P3 | UA2 已通过 | 已合并 / 已关闭 | [PLAN-001](tasks/PLAN-001.md) |
-| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Cancelled | 高 | 中 | PLAN-001 Accepted；Base `b7938ef` | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | merge Deferred / 后继版本已采用 / 无剩余执行动作 | [LEAN-001](tasks/LEAN-001.md) |
-| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Cancelled | 高 | 高 | LEAN-001 Review Passed；V003 all gates Passed | Passed / 无 P0-P3 | UA3 Deferred（未补写验收） | Not Applicable / 后继版本已采用 / 无剩余执行动作 | [LEAN-002](tasks/LEAN-002.md) |
-| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | 高 | 高 | LEAN-002 Review Passed；V003 all gates Passed | Passed / P0-P3=0 | UA3 Passed | Merged / Released `v0.8.0` / Local Sync Verified / Branch Cleanup Verified | [LEAN-003](tasks/LEAN-003.md) |
-| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Cancelled | 中 | 高 | LEAN-003 Closed；Base `d4854a7` | Passed / P0-P3=0 | UA3 Deferred（未补写验收） | Committed / Pushed `fcd3a3e` / Local Sync Verified / 无剩余执行动作 | [SYNC-001](tasks/SYNC-001.md) |
-| REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Closed | 高 | 高 | SYNC-001；Base `0702673` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged main / Local Sync Verified / Closed | [REPAIR-ESCALATION-001](tasks/REPAIR-ESCALATION-001.md) |
-| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Closed | 高 | 高 | REPAIR-ESCALATION-001 Accepted；Base `8df7399` | Passed / P0-P3=`0/0/0/0` | UA2 Passed | Merged `d708d80` / Released `v0.8.3` / Local Sync Verified / Closed | [REPAIR-CAMPAIGN-001](tasks/REPAIR-CAMPAIGN-001.md) |
-| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Closed | 高 | 高 | Base `fb16bc5`；无功能前置 | Passed / 规划 P0-P3=`0/0/1/0`；实施 TASK P0-P3=`0/0/0/0` | UA2 Passed | Docs-only plan / Committed / Merged / Closed | [DASHBOARD-001](tasks/DASHBOARD-001-local-task-relationship-dashboard.md) |
-| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Closed | 高 | 高 | DASHBOARD-001 Accepted/Committed；实施 base `c5bbf3a` | Passed / P0-P3=`0/0/0/0`；P1-001～009 Closed | UA3 Passed / User Confirmed | Committed `cc922d4` / Merged / Closed | [DASHBOARD-BE-001](tasks/DASHBOARD-BE-001.md) |
-| DASHBOARD-BE-001-REPAIR-001 | 修复核心快照性能与 dirty ownership 合同 | D | Closed | 高 | 高 | BE-001 Accepted/Merged；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `21e8816` / Merged / Closed | [DASHBOARD-BE-001-REPAIR-001](tasks/DASHBOARD-BE-001-REPAIR-001.md) |
-| DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Closed | 高 | 高 | BE-001 repair；Campaign ER-1 门禁 GREEN | Passed / P0-P3=`0/0/1/0` | UA3 Passed / User Confirmed | Committed `3cc22ab` / Merged / Closed | [DASHBOARD-BE-002](tasks/DASHBOARD-BE-002.md) |
-| DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Closed | 高 | 中 | DASHBOARD-BE-001 Accepted/Committed/Review/UA | Passed / feature `0/0/4/0`；post-merge repair `0/0/0/0` | UA4 Passed / User Confirmed | Committed / Merged / Closed | [DASHBOARD-FE-001](tasks/DASHBOARD-FE-001.md) |
-| DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Closed | 高 | 高 | FE-001 Accepted/Committed/Merged/Review/UA；INTEGRATE-P1-001 | Passed / P0-P3=`0/0/1/0` | UA4 Passed / User Confirmed | Committed / Merged / Closed | [DASHBOARD-FE-001-REPAIR-001](tasks/DASHBOARD-FE-001-REPAIR-001.md) |
-| DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Closed | 高 | 高 | FE-001 / FE-001-REPAIR-001 Accepted；INTEGRATE UA6 feedback | Passed / search × focus chain | UA6 Passed | Committed `048c513` / Merged `acd0ddd` / Closed | [DASHBOARD-FE-001-REPAIR-002](tasks/DASHBOARD-FE-001-REPAIR-002.md) |
-| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Closed | 高 | 高 | FE-001 repairs 001/002 Accepted/Committed/Merged | Passed / final baseline P0-P3=`0/0/1/0`；P2 record sync applied | UA6 Passed / User Confirmed | Committed / Merged / Released `v0.9.0` / Closed | [DASHBOARD-INTEGRATE-001](tasks/DASHBOARD-INTEGRATE-001.md) |
-| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Closed | 高 | 高 | DASHBOARD-INTEGRATE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/1/0`；P2 Board summary sync applied | UA7 Passed / User Confirmed | tag target `c2dcb94` / Local Sync Verified / Released `v0.9.0` / Closed | [REL-003](tasks/REL-003-release-v090-dashboard.md) |
-| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Closed | 高 | 高 | REL-003 Accepted/Committed/Merged/Released | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-001](tasks/DASHBOARD-PORTABLE-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Closed | 高 | 高 | DASHBOARD-PORTABLE-001；P1-002 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-001](tasks/DASHBOARD-PORTABLE-REPAIR-001.md) |
-| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Closed | 高 | 高 | PORTABLE-001；REPAIR-001 Review Passed | Passed / final P0-P3=`0/0/0/1`；record-only P3 synced | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-002](tasks/DASHBOARD-PORTABLE-REPAIR-002.md) |
-| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Closed | 高 | 高 | PORTABLE-001 UA6 Passed；REPAIR-002 Review Passed | Passed / final P0-P2=`0/0/0` | UA6 Passed / User Confirmed | commit `4754813` / merge `17ab9be` / Closed | [DASHBOARD-PORTABLE-REPAIR-003](tasks/DASHBOARD-PORTABLE-REPAIR-003.md) |
-| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Closed | 高 | 高 | PORTABLE-001 Accepted/Committed/Merged | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | commit `0875bb3` / merge `139864d` / Local Sync Verified / Released `v0.9.1` / Closed | [REL-004](tasks/REL-004-release-v091-portable-dashboard.md) |
-| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Closed | 高 | 高 | REPAIR-CAMPAIGN-001 Released；原生 Codex Goal | Passed / P0-P3=`0/0/0/0` | UA2 Passed | commit `f205679` / PR #2 Merged / Local Sync Verified / Not Released / Closed | [GOAL-USAGE-001](tasks/GOAL-USAGE-001.md) |
-| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | 高 | 中 | REL-004 Released；用户真实截图 | Passed / P0-P3=`0/0/0/0` | UA5 Passed | commit `38f5940` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-LABEL-001](tasks/DASHBOARD-EDGE-LABEL-001.md) |
-| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | 高 | 高 | REL-004 Released；真实 CADCat CPU 证据 | Passed / P0-P3=`0/0/0/0` | UA6 Passed | commit `2963353` / PR #5 Merged / Local Sync Verified / Not Released / Closed | [DASHBOARD-IDLE-PERF-001](tasks/DASHBOARD-IDLE-PERF-001.md) |
-| DASHBOARD-FOCUS-ASSESSMENT-001 | 消除聚焦链与并行评估线的视觉歧义 | B | Review | 中 | 中 | REL-005 Closed；用户截图反馈 | Passed / P0-P3=`0/0/0/0` | UA3 Pending | Committed `b2098f8` / diff incorporated by ACTION-CENTER PR #11 | [DASHBOARD-FOCUS-ASSESSMENT-001](tasks/DASHBOARD-FOCUS-ASSESSMENT-001.md) |
-| DASHBOARD-ACTION-CENTER-001 | 将默认关系图改为聚焦的任务执行工作台 | D | Accepted | 高 | 高 | FOCUS-ASSESSMENT 承接 diff；用户确认视觉方案 | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #11 Merged `2354530` / Runtime Rebuilt / Local Sync Verified / Not Released | [DASHBOARD-ACTION-CENTER-001](tasks/DASHBOARD-ACTION-CENTER-001.md) |
-| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | 高 | 高 | EDGE-LABEL / IDLE-PERF Accepted + Committed | Passed / P0-P3=`0/0/0/0` | UA6 Passed / Designated Acceptor Confirmed | PR #5 Merged `102297e` / Local Sync Verified / Not Released / Closed | [DASHBOARD-EDGE-PERF-INTEGRATE-001](tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md) |
-| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | 高 | 高 | CADCat UA5：总错误 90 / ingestion 89 口径歧义 | Passed / P0-P3=`0/0/0/0` | UA5 Passed / User Confirmed | PR #7 Merged `55ce8af` / Not Released / Closed | [WORKSPACE-CLEANUP-001](tasks/WORKSPACE-CLEANUP-001.md) |
-| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Closed | 高 | 高 | WORKSPACE-CLEANUP-001 Closed；排除 CADCat 数据修复 | Passed / P0-P3=`0/0/0/0` | UA7 Passed / User Confirmed | PR #9 Merged `f50c7c7` / Released `v0.9.2` / Local Sync Verified / Closed | [REL-005](tasks/REL-005-release-v092-maintenance.md) |
-| PROGRESS-VISIBILITY-001 | 统一跨 Worktree 进展可见性并瘦身任务看板 | C | In Progress | 高 | 高 | 用户 2026-08-10 验收通过并授权实施；v0.10 线暂停扩展 | Passed（用户裁决口径） | UA6 Pending（两周实测） | Baseline Committed / 实施中 | [PROGRESS-VISIBILITY-001](tasks/PROGRESS-VISIBILITY-001.md) |
+<!-- ADF-GENERATED:BEGIN -->
+| 任务 | 名称 | 等级 | 状态 | Review | UA | 验收 | 交付 | 任务文件 |
+|---|---|---|---|---|---|---|---|---|
+| CONTRACT-001 | 固化 Workflow Contract 语义规范 | C | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-001-workflow-contract-semantics.md |
+| CONTRACT-002 | 建立 Golden fixtures 与填写量基线 | C | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-002-golden-fixtures.md |
+| CONTRACT-003 | 实现 Legacy / v0.7 只读 Reader | C | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-003-readonly-contract-readers.md |
+| CONTRACT-004 | 实现只读 workflow_lint | C | Closed | Passed | UA4 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-004-workflow-lint-cli.md |
+| CONTRACT-005 | 启用 Compact Template 与最小 Writer 路由 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-005-compact-template-writer-routing.md |
+| CONTRACT-006 | 增加 TASK_BOARD 只读投影与 drift 检查 | C | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/CONTRACT-006-task-board-projection.md |
+| DASHBOARD-001 | 规划本地任务关系仪表盘与只读调度后端 | C | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-001-local-task-relationship-dashboard.md |
+| DASHBOARD-ACTION-CENTER-001 | 将默认关系图改为聚焦的任务执行工作台 | D | Accepted | Passed | UA6 | Passed / Designated Acceptor Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-ACTION-CENTER-001.md |
+| DASHBOARD-BE-001 | 实现任务关系与调度核心 | C | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-BE-001.md |
+| DASHBOARD-BE-001-REPAIR-001 | 修复核心快照性能与 dirty ownership 合同 | D | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-BE-001-REPAIR-001.md |
+| DASHBOARD-BE-002 | 实现 Git 快照、本地只读 API 与实时更新 | D | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-BE-002.md |
+| DASHBOARD-EDGE-LABEL-001 | 修复关系文字被任务卡片遮挡 | D | Closed | Passed | UA5 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-EDGE-LABEL-001.md |
+| DASHBOARD-EDGE-PERF-INTEGRATE-001 | 集成页面可读性与空闲性能并重建运行时 | D | Closed | Passed | UA6 | Passed / Designated Acceptor Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-EDGE-PERF-INTEGRATE-001.md |
+| DASHBOARD-FE-001 | 实现关系图优先的本地任务仪表盘前端 | C | Closed | Passed | UA4 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-FE-001.md |
+| DASHBOARD-FE-001-REPAIR-001 | 修复真实任务规模下关系图被并行评估列表挤出首屏 | D | Closed | Passed | UA4 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-FE-001-REPAIR-001.md |
+| DASHBOARD-FE-001-REPAIR-002 | 增强关系图选中态可见性 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-FE-001-REPAIR-002.md |
+| DASHBOARD-FOCUS-ASSESSMENT-001 | 消除聚焦链与并行评估线的视觉歧义 | B | Review | Passed | UA3 | Pending / None | commit=Committed;merge=Not Recorded;merge_authority=None | docs/tasks/DASHBOARD-FOCUS-ASSESSMENT-001.md |
+| DASHBOARD-IDLE-PERF-001 | 降低 Dashboard 常驻扫描 CPU 占用 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-IDLE-PERF-001.md |
+| DASHBOARD-INTEGRATE-001 | 集成本地任务仪表盘并完成回归验收 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-INTEGRATE-001.md |
+| DASHBOARD-PORTABLE-001 | 支持跨项目 Dashboard 与多实例隔离 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-PORTABLE-001.md |
+| DASHBOARD-PORTABLE-REPAIR-001 | 阻止未登记 Python 字节码绕过运行时校验 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-PORTABLE-REPAIR-001.md |
+| DASHBOARD-PORTABLE-REPAIR-002 | 修复生产空白页与历史 Scheduling 兼容 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-PORTABLE-REPAIR-002.md |
+| DASHBOARD-PORTABLE-REPAIR-003 | 关闭提交前版本固定与干净检出缺口 | D | Closed | Passed | UA6 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/DASHBOARD-PORTABLE-REPAIR-003.md |
+| GOAL-USAGE-001 | 增加 Codex Goal 自动落地预设与中文触发词 | D | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/GOAL-USAGE-001.md |
+| LEAN-001 | 冻结 v0.8 评估合同并执行零额度回放 | C | Cancelled | Passed | UA3 | Deferred / None | commit=Committed;merge=Deferred;merge_authority=None | docs/tasks/LEAN-001.md |
+| LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Cancelled | Passed | UA3 | Deferred / None | commit=Committed;merge=Not Applicable;merge_authority=None | docs/tasks/LEAN-002.md |
+| LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/LEAN-003.md |
+| PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/PLAN-001.md |
+| PROGRESS-VISIBILITY-001 | 统一跨 Worktree 进展可见性并瘦身任务看板 | C | In Progress | Passed | UA6 | Pending / None | commit=Uncommitted;merge=Not Recorded;merge_authority=None | docs/tasks/PROGRESS-VISIBILITY-001.md |
+| REL-001 | 收口 v0.6 发布身份 | B | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-001-close-v06-release-identity.md |
+| REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-002-close-v07-release-identity-and-sync.md |
+| REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-003-release-v090-dashboard.md |
+| REL-004 | 发布 v0.9.1 跨项目 Dashboard | D | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-004-release-v091-portable-dashboard.md |
+| REL-005 | 收口历史治理债务并发布 v0.9.2 | D | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-005-release-v092-maintenance.md |
+| REPAIR-CAMPAIGN-001 | 实现任务级连续修复授权 | D | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REPAIR-CAMPAIGN-001.md |
+| REPAIR-ESCALATION-001 | 实现用户授权的超限修复通道 | D | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REPAIR-ESCALATION-001.md |
+| SYNC-001 | 审查并同步 ai-dev-flow Skill 增量 | D | Cancelled | Passed | UA3 | Deferred / None | commit=Committed;merge=Not Applicable;merge_authority=None | docs/tasks/SYNC-001.md |
+| WORKSPACE-CLEANUP-001 | 迁移主工作区前端改动并清理旧工作区 | D | Closed | Passed | UA5 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/WORKSPACE-CLEANUP-001.md |
+<!-- ADF-GENERATED:END -->
 
 ## PLAN-001 核心约束与 REPAIR-ESCALATION-001 演进
 
@@ -195,7 +105,7 @@ REL-002 Closed / main@0422887
 
 ## 下一允许动作
 
-`REL-005` 按用户授权执行除 CADCat 任务数据外的全部剩余项：历史 Contract/任务收口、开发依赖安全升级、runtime 重建、本机现存 Skill 同步与 `v0.9.2` 正式发布。发布前必须完整验证和独立只读 Review；禁止修改 CADCat、创建不存在的安装目录、强推或改写历史。
+继续实施 `PROGRESS-VISIBILITY-001`：完成运行时重建与 artifact 门禁候选判定，写回实施证据后停在等待用户 UA 的状态。merge、push、release、本机 Skill 安装目录同步、Accepted、Closed 均需用户逐项明确授权。
 
 ## 停止条件
 

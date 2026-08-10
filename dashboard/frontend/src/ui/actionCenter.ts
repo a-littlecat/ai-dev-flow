@@ -8,6 +8,7 @@ import {
   LIFECYCLE_LABEL,
   PARALLEL_REASON_LABEL,
   label,
+  taskSourceShort,
 } from "./labels";
 
 export class ActionCenter {
@@ -53,6 +54,7 @@ export class ActionCenter {
             `状态：${label(LIFECYCLE_LABEL, item.task.lifecycle)} · 下一步：${next}`,
             "进行中",
             "active",
+            taskSourceShort(item.task),
           ),
         );
       }
@@ -124,6 +126,7 @@ export class ActionCenter {
     const meta = el("div", "current-meta");
     meta.append(
       this.metaLine("下一步", ACTION_KIND_LABEL[current.action.action_kind] ?? current.action.action_kind),
+      this.metaLine("来源", taskSourceShort(current.task)),
       this.metaLine(
         "相关下游",
         [...(state.derived?.downstream.get(current.task.task_id) ?? [])].slice(0, 2).join("、") || "暂无明确下游",
@@ -178,6 +181,7 @@ export class ActionCenter {
         `动作受阻 · 原因：${reasons || "快照未提供补充原因"}`,
         "动作受阻",
         "waiting",
+        taskSourceShort(item.task),
       );
     }
     const counterpart = item.counterpart?.task_id;
@@ -185,7 +189,7 @@ export class ActionCenter {
       item.kind === "blocked"
         ? `被 ${counterpart} 阻塞`
         : `必须与 ${counterpart} 串行 · ${item.assessment?.reason_codes.map((reason) => PARALLEL_REASON_LABEL[reason] ?? reason).join("、") || "存在串行证据"}`;
-    return this.taskRow(item.task.task_id, item.task.title, meta, item.kind === "blocked" ? "等待中" : "必须串行", "waiting");
+    return this.taskRow(item.task.task_id, item.task.title, meta, item.kind === "blocked" ? "等待中" : "必须串行", "waiting", taskSourceShort(item.task));
   }
 
   private section(title: string, count: number, tone: string): HTMLElement {
@@ -194,14 +198,14 @@ export class ActionCenter {
     return section;
   }
 
-  private taskRow(taskId: string, title: string, meta: string, badge: string, tone: string): HTMLLIElement {
+  private taskRow(taskId: string, title: string, meta: string, badge: string, tone: string, source: string): HTMLLIElement {
     const item = el("li", `overview-item ${tone}-item`);
     const button = el("button", "overview-row-button");
     button.type = "button";
     button.dataset.overviewFocusKey = `row:${tone}:${taskId}`;
     button.dataset.overviewTaskId = taskId;
     const head = el("span", "overview-item-head");
-    head.append(el("code", "overview-task-id", taskId), el("span", `overview-badge ${tone}`, badge));
+    head.append(el("code", "overview-task-id", taskId), el("span", `overview-badge ${tone}`, badge), el("span", "overview-badge source", source));
     button.append(head, el("span", "overview-item-title", title), el("span", "overview-item-meta", meta));
     button.addEventListener("click", () => this.store.openTaskRoute(taskId));
     item.append(button);

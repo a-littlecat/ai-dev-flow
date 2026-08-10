@@ -22,6 +22,7 @@ import {
   PARALLEL_REASON_LABEL,
   SEVERITY_ICON,
   SEVERITY_LABEL,
+  taskSourceShort,
 } from "../labels";
 import { layoutGraph, NODE_HEIGHT, NODE_WIDTH, type GraphLayout, type LayoutNode } from "./layout";
 
@@ -322,6 +323,7 @@ export class GraphView {
       action ? `下一动作 ${label(ACTION_KIND_LABEL, action.action_kind)}，${label(ELIGIBILITY_LABEL, action.eligibility)}` : "无动作建议",
       diagnostics.length > 0 ? `诊断 ${diagnostics.length} 条` : "无诊断",
       task.freshness !== "fresh" ? FRESHNESS_LABEL[task.freshness] ?? task.freshness : "",
+      `来源 ${taskSourceShort(task)}`,
       searchMatch ? "搜索匹配" : "",
       selected ? "当前选中" : "",
     ].filter(Boolean);
@@ -350,7 +352,8 @@ export class GraphView {
 
     const lifecycleText = label(LIFECYCLE_LABEL, task.lifecycle);
     const freshnessTag = task.freshness === "fresh" ? "" : ` ｜ ${FRESHNESS_LABEL[task.freshness] ?? task.freshness}`;
-    group.append(svgText({ x: "12", y: "56", class: `node-lifecycle lc-${cssSafe(task.lifecycle)}` }, `状态：${lifecycleText}${freshnessTag}`));
+    const sourceTag = task.worktree_root ? ` ｜ ${taskSourceShort(task)}` : "";
+    group.append(svgText({ x: "12", y: "56", class: `node-lifecycle lc-${cssSafe(task.lifecycle)}` }, `状态：${lifecycleText}${freshnessTag}${sourceTag}`));
 
     const actionText = action
       ? action.action_kind === "none"

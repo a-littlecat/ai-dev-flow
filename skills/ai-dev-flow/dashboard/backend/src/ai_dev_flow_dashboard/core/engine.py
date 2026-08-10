@@ -19,6 +19,7 @@ from .models import (
     SchedulingProfile,
     TaskNode,
     UNSUPPORTED_AXES,
+    WorktreeExtra,
     WorktreeSnapshot,
 )
 from .ownership import resolve_dirty_ownership
@@ -88,10 +89,12 @@ class DashboardCore:
         *,
         worktrees: Mapping[str, WorktreeSnapshot] | None = None,
         worktree_candidates: Iterable[WorktreeSnapshot] | None = None,
+        extra: WorktreeExtra | None = None,
     ) -> CoreResult:
         with self.lease_inspect(
             worktrees=worktrees,
             worktree_candidates=worktree_candidates,
+            extra=extra,
         ) as result:
             return result
 
@@ -101,6 +104,7 @@ class DashboardCore:
         *,
         worktrees: Mapping[str, WorktreeSnapshot] | None = None,
         worktree_candidates: Iterable[WorktreeSnapshot] | None = None,
+        extra: WorktreeExtra | None = None,
     ) -> Iterator[CoreResult]:
         """Keep the frozen source lease active while a caller finalizes a candidate."""
 
@@ -109,6 +113,7 @@ class DashboardCore:
                 frozen,
                 worktrees,
                 tuple(worktree_candidates or ()),
+                extra=extra,
             )
 
     def _inspect_frozen(
@@ -116,11 +121,14 @@ class DashboardCore:
         frozen: FrozenProjectInput,
         worktrees: Mapping[str, WorktreeSnapshot] | None,
         worktree_candidates: tuple[WorktreeSnapshot, ...] = (),
+        *,
+        extra: WorktreeExtra | None = None,
     ) -> CoreResult:
         result, _ = self._inspect_frozen_with_profiles(
             frozen,
             worktrees,
             worktree_candidates,
+            extra=extra,
         )
         return result
 
@@ -131,12 +139,21 @@ class DashboardCore:
         worktree_candidates: tuple[WorktreeSnapshot, ...] = (),
         *,
         defer_parallel: bool = False,
+        extra: WorktreeExtra | None = None,
     ) -> tuple[CoreResult, dict[str, SchedulingProfile]]:
+        extra_items = extra.items if extra is not None else ()
         gateway_report = self.gateway.inspect(frozen)
         known_task_ids = frozenset(
-            contract.task_id
-            for contract in gateway_report.contracts
-            if _TASK_ID_RE.fullmatch(contract.task_id)
+            {
+                contract.task_id
+                for contract in gateway_report.contracts
+                if _TASK_ID_RE.fullmatch(contract.task_id)
+            }
+            | {
+                item.contract.task_id
+                for item in extra_items
+                if _TASK_ID_RE.fullmatch(item.contract.task_id)
+            }
         )
         frozen_by_source = frozen.by_source_path()
         self.scheduling.begin_inspection()
@@ -149,9 +166,28 @@ class DashboardCore:
             profile = self.scheduling.parse(source, contract.task_id, known_task_ids)
             profiles[contract.task_id] = profile
             scheduling_diagnostics.extend(profile.diagnostics)
+        for item in extra_items:
+            profile = self.scheduling.parse(
+                item.source,
+                item.contract.task_id,
+                known_task_ids,
+            )
+            profiles[item.contract.task_id] = profile
+            scheduling_diagnostics.extend(profile.diagnostics)
 
         diagnostics = tuple(gateway_report.diagnostics) + tuple(scheduling_diagnostics)
-        tasks = self._nodes(gateway_report.contracts, profiles, diagnostics)
+        if extra is not None:
+            diagnostics = diagnostics + tuple(extra.diagnostics)
+        # The aggregator already enforces main-workspace precedence; the
+        # membership guard only protects against a defective extra input.
+        main_task_ids = {
+            contract.task_id for contract in gateway_report.contracts
+        }
+        contracts = list(gateway_report.contracts)
+        contracts.extend(
+            item.contract for item in extra_items if item.contract.task_id not in main_task_ids
+        )
+        tasks = self._nodes(tuple(contracts), profiles, diagnostics)
         if worktrees is None and worktree_candidates:
             worktrees = self._map_worktree_candidates(tasks, worktree_candidates)
         edges, relationship_diagnostics = self.relationships.build(tasks, profiles, diagnostics)
@@ -192,11 +228,13 @@ class DashboardCore:
     @contextmanager
     def lease_inspect_deferred(
         self,
+        *,
+        extra: WorktreeExtra | None = None,
     ) -> Iterator[tuple[CoreResult, dict[str, SchedulingProfile]]]:
         """Parse frozen sources while Git evidence is collected independently."""
 
         with self.lease_frozen() as frozen:
-            yield self.inspect_frozen_deferred(frozen)
+            yield self.inspect_frozen_deferred(frozen, extra=extra)
 
     @contextmanager
     def lease_frozen(self) -> Iterator[FrozenProjectInput]:
@@ -208,6 +246,8 @@ class DashboardCore:
     def inspect_frozen_deferred(
         self,
         frozen: FrozenProjectInput,
+        *,
+        extra: WorktreeExtra | None = None,
     ) -> tuple[CoreResult, dict[str, SchedulingProfile]]:
         if frozen.project_root != self.project_root:
             raise ValueError("frozen input belongs to a different project root")
@@ -218,6 +258,7 @@ class DashboardCore:
             None,
             (),
             defer_parallel=True,
+            extra=extra,
         )
 
     def complete_parallel(
@@ -335,7 +376,7 @@ class DashboardCore:
                     parallel_intent=profile.get("parallel_intent"),
                     worktree_requirement=profile.get("worktree"),
                     branch_hint=profile.get("branch_hint"),
-                    freshness="fresh",
+                    freshness="stale" if contract.stale else "fresh",
                     diagnostic_ids=tuple(sorted(set(diagnostic_ids.get(contract.task_id, ())))),
                     provenance=tuple(
                         sorted(
@@ -348,6 +389,7 @@ class DashboardCore:
                             ),
                         )
                     ),
+                    worktree_root=contract.worktree_root,
                 )
             )
         return tuple(sorted(result, key=lambda item: item.task_id))

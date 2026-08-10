@@ -245,7 +245,7 @@ class SkillRuntimeBuildTests(unittest.TestCase):
                 )
                 self.assertEqual("", status)
 
-                self.assertEqual(37, len(results["true"]))
+                self.assertEqual(38, len(results["true"]))
             self.assertEqual(results["true"], results["false"])
 
 

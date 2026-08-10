@@ -15,6 +15,9 @@ from typing import Any, Iterable
 
 from ai_dev_flow_dashboard.core import (
     DashboardCore,
+    StaleTaskRecord,
+    WorktreeAggregation,
+    WorktreeTaskAggregator,
     canonical_bytes,
     resolve_dirty_ownership_for_tasks,
     snapshot_revision,
@@ -126,6 +129,11 @@ class SnapshotBuilder:
         json.loads(self._startup_schema_content)
         self._last_good_payload: bytes | None = None
         self._last_good_source_digest: str | None = None
+        self.worktree_aggregator = WorktreeTaskAggregator(
+            self.project_root,
+            skill_root=skill_root,
+        )
+        self._wt_last_good: dict[str, tuple[StaleTaskRecord, ...]] = {}
         self._candidate_cache: dict[
             tuple[str, str, str],
             _CachedCandidate,
@@ -142,6 +150,7 @@ class SnapshotBuilder:
         leased = hasattr(self.core, "lease_inspect")
         if leased:
             git_before = self.git_collector.collect()
+            aggregation = self._collect_worktree_sources(git_before)
             provisional_mapping: dict[str, Any] = {}
             mapping_diagnostics: tuple[Diagnostic, ...] = ()
         else:
@@ -152,6 +161,7 @@ class SnapshotBuilder:
                 git_future = executor.submit(self.git_collector.collect)
                 hints_future = executor.submit(self._strict_branch_hints)
             git_before = git_future.result()
+            aggregation = self._collect_worktree_sources(git_before)
             provisional_hints = hints_future.result()
             provisional_mapping, mapping_diagnostics = self._map_hints(
                 git_before,
@@ -161,12 +171,20 @@ class SnapshotBuilder:
             inspection = (
                 self.core.lease_inspect(
                     worktree_candidates=git_before.worktrees,
+                    extra=aggregation.extra,
                 )
                 if leased
-                else nullcontext(self.core.inspect(worktrees=provisional_mapping))
+                else nullcontext(
+                    self.core.inspect(
+                        worktrees=provisional_mapping,
+                        extra=aggregation.extra,
+                    )
+                )
             )
             with inspection as core_result:
-                source_before = core_result.manifest_sha256
+                source_before = _combined_source_digest(
+                    core_result.manifest_sha256, aggregation
+                )
                 if leased:
                     resolved_mapping, mapping_diagnostics = git_before.map_tasks(
                         core_result.tasks
@@ -176,7 +194,11 @@ class SnapshotBuilder:
                         core_result.tasks,
                         provisional_mapping,
                     )
-                source_after = source_before if leased else self.source_digest()
+                source_after = (
+                    source_before
+                    if leased
+                    else _combined_source_digest(self.source_digest(), aggregation)
+                )
                 return self._complete_candidate(
                     core_result,
                     git_before,
@@ -185,6 +207,7 @@ class SnapshotBuilder:
                     source_before,
                     source_after,
                     schema_before,
+                    worktree=aggregation,
                 )
         except Exception as exc:
             current_digest = self._safe_source_digest(source_before, exc)
@@ -211,34 +234,34 @@ class SnapshotBuilder:
             return self._build_cached_deferred()
         source_before = canonical_sha256({"source": "unavailable"})
         git_before: GitCollection | None = None
+        aggregation: WorktreeAggregation | None = None
         try:
-            with ThreadPoolExecutor(
-                max_workers=1,
-                thread_name_prefix="dashboard-snapshot-git",
-            ) as executor:
-                git_future = executor.submit(self.git_collector.collect)
-                with self.core.lease_inspect_deferred() as deferred:
-                    core_result, profiles = deferred
-                    git_before = git_future.result()
-                    core_result = self.core.complete_parallel(
-                        core_result,
-                        profiles,
-                        git_before.worktrees,
-                    )
-                    source_before = core_result.manifest_sha256
-                    resolved_mapping, mapping_diagnostics = git_before.map_tasks(
-                        core_result.tasks
-                    )
-                    return self._complete_candidate(
-                        core_result,
-                        git_before,
-                        resolved_mapping,
-                        mapping_diagnostics,
-                        source_before,
-                        source_before,
-                        schema_before,
-                        reuse_git_snapshot=True,
-                    )
+            git_before = self.git_collector.collect()
+            aggregation = self._collect_worktree_sources(git_before)
+            with self.core.lease_inspect_deferred(extra=aggregation.extra) as deferred:
+                core_result, profiles = deferred
+                core_result = self.core.complete_parallel(
+                    core_result,
+                    profiles,
+                    git_before.worktrees,
+                )
+                source_before = _combined_source_digest(
+                    core_result.manifest_sha256, aggregation
+                )
+                resolved_mapping, mapping_diagnostics = git_before.map_tasks(
+                    core_result.tasks
+                )
+                return self._complete_candidate(
+                    core_result,
+                    git_before,
+                    resolved_mapping,
+                    mapping_diagnostics,
+                    source_before,
+                    source_before,
+                    schema_before,
+                    reuse_git_snapshot=True,
+                    worktree=aggregation,
+                )
         except Exception as exc:
             if git_before is None:
                 git_before = self.git_collector.collect()
@@ -262,63 +285,58 @@ class SnapshotBuilder:
         source_before = canonical_sha256({"source": "unavailable"})
         git_before: GitCollection | None = None
         try:
-            with ThreadPoolExecutor(
-                max_workers=1,
-                thread_name_prefix="dashboard-snapshot-git",
-            ) as executor:
-                git_future = executor.submit(self.git_collector.collect)
-                with self.core.lease_frozen() as frozen:
-                    source_before = frozen.manifest_sha256
-                    source_is_cached = any(
-                        key[0] == source_before and key[2] == schema_before
-                        for key in self._candidate_cache
+            git_before = self.git_collector.collect()
+            aggregation = self._collect_worktree_sources(git_before)
+            with self.core.lease_frozen() as frozen:
+                source_before = _combined_source_digest(
+                    frozen.manifest_sha256, aggregation
+                )
+                source_is_cached = any(
+                    key[0] == source_before and key[2] == schema_before
+                    for key in self._candidate_cache
+                )
+                if source_is_cached:
+                    cached = self._candidate_cache.get(
+                        (
+                            source_before,
+                            git_before.fingerprint,
+                            schema_before,
+                        )
                     )
-                    if source_is_cached:
-                        git_before = git_future.result()
-                        cached = self._candidate_cache.get(
+                    if cached is not None:
+                        return self._reuse_candidate(
+                            cached,
+                            git_before,
+                            schema_before,
                             (
                                 source_before,
                                 git_before.fingerprint,
                                 schema_before,
-                            )
+                            ),
                         )
-                        if cached is not None:
-                            return self._reuse_candidate(
-                                cached,
-                                git_before,
-                                schema_before,
-                                (
-                                    source_before,
-                                    git_before.fingerprint,
-                                    schema_before,
-                                ),
-                            )
-                        core_result, profiles = self.core.inspect_frozen_deferred(
-                            frozen
-                        )
-                    else:
-                        core_result, profiles = self.core.inspect_frozen_deferred(
-                            frozen
-                        )
-                        git_before = git_future.result()
-                    core_result = self.core.complete_parallel(
-                        core_result,
-                        profiles,
-                        git_before.worktrees,
-                    )
-                    resolved_mapping, mapping_diagnostics = git_before.map_tasks(
-                        core_result.tasks
-                    )
-                    return self._complete_candidate(
-                        core_result,
-                        git_before,
-                        resolved_mapping,
-                        mapping_diagnostics,
-                        source_before,
-                        source_before,
-                        schema_before,
-                        reuse_git_snapshot=True,
-                    )
+                core_result, profiles = self.core.inspect_frozen_deferred(
+                    frozen,
+                    extra=aggregation.extra,
+                )
+                core_result = self.core.complete_parallel(
+                    core_result,
+                    profiles,
+                    git_before.worktrees,
+                )
+                resolved_mapping, mapping_diagnostics = git_before.map_tasks(
+                    core_result.tasks
+                )
+                return self._complete_candidate(
+                    core_result,
+                    git_before,
+                    resolved_mapping,
+                    mapping_diagnostics,
+                    source_before,
+                    source_before,
+                    schema_before,
+                    reuse_git_snapshot=True,
+                    worktree=aggregation,
+                )
         except Exception as exc:
             if git_before is None:
                 git_before = self.git_collector.collect()
@@ -388,18 +406,27 @@ class SnapshotBuilder:
         *,
         git_after_future: Future[GitCollection] | None = None,
         reuse_git_snapshot: bool = False,
+        worktree: WorktreeAggregation | None = None,
     ) -> SnapshotBuildResult:
         self._verify_provisional_mapping(core_result.tasks, resolved_mapping)
         resolved_git_before = _with_resolved_ownership(
             git_before,
             resolved_mapping,
         )
+        worktree_diagnostics = (
+            tuple(worktree.diagnostics) if worktree is not None else ()
+        )
+        stale_sources = (
+            tuple(worktree.stale_sources) if worktree is not None else ()
+        )
         if reuse_git_snapshot:
             snapshot, payload = self._fresh_snapshot(
                 core_result,
                 resolved_git_before,
                 tuple(resolved_git_before.diagnostics)
-                + tuple(mapping_diagnostics),
+                + tuple(mapping_diagnostics)
+                + worktree_diagnostics,
+                stale_sources=stale_sources,
             )
             git_after = git_before
         elif git_after_future is None:
@@ -413,7 +440,9 @@ class SnapshotBuilder:
                     core_result,
                     resolved_git_before,
                     tuple(resolved_git_before.diagnostics)
-                    + tuple(mapping_diagnostics),
+                    + tuple(mapping_diagnostics)
+                    + worktree_diagnostics,
+                    stale_sources=stale_sources,
                 )
             git_after = local_git_future.result()
             snapshot, payload = snapshot_future.result()
@@ -422,7 +451,9 @@ class SnapshotBuilder:
                 core_result,
                 resolved_git_before,
                 tuple(resolved_git_before.diagnostics)
-                + tuple(mapping_diagnostics),
+                + tuple(mapping_diagnostics)
+                + worktree_diagnostics,
+                stale_sources=stale_sources,
             )
             git_after = git_after_future.result()
         if source_before != source_after:
@@ -433,6 +464,14 @@ class SnapshotBuilder:
             raise SnapshotInputChanged(
                 "Git/Worktree evidence changed during snapshot build"
             )
+        if worktree is not None and not self.worktree_aggregator.verify_unchanged(
+            git_before.worktrees,
+            worktree,
+            self._wt_last_good,
+        ):
+            raise SnapshotInputChanged(
+                "Worktree TASK source changed during snapshot build"
+            )
         if schema_before != self.schema_digest():
             raise SnapshotInputChanged(
                 "dashboard contract schema changed during snapshot build"
@@ -440,6 +479,11 @@ class SnapshotBuilder:
         resolved_git = _with_resolved_ownership(git_after, resolved_mapping)
         self._last_good_payload = payload
         self._last_good_source_digest = source_after
+        if worktree is not None:
+            self._wt_last_good = self.worktree_aggregator.updated_last_good(
+                self._wt_last_good,
+                worktree,
+            )
         result = SnapshotBuildResult(
             snapshot,
             source_after,
@@ -535,6 +579,8 @@ class SnapshotBuilder:
         core_result: CoreResult,
         git: GitCollection,
         extra_diagnostics: tuple[Diagnostic, ...],
+        *,
+        stale_sources: tuple[dict, ...] = (),
     ) -> tuple[dict[str, Any], bytes]:
         diagnostics = _unique_diagnostics(core_result.diagnostics + extra_diagnostics)
         snapshot = {
@@ -550,7 +596,7 @@ class SnapshotBuilder:
                 _wire_value(item) for item in core_result.parallel_assessments
             ],
             "diagnostics": [_wire_value(item) for item in diagnostics],
-            "stale_sources": [],
+            "stale_sources": list(stale_sources),
             "summary": _summary(core_result, diagnostics),
             "capabilities": _capabilities(),
             "disclaimer": DISCLAIMER,
@@ -619,6 +665,27 @@ class SnapshotBuilder:
             snapshot,
             schema_content=self._startup_schema_content,
         )
+
+    def _collect_worktree_sources(self, git: GitCollection) -> WorktreeAggregation:
+        return self.worktree_aggregator.collect(
+            git.worktrees,
+            main_task_ids=self._main_task_ids(),
+            last_good=self._wt_last_good,
+        )
+
+    def _main_task_ids(self) -> frozenset[str]:
+        result: set[str] = set()
+        for path in sorted((self.project_root / "docs" / "tasks").glob("*.md")):
+            if _is_temporary(path):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="strict")
+            except (OSError, UnicodeDecodeError):
+                continue
+            task_id = WorktreeTaskAggregator.task_id_from_text(text)
+            if task_id:
+                result.add(task_id)
+        return frozenset(result)
 
     def _strict_branch_hints(self) -> dict[str, str]:
         result: dict[str, str] = {}
@@ -728,6 +795,14 @@ class SnapshotBuilder:
             task_ids=(),
             provenance=(),
         )
+
+
+def _combined_source_digest(main_digest: str, aggregation: WorktreeAggregation) -> str:
+    """Source identity covering the main workspace and safe Worktree TASK files."""
+
+    return canonical_sha256(
+        {"main": main_digest, "worktree_tasks": aggregation.digest}
+    )
 
 
 class SnapshotInputChanged(RuntimeError):
@@ -937,6 +1012,16 @@ def _wire_value(value: Any) -> Any:
         task_id_provenance = [
             item for item in provenance if item.field == "task_id"
         ]
+        # Co-source markers (rule: identical multi-Worktree content lists every
+        # source) survive the wire trimming alongside the identity entry.
+        source_provenance = [
+            item for item in provenance if item.field == "worktree_source"
+        ]
+        kept = (
+            task_id_provenance[:1]
+            if task_id_provenance
+            else list(provenance[:1])
+        ) + source_provenance
         value = replace(
             value,
             provenance=tuple(
@@ -948,11 +1033,7 @@ def _wire_value(value: Any) -> Any:
                         "legacy": "legacy_inferred",
                     }.get(item.source_type, item.source_type),
                 )
-                for item in (
-                    task_id_provenance[:1]
-                    if task_id_provenance
-                    else provenance[:1]
-                )
+                for item in kept
             ),
         )
     return primitive(value)

@@ -20,6 +20,7 @@
 
 ## 目标与边界
 
+- 目标：目标 1 为 Dashboard 跨 worktree 进展可见性，目标 2 为看板生成器与授权归档；明细如下。
 - 目标 1（Dashboard）：发现合同改为 **worktree 优先**——先由 `git worktree list --porcelain -z` 的安全结果枚举候选 linked Worktree（排除 detached / locked / prunable，解析失败只报诊断不猜测），再读取各安全 worktree 的 `docs/tasks/*.md` 作为只读补充源并入快照；**不读取 worktree 的 `TASK_BOARD.md`**——看板只是投影、TASK 才是事实源，跨源看板仲裁被显式排除，任务状态一律从 TASK 文件派生。任务身份以 `task_id` 为准，不依赖任务先存在于主工作区、也不要求 TASK 带 `branch_hint`。前端明确标记任务来源（主工作区 / 具体 worktree）。同一 `task_id` 的选择规则按以下确定性顺序判定，禁止依赖 `git worktree list` 返回顺序，一切并列决胜按 worktree 根路径字典序（casefold）：(a) 主工作区含该 `task_id` 时主工作区内容进入公开快照；(b) 否则恰好一个安全 worktree 含该 `task_id` 时采用之；(c) 多个 worktree 含同一 `task_id` 且文件内容 SHA256 一致时视为一份，来源标记为字典序首个 worktree，全部来源列入 provenance；(d) 多个 worktree 内容不一致时不发布任何候选内容，只发布 `WT_TASK_CONFLICT` 冲突诊断（列出全部候选 worktree 及各自 SHA256）。冲突与异常产生稳定诊断（code / severity / provenance 见"冻结合同"节），不静默猜测；路径逃逸出 worktree 根、文件不可读、重复 `task_id` 均按诊断处理。
 - 目标 2（看板生成器）：新增看板生成器，复用 `skills/ai-dev-flow/scripts/workflow_contract.py::_expected_board_projection()` 的既有 TASK→九字段状态表投影逻辑；生成器范围**只含任务状态表**，依赖链与下一动作不由生成器重复实现（Dashboard 的 SchedulingParser / ActionEngine 已提供该视图）。生成器为双模式：默认 `--check` 纯只读，显式 `--write` 才写 `TASK_BOARD.md` 生成区；写入必须 byte-stable（重复生成零 diff），人工区 byte-preserve。生成器是**独立命令**，`workflow_lint` 完全不接线、行为不变，生成器 `--check` 作为并列验证命令单独运行。`TASK_BOARD.md` 顶部标注"任务状态表为生成区，请勿手改；生成区标记范围外为人工维护区"，生成区以 `<!-- ADF-GENERATED:BEGIN -->` / `<!-- ADF-GENERATED:END -->` 显式包围。"当前有效授权"与叙事性"下一允许动作"属不可派生的授权事实，保留为生成区外的小型人工维护区，生成器 `--check` 校验其指向的任务状态一致性（指向已 Closed / 不存在任务即产生诊断，不自动改写）。历史授权流水由生成器的显式迁移模式**自动归档**：`## 当前授权边界` 整节按段落/列表项机械切分、原文逐字搬入 `docs/AUTHORITY_LOG.md`，不做"当前有效 / 历史"的语义判定——整节一律视为历史记录。迁移后看板人工区只保留用户当下重新声明的当前授权（一句话级别；未声明即为空，不存在机器误判授权有效性的问题）。生成器在迁移时按条目 ID 对账完整性（无遗漏、无重复），并在此后持续校验人工区引用完整性；归档不是 lint 或 `--check` 的副作用。
 - 非目标：不修改 v0.10 各 worktree 分支内容；不引入网络写接口、数据库、自动同步或遥测；不改变 Review / UA / Accepted / delivery / Closed 的正交语义；不夹带 v0.10 架构重构（core split / console 等）内容；不改动 `artifact_guard` 的 Accepted 基线保护语义。
@@ -48,6 +49,7 @@
 
 ## 完成标准与验证
 
+- 完成标准：以下勾选项全部完成。
 - [ ] 在 4 个 `codex/v010-*` worktree 存在（且其 TASK 无 `branch_hint`）的情况下启动仪表盘，`ADF-V010-*` 任务状态可见（一律派生自 TASK 文件，不读取 worktree 看板），来源标记正确。
 - [ ] 冲突选择规则生效：主工作区优先、单源采用、多源同 SHA 去重、多源不同内容只发 `WT_TASK_CONFLICT` 诊断不发布候选；诊断带冻结 code / severity / provenance；detached / locked / prunable worktree 不进入读取集；并列决胜不依赖 `git worktree list` 返回顺序。
 - [ ] 运行中实时刷新：仪表盘已运行时修改一个安全 worktree 的 TASK，≤2 秒产生新 snapshot revision 与 SSE 更新且状态与来源正确；worktree 被 locked / prunable / 删除 / 不可读或其 TASK 源文件被删除 / 重命名时，保留 last-known-good 并标记 stale，同时产生 `WT_SOURCE_LOST` 诊断。
@@ -63,4 +65,15 @@
 - Review Round 3（2026-08-10）：Codex 复审结论 `Needs Fix`；Round 2 修复关闭 4 项、Open 2 项，新增 P1×3 / P2×2。三轮整体趋势：Round 1 为致命设计缺陷，Round 2 为规则完备性，Round 3 已为合同措辞精度级。用户裁定"方案已经可以，不再逐字抠细节"，授权按降范围方式定稿、不再进行 Round 4 正式复审：R3-002 → 砍掉跨 worktree 看板聚合（回归 TASK 即事实源，看板不跨源仲裁）；R3-003 → 归档迁移降为人工一次性归类 + 生成器仅校验对账与引用完整性；R3-001 / R3-004 / R3-005 → 记入"实施时冻结项"（provenance 复用现有 `Diagnostic` / `Provenance[]` 兼容扩展、异常 code 优先复用既有、路径身份与 `WT_SOURCE_LOST` 触发集统一、失效语义为 last-known-good + stale），由实施者按既有代码事实决定并记入 Outcome。Draft 就此定稿，Review 状态保持用户裁决口径。
 - 用户裁决补充（2026-08-10）：用户拒绝"人工搬移授权流水"，确认归档迁移改为生成器自动整节机械归档（无语义判定、整节视为历史），当前授权由用户在看板人工区按需重新声明。
 - 验收与授权（2026-08-10）：用户明确"验收通过，提交然后进行实施"。据此记录：草稿验收通过（规划级验收），Review 状态按用户裁决口径记为 `Passed`（三轮正式复审结论为 Needs Fix，残余项已由用户裁决降范围或降为实施时冻结项，详见上条）；lifecycle 推进为 `In Progress`。授权范围：精确提交本 TASK 与看板索引形成 baseline，随后开始实施。UA6（两周真实使用 10 秒判据）保持 Pending，不以草稿验收代替。commit 之外的 merge、push、release、本机 Skill 安装目录同步、Closed 仍未授权。
-- 实施证据：待实施完成后填写。
+- Base / Diff：base=733dc145aef833f433dd4fc639293465e9296a31
+- 隔离位置：独立 Worktree `D:/open-source/ai-dev-flow-wt/progress-visibility-001`，分支 `codex/progress-visibility-001`。
+- 回滚方式：删除该 Worktree 与分支即可整体回退；baseline 提交 `733dc14` 不含实现代码。
+- 实施证据（2026-08-10，全部实跑）：
+  - 目标 1（Dashboard 聚合）：新增 `core/worktree_tasks.py`（worktree 优先发现、(a)-(d) 确定性选择、last-known-good stale）；`engine.py` / `builder.py` / `models.py` / `contract_gateway.py` 接入聚合与失效检测；合同 schema 兼容扩展（`Provenance.source_type` 加 `worktree`，`TaskNode.worktree_root` 可选）；前端 `detailPanel` / `actionCenter` / `graphView` / `labels` 来源标记。实施时代理发现 `state-matrix.spec.mjs` 两处断言为 baseline 内 PR #13 遗留既有失败（git 历史证实），已随本任务修正；`test_build_skill_runtime.py` bundle 计数 37→38。
+  - 目标 2（看板生成器）：新增 `skills/ai-dev-flow/scripts/board_generator.py`（`--check` 只读 / `--write` / `--migrate-authority-log` 三模式）与 15 个定向测试；既有 lint / repair_gate / 投影校验零改动。
+  - 看板重建：授权流水 32 条机械归档至 `docs/AUTHORITY_LOG.md`（AUTH-20260810-001～032，逐字未改写、SHA256 对账）；看板 213→122 行，生成区以 ADF-GENERATED 标记包围；`--check` errors=0（22 条 warning 为人工区历史节对 Closed 任务的引用提示，不阻断，是否继续归档由用户决定）。
+  - 验证数字：后端 unittest 187/187；集成 51/51；技能测试 106/106；前端 `npm run verify` 全绿（Vitest 95、Playwright 96）；`workflow_lint` errors=0；`build_skill_runtime.py --check` ok（37 文件 manifest）；artifact 门禁候选阶段 `baseline_preserved=true / candidate_consistent=true / accepted_ok=false`（候选记录已更新为 PROGRESS-VISIBILITY-001、57 文件，集成测试冻结断言同步更新）。
+  - 真实冒烟：以主项目为 root 启动便携 runtime，快照 `fresh`、38 任务、`WT_TASK_CONFLICT`×7（4 个 v010 worktree 同名 TASK 内容互异，按用户裁定规则 (d) 只报冲突不发布内容）、来源 provenance 正确。
+- Review findings：Round 1 P1×3/P2×3、Round 2 Open 3 + 新 P1×1/P2×2、Round 3 Open 2 + 新 P1×3/P2×2，全部经用户裁决关闭（降范围或降为实施时冻结项）；用户 2026-08-10 裁定多源冲突任务保持规则 (d) 只报冲突。
+- 实施时冻结项的实际选择：provenance 复用现有 `Diagnostic`/`Provenance[]`（新增 `source_type="worktree"` 取值，字段 `worktree_root`/`sha256`/`worktree_source`）；`worktree_root` 为 canonical 绝对路径 posix；`WT_SOURCE_LOST` 触发集为 worktree 变 unsafe/不可扫描或曾贡献文件消失；失效语义为 last-known-good + `freshness="stale"`；异常 code 复用既有 `GIT_PARSE_ERROR` 等。
+- 剩余风险与下一步：重启后 `_wt_last_good` 为空（`WT_SOURCE_LOST` 仅对运行中失效发射）；worktree TASK 的 Scheduling 拓扑探测用主 root 的 SchedulingParser；主工作区看板存在 1 条既有 `V_BOARD_DRIFT`（ACTION-CENTER/FOCUS-ASSESSMENT 行与 TASK 不一致，早于本任务）；实施 diff 已 stage 未 commit（commit 待用户授权）；本机已安装 Skill 仍为 0.9.2 旧运行时（同步未授权）。UA6 两周实测自用户验收后起算。
