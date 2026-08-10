@@ -536,6 +536,11 @@ button:hover {
   border-color: color-mix(in srgb, var(--candidate) 70%, var(--border));
 }
 
+.overview-badge.source {
+  color: var(--muted);
+  border-style: dashed;
+}
+
 .current-action-button {
   margin: 24px 0 24px 44px;
   padding: 11px 26px;
