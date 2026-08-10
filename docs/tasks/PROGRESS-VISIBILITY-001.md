@@ -10,7 +10,7 @@
 - `review_status`: `Passed`
 - `ua_level`: `UA6`
 - `ua_status`: `Pending`
-- `commit_status`: `Uncommitted`
+- `commit_status`: `Committed`
 
 ## 背景与价值判据
 
@@ -76,4 +76,5 @@
   - 真实冒烟：以主项目为 root 启动便携 runtime，快照 `fresh`、38 任务、`WT_TASK_CONFLICT`×7（4 个 v010 worktree 同名 TASK 内容互异，按用户裁定规则 (d) 只报冲突不发布内容）、来源 provenance 正确。
 - Review findings：Round 1 P1×3/P2×3、Round 2 Open 3 + 新 P1×1/P2×2、Round 3 Open 2 + 新 P1×3/P2×2，全部经用户裁决关闭（降范围或降为实施时冻结项）；用户 2026-08-10 裁定多源冲突任务保持规则 (d) 只报冲突。
 - 实施时冻结项的实际选择：provenance 复用现有 `Diagnostic`/`Provenance[]`（新增 `source_type="worktree"` 取值，字段 `worktree_root`/`sha256`/`worktree_source`）；`worktree_root` 为 canonical 绝对路径 posix；`WT_SOURCE_LOST` 触发集为 worktree 变 unsafe/不可扫描或曾贡献文件消失；失效语义为 last-known-good + `freshness="stale"`；异常 code 复用既有 `GIT_PARSE_ERROR` 等。
-- 剩余风险与下一步：重启后 `_wt_last_good` 为空（`WT_SOURCE_LOST` 仅对运行中失效发射）；worktree TASK 的 Scheduling 拓扑探测用主 root 的 SchedulingParser；主工作区看板存在 1 条既有 `V_BOARD_DRIFT`（ACTION-CENTER/FOCUS-ASSESSMENT 行与 TASK 不一致，早于本任务）；实施 diff 已 stage 未 commit（commit 待用户授权）；本机已安装 Skill 仍为 0.9.2 旧运行时（同步未授权）。UA6 两周实测自用户验收后起算。
+- 剩余风险与下一步：重启后 `_wt_last_good` 为空（`WT_SOURCE_LOST` 仅对运行中失效发射）；worktree TASK 的 Scheduling 拓扑探测用主 root 的 SchedulingParser；主工作区看板存在 1 条既有 `V_BOARD_DRIFT`（ACTION-CENTER/FOCUS-ASSESSMENT 行与 TASK 不一致，早于本任务）。UA6 两周实测自用户验收后起算。
+- 交付收据（2026-08-10，用户授权"提交合并推送并同步"）：实施提交 `91b5a24`（分支 `codex/progress-visibility-001`），merge 到 main `ce5aac8` 并推送 origin/main；交付链尾发现 CRLF 误报 `BOARD_DRIFT`（core.autocrlf 落盘行尾与生成器字节级比较不一致），修复提交 `0276a8e`（比较前 CRLF→LF 归一化、`--write` 跟随文件既有 EOL、新增 CRLF 定向测试，107 tests OK，主检出与 worktree 双跑 `--check` errors=0），merge `e0666a7` 并推送 origin/main；本机 Skill 安装目录已用 robocopy /MIR 同步，SHA256 校验 missing=0 / extra=0 / sha_diff=0（Local Sync Verified）。lifecycle 保持 `In Progress`（UA6 两周实测未完）；tag/release/Closed 未授权。

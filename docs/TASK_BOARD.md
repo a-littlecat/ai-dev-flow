@@ -80,7 +80,7 @@ REL-002 Closed / main@0422887
 | LEAN-002 | 构建默认关闭原型并执行阶段 B 对照 | C | Cancelled | Passed | UA3 | Deferred / None | commit=Committed;merge=Not Applicable;merge_authority=None | docs/tasks/LEAN-002.md |
 | LEAN-003 | 全面精简 Skill 并收口 v0.8 实现 | D | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/LEAN-003.md |
 | PLAN-001 | 规划前沿模型时代的 Skill 瘦身与净收益门禁 | C | Closed | Passed | UA2 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/PLAN-001.md |
-| PROGRESS-VISIBILITY-001 | 统一跨 Worktree 进展可见性并瘦身任务看板 | C | In Progress | Passed | UA6 | Pending / None | commit=Uncommitted;merge=Not Recorded;merge_authority=None | docs/tasks/PROGRESS-VISIBILITY-001.md |
+| PROGRESS-VISIBILITY-001 | 统一跨 Worktree 进展可见性并瘦身任务看板 | C | In Progress | Passed | UA6 | Pending / None | commit=Committed;merge=Not Recorded;merge_authority=None | docs/tasks/PROGRESS-VISIBILITY-001.md |
 | REL-001 | 收口 v0.6 发布身份 | B | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-001-close-v06-release-identity.md |
 | REL-002 | 收口 v0.7 发布身份并同步本机 Skill | B | Closed | Passed | UA3 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-002-close-v07-release-identity-and-sync.md |
 | REL-003 | 发布 v0.9.0 本地任务关系仪表盘 | D | Closed | Passed | UA7 | Passed / User Confirmed | commit=Committed;merge=Merged;merge_authority=User Authorized | docs/tasks/REL-003-release-v090-dashboard.md |
