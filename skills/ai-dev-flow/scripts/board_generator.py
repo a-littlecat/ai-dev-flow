@@ -158,7 +158,8 @@ def _locate_generated_zone(lines):
 def _drift_diagnostics(project_root, text, projections):
     if text is None:
         return [_diagnostic("BOARD_DRIFT", 0, "docs/TASK_BOARD.md 缺失或不是可读 UTF-8")]
-    lines = text.split("\n")
+    # CRLF 归一化：core.autocrlf 落盘的看板逐行差一个 \r，比较前统一为 LF。
+    lines = text.replace("\r\n", "\n").split("\n")
     zone = _locate_generated_zone(lines)
     if zone is None:
         return [_diagnostic(
@@ -339,7 +340,9 @@ def write_board(project_root):
     text = _read_board_text(project_root)
     if text is None:
         return [_diagnostic("BOARD_DRIFT", 0, "docs/TASK_BOARD.md 缺失或不是可读 UTF-8，--write 中止")], False
-    lines = text.split("\n")
+    # CRLF 归一化：比较与重组统一在 LF 视图进行，写回时恢复文件既有行尾风格。
+    eol = "\r\n" if "\r\n" in text else "\n"
+    lines = text.replace("\r\n", "\n").split("\n")
     zone = _locate_generated_zone(lines)
     if zone is None:
         return [_diagnostic(
@@ -352,7 +355,7 @@ def write_board(project_root):
     if lines[begin + 1:end] == expected:
         return [], False
     new_lines = lines[:begin + 1] + expected + lines[end:]
-    data = "\n".join(new_lines).encode("utf-8")
+    data = eol.join(new_lines).encode("utf-8")
     board_path = project_root / "docs" / "TASK_BOARD.md"
     tmp = _write_temp(board_path.parent, board_path.name, data)
     _replace_all([(tmp, board_path)])

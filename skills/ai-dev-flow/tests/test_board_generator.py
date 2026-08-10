@@ -200,6 +200,25 @@ class BoardGeneratorTests(unittest.TestCase):
             self.assertEqual(check.returncode, 0, check.stdout)
             self.assertNotIn("BOARD_DRIFT", check.stdout)
 
+    def test_crlf_board_check_and_write_preserve_eol(self):
+        with tempfile.TemporaryDirectory() as td:
+            fixture = self.make_project(td)
+            board = fixture.set_board(build_board())
+            # 模拟 core.autocrlf=true 的 Windows 检出：整文件 CRLF 落盘。
+            board.write_bytes(board.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+            write = self.run_cli(fixture.root, "--write")
+            self.assertEqual(write.returncode, 0, write.stdout + write.stderr)
+            data = board.read_bytes()
+            self.assertIn(b"\r\n", data, "--write 必须保留 CRLF 行尾风格")
+            self.assertNotIn(b"\n", data.replace(b"\r\n", b""), "--write 不得混入裸 LF")
+            check = self.run_cli(fixture.root, "--check")
+            self.assertEqual(check.returncode, 0, check.stdout)
+            self.assertNotIn("BOARD_DRIFT", check.stdout)
+            before = board.read_bytes()
+            rewrite = self.run_cli(fixture.root, "--write")
+            self.assertEqual(rewrite.returncode, 0, rewrite.stdout + rewrite.stderr)
+            self.assertEqual(board.read_bytes(), before, "CRLF 看板上 --write 重复执行必须零 diff")
+
     def test_write_refuses_without_markers(self):
         with tempfile.TemporaryDirectory() as td:
             fixture = self.make_project(td)
