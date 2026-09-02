@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add explicit two-tier validation guidance to `SKILL.md` and `references/WORKFLOW.md`: fast iteration validation during patches (risk-closest tests, affected subsets, parallel independent checks), and one full gate validation run before independent Review / UA / merge / delivery. `POLICY_JSON`, repair counting, and independent-review requirements are unchanged.
+
 ## 0.9.2 - 2026-08-01
 
 > `ai-dev-flow v0.9.2` 是 Goal 中文预设、历史任务收口和开发依赖安全维护版本；Workflow Contract schema 继续为 `adf/v0.7.0`，Scheduling schema 继续为 `ai-dev-flow/scheduling/v1`。
