@@ -42,6 +42,9 @@
 
 ## 完成标准与验证
 
+- 完成标准：<当前已确认的可观察结果；下方清单细化适用项>
+- 验证命令或检查：<与风险对应的命令或检查>
+
 - [ ] <完成标准 1>：<验证命令/人工步骤/证据>
 - [ ] <完成标准 2>：<验证命令/人工步骤/证据>
 - [ ] `git diff --check` 通过，diff 可归属当前 TASK。
@@ -63,9 +66,11 @@
 
 ## Outcome
 
-- Base / Diff：<base..HEAD 或工作区范围>
+- Base / Diff：base=<HASH>;diff=<working-tree 或明确 Git 范围>
+- 隔离位置：<当前工作区或任务 Worktree；C/D 级代码、测试、修复任务须明确>
+- 回滚方式：<保护已有修改的限定恢复方案；不代表已授权回滚>
 - 修改文件：<路径和作用>
-- 验证命令与结果：<命令、退出码、关键结果>
+- 验证证据：<命令、退出码、关键结果和未验证项>
 - Review findings：<稳定 ID、严重度、状态；或 Outcome 中记录 Skipped by policy，Contract 仍保持 Pending>
 - UA 动作与结果：<等级、用户需做什么、Pending/Passed/Failed>
 - 状态边界：<未执行或未授权的 commit/merge/release/Closed>

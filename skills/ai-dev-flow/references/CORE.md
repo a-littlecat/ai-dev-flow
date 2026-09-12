@@ -1,6 +1,6 @@
 # ai-dev-flow v0.8 核心规则
 
-本文件与 `SKILL.md` 构成 v0.8 默认运行时内核。下方 `POLICY_JSON` 的 route/review/safety 继承通过 V003 门禁的冻结原型，repair 在后续开发线中独立演进；它是当前 route、review 和 repair 决策的唯一规则源，其他文档只能解释。
+本文件与 `SKILL.md` 构成适用性确认后启用的 v0.8 默认运行时内核。下方 `POLICY_JSON` 的 route/review/safety 继承通过 V003 门禁的冻结原型，repair 在后续开发线中独立演进；它是当前 route、review 和 repair 决策的唯一规则源，其他文档只能解释。
 
 解析失败、未知字段、输入不完整或规则冲突时一律 `Blocked`。
 
@@ -277,7 +277,7 @@ ledger 一律视为不可信输入。判定器还必须接收由当前对话、h
 
 ## 活跃加载预算
 
-- 默认：`SKILL.md` + 本文件。
+- 先由 `SKILL.md` 判断适用性；普通请求退出后不加载本文件。需要治理或适用性不明时，默认内核为 `SKILL.md` + 本文件。
 - Tracked：默认内核外最多读取 1 份与当前动作直接相关的 reference。
 - Controlled：可按风险读取必要专项文档，但不要整包预加载。
 - `PROMPTS.md`、Batch、Wave、Loop、Memory、Constitution、角色和 provider/harness 指南均不默认加载。
