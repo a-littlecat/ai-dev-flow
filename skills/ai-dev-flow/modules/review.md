@@ -23,8 +23,10 @@
 默认跨模型审查：Claude 执行的任务请 Codex 审；Codex 执行的任务用 Codex 原生的只读子 agent，或者请 Claude 审。Claude 调用 Codex 的方式：
 
 ```powershell
-codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> - < <brief.md>
+Get-Content -Raw -Encoding UTF8 <brief.md> | codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> -
 ```
+
+在 Bash 中，最后的 `-` 改为 `- < <brief.md>`，从文件读入。
 
 审查放在后台跑，等待期间继续做别的事。审查前后各看一次 diff 涉及文件的 `git status`，确认审查方没有改动任何文件。
 

@@ -6,7 +6,7 @@
 
 It is built for frontier models and has two goals:
 
-- **Keep the key safeguards.** Nothing is called done without evidence. Product code is reviewed read-only by a different model. Irreversible actions are confirmed first.
+- **Keep the key safeguards.** Nothing is called done without evidence. Product code is reviewed read-only by a different model. Merges, releases and other actions that need your authorization are confirmed first.
 - **Spare your attention.** The hub decides what it can by itself. When it must ask, it asks everything in one message. Reports are three lines.
 
 ## Layout
@@ -41,7 +41,7 @@ It interrupts you only in four cases:
 
 - a direction must be chosen
 - something needs your eyes
-- an action can't be undone
+- an action needs your authorization (merge, push, release, deletion)
 - it is stuck
 
 When it does, it asks everything at once and recommends an answer for each question.
@@ -63,7 +63,7 @@ A project's own `AGENTS.md` can override tiers, verification commands and the re
 
 Copy `skills/ai-dev-flow/` to `~/.agents/skills/ai-dev-flow/`, which is the user-level skill directory for Codex.
 
-Claude Code reads only `~/.claude/skills/`. Add a directory junction that points at the same files (no admin rights needed on Windows):
+Claude Code's user-level skill directory is `~/.claude/skills/` (project-level `.claude/skills/` also works). Add a directory junction that points at the same files (no admin rights needed on Windows):
 
 ```powershell
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" -Target "$env:USERPROFILE\.agents\skills\ai-dev-flow"

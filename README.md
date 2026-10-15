@@ -6,7 +6,7 @@
 
 它为前沿模型设计，目标有两个：
 
-- **关键环节不省**：有证据才说完成；产品代码由另一个模型只读审查；不可挽回的动作先问。
+- **关键环节不省**：有证据才说完成；产品代码由另一个模型只读审查；合并、发布等需要授权的动作先问。
 - **不占用你的注意力**：能自己决定的不问，需要问的一次问完，汇报只写三行。
 
 ## 结构
@@ -37,7 +37,7 @@ skills/ai-dev-flow/
 | 不对 / 报错了 | 先分类，再诊断 |
 | 先停 | 停在安全点，写好交接 |
 
-它只在四种情况下来找你：方向要选、需要你亲眼看、不可挽回的动作、卡住了。每次都把问题一次问完，并附上推荐答案。
+它只在四种情况下来找你：方向要选、需要你亲眼看、需要你授权的动作（合并、push、发布、删除）、卡住了。每次都把问题一次问完，并附上推荐答案。
 
 ### 三个档位
 
@@ -53,7 +53,7 @@ skills/ai-dev-flow/
 
 把 `skills/ai-dev-flow/` 复制到 `~/.agents/skills/ai-dev-flow/`。这是 Codex 的用户级 skill 目录。
 
-Claude Code 只读 `~/.claude/skills/`，需要建一个目录链接指向同一份文件（Windows 下不需要管理员权限）：
+Claude Code 的用户级 skill 目录是 `~/.claude/skills/`（也支持项目里的 `.claude/skills/`），需要建一个目录链接指向同一份文件（Windows 下不需要管理员权限）：
 
 ```powershell
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" -Target "$env:USERPROFILE\.agents\skills\ai-dev-flow"
