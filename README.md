@@ -2,126 +2,70 @@
 
 [English](README.en.md)
 
-> **推荐使用 v1 精简版**：[`v1/ai-dev-flow`](v1/README.md)，一个总览入口加 5 个按需读取的模块，面向前沿模型，流程更轻但保留关键环节。下文介绍的 v0.9.2 和 Dashboard 保持不变，仍可继续使用。
+`ai-dev-flow` 是给 AI 编程助手（Claude Code、Codex 等）用的开发流程 skill。你只和它的总览对话：说想要什么、看结果、做关键决定；定档、建任务、验证、独立审查、合并和记录，由总览调度完成。
 
-`ai-dev-flow` 是一个按风险启用的 AI 开发治理 Skill，并附带只读的本地任务关系 Dashboard。
+它为前沿模型设计，目标有两个：
 
-它解决两件事：
+- **关键环节不省**：有证据才说完成；产品代码由另一个模型只读审查；不可挽回的动作先问。
+- **不占用你的注意力**：能自己决定的不问，需要问的一次问完，汇报只写三行。
 
-1. 小任务不强行套完整流程；高风险、跨会话、真实环境和交付任务才启用 TASK、独立 Review 与权限门禁。
-2. 把项目中的 TASK、TASK_BOARD、Git 和 Worktree 事实变成可交互关系图，帮助判断下一步、上下游、并行候选和待决事项。
+## 结构
 
-## v0.9.2 新版特性
-
-- **Codex Goal 中文预设**：支持“启动受控目标”“启动自动落地目标”“我去休息，自动修好并交付”等入口；Goal 负责持续运行，Skill 继续负责范围、验证、Review、UA 和交付权限。
-- **历史任务收口**：修复 6 份旧 Contract 的可解析性；27 个历史任务中 24 个按完整证据 Closed，3 个缺少独立 UA3 的任务保留 UA Deferred 并将任务合法收口为 Cancelled。
-- **开发依赖安全更新**：升级 Vite、Vitest、ESLint 与 TypeScript ESLint；保持 Dashboard 89 个浏览器用例和 91 个前端单元测试通过，`npm audit` 为 0。
-- **跨项目 Dashboard 保持兼容**：继续提供自包含、只读、多实例隔离和自动端口的安装运行时；日常使用无需 Node.js。
-- **安全边界不变**：仅监听 loopback，没有写 API，不修改项目、Skill 或 Git，不创建 Worktree，也不授予验收、提交、合并、发布或 Closed 权限。
-
-## 工作方式
-
-```text
-项目目录                         已安装 Skill
-├─ docs/tasks/*.md              ├─ Workflow Contract Reader
-├─ docs/TASK_BOARD.md           ├─ schema 与治理规则
-└─ .git / Worktree              └─ Dashboard 运行时与静态前端
-          │                                  │
-          └──────── 只读组合 ────────────────┘
-                           │
-                 http://127.0.0.1:<动态端口>
+```
+skills/ai-dev-flow/
+  SKILL.md              总览（唯一入口）
+  VERSION
+  modules/plan.md       计划与建任务
+  modules/diagnose.md   诊断：先定义能判定对错的信号再修
+  modules/review.md     独立审查：发起、输出格式、处理意见
+  modules/ship.md       合并落地
+  modules/compound.md   收尾沉淀与交接
 ```
 
-TASK 是详细事实源，TASK_BOARD 是投影。Dashboard 只展示可由当前证据确定的结果；证据不足时保持 `unknown`，不会猜测任务可并行或必须串行。
+模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
 
-## 快速开始
+## 怎么用
 
-### 从已安装 Skill 启动
+日常只说这几类话：
 
-支持基线为 Windows 11、Python 3.11+、Git 2.40+ 和现代浏览器。项目必须是 Git 仓库，并至少包含一个 `docs/tasks/*.md` TASK；推荐同时维护 `docs/TASK_BOARD.md`。安装版不需要 Node.js。
+| 你说 | 总览会 |
+|---|---|
+| 想做 X、修 Y | 定档，一直做到需要你的地方 |
+| 继续 | 接着做下一步 |
+| 现在到哪了 | 三行汇报 |
+| 通过了 / 可以合并 | 合并落地 |
+| 不对 / 报错了 | 先分类，再诊断 |
+| 先停 | 停在安全点，写好交接 |
 
-```powershell
-py -3 -B -X utf8 `
-  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
-  --project-root "D:\projects\your-project"
-```
+它只在四种情况下来找你：方向要选、需要你亲眼看、不可挽回的动作、卡住了。每次都把问题一次问完，并附上推荐答案。
 
-启动器会自动发现当前 Skill 根目录并选择可用端口。需要显式指定时：
+### 三个档位
 
-```powershell
-py -3 -B -X utf8 `
-  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
-  --project-root "D:\projects\your-project" `
-  --skill-root "$env:USERPROFILE\.agents\skills\ai-dev-flow" `
-  --port 5084
-```
-
-浏览器只访问输出中的 `127.0.0.1` 地址。按 `Ctrl+C` 只停止当前实例。
-
-### 从源码仓库启动
-
-源码入口额外需要 Node.js 22.13+（仅 22.x）或 Node.js 24+。首次在干净检出中运行前先安装锁定的前端依赖：
-
-```powershell
-Set-Location dashboard/frontend
-npm ci
-Set-Location ../..
-```
-
-```powershell
-py -3 -B -X utf8 dashboard/integration/launcher.py `
-  --project-root "D:\projects\your-project"
-```
-
-源码入口继续兼容，也支持 `--skill-root`、自动端口和实例隔离。
-
-## 安装或更新 Skill
-
-把仓库中的 `skills/ai-dev-flow/` 复制到 Harness 的 Skill 目录，例如：
-
-```text
-C:\Users\<user>\.agents\skills\ai-dev-flow
-```
-
-完整 Skill 目录已经包含 Dashboard 运行时。目标项目中无需再创建 Skill 副本、junction 或 symlink。
-
-## 治理路由
-
-| 结果 | 适用情况 | 默认行为 |
+| 档 | 情况 | 流程 |
 |---|---|---|
-| `DoNotUseSkill` | 低风险、单会话、验证完整 | 不建 TASK，不调用 Reviewer |
-| `Tracked` | 跨会话、范围较大或需要留证 | 使用 TASK；风险命中时只读 Review |
-| `Controlled` | D 级、高风险、真实环境或交付动作 | 完整 TASK；关键动作前独立 Review |
-| `Blocked` | 输入、权限、能力或证据不足 | 停止并报告最小阻塞信息 |
+| 直接做 | 问答、文档、样式微调、验证脚本、局部小修 | 改 → 验证 → 汇报 |
+| 标准 | 产品代码、接口、构建配置，或要跨会话 | 计划 → worktree 实现 → 分级验证 → 独立审查 → 合并 → 沉淀 |
+| 高风险 | 打包发布、写用户文件、真实业务数据、迁移、不可逆动作 | 标准流程，另加：计划先确认、完整验证、用户验收 |
 
-准确规则只维护在 `skills/ai-dev-flow/references/CORE.md` 的 `POLICY_JSON` 中。
+项目自己的 `AGENTS.md` 可以覆盖档位、验证命令和审查方式。建议在项目 `AGENTS.md` 里写一句"开发相关请求一律从 `ai-dev-flow` 总览进入"，再列出项目事实：验证命令、分工、合并授权、专项 skill。
 
-## 版本与兼容性
+## 安装
 
-- Skill：`0.9.2`
-- Dashboard 支持的 Skill 系列：`0.9.x`
-- Workflow Contract：`adf/v0.7.0`
-- Scheduling：`ai-dev-flow/scheduling/v1`
-- 支持环境：`Windows 11`、`Git 2.40+`、现代浏览器
-- Python：`3.11+`
+把 `skills/ai-dev-flow/` 复制到 `~/.agents/skills/ai-dev-flow/`。这是 Codex 的用户级 skill 目录。
 
-升级 Skill 后，已经运行的 Dashboard 会保持启动时版本并提示重启。
-
-## 开发验证
+Claude Code 只读 `~/.claude/skills/`，需要建一个目录链接指向同一份文件（Windows 下不需要管理员权限）：
 
 ```powershell
-py -3 -B -X utf8 -m unittest discover -s dashboard/backend/tests -p "test_*.py"
-py -3 -B -X utf8 -m unittest discover -s dashboard/integration/tests -p "test_*.py"
-py -3 -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_*.py"
-py -3 -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format human
-
-cd dashboard/frontend
-npm ci
-npm run verify
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" -Target "$env:USERPROFILE\.agents\skills\ai-dev-flow"
 ```
 
-更多实现与测试说明见 [Dashboard 文档](dashboard/README.md) 和 [Skill 手册](skills/ai-dev-flow/README.md)。
+其他工具按各自的 skill 目录安装。同一个 skill 不要在同一个工具能扫到的两个目录里各放一份，否则会重复出现在 skill 列表里。
 
-## License
+## 版本
 
-MIT License，详见 [LICENSE](LICENSE)。
+- **1.0.0**（2026-10-15）：重写为"一个总览加 5 个模块"。去掉了旧版的 repair 计数和收据、Lite / Tracked / Controlled 路由、UA0–UA7 分级、`workflow_lint` 和 Dashboard。
+- **0.9.2 及更早**：完整的旧版（含 Dashboard、lint、repair gate、参考文档和测试）见标签 [`v0.9.2`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9.2)。v0.9 线的最后状态见标签 [`v0.9-final`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9-final)。
+
+## 许可
+
+[MIT](LICENSE)

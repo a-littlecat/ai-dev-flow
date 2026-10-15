@@ -2,123 +2,80 @@
 
 [中文](README.md)
 
-> **Recommended: the slim v1** at [`v1/ai-dev-flow`](v1/README.md). It has one hub entry plus five modules loaded on demand, is built for frontier models, and keeps the key safeguards with less process. The v0.9.2 skill and Dashboard described below stay unchanged and remain available.
+`ai-dev-flow` is a development-flow skill for AI coding assistants such as Claude Code and Codex. You talk only to its hub. You say what you want, look at results and make the key decisions. The hub handles tiering, tasks, verification, independent review, merging and records.
 
-`ai-dev-flow` is a risk-activated governance Skill for AI-assisted development, with a read-only local task relationship Dashboard.
+It is built for frontier models and has two goals:
 
-It keeps small tasks lightweight while applying TASK records, independent Review, and authority gates to high-risk, cross-session, real-environment, and delivery work. The Dashboard turns TASK, TASK_BOARD, Git, and Worktree facts into an interactive view of next actions, dependencies, parallel candidates, and decisions.
+- **Keep the key safeguards.** Nothing is called done without evidence. Product code is reviewed read-only by a different model. Irreversible actions are confirmed first.
+- **Spare your attention.** The hub decides what it can by itself. When it must ask, it asks everything in one message. Reports are three lines.
 
-## What is new in v0.9.2
+## Layout
 
-- **Chinese Codex Goal presets**: phrases such as “启动受控目标”, “启动自动落地目标”, and “我去休息，自动修好并交付” keep native Goal persistence while the Skill governs scope, verification, Review, UA, and delivery authority.
-- **Historical task closeout**: repair six legacy Contracts; close 24 of 27 historical tasks with complete evidence, while keeping UA deferred and legally cancelling the three tasks that lack independent UA3 acceptance.
-- **Secure development dependencies**: upgrade Vite, Vitest, ESLint, and TypeScript ESLint while keeping 89 browser tests and 91 frontend unit tests green with zero `npm audit` findings.
-- **Compatible cross-project Dashboard**: retain the self-contained, read-only, multi-instance runtime with automatic port selection; installed use still requires no Node.js.
-- **Preserved safety boundary**: loopback only, no write API, no project/Skill/Git mutations, no Worktree creation, and no authority to accept, commit, merge, release, or close tasks.
-
-## How it works
-
-```text
-Project root                     Installed Skill
-├─ docs/tasks/*.md              ├─ Workflow Contract Reader
-├─ docs/TASK_BOARD.md           ├─ schemas and governance rules
-└─ .git / Worktrees             └─ Dashboard runtime and frontend
-          │                                  │
-          └──────── read-only composition ───┘
-                           │
-                 http://127.0.0.1:<dynamic-port>
+```
+skills/ai-dev-flow/
+  SKILL.md              hub (the only entry)
+  VERSION
+  modules/plan.md       planning and tasks
+  modules/diagnose.md   diagnosis: define a pass/fail signal before fixing
+  modules/review.md     independent review: request, output format, handling findings
+  modules/ship.md       merge and landing
+  modules/compound.md   capturing lessons and handoff
 ```
 
-TASK is the detailed source of truth and TASK_BOARD is a projection. Insufficient evidence remains `unknown`; the Dashboard never guesses that tasks are parallel-safe or strictly serial.
+The modules are not separate skills. The hub reads only the one it needs at the moment.
 
-## Quick start
+## Usage
 
-### Start from an installed Skill
+In daily work you mostly say one of these:
 
-The supported baseline is Windows 11, Python 3.11+, Git 2.40+, and a modern browser. The project must be a Git repository with at least one `docs/tasks/*.md` TASK; keeping `docs/TASK_BOARD.md` is recommended. The installed runtime does not require Node.js.
+| You say | The hub |
+|---|---|
+| Build X / fix Y | picks a tier and works until it needs you |
+| Continue | does the next step |
+| Where are we? | gives a three-line report |
+| Accepted / merge it | merges and lands the work |
+| That's wrong / it errors | classifies first, then diagnoses |
+| Stop | stops at a safe point and writes a handoff |
 
-```powershell
-py -3 -B -X utf8 `
-  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
-  --project-root "D:\projects\your-project"
-```
+It interrupts you only in four cases:
 
-The launcher discovers its Skill root and selects an available port. To be explicit:
+- a direction must be chosen
+- something needs your eyes
+- an action can't be undone
+- it is stuck
 
-```powershell
-py -3 -B -X utf8 `
-  "$env:USERPROFILE\.agents\skills\ai-dev-flow\scripts\dashboard.py" `
-  --project-root "D:\projects\your-project" `
-  --skill-root "$env:USERPROFILE\.agents\skills\ai-dev-flow" `
-  --port 5084
-```
+When it does, it asks everything at once and recommends an answer for each question.
 
-Open only the printed `127.0.0.1` URL. `Ctrl+C` stops that instance only.
+### Tiers
 
-### Start from this repository
-
-The source launcher additionally requires Node.js 22.13+ on the 22.x line, or Node.js 24+. Install the locked frontend dependencies before the first run in a clean checkout:
-
-```powershell
-Set-Location dashboard/frontend
-npm ci
-Set-Location ../..
-```
-
-```powershell
-py -3 -B -X utf8 dashboard/integration/launcher.py `
-  --project-root "D:\projects\your-project"
-```
-
-The source launcher remains compatible and also supports `--skill-root`, automatic ports, and isolated instances.
-
-## Install or update the Skill
-
-Copy `skills/ai-dev-flow/` into the harness Skill directory, for example:
-
-```text
-C:\Users\<user>\.agents\skills\ai-dev-flow
-```
-
-The complete Skill directory already contains the Dashboard runtime. Target projects need no copy, junction, or symlink.
-
-## Governance routing
-
-| Outcome | Use when | Default behavior |
+| Tier | When | Flow |
 |---|---|---|
-| `DoNotUseSkill` | Low risk, one session, complete validation | No TASK or Reviewer |
-| `Tracked` | Cross-session, broader scope, or durable evidence | TASK; read-only Review when risk triggers |
-| `Controlled` | Class D, high-risk, real-environment, or delivery work | Full TASK; independent Review at enforcement points |
-| `Blocked` | Input, authority, capability, or evidence is missing | Stop and report the minimum blocker |
+| Direct | Q&A, docs, small style tweaks, validation scripts, local fixes | change → verify → report |
+| Standard | product code, interfaces, build config, or multi-session work | plan → worktree → tiered verification → independent review → merge → capture lessons |
+| High risk | packaging and releases, writing user files, real business data, migrations, irreversible actions | the standard flow, plus a confirmed plan, full verification and user acceptance |
 
-The canonical policy lives only in `skills/ai-dev-flow/references/CORE.md` → `POLICY_JSON`.
+A project's own `AGENTS.md` can override tiers, verification commands and the review setup. Two lines are recommended there:
 
-## Versions and compatibility
+- a rule that all development requests go through the `ai-dev-flow` hub;
+- the project facts: verification commands, who does what, merge authorization and project-specific skills.
 
-- Skill: `0.9.2`
-- Dashboard-supported Skill series: `0.9.x`
-- Workflow Contract: `adf/v0.7.0`
-- Scheduling: `ai-dev-flow/scheduling/v1`
-- Supported environment: `Windows 11`, `Git 2.40+`, modern browser
-- Python: `3.11+`
+## Install
 
-After a Skill update, running Dashboard instances keep their startup version and request a restart.
+Copy `skills/ai-dev-flow/` to `~/.agents/skills/ai-dev-flow/`, which is the user-level skill directory for Codex.
 
-## Development validation
+Claude Code reads only `~/.claude/skills/`. Add a directory junction that points at the same files (no admin rights needed on Windows):
 
 ```powershell
-py -3 -B -X utf8 -m unittest discover -s dashboard/backend/tests -p "test_*.py"
-py -3 -B -X utf8 -m unittest discover -s dashboard/integration/tests -p "test_*.py"
-py -3 -B -X utf8 -m unittest discover -s skills/ai-dev-flow/tests -p "test_*.py"
-py -3 -B -X utf8 skills/ai-dev-flow/scripts/workflow_lint.py . --format human
-
-cd dashboard/frontend
-npm ci
-npm run verify
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" -Target "$env:USERPROFILE\.agents\skills\ai-dev-flow"
 ```
 
-See [Dashboard documentation](dashboard/README.md) and the [Skill guide](skills/ai-dev-flow/README.md) for details.
+For other tools, install into their own skill directory. Don't put two copies of the same skill where one tool scans both locations, or it will appear twice in the skill list.
+
+## Versions
+
+- **1.0.0** (2026-10-15): rewritten as one hub plus five modules. The old repair counters and receipts, Lite / Tracked / Controlled routing, UA0–UA7 levels, `workflow_lint` and the Dashboard are gone.
+- **0.9.2 and earlier**: the complete old version (Dashboard, lint, repair gate, references and tests) is at tag [`v0.9.2`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9.2). The last state of the v0.9 line is at tag [`v0.9-final`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9-final).
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+[MIT](LICENSE)
