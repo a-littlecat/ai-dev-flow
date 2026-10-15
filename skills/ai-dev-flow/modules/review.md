@@ -26,7 +26,11 @@
 Get-Content -Raw -Encoding UTF8 <brief.md> | codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> -
 ```
 
-在 Bash 中，最后的 `-` 改为 `- < <brief.md>`，从文件读入。
+Bash 中不用 `Get-Content` 管道，直接从文件读入：
+
+```bash
+codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> - < <brief.md>
+```
 
 审查放在后台跑，等待期间继续做别的事。审查前后各看一次 diff 涉及文件的 `git status`，确认审查方没有改动任何文件。
 
