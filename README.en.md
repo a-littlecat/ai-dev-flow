@@ -2,6 +2,8 @@
 
 [中文](README.md)
 
+> **Recommended: the slim v1** at [`v1/ai-dev-flow`](v1/README.md). It has one hub entry plus five modules loaded on demand, is built for frontier models, and keeps the key safeguards with less process. The v0.9.2 skill and Dashboard described below stay unchanged and remain available.
+
 `ai-dev-flow` is a risk-activated governance Skill for AI-assisted development, with a read-only local task relationship Dashboard.
 
 It keeps small tasks lightweight while applying TASK records, independent Review, and authority gates to high-risk, cross-session, real-environment, and delivery work. The Dashboard turns TASK, TASK_BOARD, Git, and Worktree facts into an interactive view of next actions, dependencies, parallel candidates, and decisions.

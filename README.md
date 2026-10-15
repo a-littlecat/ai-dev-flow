@@ -2,6 +2,8 @@
 
 [English](README.en.md)
 
+> **推荐使用 v1 精简版**：[`v1/ai-dev-flow`](v1/README.md)，一个总览入口加 5 个按需读取的模块，面向前沿模型，流程更轻但保留关键环节。下文介绍的 v0.9.2 和 Dashboard 保持不变，仍可继续使用。
+
 `ai-dev-flow` 是一个按风险启用的 AI 开发治理 Skill，并附带只读的本地任务关系 Dashboard。
 
 它解决两件事：
