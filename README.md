@@ -20,6 +20,7 @@ skills/ai-dev-flow/
   modules/review.md     独立审查：发起、输出格式、处理意见
   modules/ship.md       合并落地
   modules/compound.md   收尾沉淀与交接
+  modules/orchestrate.md 自动推进：后台子 agent＋worktree 逐项接力
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -63,6 +64,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" 
 
 ## 版本
 
+- **1.1.0**（2026-10-18）：新增自动推进模块（后台子 agent＋worktree 接力，项目可授权核对后自动合并）；审查模块补充首选审查方不可用时的顺序，审查模型不得低于执行方。
 - **1.0.0**（2026-10-15）：重写为"一个总览加 5 个模块"。去掉了旧版的 repair 计数和收据、Lite / Tracked / Controlled 路由、UA0–UA7 分级、`workflow_lint` 和 Dashboard。
 - **0.9.2 及更早**：完整的旧版（含 Dashboard、lint、repair gate、参考文档和测试）见标签 [`v0.9.2`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9.2)。v0.9 线的最后状态见标签 [`v0.9-final`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9-final)。
 

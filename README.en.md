@@ -20,6 +20,7 @@ skills/ai-dev-flow/
   modules/review.md     independent review: request, output format, handling findings
   modules/ship.md       merge and landing
   modules/compound.md   capturing lessons and handoff
+  modules/orchestrate.md auto-advance: background subagents in worktrees, one item after another
 ```
 
 The modules are not separate skills. The hub reads only the one it needs at the moment.
@@ -73,6 +74,7 @@ For other tools, install into their own skill directory. Don't put two copies of
 
 ## Versions
 
+- **1.1.0** (2026-10-18): new auto-advance module (background subagents in worktrees; a project can authorize merging after verification). The review module adds a fallback order for when the preferred reviewer is unavailable; the reviewer model must not be lower-tier than the executor.
 - **1.0.0** (2026-10-15): rewritten as one hub plus five modules. The old repair counters and receipts, Lite / Tracked / Controlled routing, UA0–UA7 levels, `workflow_lint` and the Dashboard are gone.
 - **0.9.2 and earlier**: the complete old version (Dashboard, lint, repair gate, references and tests) is at tag [`v0.9.2`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9.2). The last state of the v0.9 line is at tag [`v0.9-final`](https://github.com/a-littlecat/ai-dev-flow/tree/v0.9-final).
 
