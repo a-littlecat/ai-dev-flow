@@ -138,7 +138,8 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `modules/verify.md` | 独立验证：说明模板、证明门槛、跨厂商规则、审查方不可用时怎么办 |
 | `modules/land.md` | 合并落地：rebase、在最终版本上复跑、提交正文模板、往前修和 revert |
 | `modules/diagnose.md` | bug、变慢、原因不明的失败、验收没通过 |
-| `modules/orchestrate.md` | 自动推进：队列、派后台子 agent、接力、并行上限 |
+| `modules/orchestrate.md` | 自动推进：队列、派后台子 agent 或外部 agent、接力、并行上限、关联项目 |
+| `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、DSH 等）写或审，项目配置在 `scripts/dispatch.json` |
 | `modules/garden.md` | 每晚复盘、教训升级、每日摘要、每周清理 |
 
 能并行的独立工作交给隔离的子 agent，各自在自己的 worktree 里做；验证放到后台跑。你负责整合结果，并对最终质量负责。

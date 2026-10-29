@@ -53,11 +53,13 @@
 
 验证放在后台跑，等待期间继续做别的事。
 
-先为验证方开一个临时 worktree，检出要合并的 head：
+先为验证方开一个临时 worktree，检出要合并的 head（用 `scripts/dispatch.ps1 -Review` 派给外部 agent 时，脚本会自动开好）：
 
 ```bash
-git worktree add --detach <tmp> <head>
+git worktree add --detach .agents/worktrees/<运行名> <head>
 ```
+
+只改了文档的 diff（改名算删＋增，子模块和链接不算），验证方不跑快检，改成把文档里的路径、命令、源码位置逐条实际查一遍或跑一遍。
 
 验证结束后核对两件事：候选分支的 head 没变；`git -C <tmp> status --short` 里没有改动被跟踪的文件（未跟踪的构建产物不算；改坏检查没恢复的，这轮结论作废重来）。然后用 `git worktree remove --force <tmp>` 删掉这个临时 worktree。它是你为验证自己建的，删它不需要用户授权。
 

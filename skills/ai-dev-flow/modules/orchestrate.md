@@ -37,13 +37,42 @@
 
 总览所用模型的额度紧时，执行交给另一个 CLI agent（如 Codex、DSH），你只派活、核对、汇报。不要用自己的子 agent 去做，那样花的还是你的额度。
 
-- **怎么调**：项目有派活脚本的用脚本（例如 `scripts/dispatch.ps1`）；没有的，在后台运行对方的无界面模式，工作目录设为这一项的 worktree，任务说明从标准输入传入，最终回复写到文件。例如 `codex exec --profile <完全访问的 profile> -C <worktree> -o <final.md> -`。
-- **任务说明的固定尾部**：上面派活说明的内容之外，再写死三条：
-  - 完成前在 worktree 里跑 verify，退出码必须是 0，并做一次改坏验证；
-  - 提交到本分支，提交正文按 `land.md` 模板；
-  - 不写长报告，最后的回复只写三行白话：结果 / 跑了 / 风险。
-  这样对方的输出你读得快，也不会把难懂的长文转给用户。
-- **按难度分工**：量大、照着现成写法做的活交给便宜的那个；难的交给能力强的那个。具体分工写在项目 `AGENTS.md`。
+- **怎么调**：用本 skill 的 `scripts/dispatch.ps1`（PowerShell 7），在项目仓库里运行。它负责开 worktree、拼任务说明、后台启动对方、记录结果：
+  ```
+  pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <分支名> -Agent codex -BriefFile <说明.md> -Wait          # 写
+  pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <运行名> -Agent codex -BriefFile <标准.md> -Review <分支> -Wait  # 审
+  pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <运行名> -Agent dsh -BriefFile <意见.md> -Continue <分支> -Wait # 修
+  pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -List
+  ```
+  `-Wait` 放进你自己的后台任务里跑，跑完你会收到通知。不加 `-Wait` 就不会有通知，要自己另起一个等待任务。退出码 4 表示写代码的一轮没留下新提交，或留了未提交的改动：先看 `final.md` 和工作区再决定，不要直接派审查。
+- **项目配置** `scripts/dispatch.json`（入库）：
+  ```json
+  {
+    "verify": "pwsh -NoProfile -File scripts/verify.ps1",
+    "verifyReview": "pwsh -NoProfile -File scripts/verify.ps1 -Base {base}",
+    "readFirst": ["AGENTS.md", "docs/DEVELOPMENT.md"],
+    "protected": ["docs/queue.md"],
+    "rules": ["真实数据只读，只用副本", "启动宿主软件只用 scripts/host-probe.ps1"],
+    "docsOnly": ["*.md"],
+    "sparse": ["/*", "!/evidence/"],
+    "agents": {
+      "codex": { "build": "Get-Content -Raw -Encoding UTF8 {prompt} | codex exec --profile <完全访问的 profile> -C {wt} -o {final} - *> {log}",
+                 "review": "Get-Content -Raw -Encoding UTF8 {prompt} | codex exec --sandbox workspace-write -C {wt} -o {final} - *> {log}" },
+      "dsh":   { "build": "Get-Content -Raw -Encoding UTF8 {prompt} | & '<dsh.cmd 的路径>' headless - 2> {log} | Set-Content -LiteralPath {final} -Encoding utf8NoBOM",
+                 "env": { "DSH_PERMISSION_MODE": "danger-full-access" } }
+    }
+  }
+  ```
+  `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
+- `.agents/` 写进 `.gitignore`：派活的 worktree 在 `.agents/worktrees/`，每次的说明、日志、回复在 `.agents/runs/`。用 `.agents` 而不是某个工具专属的目录，换别的 AI 接手也找得到。
+- **任务说明的固定尾部**由脚本自动附上，你写说明时只写目标、完成标准和提示：
+  - 改了代码、脚本或配置的：完成前跑 verify，退出码必须是 0，并做一次改坏验证。
+  - 只改了文档的：不跑 verify、不做改坏验证，改成把文档里写的路径、命令逐条实际查一遍或跑一遍。审查时脚本按 diff 自动判断（改名算删＋增，子模块和链接不算文档）。只改文档也跑全量 verify，每轮会白花好几分钟。
+  - 写下的每条事实都要先自己用命令确认过，确认不了的写"未查到"。不这样要求，对方会写出想当然的路径和命令，审查一轮只能挑出一部分，要来回好几轮。
+  - 临时文件放系统临时目录，结束时工作区只能有已提交的改动。
+  - 提交正文按 `land.md` 模板。不写长报告，最后的回复只写三行白话：结果 / 跑了 / 风险。这样对方的输出你读得快，也不会把难懂的长文转给用户。
+- **按难度分工**：便宜的那个只接照章执行的机械活（批量跑回归、补用例、按明确规则整理文件）；要逐条核对事实、做判断、改核心代码的交给能力强的那个。看起来简单的文档活往往要逐条核对事实，不算机械活。具体分工写在项目 `AGENTS.md`。
+- **记得给要查历史证据的活加 `-Full`**：稀疏检出里没有的文件，对方会当作"不存在"。
 - **谁审谁**：独立验证不能由同一个执行方做。一个写、另一个审；同一个 agent 写的，开一个全新的会话审，模型不低于执行方。单向门档仍按 `verify.md` 跨厂商。
 - **你怎么核对**：不读完整 diff。只看三样东西：对方的三行回复、你自己在它的 worktree 里跑的 verify 结果、验证方的结论。三者对不上，或结论是 Fix，再去看 diff 的相关部分。
 - **跟用户汇报**：用你自己的话写，不转发对方原文。
@@ -67,3 +96,12 @@
 - 同一项从头重来以后仍然通不过验证。
 - 需要超出授权的动作：单向门清单里的任何一项。
 - 主干红了，往前修和 revert 都没能恢复。
+
+## 6. 关联项目
+
+一个项目用另一个项目的产出时（例如应用调用另一个仓库编译出的引擎），仍然一个项目一个会话，各自开在自己的仓库里，各管各的队列、verify 和信任等级。两边靠**接口约定**连起来，不靠同一个会话记住两边：
+
+- **提供方发版**：合并后，把对方要用的东西做成带版本的冻结包（文件清单加散列，写明支持的输入格式版本），连同兼容性说明写进提交正文。接口有不兼容的改动，版本号要变，并在说明里写清楚怎么迁移。
+- **使用方锁版本**：只用明确指定的那一版冻结包，不直接引用提供方的工作目录。升级是使用方队列里的一项：换版本 → 跑自己的 verify 和北极星 → 通过才合。
+- **需求单向流动**：使用方发现缺什么（新对象、格式问题、缺陷），写成一项需求，附最小复现，交给提供方的会话（能互发消息就发消息，否则写进提供方的 `docs/requests.md`，由那边的编排者转进自己的队列）。不要在使用方的会话里直接改提供方的代码。
+- **优先级跟着使用方走**：提供方排队列时，优先做使用方北极星卡住的那几项，汇报时说明是哪个需求驱动的。

@@ -23,6 +23,8 @@
 5. **北极星数字**：一个能看出离目标还有多远的数，例如兼容矩阵里通过的格数、评测集分数、端到端通过率。口径写死在 `AGENTS.md`，每次汇报和摘要都用同一个口径。
 6. **`AGENTS.md` 改成目录**，100 行以内：verify 命令、信任等级、北极星口径、单向门补充、预算、禁止项、各文档入口。长内容移到 `docs/`，`AGENTS.md` 只留链接。
 7. **空的 `LESSONS.md` 和 `docs/code-standards.md`**。`LESSONS.md` 头部写 `reviewed-through: <当前主干 sha>`。
+8. **`.agents/` 写进 `.gitignore`**。要把执行交给外部 agent 的，再写 `scripts/dispatch.json`（格式见 `orchestrate.md`）。
+9. **verify 能并行跑**：几个 worktree 同时跑 verify 不能互相破坏。共用的缓存（例如按提交号缓存的基准构建）要加进程间锁，并且只认构建成功后写下的完成标记，不认目录里有没有某个文件；删到一半、建到一半的缓存里也可能留着那个文件。
 
 ## 3. hooks
 
