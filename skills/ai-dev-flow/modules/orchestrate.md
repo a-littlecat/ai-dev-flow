@@ -44,7 +44,7 @@
   pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <运行名> -Agent dsh -BriefFile <意见.md> -Continue <分支> -Wait # 修
   pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -List
   ```
-  `-Wait` 放进你自己的后台任务里跑，跑完你会收到通知。不加 `-Wait` 就不会有通知，要自己另起一个等待任务。退出码 4 表示写代码的一轮没留下新提交，或留了未提交的改动：先看 `final.md` 和工作区再决定，不要直接派审查。
+  `-Wait` 放进你自己的后台任务里跑，跑完你会收到通知。不加 `-Wait` 就不会有通知，要自己另起一个等待任务。退出码 4 表示写代码的一轮没留下新提交，或留了未提交的改动；5 表示没写出最终回复；127 表示 agent 命令找不到：先看 `final.md` 和工作区再决定，不要直接派审查。
 - **项目配置** `scripts/dispatch.json`（入库）：
   ```json
   {
@@ -63,7 +63,7 @@
     }
   }
   ```
-  `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
+  `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
 - `.agents/` 写进 `.gitignore`：派活的 worktree 在 `.agents/worktrees/`，每次的说明、日志、回复在 `.agents/runs/`。用 `.agents` 而不是某个工具专属的目录，换别的 AI 接手也找得到。
 - **任务说明的固定尾部**由脚本自动附上，你写说明时只写目标、完成标准和提示：
   - 改了代码、脚本或配置的：完成前跑 verify，退出码必须是 0，并做一次改坏验证。

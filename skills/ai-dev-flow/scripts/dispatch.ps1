@@ -90,7 +90,11 @@ if ($Continue) {
     if ($LASTEXITCODE) { throw "Unknown branch to continue: $Continue" }
     $lines = @(git -C $root worktree list --porcelain)
     $existing = for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -ceq "branch refs/heads/$Continue") { $lines[$i - 2] -replace '^worktree ', '' } }
-    if ($existing) { $wt = [IO.Path]::GetFullPath(@($existing)[0]) }
+    if ($existing) {
+        $wt = [IO.Path]::GetFullPath(@($existing)[0])
+        # 已有的 worktree 可能是稀疏检出的；这一轮要 -Full 时把它放开。
+        if ($Full -and (git -C $wt config --get core.sparseCheckout) -eq 'true') { git -C $wt sparse-checkout disable; if ($LASTEXITCODE) { throw 'sparse-checkout disable failed' } }
+    }
     else { $wt = Join-Path $repo ".agents/worktrees/$Continue"; New-Worktree $wt @($wt, $Continue) }
     # 上一轮没提交的改动留给本轮接着处理（例如执行方写好了却没能提交），在固定要求里列出来。
     $leftover = @(git -C $wt status --porcelain)
@@ -104,12 +108,14 @@ if ($Review) {
     $baseSha = git -C $root merge-base $baseSha $headSha
     New-Worktree $wt @('--detach', $wt, $headSha)
     $mode = 'review'
-    # 只改文档才免 verify：改名拆成删＋增；只认普通文件，子模块（160000）和链接（120000）不算文档。
+    # 只改文档才免 verify：改名拆成删＋增；只认普通文件，子模块（160000）和链接（120000）不算文档；
+    # docsOnly 只按文件名匹配（如 *.md），不按目录，免得 docs/ 下的脚本被当成文档。
     $changed = @(git -C $root -c core.quotepath=false diff --raw --no-renames "$baseSha..$headSha")
     $docsOnly = $changed.Count -gt 0 -and -not ($changed | Where-Object {
             if ($_ -notmatch '^:(100644|100755|000000) (100644|100755|000000) [^\t]*\t(.*)$') { return $true }
             $path = $Matches[3]
-            -not ($docsPatterns | Where-Object { $path -like $_ })
+            $leaf = [IO.Path]::GetFileName($path)
+            -not ($docsPatterns | Where-Object { $leaf -like $_ })
         })
     $verifyReview = if ($cfg.verifyReview) { $cfg.verifyReview.Replace('{base}', $baseSha) } else { $cfg.verify }
     $footer = @"
@@ -163,23 +169,29 @@ $(($rules) -join "`n")
 $prompt = Join-Path $runDir 'prompt.md'; $log = Join-Path $runDir 'run.log'; $final = Join-Path $runDir 'final.md'; $exitFile = Join-Path $runDir 'exit.json'
 Set-Content -LiteralPath $prompt -Value ($brief.TrimEnd() + "`n" + $footer) -Encoding utf8NoBOM
 
-# 配置里的命令模板：{prompt} {final} {log} {wt} {root} 换成加了单引号的路径，由 PowerShell 执行。
+# 配置里的命令模板：{prompt} {final} {log} {wt} {root} 一次替换成加了单引号的路径，由 PowerShell 执行。
+# 必须一次替换：逐个替换时，前面换进去的路径里若含 {log} 之类的字样，会被再换一遍、拆坏引号。
 $q = { param($s) "'" + ($s -replace "'", "''") + "'" }
 $template = if ($mode -eq 'review' -and $agentCfg.review) { $agentCfg.review } else { $agentCfg.build }
 if (-not $template) { throw "Agent '$Agent' needs a ""build"" command in the config" }
-$command = $template.Replace('{prompt}', (& $q $prompt)).Replace('{final}', (& $q $final)).Replace('{log}', (& $q $log)).Replace('{wt}', (& $q $wt)).Replace('{root}', (& $q $root))
+$slots = @{ prompt = $prompt; final = $final; log = $log; wt = $wt; root = $root }
+$command = [regex]::Replace($template, '\{(prompt|final|log|wt|root)\}', { param($m) & $q $slots[$m.Groups[1].Value] })
 $envLines = if ($agentCfg.env) { foreach ($p in $agentCfg.env.PSObject.Properties) { "`$env:$($p.Name) = $(& $q ([string]$p.Value))" } } else { @() }
 $startHead = git -C $wt rev-parse HEAD
 $runner = Join-Path $runDir 'run.ps1'
 # 执行方输出 UTF-8；Windows 中文系统控制台默认 GBK，不设置的话管道读进来是乱码。
 # 退出码 0 不代表做完了：另记本轮新增提交数和未提交的改动数，由 -Wait 和 -List 判断。
-# 配置的命令里没有调用外部程序时退出码为空，按成功计。
+# 配置的命令里没有调用外部程序时退出码为空：看最后一条是否成功、有没有找不到的命令。
+# 退出码为 0 却没写出最终回复的，记为 5（例如 agent 启动了但什么都没输出）。
 Set-Content -LiteralPath $runner -Encoding utf8NoBOM -Value @"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8; `$OutputEncoding = [Text.Encoding]::UTF8
 $($envLines -join "`n")
 Set-Location -LiteralPath $(& $q $wt)
+`$global:LASTEXITCODE = `$null; `$Error.Clear()
 $command
-`$code = if (`$null -eq `$LASTEXITCODE) { 0 } else { `$LASTEXITCODE }
+`$ok = `$?
+`$code = if (`$Error | Where-Object { `$_.FullyQualifiedErrorId -like 'CommandNotFoundException*' }) { 127 } elseif (`$null -ne `$LASTEXITCODE) { `$LASTEXITCODE } elseif (`$ok) { 0 } else { 1 }
+if (`$code -eq 0 -and -not ((Test-Path -LiteralPath $(& $q $final)) -and (Get-Item -LiteralPath $(& $q $final)).Length -gt 0)) { `$code = 5 }
 [ordered]@{ ExitCode = `$code; Finished = (Get-Date).ToString('o'); Head = (git rev-parse HEAD); NewCommits = [int](git rev-list --count $startHead..HEAD); Uncommitted = @(git status --porcelain).Count } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $exitFile) -Encoding utf8NoBOM
 "@
 # 参数整体传一个带引号的字符串：路径含空格时，数组形式会被拆开。
