@@ -1,0 +1,1 @@
+覆盖：ef5e205..ec71db1；Codex（codex exec workspace-write，临时 worktree）审 c752513 → Fix（P1 占位符连续替换拆坏引号可执行路径文字；P1 agent 命令不存在仍报 done；P1 docsOnly 按路径匹配放过 docs/tool.ps1；P2 续做 -Full 不放开稀疏）→ ec71db1 修；新会话复审 → Pass；跑了：审查方复现脚本 5 例对 c752513 复现、对 ec71db1 不复现；复审补测成功场景、退出码 5/127、空回复、稀疏续做；没覆盖：真实 Codex/DSH 一轮
