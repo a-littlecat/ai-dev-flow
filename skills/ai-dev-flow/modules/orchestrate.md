@@ -64,6 +64,15 @@
   }
   ```
   `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
+- **项目里的入口**：在项目里放一个几行的 `scripts/dispatch.ps1` 转调本 skill 的脚本，`AGENTS.md` 里写这个入口就行，接手的 AI 不用知道 skill 装在哪：
+  ```powershell
+  # 派活入口：转调 ai-dev-flow 的通用派活脚本，本项目的设置在 scripts/dispatch.json。参数见 ai-dev-flow modules/orchestrate.md。
+  $skill = if ($env:AI_DEV_FLOW) { $env:AI_DEV_FLOW } else { Join-Path $HOME '.agents/skills/ai-dev-flow' }
+  $script = Join-Path $skill 'scripts/dispatch.ps1'
+  if (-not (Test-Path -LiteralPath $script)) { throw "ai-dev-flow skill not found: $script (set AI_DEV_FLOW)" }
+  & $script @args -Config (Join-Path $PSScriptRoot 'dispatch.json')
+  exit $LASTEXITCODE
+  ```
 - `.agents/` 写进 `.gitignore`：派活的 worktree 在 `.agents/worktrees/`，每次的说明、日志、回复在 `.agents/runs/`。用 `.agents` 而不是某个工具专属的目录，换别的 AI 接手也找得到。
 - **任务说明的固定尾部**由脚本自动附上，你写说明时只写目标、完成标准和提示：
   - 改了代码、脚本或配置的：完成前跑 verify，退出码必须是 0，并做一次改坏验证。

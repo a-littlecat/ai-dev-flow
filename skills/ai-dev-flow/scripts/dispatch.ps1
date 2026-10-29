@@ -11,7 +11,8 @@ param(
     [switch]$List
 )
 # 派活：把一项任务交给外部 CLI agent（Codex、DSH 等）在后台做，总览只派活、核对、汇报。
-# 在项目仓库里任意目录运行；项目配置默认读 <仓库>/scripts/dispatch.json（格式见 ai-dev-flow modules/orchestrate.md）。
+# 在项目仓库里任意目录运行，或用 -Config 指定配置（仓库按配置所在位置找）；
+# 项目配置默认读 <仓库>/scripts/dispatch.json（格式见 ai-dev-flow modules/orchestrate.md）。
 #   派活  dispatch.ps1 -Name <分支名> -Agent <agent> -BriefFile <任务说明.md> [-Base main]
 #         新开 worktree .agents/worktrees/<分支名>（从 -Base 开出），执行方在里面改、跑 verify、提交到该分支。
 #   审查  dispatch.ps1 -Name <运行名> -Agent <agent> -BriefFile <目标与完成标准.md> -Review <要审的分支> [-Base main]
@@ -25,7 +26,8 @@ param(
 # 每次运行的记录在 .agents/runs/<运行名>/：prompt.md、run.log、final.md（执行方最后的回复）、meta.json、exit.json。
 # 脚本本身不 push、不合并。
 $ErrorActionPreference = 'Stop'
-$root = git rev-parse --show-toplevel
+# 仓库按 -Config 所在位置找（项目里的入口脚本会传它）；没传就按当前目录。
+$root = if ($Config) { git -C ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Config))) rev-parse --show-toplevel } else { git rev-parse --show-toplevel }
 if ($LASTEXITCODE) { throw 'Run dispatch.ps1 inside a git repository' }
 $root = [IO.Path]::GetFullPath($root)
 # worktree 和运行记录一律放在主仓库下：从某个 worktree 里调用时不嵌套，否则 Windows 上路径容易超过 260 字符。
