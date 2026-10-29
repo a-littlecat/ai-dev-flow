@@ -9,15 +9,17 @@
 | 自走 | 一轮。同厂商的子 agent 可以，模型不低于执行方 |
 | 看一眼 | 一轮，另加用户看 |
 | 单向门 | 跨厂商（Claude 和 Codex 互审），一直验到没有 P0 / P1 |
-| 只改文档、验证脚本、原型 | 跑 verify 即可，不必请验证方 |
+| 只改纯文档（不改代码、脚本、hook、CI 和配置） | 跑 verify 即可，不必请验证方；这是总览第 5 节"合并前要有独立结论"唯一的例外 |
+
+改验证脚本、hook、CI 配置的，等于改了门禁本身，一定要独立验证：验证方要亲手改坏一处被测代码，确认改过的门禁真的会红。
 
 项目另有规定的，按项目执行。
 
 ## 2. 独立性从哪里来
 
-- **全新上下文、只读权限**，模型不低于执行方。
+- **全新上下文**，模型不低于执行方。**不改候选版本**：不改源码、规则和提交。构建要写的产物（`bin/`、`obj/`、缓存）放在为它单独开的临时 worktree 里，不在执行方的 worktree 里跑。
 - **只给目标、完成标准和 diff**，不给执行方的自述、总结或 PR 描述，让它自己判断。
-- **自己重跑门禁**：验证方自己跑 verify，不信执行方贴出来的结果。
+- **自己重跑门禁**：验证方在临时 worktree 里自己跑快检，不信执行方贴出来的结果。慢验证不重跑，读队列留下的结果文件，核对它对应的是同一个 head。
 - **专门找问题**，不必肯定已有做法；但要倾向通过：没有带证明的严重问题，就给通过。
 
 ## 3. 验证说明模板
@@ -26,11 +28,12 @@
 
 ```
 目标与完成标准：<来自对话、issue 或计划>
-基准：工作目录 <worktree>，分支 <branch>，base <sha>，head <sha>（要合并的那个版本）
+基准：临时 worktree <tmp>（检出 head），分支 <branch>，base <sha>，head <sha>（要合并的那个版本）
 项目规则：AGENTS.md、docs/code-standards.md、LESSONS.md
+慢验证结果：<结果文件路径，及其对应的 head；没有就写"无">
 要求：
-- 只读，不改任何文件。
-- 自己跑 <verify 命令>，把命令和结果写进输出。
+- 不改源码、规则和提交；构建产物只留在 <tmp> 里。
+- 在 <tmp> 里自己跑 <verify 命令>，把命令和结果写进输出。
 - 对照目标和完成标准审。skip style：命名、格式、写法偏好都不报。
 - 只报 P0–P2。每条附可执行的证明：复现命令、会失败的测试、具体输入和错误输出。
   拿不出证明的写进"备注"，不算问题。
@@ -45,7 +48,15 @@
 
 ## 4. 发起
 
-验证放在后台跑，等待期间继续做别的事。发起前后各看一次 diff 涉及文件的 `git status`，确认验证方没有改动任何文件。
+验证放在后台跑，等待期间继续做别的事。
+
+先为验证方开一个临时 worktree，检出要合并的 head：
+
+```bash
+git worktree add --detach <tmp> <head>
+```
+
+验证结束后核对两件事：候选分支的 head 没变；`git -C <tmp> status --short` 里没有改动源码（构建产物不算）。然后用 `git worktree remove --force <tmp>` 删掉这个临时 worktree。它是你为验证自己建的，删它不需要用户授权。
 
 **Claude 执行的项**
 
@@ -53,14 +64,16 @@
 - 单向门档：请 Codex。PowerShell 中：
 
 ```powershell
-Get-Content -Raw -Encoding UTF8 <brief.md> | codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> -
+Get-Content -Raw -Encoding UTF8 <brief.md> | codex exec --ephemeral --sandbox workspace-write -m <model> -c model_reasoning_effort=high -C <tmp> -o <out.md> -
 ```
 
 Bash 中不用 `Get-Content` 管道，直接从文件读入：
 
 ```bash
-codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=high -C <worktree> -o <out.md> - < <brief.md>
+codex exec --ephemeral --sandbox workspace-write -m <model> -c model_reasoning_effort=high -C <tmp> -o <out.md> - < <brief.md>
 ```
+
+`workspace-write` 只让它写 `<tmp>` 里的构建产物；不改源码的要求写在说明里，结束后按上面的方法核对。
 
 **Codex 执行的项**：自走、看一眼档用 Codex 原生的只读子 agent；单向门档请 Claude（`claude -p`，只读）。
 
@@ -79,5 +92,5 @@ codex exec --ephemeral --sandbox read-only -m <model> -c model_reasoning_effort=
 这一步由你判断，不要转给用户：
 
 - 每条意见先对照代码和目标核实，确认是真问题再改。没采纳的，在提交正文"验证"一行写一句理由。
-- 修完 head 变了，结论就作废：把改动部分和上一轮每条的处理结果发给验证方复验，新结论要对应新的 head。
+- head 一变，结论就作废，包括修意见、重新 rebase、squash。复验时把这次的变化发给验证方：修了意见的，发修改部分和上一轮每条的处理结果；因为主干前进而重新 rebase 的，发 rebase 带进来的主干改动，让验证方看两者合在一起是否还成立。新结论要对应新的 head。
 - 验证方和执行方意见不一致时，以能跑出来的证明为准。
