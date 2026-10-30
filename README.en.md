@@ -25,6 +25,10 @@ skills/ai-dev-flow/
   modules/diagnose.md      diagnosis: define a pass/fail signal before fixing
   modules/orchestrate.md   auto-advance: queue, background subagents in worktrees, parallel limits
   modules/garden.md        nightly retrospective, lesson promotion, daily digest, weekly cleanup
+  modules/portfolio.md     several projects at once: project list, one inbox, global cap, merged digest, cross-project lessons
+  scripts/dispatch.ps1     hand an item to an external CLI agent (Codex, DSH, ...) to build or review
+  scripts/status.ps1       collect every project's status from the portfolio repo's project list (read-only)
+tests/status.tests.ps1     checks for status.ps1: pwsh -NoProfile -File tests/status.tests.ps1
 ```
 
 The modules are not separate skills. The hub reads only the one it needs at the moment.
@@ -42,6 +46,7 @@ In daily work you mostly say one of these:
 | That's wrong / it errors | classifies first, then diagnoses |
 | Retro | reviews today's merges and gives you a daily digest |
 | Stop | stops at a safe point and writes what's left into the queue |
+| Morning report / how are the projects? (in the portfolio repo) | collects every project's status and hands you only the few things that matter most |
 
 It interrupts you only in four cases:
 
@@ -76,6 +81,16 @@ Two lines are recommended in the project's `AGENTS.md`:
 - a rule that all development requests go through the `ai-dev-flow` hub;
 - the project facts: verify command, trust level, how the north-star number is measured, extra one-way doors, budget and prohibitions.
 
+### Several projects at once
+
+Each project still has one lead session, opened in its own repository, and moves on its own. Add one local-only portfolio repository that holds your intent (`INTENT.md`), the project list (`projects.json`), a decision log and cross-project lessons, and open a portfolio session there:
+
+- You read only the portfolio session each day. It collects every project's status with `scripts/status.ps1`, merges one daily digest, and hands you at most 3 things to look at or decide; the rest wait their turn.
+- The portfolio session passes your decisions on to the projects. Intent flows only from the portfolio to the projects.
+- A lesson that shows up in several projects is promoted into the skill or user-level config instead of being fixed once per project.
+
+See `modules/portfolio.md`.
+
 ## Install
 
 Copy `skills/ai-dev-flow/` to `~/.agents/skills/ai-dev-flow/`, which is the user-level skill directory for Codex.
@@ -97,6 +112,7 @@ For other tools, install into their own skill directory. Don't put two copies of
 
 ## Versions
 
+- **2.1.0** (2026-10-31): new `portfolio` module (several projects at once: project list, one inbox with a global cap, merged digest, cross-project lesson promotion) and a read-only status script, `scripts/status.ps1`. Related projects agree on a contract before building, and the contract tests live in the provider's verify. The daily digest is also written to `.agents/digest/`, and approval prompts that keep recurring get a concrete permission-rule suggestion. The dispatch script `scripts/dispatch.ps1`, added after 2.0.0, is counted in this release.
 - **2.0.0** (2026-10-29): reorganized around "harness + loops". Tiers are now based on reversibility × verifiability. New trust levels L0–L3. New `harness` (project verification) and `garden` (nightly retrospective, lesson promotion) modules. Evidence moves into commit bodies. Independent verification reports only provable P0–P2 findings. A red trunk after a merge is fixed forward or reverted.
 - **1.1.0** (2026-10-18): new auto-advance module (background subagents in worktrees; a project can authorize merging after verification). The review module adds a fallback order for when the preferred reviewer is unavailable; the reviewer model must not be lower-tier than the executor.
 - **1.0.0** (2026-10-15): rewritten as one hub plus five modules. The old repair counters and receipts, Lite / Tracked / Controlled routing, UA0–UA7 levels, `workflow_lint` and the Dashboard are gone.
