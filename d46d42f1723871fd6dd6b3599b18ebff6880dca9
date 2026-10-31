@@ -1,0 +1,1 @@
+覆盖：126b89d..d46d42f；Claude 子 agent（opus，全新上下文，effort high，临时 worktree）审 d46d42f → Pass；跑了：tests/status.tests.ps1 28/28，status.ps1 只读跑真实清单 exit 0、各项目 .git/index 未变；改坏检查：worktree 统计 Skip 1→0、分隔行正则各自变红，恢复后 28/28；没采纳：无，P2 四条（git status 刷新 index、无前导竖线的表、-Project 多名和位置绑定、清单缺 projects 键）下一提交修
