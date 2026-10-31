@@ -1,3 +1,4 @@
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [string]$Config,
     [string]$Since,
@@ -12,13 +13,14 @@ param(
 # 在总览仓库里任意目录运行，或用 -Config 指定清单（默认 <仓库>/projects.json）。
 #   默认      推进中的项目全量；维护中的只列提交数、队列和待用户项；暂停的只列名字
 #   -Since    新提交从这个时间算（git 的写法：'24 hours ago'、'2026-10-30'）；不给就从上次 -Mark 记下的位置算，没有记录按 24 小时
-#   -Project  只看这几个（按名字，暂停的也看）
+#   -Project  只看这几个（按名字，多个用逗号隔开，暂停的也看）
 #   -All      维护中的也全量
 #   -Lessons  附上各项目 LESSONS.md 每条教训的 Seen 和标题（合并跨项目教训用）
 #   -Mark     把各项目当前的主干位置记为下次的起点（写每日摘要时用），记在 <清单所在目录>/.agents/status-marks.json
 #   -Json     输出 JSON
-# 只读各项目：不 fetch，不改项目里的任何文件。
+# 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
+$env:GIT_OPTIONAL_LOCKS = '0'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $OutputEncoding = [Text.Encoding]::UTF8
 
@@ -30,9 +32,10 @@ if (-not $Config) {
 if (-not (Test-Path -LiteralPath $Config)) { throw "No project list: $Config (see ai-dev-flow modules/portfolio.md)" }
 $Config = [IO.Path]::GetFullPath($Config)
 $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
-$projects = @($cfg.projects)
+$projects = @($cfg.projects | Where-Object { $_ })
 if (-not $projects.Count) { throw "No projects in $Config" }
 $names = @($projects | ForEach-Object { $_.name })
+$Project = @($Project | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($n in $Project) { if ($names -notcontains $n) { throw "Unknown project: $n (names: $($names -join ', '))" } }
 
 $marksFile = Join-Path ([IO.Path]::GetDirectoryName($Config)) '.agents/status-marks.json'
@@ -53,7 +56,7 @@ function Short([string]$s, [int]$n) {
 function Read-Queue([string]$file) {
     $cols = $null
     foreach ($line in Get-Content -LiteralPath $file -Encoding UTF8) {
-        if ($line -notmatch '^\s*\|') { $cols = $null; continue }
+        if ($line -notmatch '\|') { $cols = $null; continue }
         $cells = @(($line.Trim() -replace '^\||\|$', '') -split '(?<!\\)\|' | ForEach-Object { $_.Trim() })
         if (-not $cols) {
             if ($cells -contains '状态') { $cols = $cells }
@@ -177,7 +180,8 @@ function Get-ProjectStatus($p) {
 $selected = if ($Project) { @($projects | Where-Object { $Project -contains $_.name }) } else { @($projects | Where-Object { $_.status -ne '暂停' }) }
 $selected = @($selected | Sort-Object { if ($statusOrder.ContainsKey([string]$_.status)) { $statusOrder[[string]$_.status] } else { 0 } }, { if ($null -ne $_.priority) { [int]$_.priority } else { 99 } })
 $results = @(foreach ($p in $selected) { Get-ProjectStatus $p })
-$paused = @($projects | Where-Object { $_.status -eq '暂停' -and $Project -notcontains $_.name } | ForEach-Object { $_.name })
+$paused = @($projects | Where-Object { $_.status -eq '暂停' -and $Project -notcontains $_.name } | ForEach-Object {
+    if ($_.path -and (Test-Path -LiteralPath $_.path)) { $_.name } else { "$($_.name)（路径不存在）" } })
 
 if ($Mark) {
     $time = Get-Date -Format 'yyyy-MM-dd HH:mm'

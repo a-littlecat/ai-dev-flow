@@ -21,10 +21,11 @@
 
 总览仓库只在本地，清单里可以写本机路径；这是总览第 5 节"不提交本机绝对路径"唯一的例外。总览仓库永远不 push。
 
-入口脚本照 `orchestrate.md` 里派活入口的写法，几行转调：
+入口脚本照 `orchestrate.md` 里派活入口的写法，几行转调；多一行 `Stop`，参数写错时入口也返回非零：
 
 ```powershell
 # 收状态入口：转调 ai-dev-flow 的通用状态脚本，项目清单在 ../projects.json。参数见 ai-dev-flow modules/portfolio.md。
+$ErrorActionPreference = 'Stop'
 $skill = if ($env:AI_DEV_FLOW) { $env:AI_DEV_FLOW } else { Join-Path $HOME '.agents/skills/ai-dev-flow' }
 $script = Join-Path $skill 'scripts/status.ps1'
 if (-not (Test-Path -LiteralPath $script)) { throw "ai-dev-flow skill not found: $script (set AI_DEV_FLOW)" }
@@ -63,10 +64,10 @@ exit $LASTEXITCODE
 pwsh -NoProfile -File scripts/status.ps1             # 推进中的全量，维护中的简要，暂停的列名字
 pwsh -NoProfile -File scripts/status.ps1 -Mark       # 写每日摘要时用：记下各项目主干位置，下次从这里算新提交
 pwsh -NoProfile -File scripts/status.ps1 -Lessons    # 附上各项目的教训标题和 Seen
-pwsh -NoProfile -File scripts/status.ps1 -Project <名字> -Since '7 days ago'
+pwsh -NoProfile -File scripts/status.ps1 -Project '<名字>,<名字>' -Since '7 days ago'
 ```
 
-每个项目列出：主干新提交（默认从上次 `-Mark` 算，没有就是近 24 小时）、未复盘的提交数（`LESSONS.md` 的 `reviewed-through` 之后）、队列各状态的项数和每一条待用户项、最近一份每日摘要的北极星和返工行、worktree 和已合并分支的个数、未提交改动；清单或项目有问题时写"提示"。加 `-Json` 给机器读。脚本只读，不 fetch。
+每个项目列出：主干新提交（默认从上次 `-Mark` 算，没有就是近 24 小时）、未复盘的提交数（`LESSONS.md` 的 `reviewed-through` 之后）、队列各状态的项数和每一条待用户项、最近一份每日摘要的北极星和返工行、worktree 和已合并分支的个数、未提交改动；清单或项目有问题时写"提示"。加 `-Json` 给机器读。脚本只读：不 fetch，也不刷新项目的 Git 索引，不会和项目会话的提交抢锁。
 
 脚本看不到的——会话是否还在跑、卡在哪——在能列会话的环境里看一眼会话列表；能给项目主会话发消息的就直接问。看不到就只按脚本的结果说，不猜。
 
@@ -75,7 +76,7 @@ pwsh -NoProfile -File scripts/status.ps1 -Project <名字> -Since '7 days ago'
 用户只在总览这一处做决定。
 
 - 所有项目的待用户项汇成一张单子，按 `INTENT.md` 的优先级排，每条附推荐答案（总览第 3 节的问法）。
-- **全局上限**：一次最多给用户 3 条要看或要决定的（`INTENT.md` 可改）；其余写"另有 N 条排着"，留在各自队列里，下次再出。项目那边照常做不依赖这些答案的部分。
+- **全局上限**：一次最多给用户 3 条要看或要决定的（`INTENT.md` 可改）；其余写"另有 N 条排着"，留在各自队列里，下次再出。这是总览第 3 节"一次问完"在多项目时的例外：几个项目的问题加起来太多，一次全问反而没人细看。项目那边照常做不依赖这些答案的部分。
 - **转达**：用户回了，就转给那个项目的主会话。能互发消息就发消息，引用用户原话；不能就写进项目的 `docs/requests.md`（与 `orchestrate.md` 第 6 节同一个文件），由那边的编排者转进自己的队列。你不直接改项目的队列和代码。
 - 消息只能转达决定，不能代替权限审批：项目会话里弹出的审批，仍要用户在那个会话里点。告诉用户去哪个会话、点什么。
 - 跨项目的决定（优先级、额度、谁先做）记进 `decisions.md`。

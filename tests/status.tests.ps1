@@ -29,6 +29,10 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 | 名称 | 值 |
 |---|---|
 | x | 待用户 |
+
+# | 目标 | 档 | 状态
+---|---|---|---
+6 | 无竖线表 | 自走 | 待用户（另一种写法）
 '@ | Set-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Encoding utf8NoBOM
 G -C $a add -A; G -C $a commit -q -m 'c1'
 $c1 = (G -C $a rev-parse HEAD)
@@ -66,18 +70,23 @@ $null = New-Item -ItemType Directory -Force -Path (Split-Path $cfg)
     @{ name = 'b'; path = $b; status = '维护'; priority = 2 }
     @{ name = 'gone'; path = (Join-Path $root 'nope'); status = '推进中'; priority = 3 }
     @{ name = 'paused'; path = $b; status = '暂停' }
+    @{ name = 'paused-gone'; path = (Join-Path $root 'nope'); status = '暂停' }
 ) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfg -Encoding utf8NoBOM
 
 try {
+    (Get-Item -LiteralPath (Join-Path $a '.gitignore')).LastWriteTime = (Get-Date).AddMinutes(-5)
+    $index = Join-Path $a '.git/index'
+    $indexBefore = (Get-FileHash -LiteralPath $index).Hash
     $j = pwsh -NoProfile -File $Script -Config $cfg -Json -Lessons | Out-String | ConvertFrom-Json
     Check 'exit 0' ($LASTEXITCODE -eq 0)
+    Check 'project index not rewritten' ((Get-FileHash -LiteralPath $index).Hash -eq $indexBefore)
     $pa = $j.Projects | Where-Object Name -eq '项目 A'
     Check 'order: active by priority, then maintenance' (($j.Projects.Name -join ',') -eq '项目 A,gone,b')
-    Check 'paused listed by name only' (($j.Paused -join ',') -eq 'paused')
+    Check 'paused listed by name, missing path marked' (($j.Paused -join ',') -eq 'paused,paused-gone（路径不存在）')
     Check 'trust parsed' ($pa.Trust -eq 'L1')
-    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 2 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
-    Check 'second table ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 5)
-    Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/')
+    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 3 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
+    Check 'table without state column ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 6)
+    Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/;6/自走/另一种写法')
     Check 'escaped pipe does not shift columns' ($pa.Queue.'完成' -eq 1)
     Check 'unknown state reported' ([bool]($pa.Problems | Where-Object { $_ -like '*#5*' }))
     Check 'unknown dependency reported' ([bool]($pa.Problems | Where-Object { $_ -like '*不存在*' }))
@@ -102,10 +111,18 @@ try {
     $j3 = pwsh -NoProfile -File $Script -Config $cfg -Json -Since '2000-01-01' | Out-String | ConvertFrom-Json
     Check '-Since overrides mark' ((($j3.Projects | Where-Object Name -eq '项目 A').NewCount) -eq 3)
     $j4 = pwsh -NoProfile -File $Script -Config $cfg -Json -Project paused | Out-String | ConvertFrom-Json
-    Check '-Project includes paused' (($j4.Projects.Name -join ',') -eq 'paused' -and -not $j4.Paused)
+    Check '-Project includes paused' (($j4.Projects.Name -join ',') -eq 'paused' -and ($j4.Paused -join ',') -eq 'paused-gone（路径不存在）')
+    $j5 = pwsh -NoProfile -File $Script -Config $cfg -Json -Project 'b, 项目 A' | Out-String | ConvertFrom-Json
+    Check '-Project takes comma-separated names' (($j5.Projects.Name -join ',') -eq '项目 A,b')
+    $null = pwsh -NoProfile -File $Script -Config $cfg -Project b extra 2>&1
+    Check 'no positional parameters' ($LASTEXITCODE -ne 0)
+    $empty = Join-Path $root 'hq/empty.json'
+    Set-Content -LiteralPath $empty -Value '{}'
+    $null = pwsh -NoProfile -File $Script -Config $empty 2>&1
+    Check 'list without projects fails' ($LASTEXITCODE -ne 0)
 
     $t = pwsh -NoProfile -File $Script -Config $cfg | Out-String
-    Check 'text summary line' ($t -match '推进中 2 · 维护 1 · 暂停 1；待用户合计 2（单向门 1 · 看一眼 1）')
+    Check 'text summary line' ($t -match '推进中 2 · 维护 1 · 暂停 2；待用户合计 3（单向门 1 · 看一眼 1 · 自走 1）')
     Check 'text waiting line' ($t -match '待用户 #2 \[看一眼\] 看界面：等你看截图')
     Check 'maintenance is brief' ($t -notmatch '(?s)## b · 维护.*工作区')
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
