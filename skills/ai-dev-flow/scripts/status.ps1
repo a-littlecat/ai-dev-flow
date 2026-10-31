@@ -30,7 +30,7 @@ if (-not $Config) {
     $Config = Join-Path $top 'projects.json'
 }
 if (-not (Test-Path -LiteralPath $Config)) { throw "No project list: $Config (see ai-dev-flow modules/portfolio.md)" }
-$Config = [IO.Path]::GetFullPath($Config)
+$Config = (Resolve-Path -LiteralPath $Config).ProviderPath
 $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 $projects = @($cfg.projects | Where-Object { $_ })
 if (-not $projects.Count) { throw "No projects in $Config" }
@@ -53,13 +53,18 @@ function Short([string]$s, [int]$n) {
 }
 
 # 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 开头，后面可以跟括号说明。
-# 首尾竖线可有可无；代码块里的不算。
+# 首尾竖线可有可无；代码块里的不算（围栏按 CommonMark：同种字符、不短于开头、整行只有围栏才算结束；表格外缩进 4 格的行算缩进代码）。
 function Read-Queue([string]$file) {
-    $cols = $header = $null
-    $fence = $false
+    $cols = $header = $fence = $null
     foreach ($line in Get-Content -LiteralPath $file -Encoding UTF8) {
-        if ($line -match '^\s*(```|~~~)') { $fence = -not $fence; $cols = $header = $null; continue }
-        if ($fence -or $line -notmatch '\|') { $cols = $header = $null; continue }
+        if ($fence) {
+            $m = [regex]::Match($line, '^ {0,3}(`{3,}|~{3,})\s*$')
+            if ($m.Success -and $m.Groups[1].Value[0] -eq $fence[0] -and $m.Groups[1].Value.Length -ge $fence.Length) { $fence = $null }
+            continue
+        }
+        $m = [regex]::Match($line, '^ {0,3}(`{3,}|~{3,})')
+        if ($m.Success) { $fence = $m.Groups[1].Value; $cols = $header = $null; continue }
+        if ($line -notmatch '\|' -or (-not $cols -and $line -match '^( {4}|\t)')) { $cols = $header = $null; continue }
         $cells = @(($line.Trim() -replace '^\||\|$', '') -split '(?<!\\)\|' | ForEach-Object { $_.Trim() })
         if ($header) {
             $cols = if (-not @($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count) { $header }
@@ -164,7 +169,7 @@ function Get-ProjectStatus($p) {
         }
     }
 
-    $changes = @(git -C $path status --porcelain)
+    $changes = @(git -C $path status --porcelain --untracked-files=all)
     $r.Untracked = @($changes | Where-Object { $_.StartsWith('??') }).Count
     $r.Uncommitted = $changes.Count - $r.Untracked
     $merged = @(git -C $path branch --merged $head --format='%(refname:short)' | Where-Object { $_ -and $_ -ne $r.Trunk })

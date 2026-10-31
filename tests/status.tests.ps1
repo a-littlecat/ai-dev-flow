@@ -43,6 +43,37 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 |---|---|
 | x | 待用户 |
 ```
+
+````markdown
+```
+| ex | 状态 |
+|---|---|
+| e1 | 待用户 |
+```
+| ex | 状态 |
+|---|---|
+| e2 | 待用户 |
+````
+
+~~~markdown
+```powershell
+```
+~~~
+
+| # | 目标 | 档 | 状态 |
+|---|---|---|---|
+| 7 | 围栏后的真表 | 看一眼 | 待用户（真的） |
+
+    | ex | 状态 |
+    |---|---|
+    | e3 | 待用户 |
+
+```
+``` 不是结束
+| ex | 状态 |
+|---|---|
+| e4 | 待用户 |
+```
 '@ | Set-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Encoding utf8NoBOM
 G -C $a add -A; G -C $a commit -q -m 'c1'
 $c1 = (G -C $a rev-parse HEAD)
@@ -66,6 +97,8 @@ G -C $a worktree add -q -b gone (Join-Path $root 'wt-gone') HEAD
 Remove-Item -Recurse -Force (Join-Path $root 'wt-gone')
 G -C $a switch -q -c side; G -C $a commit -q --allow-empty -m 'side only'; G -C $a switch -q main
 Set-Content -LiteralPath (Join-Path $a 'scratch.txt') -Value 'x'
+$null = New-Item -ItemType Directory -Force -Path (Join-Path $a '未跟踪 目录')
+'1' | Set-Content -LiteralPath (Join-Path $a '未跟踪 目录/一.txt'); '2' | Set-Content -LiteralPath (Join-Path $a '未跟踪 目录/二.txt')
 Add-Content -LiteralPath (Join-Path $a 'AGENTS.md') -Value 'edit'
 "今天：合了 1 项`n北极星：7（昨天 5）`n返工：0 / 1`n要你做：无" | Set-Content -LiteralPath (Join-Path $a '.agents/digest/2026-10-30.md') -Encoding utf8NoBOM
 "北极星：9（昨天 7）" | Set-Content -LiteralPath (Join-Path $a '.agents/digest/2026-10-31.md') -Encoding utf8NoBOM
@@ -94,9 +127,9 @@ try {
     Check 'order: active by priority, then maintenance' (($j.Projects.Name -join ',') -eq '项目 A,gone,b')
     Check 'paused listed by name, missing path marked' (($j.Paused -join ',') -eq 'paused,paused-gone（路径不存在）')
     Check 'trust parsed' ($pa.Trust -eq 'L1')
-    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 3 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
-    Check 'tables without state column, separator row or outside code blocks ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 6)
-    Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/;6/自走/另一种写法')
+    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 4 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
+    Check 'tables without state column or separator row, and code blocks, ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 7)
+    Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/;6/自走/另一种写法;7/看一眼/真的')
     Check 'escaped pipe does not shift columns' ($pa.Queue.'完成' -eq 1)
     Check 'unknown state reported' ([bool]($pa.Problems | Where-Object { $_ -like '*#5*' }))
     Check 'unknown dependency reported' ([bool]($pa.Problems | Where-Object { $_ -like '*不存在*' }))
@@ -107,7 +140,7 @@ try {
     Check 'latest digest lines' ($pa.Digest.Date -eq '2026-10-31' -and ($pa.Digest.Lines -join ';') -eq '北极星：9（昨天 7）')
     Check 'worktrees' ($pa.Worktrees -eq 3 -and $pa.WorktreesMerged -eq 2 -and $pa.WorktreesDetached -eq 1 -and $pa.WorktreesMissing -eq 1)
     Check 'merged branches exclude trunk' ($pa.BranchesMerged -eq 2)
-    Check 'uncommitted vs untracked' ($pa.Uncommitted -eq 1 -and $pa.Untracked -eq 1)
+    Check 'uncommitted vs untracked files' ($pa.Uncommitted -eq 1 -and $pa.Untracked -eq 3)
     $pg = $j.Projects | Where-Object Name -eq 'gone'
     Check 'missing path reported' ([bool]($pg.Problems | Where-Object { $_ -like '路径不存在*' }))
     $pb = $j.Projects | Where-Object Name -eq 'b'
@@ -131,8 +164,12 @@ try {
     $null = pwsh -NoProfile -File $Script -Config $empty 2>&1
     Check 'list without projects fails' ($LASTEXITCODE -ne 0)
 
+    Push-Location (Split-Path $cfg)
+    try { $j6 = & $Script -Config './projects.json' -Json | Out-String | ConvertFrom-Json } catch { $j6 = $null } finally { Pop-Location }
+    Check 'relative -Config resolved against current location' ($j6 -and $j6.Projects.Count -eq 3)
+
     $t = pwsh -NoProfile -File $Script -Config $cfg | Out-String
-    Check 'text summary line' ($t -match '推进中 2 · 维护 1 · 暂停 2；待用户合计 3（单向门 1 · 看一眼 1 · 自走 1）')
+    Check 'text summary line' ($t -match '推进中 2 · 维护 1 · 暂停 2；待用户合计 4（单向门 1 · 看一眼 2 · 自走 1）')
     Check 'text waiting line' ($t -match '待用户 #2 \[看一眼\] 看界面：等你看截图')
     Check 'maintenance is brief' ($t -notmatch '(?s)## b · 维护.*工作区')
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
