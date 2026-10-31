@@ -1,0 +1,1 @@
+覆盖：d46d42f..3c10a6f；Claude 子 agent（opus，全新上下文，effort high，临时 worktree）审 3c10a6f → Pass；跑了：tests/status.tests.ps1 32/32，四条修复各自对照旧版复现确认已修，真实清单只读运行 15 个项目 index 哈希和 mtime 不变；改坏检查：GIT_OPTIONAL_LOCKS 0→1、逗号拆分改分号各自变红，恢复后 32/32；没采纳：无，P2 N1（无分隔行的含竖线文字行和代码块被当成表头）下一提交修
