@@ -52,17 +52,24 @@ function Short([string]$s, [int]$n) {
     if ($s.Length -gt $n) { $s.Substring(0, $n - 1) + '…' } else { $s }
 }
 
-# 队列：Markdown 表格，表头里有"状态"列；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 开头，后面可以跟括号说明。
+# 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 开头，后面可以跟括号说明。
+# 首尾竖线可有可无；代码块里的不算。
 function Read-Queue([string]$file) {
-    $cols = $null
+    $cols = $header = $null
+    $fence = $false
     foreach ($line in Get-Content -LiteralPath $file -Encoding UTF8) {
-        if ($line -notmatch '\|') { $cols = $null; continue }
+        if ($line -match '^\s*(```|~~~)') { $fence = -not $fence; $cols = $header = $null; continue }
+        if ($fence -or $line -notmatch '\|') { $cols = $header = $null; continue }
         $cells = @(($line.Trim() -replace '^\||\|$', '') -split '(?<!\\)\|' | ForEach-Object { $_.Trim() })
-        if (-not $cols) {
-            if ($cells -contains '状态') { $cols = $cells }
+        if ($header) {
+            $cols = if (-not @($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count) { $header }
+            $header = $null
             continue
         }
-        if ($cells[0] -match '^:?-+:?$') { continue }
+        if (-not $cols) {
+            if ($cells -contains '状态') { $header = $cells }
+            continue
+        }
         $get = { param($name) $i = [array]::IndexOf($cols, $name); if ($i -ge 0 -and $i -lt $cells.Count) { $cells[$i] } else { '' } }
         $raw = ((& $get '状态') -replace '\*', '').Trim()
         $state = $states | Where-Object { $raw.StartsWith($_, [StringComparison]::Ordinal) } | Select-Object -First 1

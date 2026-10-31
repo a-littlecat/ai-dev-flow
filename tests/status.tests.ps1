@@ -30,9 +30,19 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 |---|---|
 | x | 待用户 |
 
-# | 目标 | 档 | 状态
----|---|---|---
-6 | 无竖线表 | 自走 | 待用户（另一种写法）
+目标 | # | 档 | 状态
+:--|:-:|---|--:
+无竖线表 | 6 | 自走 | 待用户（另一种写法）
+
+说明 | 状态
+没有分隔行 | 待用户
+还是没有 | 待用户
+
+```
+| code | 状态 |
+|---|---|
+| x | 待用户 |
+```
 '@ | Set-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Encoding utf8NoBOM
 G -C $a add -A; G -C $a commit -q -m 'c1'
 $c1 = (G -C $a rev-parse HEAD)
@@ -85,7 +95,7 @@ try {
     Check 'paused listed by name, missing path marked' (($j.Paused -join ',') -eq 'paused,paused-gone（路径不存在）')
     Check 'trust parsed' ($pa.Trust -eq 'L1')
     Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 3 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
-    Check 'table without state column ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 6)
+    Check 'tables without state column, separator row or outside code blocks ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 6)
     Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/;6/自走/另一种写法')
     Check 'escaped pipe does not shift columns' ($pa.Queue.'完成' -eq 1)
     Check 'unknown state reported' ([bool]($pa.Problems | Where-Object { $_ -like '*#5*' }))
