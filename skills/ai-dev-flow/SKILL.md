@@ -19,7 +19,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 
 | 用户说 | 你做 |
 |---|---|
-| `/next`（可带答复、编号、"连做""收云端"） | 照 `skills/next/SKILL.md`：一个会话领一项、做完、收尾、通知 |
+| `/next`（可带答复、编号、"只做一项""收云端"） | 照 `skills/next/SKILL.md`：按队列一项接一项做，直到需要用户才收尾、发通知 |
 | 想做、改、修某件事 | 按第 2 节定档，读 `modules/build.md`，一直做到下一个需要用户的地方 |
 | "继续" | 接着做进行中的那一项；没有就从队列里领下一项 |
 | "继续推进""自动推进"，或项目已授权自动推进 | 读 `modules/orchestrate.md` |
@@ -113,7 +113,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 风险：<无 / 一句话>
 ```
 
-多项并行时，每项一行。命令、审查记录、改动清单写进提交正文，不堆在对话里。每次结束回合前发一条通知（`skills/next/SKILL.md` 第 5 节）；每天的状态页见 `portfolio.md` 第 6 节，复盘摘要见 `garden.md` 第 3 节。
+多项并行时，每项一行。命令、审查记录、改动清单写进提交正文，不堆在对话里。每次结束回合前发一条通知（`skills/next/SKILL.md` 第 6 节）；每天的状态页见 `portfolio.md` 第 6 节，复盘摘要见 `garden.md` 第 3 节。
 
 ## 7. 记录放哪里
 
@@ -148,6 +148,6 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
 | `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
-| `skills/next`、`skills/week` | 与本 skill 同仓库的两个入口：`/next` 一项一会话，`/week` 周会 |
+| `skills/next`、`skills/week` | 与本 skill 同仓库的两个入口：`/next` 按队列往下做，`/week` 周会 |
 
 能并行的独立工作交给隔离的子 agent，各自在自己的 worktree 里做；验证放到后台跑。你负责整合结果，并对最终质量负责。

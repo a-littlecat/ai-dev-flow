@@ -30,7 +30,7 @@ skills/ai-dev-flow/
   scripts/status.ps1       collect every project's status from the portfolio repo's project list (read-only)
   scripts/daily.ps1        write the status as one HTML page and send a notification; meant for a scheduled task
   scripts/notify.ps1       desktop notification; things that need you also go to your phone (Bark)
-skills/next/SKILL.md       /next: in a project, one session takes one item, finishes it, wraps up and notifies
+skills/next/SKILL.md       /next: in a project, work through the queue item after item until you are needed, then wrap up and notify
 skills/week/SKILL.md       /week: the weekly review, in the portfolio repo
 tests/status.tests.ps1     checks for status.ps1: pwsh -NoProfile -File tests/status.tests.ps1
 ```
@@ -43,7 +43,7 @@ In daily work you mostly say one of these:
 
 | You say | The hub |
 |---|---|
-| `/next` (optionally with an answer, e.g. `/next #7 go with yours`) | takes the next queue item, builds, verifies, merges, updates the queue, notifies you and ends |
+| `/next` (optionally with an answer, e.g. `/next #7 go with yours`) | works through the queue item after item (build, verify, merge) and wraps up with a notification when it needs you |
 | Build X / fix Y | picks a tier and works until it needs you |
 | Continue / keep going | carries on, or works through the queue one item after another |
 | Where are we? | gives a three-line report |
@@ -88,7 +88,7 @@ Two lines are recommended in the project's `AGENTS.md`:
 
 ### Several projects at once
 
-There are no long-running sessions. In a project you open a new session and type `/next`; each session does one item, wraps up and ends. Progress lives in the queue, so any account or any new session can pick it up. Add one local-only portfolio repository that holds your intent (`INTENT.md`), the project list (`projects.json`, including this week's goals), a decision log and cross-project lessons:
+There are no long-running sessions. In a project you open a new session and type `/next`; it works through the queue item after item and wraps up only when it needs you, is stuck, runs low on quota or has finished 5 items. Progress lives in the queue, so any account or any new session can pick it up. Add one local-only portfolio repository that holds your intent (`INTENT.md`), the project list (`projects.json`, including this week's goals), a decision log and cross-project lessons:
 
 - **Daily**: a scheduled task runs `scripts/daily.ps1`, which writes one status page (what needs you, which projects have free work, each project's goals and progress) and sends a notification that opens it. No model usage.
 - **In between**: every session sends a notification when it wraps up; when it needs you or is stuck, the notification also goes to your phone. Questions about a project are answered in that project (`/next #id <answer>`).
@@ -125,6 +125,7 @@ For other tools, install into their own skill directory. Don't put two copies of
 
 ## Versions
 
+- **2.3.0** (2026-11-01): `/next` keeps going by default: when an item is done it takes the next one; when an item needs you it notifies you first and carries on with work that doesn't depend on the answer. It wraps up when nothing is left to take, after 5 items, when quota runs low or when the context gets long. The retrospective is a quick step before starting work instead of taking a whole session, and review, fixes, re-review and merge of one item all happen in the same session. `/next 连做` is replaced by `/next 只做一项` (one item only).
 - **2.2.0** (2026-11-01): day-to-day work becomes "one item per session". New `/next` and `/week` entries; no more long-running lead sessions, portfolio session or nightly scheduled tasks. Work handed to other agents is awaited inside the session, and every wrap-up updates the queue and sends a notification. New `scripts/daily.ps1` (status page plus notification, for a scheduled task) and `scripts/notify.ps1` (desktop notifications plus Bark push). `status.ps1` adds last activity, available items, this week's goals and a "may have stalled" hint. Retrospectives now run when 20 commits or 7 days have piled up, triggered by `/next`; the daily digest is now the retro digest.
 - **2.1.0** (2026-10-31): new `portfolio` module (several projects at once: project list, one inbox with a global cap, merged digest, cross-project lesson promotion) and a read-only status script, `scripts/status.ps1`. Related projects agree on a contract before building, and the contract tests live in the provider's verify. The daily digest is also written to `.agents/digest/`, and approval prompts that keep recurring get a concrete permission-rule suggestion. The dispatch script `scripts/dispatch.ps1`, added after 2.0.0, is counted in this release.
 - **2.0.0** (2026-10-29): reorganized around "harness + loops". Tiers are now based on reversibility × verifiability. New trust levels L0–L3. New `harness` (project verification) and `garden` (nightly retrospective, lesson promotion) modules. Evidence moves into commit bodies. Independent verification reports only provable P0–P2 findings. A red trunk after a merge is fixed forward or reverted.
