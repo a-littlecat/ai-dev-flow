@@ -127,6 +127,7 @@ For other tools, install into their own skill directory. Don't put two copies of
 
 ## Versions
 
+- **2.5.0** (2026-11-01): `/next` fills free slots: while its item waits on an external agent or a slow check, it hands independent ready items (dependencies met, not touching the same files) to background or external agents, up to the project's parallel limit, instead of running in parallel only when you ask.
 - **2.4.1** (2026-11-01): `/next` no longer wraps up after one context compaction: it rereads the project's `AGENTS.md`, the queue and the `/next` rules, then carries on; it wraps up after the second compaction.
 - **2.4.0** (2026-11-01): fewer notifications, stalls caught sooner. `notify.ps1 -Hook` now looks at the event type: the "waiting for your input" reminder after a minute of no input is dropped, and a session that failed to resume after the usage limit reset goes to your phone. New `scripts/watch.ps1`, run every 15 minutes by a scheduled task, pushes to your phone only when a project newly looks stalled.
 - **2.3.0** (2026-11-01): `/next` keeps going by default: when an item is done it takes the next one; when an item needs you it notifies you first and carries on with work that doesn't depend on the answer. It wraps up when nothing is left to take, after 5 items, when quota runs low or when the context gets long. The retrospective is a quick step before starting work instead of taking a whole session, and review, fixes, re-review and merge of one item all happen in the same session. `/next 连做` is replaced by `/next 只做一项` (one item only).
