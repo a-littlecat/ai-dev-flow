@@ -6,3 +6,4 @@
 |---|---|---|---|---|---|
 | 1 | `status.ps1`：反引号围栏的 info string 里含反引号时，按 CommonMark 不算开围栏，后面的真实队列表照常读 | `tests/status.tests.ps1` 加正反例；改坏会红 | 自走 | 无 | 待做（Codex 2026-10-31 复审的 R5，见 0454ea5 的 verify note） |
 | 2 | `status.ps1`：缩进按四列制表位算，空格加 Tab 凑满四列的行算缩进代码；已认出的表格里的缩进行照常读 | `tests/status.tests.ps1` 加正反例；改坏会红 | 自走 | 无 | 待做（Codex 2026-10-31 复审的 R6，同上） |
+| 3 | `notify.ps1`：Bark 报错脱敏不跳过短 key（现在只替换 8 个字符以上的片段），服务端返回或异常里带短 key 时也换成 `<bark>` | `tests/status.tests.ps1` 加替身用例（不联网）；改坏会红 | 自走 | 无 | 待做（Codex 2026-11-01 复验 e0879fe 的 R1 残留，见它的 verify note） |
