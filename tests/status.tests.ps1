@@ -251,6 +251,10 @@ try {
     $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate
     $w3 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
     Check 'watch: stall after it cleared is sent again' ($w3 -match '可能停了')
+    '{"stalled":[' | Set-Content -LiteralPath $wstate
+    $w4 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun 2>$null | Out-String
+    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 2>$null
+    Check 'watch: broken state file does not stop alerts and is rewritten' ($w4 -match '可能停了' -and $LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|' -and -not (Test-Path -LiteralPath "$wstate.tmp"))
     Remove-Item Env:AI_DEV_FLOW_NOTIFY
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)

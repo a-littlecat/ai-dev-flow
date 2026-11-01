@@ -5,13 +5,13 @@ param(
     [string]$State,
     [switch]$DryRun
 )
-# 停滞检查：跑 status.ps1，只在有项目新变成"可能停滞"时发一条 stuck 通知（按 notify.json 的配置会推到手机）。给计划任务每小时跑，不花模型额度。
+# 停滞检查：跑 status.ps1，只在有项目新变成"可能停滞"时发一条 stuck 通知（按 notify.json 的配置会推到手机）。给计划任务每 15 分钟跑，不花模型额度；停住后最晚约 StaleMinutes + 15 分钟收到。
 #   -Config        总览仓库的 projects.json（同 status.ps1）
 #   -StaleMinutes  同 status.ps1，默认 60
 #   -State         上次已经提醒过哪些停滞，默认 %LOCALAPPDATA%\ai-dev-flow\watch-state.json
 #   -DryRun        通知只打印不发（传给 notify.ps1），也不改 -State
 # 同一次停滞只提醒一次：项目、在做的项和最后活动时间都没变，就不再发。项目动过以后又停住，算新的一次。
-# 通知发不出去时不记下这次停滞，下次检查会再发；退出码同 notify.ps1。
+# 通知发不出去时不记下这次停滞，下次检查会再发；退出码同 notify.ps1。状态文件读不出来时当作没提醒过，照常检查。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $here = $PSScriptRoot
@@ -33,7 +33,10 @@ foreach ($p in $stalled) {
     $ids = (@($p.Doing) | ForEach-Object { $_.Id }) -join ','
     $now["$($p.Name)|$ids|$($p.LastActivity)"] = $p
 }
-$seen = @(if (Test-Path -LiteralPath $State) { (Get-Content -LiteralPath $State -Raw -Encoding UTF8 | ConvertFrom-Json).stalled })
+$seen = @(if (Test-Path -LiteralPath $State) {
+    try { (Get-Content -LiteralPath $State -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop).stalled }
+    catch { [Console]::Error.WriteLine("watch.ps1 ignores unreadable state ${State}: $($_.Exception.Message)") }
+})
 $new = @($now.Keys | Where-Object { $seen -notcontains $_ })
 
 $code = 0
@@ -52,6 +55,8 @@ if ($new) {
 
 if (-not $DryRun -and -not $code) {
     $null = New-Item -ItemType Directory -Force -Path (Split-Path $State)
-    [ordered]@{ checked = (Get-Date).ToString('yyyy-MM-dd HH:mm'); stalled = @($now.Keys) } | ConvertTo-Json | Set-Content -LiteralPath $State -Encoding utf8NoBOM
+    $tmp = "$State.tmp"
+    [ordered]@{ checked = (Get-Date).ToString('yyyy-MM-dd HH:mm'); stalled = @($now.Keys) } | ConvertTo-Json | Set-Content -LiteralPath $tmp -Encoding utf8NoBOM
+    Move-Item -LiteralPath $tmp -Destination $State -Force
 }
 exit $code
