@@ -176,8 +176,9 @@ function Get-ProjectStatus($p) {
         $r.Available = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
             $d = ($_.Deps -replace '\*', '').Trim()
             if ($d -match '^(无|-|—|)$') { return $true }
-            if ($d -notmatch '^[#\d\s,，、]+$') { return $false }
-            -not @([regex]::Matches($d, '\d+') | Where-Object { $open -contains $_.Value }).Count
+            $nums = @([regex]::Matches($d, '\d+') | ForEach-Object Value)
+            if ($d -notmatch '^[#\d\s,，、]+$' -or -not $nums) { return $false }
+            -not @($nums | Where-Object { $open -contains $_ }).Count
         }).Count
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {

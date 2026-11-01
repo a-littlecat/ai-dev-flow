@@ -70,14 +70,16 @@ if ($useToast) {
 }
 
 if ($useBark) {
+    $secrets = @([string]$cfg.bark) + @(([string]$cfg.bark).TrimEnd('/') -split '/' | Select-Object -Last 1) | Where-Object { $_.Length -ge 8 }
+    $clean = { param($m) $m = [string]$m; foreach ($x in $secrets) { $m = $m.Replace($x, '<bark>') }; $m }
     $payload = [ordered]@{ title = $heading; body = $Body; group = 'ai-dev-flow'; level = if ($Level -in 'user', 'stuck') { 'timeSensitive' } else { 'active' } }
     if ($openUri -and $openUri -notlike 'file:*') { $payload.url = $openUri }
     try {
         $res = Invoke-RestMethod -Method Post -Uri $cfg.bark -ContentType 'application/json; charset=utf-8' -TimeoutSec 15 `
             -Body ([Text.Encoding]::UTF8.GetBytes(($payload | ConvertTo-Json -Compress)))
-        if ($res.code -ne 200) { $failed.Add("bark: code $($res.code) $($res.message)") }
+        if ($res.code -ne 200) { $failed.Add((& $clean "bark: code $($res.code) $($res.message)")) }
     } catch {
-        $failed.Add("bark: $($_.Exception.Message.Replace([string]$cfg.bark, '<bark>'))")
+        $failed.Add((& $clean "bark: $($_.Exception.Message)"))
     }
 }
 

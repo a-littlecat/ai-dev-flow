@@ -14,6 +14,7 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $here = $PSScriptRoot
 if (-not $Out) { $Out = Join-Path $env:LOCALAPPDATA 'ai-dev-flow/status.html' }
+$Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
 
 $statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes)
 if ($Config) { $statusArgs += '-Config', $Config }

@@ -99,14 +99,13 @@ pwsh -NoProfile -File scripts/status.ps1 -Project '<名字>,<名字>' -Since '7 
 pwsh -NoProfile -File <skill>/scripts/daily.ps1 -Config <总览仓库>/projects.json
 ```
 
-- 生成一页 HTML（默认 `%LOCALAPPDATA%i-dev-flow\status.html`），内容依次是：要你做（每条附怎么答复）、空闲可领的项目、各项目的北极星、本周目标、队列、最后活动和提示。
+- 生成一页 HTML（默认 `%LOCALAPPDATA%\ai-dev-flow\status.html`），内容依次是：要你做（每条附怎么答复）、空闲可领的项目、各项目的北极星、本周目标、队列、最后活动和提示。
 - 然后发一条系统通知，点开就是这一页。有待用户的项或可能停滞的项目时，同时推到手机。
 - 用 Windows 计划任务每天跑两次，默认 9:00 和 18:00。这属于持久配置，第一次要用户同意，同意后写进总览的 `AGENTS.md`。电脑关着就不跑，下次开机后按计划任务的"错过后尽快运行"补跑。
 
 通知统一走 `scripts/notify.ps1`：
 
-- 渠道和 key 放在本机配置里（默认 `%APPDATA%i-dev-flow
-otify.json`），不入库：
+- 渠道和 key 放在本机配置里（默认 `%APPDATA%\ai-dev-flow\notify.json`），不入库：
   ```json
   { "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"], "toast": true }
   ```

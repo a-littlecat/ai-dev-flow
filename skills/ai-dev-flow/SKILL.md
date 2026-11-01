@@ -147,8 +147,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
-| `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%i-dev-flow
-otify.json` |
+| `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
 | `skills/next`、`skills/week` | 与本 skill 同仓库的两个入口：`/next` 一项一会话，`/week` 周会 |
 
 能并行的独立工作交给隔离的子 agent，各自在自己的 worktree 里做；验证放到后台跑。你负责整合结果，并对最终质量负责。

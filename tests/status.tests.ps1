@@ -28,6 +28,7 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 | 10 | 依赖别的项目 | 绿 | 自走 | 天正 #22 | 待做 |
 | 11 | 没有依赖 | 绿 | 自走 | 无 | 待做 |
 | 12 | 依赖的项已删 | 绿 | 自走 | 99 | 待做 |
+| 13 | 依赖只有井号 | 绿 | 自走 | # | 待做 |
 
 另一张不算队列的表：
 
@@ -138,9 +139,9 @@ try {
     Check 'order: active by priority, then maintenance' (($j.Projects.Name -join ',') -eq '项目 A,gone,b')
     Check 'paused listed by name, missing path marked' (($j.Paused -join ',') -eq 'paused,paused-gone（路径不存在）')
     Check 'trust parsed' ($pa.Trust -eq 'L1')
-    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 4 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1 -and $pa.Queue.'待做' -eq 5)
-    Check 'tables without state column or separator row, and code blocks, ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 12)
-    Check 'available: deps done, none, or deleted; not open or foreign' ($pa.Available -eq 3)
+    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 4 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1 -and $pa.Queue.'待做' -eq 6)
+    Check 'tables without state column or separator row, and code blocks, ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 13)
+    Check 'available: deps done, none, or deleted; not open, foreign or number-less' ($pa.Available -eq 3)
     Check 'goals: by items, open item, manual done' ((($pa.Goals | ForEach-Object { "$($_.Text)=$($_.Done)" }) -join ';') -eq '目标一=True;目标二=False;手动勾的 <x>=True')
     Check 'last activity takes the newest of branches and runs' ($pa.LastActivity -eq $runTime.ToString('yyyy-MM-dd HH:mm'))
     Check 'not stalled while active' (-not ($pa.Problems -match '^可能停滞'))
@@ -203,6 +204,9 @@ try {
     Check 'daily: waiting items with how to answer' ($html -match '#2</b> <span class="muted">\[看一眼\]</span> 看界面：等你看截图' -and $html -match '/next #2 按你的')
     Check 'daily: html escaped' ($html -match '手动勾的 &lt;x&gt;' -and $html -notmatch '<x>')
     Check 'daily: summary chips' ($html -match '待你 <b>4</b>')
+    Push-Location $root
+    try { $null = pwsh -NoProfile -File $daily -Config $cfg -Out 'bare.html' -NoNotify } finally { Pop-Location }
+    Check 'daily: bare -Out file name' ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $root 'bare.html')))
 
     $notify = Join-Path (Split-Path $Script) 'notify.ps1'
     $ncfg = Join-Path $root 'hq/notify.json'
