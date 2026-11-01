@@ -1,0 +1,1 @@
+覆盖：7bd6a9b..6bd5d85；Codex（codex exec 默认模型，reasoning high），两轮 → Pass。第一轮审 7bd6a9b..cd3804d：Pass，附 P2 R1–R4，已在 6bd5d85 修复；第二轮复验 cd3804d..6bd5d85：Pass，R1–R4 已修，新 P2 R5（本周目标网格不折超长连续文本，页面被横向撑开）进队列。跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 55 项全过；边界脚本 14 例加补充 10 项断言全过；验证方改坏 Next 的 -First 3 → 对应检查红，恢复后全绿。没采纳：无。
