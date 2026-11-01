@@ -6,18 +6,24 @@ param(
     [switch]$All,
     [switch]$Lessons,
     [switch]$Mark,
-    [switch]$Json
+    [switch]$Json,
+    [int]$StaleMinutes = 60
 )
 # 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交、队列各状态的项数和待用户项、
-# 最近一份每日摘要、worktree 和分支、未提交改动。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
+# 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
 # 在总览仓库里任意目录运行，或用 -Config 指定清单（默认 <仓库>/projects.json）。
 #   默认      推进中的项目全量；维护中的只列提交数、队列和待用户项；暂停的只列名字
 #   -Since    新提交从这个时间算（git 的写法：'24 hours ago'、'2026-10-30'）；不给就从上次 -Mark 记下的位置算，没有记录按 24 小时
 #   -Project  只看这几个（按名字，多个用逗号隔开，暂停的也看）
 #   -All      维护中的也全量
 #   -Lessons  附上各项目 LESSONS.md 每条教训的 Seen 和标题（合并跨项目教训用）
-#   -Mark     把各项目当前的主干位置记为下次的起点（写每日摘要时用），记在 <清单所在目录>/.agents/status-marks.json
+#   -Mark     把各项目当前的主干位置记为下次的起点（周会时用），记在 <清单所在目录>/.agents/status-marks.json
 #   -Json     输出 JSON
+#   -StaleMinutes  推进中的项目有"在做"的项、最后活动又早于这么多分钟前，提示"可能停滞"（默认 60）
+# 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
+# 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
+#   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
+# 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
 $env:GIT_OPTIONAL_LOCKS = '0'
@@ -46,6 +52,10 @@ if (Test-Path -LiteralPath $marksFile) {
 
 $states = '待做', '在做', '待验证', '待用户', '完成'
 $statusOrder = @{ '推进中' = 0; '维护' = 1; '暂停' = 2 }
+
+function Format-Idle([int]$m) {
+    if ($m -lt 60) { "$m 分钟" } elseif ($m -lt 2880) { "$([math]::Floor($m / 60)) 小时" } else { "$([math]::Floor($m / 1440)) 天" }
+}
 
 function Short([string]$s, [int]$n) {
     $s = ($s -replace '\s+', ' ').Trim()
@@ -82,6 +92,7 @@ function Read-Queue([string]$file) {
             Id     = & $get '#'
             Goal   = & $get '目标'
             Tier   = (& $get '档') -replace '\*', ''
+            Deps   = & $get '依赖'
             State  = if ($state) { $state } else { '其他' }
             Detail = if ($state) { $raw.Substring($state.Length).Trim() -replace '^[（(]', '' -replace '[）)]$', '' } else { $raw }
         }
@@ -97,6 +108,7 @@ function Get-ProjectStatus($p) {
         Queue = $null; Waiting = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @()
+        LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
         Problems = [Collections.Generic.List[string]]::new()
     }
     if ($statusOrder.Keys -notcontains $p.status) { $r.Problems.Add("状态应为 推进中 / 维护 / 暂停，现在是：$($p.status)") }
@@ -147,6 +159,7 @@ function Get-ProjectStatus($p) {
         }
     }
 
+    $done = @()
     $queueRel = if ($p.queue) { $p.queue } else { 'docs/queue.md' }
     $queueFile = Join-Path $path $queueRel
     if (Test-Path -LiteralPath $queueFile) {
@@ -158,7 +171,20 @@ function Get-ProjectStatus($p) {
         $r.Waiting = @($items | Where-Object State -eq '待用户')
         $other = @($items | Where-Object State -eq '其他')
         if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "#$($_.Id)（$(Short $_.Detail 20)）" }) -join '、')) }
+        $done = @($items | Where-Object State -eq '完成' | ForEach-Object { $_.Id -replace '^#', '' })
+        $open = @($items | Where-Object State -ne '完成' | ForEach-Object { $_.Id -replace '^#', '' })
+        $r.Available = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
+            $d = ($_.Deps -replace '\*', '').Trim()
+            if ($d -match '^(无|-|—|)$') { return $true }
+            if ($d -notmatch '^[#\d\s,，、]+$') { return $false }
+            -not @([regex]::Matches($d, '\d+') | Where-Object { $open -contains $_.Value }).Count
+        }).Count
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
+    $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {
+        $ids = @($g.items | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' })
+        $byItems = $ids.Count -and $done -and -not @($ids | Where-Object { $done -notcontains $_ }).Count
+        [pscustomobject]@{ Text = $g.text; Done = [bool]($g.done -eq $true -or $byItems) }
+    })
 
     $digestDir = Join-Path $path '.agents/digest'
     if (Test-Path -LiteralPath $digestDir) {
@@ -186,6 +212,18 @@ function Get-ProjectStatus($p) {
     $r.WorktreesMerged = @($extra | Where-Object { $_.Branch -and $merged -contains $_.Branch }).Count
     $r.WorktreesDetached = @($extra | Where-Object { $_.Detached }).Count
     $r.WorktreesMissing = @($extra | Where-Object { $_.Prunable }).Count
+
+    $times = @(git -C $path for-each-ref refs/heads --format='%(committerdate:iso-strict)' | Where-Object { $_ } | ForEach-Object { [datetimeoffset]::Parse($_).LocalDateTime })
+    $runs = Join-Path $path '.agents/runs'
+    if (Test-Path -LiteralPath $runs) { $times += @(Get-ChildItem -LiteralPath $runs -Recurse -Depth 1 -File -ErrorAction SilentlyContinue | ForEach-Object LastWriteTime) }
+    if ($times) {
+        $last = ($times | Measure-Object -Maximum).Maximum
+        $r.LastActivity = $last.ToString('yyyy-MM-dd HH:mm')
+        $r.IdleMinutes = [int][math]::Floor(((Get-Date) - $last).TotalMinutes)
+        if ($p.status -eq '推进中' -and $r.Queue -and $r.Queue['在做'] -and $r.IdleMinutes -ge $StaleMinutes) {
+            $r.Problems.Add("可能停滞：在做 $($r.Queue['在做']) 项，已 $(Format-Idle $r.IdleMinutes)没有动静")
+        }
+    }
     [pscustomobject]$r
 }
 
@@ -229,7 +267,9 @@ foreach ($r in $results) {
             if ($r.NewCount -gt 8) { $out.Add("  …另 $($r.NewCount - 8) 条") }
         }
     }
-    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -ne '其他' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ')) }
+    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -ne '其他' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
+    if ($r.Goals) { $out.Add("本周目标 $(@($r.Goals | Where-Object Done).Count)/$($r.Goals.Count)：" + (($r.Goals | ForEach-Object { "$(if ($_.Done) { '✓' } else { '○' }) $(Short $_.Text 40)" }) -join '；')) }
+    if ($r.LastActivity) { $out.Add("最后活动 $($r.LastActivity)（$(Format-Idle $r.IdleMinutes)前）") }
     foreach ($w in $r.Waiting) { $out.Add("  待用户 #$($w.Id)$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
     if ($r.Digest -and -not $brief) {
         $out.Add("最近摘要 $($r.Digest.Date)")

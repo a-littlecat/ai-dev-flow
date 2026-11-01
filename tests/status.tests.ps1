@@ -23,6 +23,11 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 | 3 | 推远程 | 授权 | 单向门 | 无 | 待用户 |
 | 4 | 跑回归 | 绿 | 自走 | 1 | 在做（r2） |
 | 5 | 拼写错 | 绿 | 自走 | 无 | 进行中 |
+| 8 | 依赖已完成 | 绿 | 自走 | 1 | 待做 |
+| 9 | 依赖还在做 | 绿 | 自走 | #4、1 | 待做 |
+| 10 | 依赖别的项目 | 绿 | 自走 | 天正 #22 | 待做 |
+| 11 | 没有依赖 | 绿 | 自走 | 无 | 待做 |
+| 12 | 依赖的项已删 | 绿 | 自走 | 99 | 待做 |
 
 另一张不算队列的表：
 
@@ -109,7 +114,8 @@ G init -q $b; G -C $b commit -q --allow-empty -m 'b1'
 $cfg = Join-Path $root 'hq/projects.json'
 $null = New-Item -ItemType Directory -Force -Path (Split-Path $cfg)
 @{ projects = @(
-    @{ name = '项目 A'; path = $a; status = '推进中'; priority = 1; trunk = 'main'; dependsOn = @('b', '不存在') }
+    @{ name = '项目 A'; path = $a; status = '推进中'; priority = 1; trunk = 'main'; dependsOn = @('b', '不存在')
+       goals = @(@{ text = '目标一'; items = @('1') }, @{ text = '目标二'; items = @('#4') }, @{ text = '手动勾的 <x>'; done = $true }) }
     @{ name = 'b'; path = $b; status = '维护'; priority = 2 }
     @{ name = 'gone'; path = (Join-Path $root 'nope'); status = '推进中'; priority = 3 }
     @{ name = 'paused'; path = $b; status = '暂停' }
@@ -118,6 +124,11 @@ $null = New-Item -ItemType Directory -Force -Path (Split-Path $cfg)
 
 try {
     (Get-Item -LiteralPath (Join-Path $a '.gitignore')).LastWriteTime = (Get-Date).AddMinutes(-5)
+    $run = Join-Path $a '.agents/runs/r1/final.md'
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $run)
+    'done' | Set-Content -LiteralPath $run
+    $runTime = (Get-Date).AddMinutes(30)
+    (Get-Item -LiteralPath $run).LastWriteTime = $runTime
     $index = Join-Path $a '.git/index'
     $indexBefore = (Get-FileHash -LiteralPath $index).Hash
     $j = pwsh -NoProfile -File $Script -Config $cfg -Json -Lessons | Out-String | ConvertFrom-Json
@@ -127,8 +138,14 @@ try {
     Check 'order: active by priority, then maintenance' (($j.Projects.Name -join ',') -eq '项目 A,gone,b')
     Check 'paused listed by name, missing path marked' (($j.Paused -join ',') -eq 'paused,paused-gone（路径不存在）')
     Check 'trust parsed' ($pa.Trust -eq 'L1')
-    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 4 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1)
-    Check 'tables without state column or separator row, and code blocks, ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 7)
+    Check 'queue counts' ($pa.Queue.'完成' -eq 1 -and $pa.Queue.'待用户' -eq 4 -and $pa.Queue.'在做' -eq 1 -and $pa.Queue.'其他' -eq 1 -and $pa.Queue.'待做' -eq 5)
+    Check 'tables without state column or separator row, and code blocks, ignored' ((($pa.Queue.PSObject.Properties.Value | Measure-Object -Sum).Sum) -eq 12)
+    Check 'available: deps done, none, or deleted; not open or foreign' ($pa.Available -eq 3)
+    Check 'goals: by items, open item, manual done' ((($pa.Goals | ForEach-Object { "$($_.Text)=$($_.Done)" }) -join ';') -eq '目标一=True;目标二=False;手动勾的 <x>=True')
+    Check 'last activity takes the newest of branches and runs' ($pa.LastActivity -eq $runTime.ToString('yyyy-MM-dd HH:mm'))
+    Check 'not stalled while active' (-not ($pa.Problems -match '^可能停滞'))
+    $pb0 = $j.Projects | Where-Object Name -eq 'b'
+    Check 'last activity from commits when no runs' ($pb0.LastActivity -eq (G -C $b log -1 '--format=%cd' '--date=format:%Y-%m-%d %H:%M') -and $pb0.IdleMinutes -ge 0)
     Check 'waiting items with tier and detail' ((($pa.Waiting | ForEach-Object { "$($_.Id)/$($_.Tier)/$($_.Detail)" }) -join ';') -eq '2/看一眼/等你看截图;3/单向门/;6/自走/另一种写法;7/看一眼/真的')
     Check 'escaped pipe does not shift columns' ($pa.Queue.'完成' -eq 1)
     Check 'unknown state reported' ([bool]($pa.Problems | Where-Object { $_ -like '*#5*' }))
@@ -148,10 +165,14 @@ try {
 
     $null = pwsh -NoProfile -File $Script -Config $cfg -Mark
     G -C $a commit -q --allow-empty -m 'after mark'
+    (Get-Item -LiteralPath $run).LastWriteTime = (Get-Date).AddHours(-3)
     $j2 = pwsh -NoProfile -File $Script -Config $cfg -Json | Out-String | ConvertFrom-Json
     $pa2 = $j2.Projects | Where-Object Name -eq '项目 A'
     Check 'mark: only commits after it' ($pa2.NewCount -eq 1 -and $pa2.NewSince -like '自上次标记*')
     $j3 = pwsh -NoProfile -File $Script -Config $cfg -Json -Since '2000-01-01' | Out-String | ConvertFrom-Json
+    Check 'stale only past -StaleMinutes' (-not (($j2.Projects | Where-Object Name -eq '项目 A').Problems -match '^可能停滞'))
+    $js = pwsh -NoProfile -File $Script -Config $cfg -Json -StaleMinutes 0 | Out-String | ConvertFrom-Json
+    Check 'stalled: active project with work in progress and no activity' ([bool](($js.Projects | Where-Object Name -eq '项目 A').Problems -match '^可能停滞：在做 1 项') -and -not (($js.Projects | Where-Object Name -eq 'b').Problems -match '^可能停滞'))
     Check '-Since overrides mark' ((($j3.Projects | Where-Object Name -eq '项目 A').NewCount) -eq 3)
     $j4 = pwsh -NoProfile -File $Script -Config $cfg -Json -Project paused | Out-String | ConvertFrom-Json
     Check '-Project includes paused' (($j4.Projects.Name -join ',') -eq 'paused' -and ($j4.Paused -join ',') -eq 'paused-gone（路径不存在）')
@@ -172,6 +193,28 @@ try {
     Check 'text summary line' ($t -match '推进中 2 · 维护 1 · 暂停 2；待用户合计 4（单向门 1 · 看一眼 2 · 自走 1）')
     Check 'text waiting line' ($t -match '待用户 #2 \[看一眼\] 看界面：等你看截图')
     Check 'maintenance is brief' ($t -notmatch '(?s)## b · 维护.*工作区')
+    Check 'text available and goals' ($t -match '可领 3' -and $t -match '本周目标 2/3：✓ 目标一；○ 目标二；✓ 手动勾的 <x>')
+
+    $daily = Join-Path (Split-Path $Script) 'daily.ps1'
+    $page = Join-Path $root 'out/status.html'
+    $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -NoNotify
+    $html = if (Test-Path -LiteralPath $page) { Get-Content -LiteralPath $page -Raw -Encoding UTF8 } else { '' }
+    Check 'daily: page written' ($LASTEXITCODE -eq 0 -and $html -match '<title>项目状态</title>')
+    Check 'daily: waiting items with how to answer' ($html -match '#2</b> <span class="muted">\[看一眼\]</span> 看界面：等你看截图' -and $html -match '/next #2 按你的')
+    Check 'daily: html escaped' ($html -match '手动勾的 &lt;x&gt;' -and $html -notmatch '<x>')
+    Check 'daily: summary chips' ($html -match '待你 <b>4</b>')
+
+    $notify = Join-Path (Split-Path $Script) 'notify.ps1'
+    $ncfg = Join-Path $root 'hq/notify.json'
+    '{ "bark": "https://example.invalid/secret-key", "barkLevels": ["user", "stuck"] }' | Set-Content -LiteralPath $ncfg
+    $n1 = pwsh -NoProfile -File $notify -Config $ncfg -Title 'p' -Body 'b' -Level done -DryRun | Out-String
+    $n2 = pwsh -NoProfile -File $notify -Config $ncfg -Title 'p' -Body 'b' -Level stuck -DryRun | Out-String
+    Check 'notify: done stays on the desktop, stuck goes to the phone' ($n1 -match 'bark: no' -and $n2 -match 'bark: yes' -and $n2 -match 'title: 🔴 p')
+    Check 'notify: dry run never prints the key' ($n1 + $n2 -notmatch 'secret-key')
+    $n3 = '{"cwd":"C:\\x\\项目 A","message":"needs permission"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: hook event gives project and message, desktop only' ($n3 -match 'title: 项目 A' -and $n3 -match 'body: needs permission' -and $n3 -match 'bark: no')
+    $null = pwsh -NoProfile -File $notify -Config $ncfg -Title 'p' -Level urgent -DryRun 2>&1
+    Check 'notify: unknown level fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config $cfg -Project nobody 2>&1

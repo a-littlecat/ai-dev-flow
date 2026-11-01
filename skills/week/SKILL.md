@@ -1,0 +1,33 @@
+---
+name: week
+description: 每周一次的周会，在多项目总览仓库里开：收齐全部项目这一周的进展，合跨项目教训，列待清理的东西，提议下周目标，用户确认后写进 INTENT.md、projects.json 和 decisions.md。用户输入 /week 或说"周会"时使用。
+---
+
+# /week：周会
+
+在总览仓库里开，用完就关。做法照 ai-dev-flow（`$env:AI_DEV_FLOW`，默认 `~/.agents/skills/ai-dev-flow`）的 `modules/portfolio.md`，这里只给步骤。
+
+1. 读总览的 `AGENTS.md`、`INTENT.md`、`projects.json`、`decisions.md`。
+2. 收状态，只跑脚本，不挨个进项目读：
+   ```
+   pwsh -NoProfile -File scripts/status.ps1 -Since '7 days ago' -Lessons
+   ```
+3. 写周报，白话，一屏以内：
+   ```
+   本周：<项目>：合了 N 项，<一句结果>（有动静的项目各一行）
+   北极星：<项目> <数字>（上周 <数字>）
+   目标：<项目> 完成 a/b，没完成的一句原因
+   返工：<项目> <返工项数> / <合并项数>
+   教训：<跨项目的新教训，或升级了哪条>
+   待清理：<项目>：已合并的分支 N、worktree N
+   要你定：<最多 3 条，每条附推荐答案>
+   ```
+   - 北极星和返工取各项目最近一份复盘摘要。复盘超过 7 天没做的项目，写"没复盘"；下次在那个项目发 `/next` 时会先复盘。
+   - 跨项目教训按 `portfolio.md` 第 7 节合并、升级。
+4. **提议下周目标**：每个推进中的项目最多 2 条，尽量挂到队列编号上（`projects.json` 的 `goals`，格式见 `portfolio.md` 第 2 节），状态页才能自动勾掉。同时提出优先级调整，以及哪个项目转维护或暂停。
+5. 用户回复后：
+   - 改 `INTENT.md` 的本周目标和 `projects.json` 的 `goals`；
+   - 在 `decisions.md` 里一行一条记下来，附用户原话；
+   - 只涉及某一个项目的决定，写进那个项目的 `docs/requests.md`；
+   - 跑 `status.ps1 -Mark`，然后提交总览仓库。
+6. 清理只列出来请用户批。批了以后写进各项目的 `docs/requests.md`，由那边下次发 `/next` 时照 `garden.md` 第 4 节删。总览不进项目动手。

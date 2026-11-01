@@ -8,7 +8,7 @@ v2 把质量押在机器上，不押在流程和询问上：
 
 - **项目自带的验证能力**：一条 verify 命令能判对错，能操作真实产品。项目没有，就先帮它搭。
 - **机械约束**：每次都必须发生的事写成 hook、测试或 lint。
-- **每天复盘**：看一遍合进去的东西，反复出现的问题升级成规则。
+- **定期复盘**：攒够一批就看一遍合进去的东西，反复出现的问题升级成规则。
 
 能撤回的事不停下来问"要不要"：直接做，给出结果，你事后可以推翻。设计依据和调研见 [docs/v2-design.md](docs/v2-design.md)。
 
@@ -24,11 +24,15 @@ skills/ai-dev-flow/
   modules/land.md          合并落地：提交正文模板、往前修和 revert
   modules/diagnose.md      诊断：先定义能判定对错的信号再修
   modules/orchestrate.md   自动推进：队列、后台子 agent＋worktree、并行上限
-  modules/garden.md        每晚复盘、教训升级、每日摘要、每周清理
-  modules/portfolio.md     多项目总览：项目清单、统一收件箱、全局上限、合并摘要、跨项目教训
+  modules/garden.md        复盘、教训升级、复盘摘要、清理
+  modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
   scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
-tests/status.tests.ps1     status.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
+  scripts/daily.ps1        把状态写成一页 HTML 并发通知，给计划任务定时跑
+  scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
+skills/next/SKILL.md       /next：在项目里一个会话领一项，做完、收尾、通知
+skills/week/SKILL.md       /week：在总览仓库里开周会
+tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -39,14 +43,15 @@ tests/status.tests.ps1     status.ps1 的检查：pwsh -NoProfile -File tests/st
 
 | 你说 | 总览会 |
 |---|---|
+| `/next`（可带答复，如 `/next #7 按你的`） | 领队列的下一项，做完、验证、合并，更新队列，发通知后结束 |
 | 想做 X、修 Y | 定档，一直做到需要你的地方 |
 | 继续 / 自动推进 | 接着做，或者从队列里一项接一项推进 |
 | 现在到哪了 | 三行汇报 |
 | 可以 / 可以合并 | 合并落地 |
 | 不对 / 报错了 | 先分类，再诊断 |
-| 复盘 | 看一遍今天合进去的东西，给你一份每日摘要 |
+| 复盘 | 看一遍最近合进去的东西，给你一份复盘摘要 |
 | 先停 | 停在安全点，把剩下的写进队列 |
-| 早报 / 各项目怎么样（在总览仓库里） | 收齐所有项目的状态，只把最要紧的几件事交给你 |
+| `/week`、周会（在总览仓库里） | 收齐所有项目一周的进展，提议下周目标 |
 
 它只在四种情况下来找你：单向门要授权、需要你亲眼看、方向要选、卡住了。每次都把问题一次问完，并附上推荐答案。
 
@@ -54,13 +59,13 @@ tests/status.tests.ps1     status.ps1 的检查：pwsh -NoProfile -File tests/st
 
 | 档 | 情况 | 谁说了算 |
 |---|---|---|
-| 自走 | 能撤回，而且 verify 能证明对错 | 按信任等级合并，写进每日摘要 |
+| 自走 | 能撤回，而且 verify 能证明对错 | 按信任等级合并，写进复盘摘要 |
 | 看一眼 | 能撤回，但对不对要靠人的眼光（界面、文案、手感） | 做完附截图，等你说"可以" |
 | 单向门 | push 和发布、真实数据、删除、对外发送、花钱、安全设置、操作你正在用的软件 | 方案先确认，你授权才执行 |
 
 ### 信任等级
 
-每个项目在 `AGENTS.md` 里写一个等级，由你来改；agent 只能在每日摘要里附数据建议升降。没写时按 L0。
+每个项目在 `AGENTS.md` 里写一个等级，由你来改；agent 只能在复盘摘要里附数据建议升降。没写时按 L0。
 
 | 等级 | 自走档怎么合 | 并行上限 |
 |---|---|---|
@@ -73,23 +78,31 @@ tests/status.tests.ps1     status.ps1 的检查：pwsh -NoProfile -File tests/st
 
 ### 同时推进几个项目
 
-每个项目照常一个主会话，开在自己的仓库里各自推进。另建一个只在本地的总览仓库，放你的意图（`INTENT.md`）、项目清单（`projects.json`）、决定记录和跨项目教训，在里面开一个总览会话：
+项目不设常驻会话：你在项目里新建会话、发 `/next`，一个会话做一项，做完收尾就结束。进度都在队列里，换账号、换会话都能接着做。另建一个只在本地的总览仓库，放你的意图（`INTENT.md`）、项目清单（`projects.json`，含本周目标）、决定记录和跨项目教训：
 
-- 你每天只看总览会话：它用 `scripts/status.ps1` 收齐各项目的状态，合成一份每日摘要，一次最多交给你 3 件要看或要决定的事，其余排着。
-- 你的决定由总览转给对应项目；你的意图只从总览流向项目。
-- 同一条教训在几个项目里都出现，就升到 skill 或用户级配置，不在每个项目各修一遍。
+- **每天**：计划任务定时跑 `scripts/daily.ps1`，生成一页状态（要你做的、空闲可领的、各项目的目标和进度），再弹一条通知，点开就是这一页。不花模型额度。
+- **平时**：每个会话收尾时都发通知；要你看、要你定或卡住了，会同时推到手机。项目里的问题到项目里答（`/next #编号 答复`）。
+- **每周**：在总览仓库里发 `/week`，看一周的进展，定下周目标。同一条教训在几个项目里都出现，就升到 skill 或用户级配置。
 
 做法见 `modules/portfolio.md`。
 
 ## 安装
 
-把 `skills/ai-dev-flow/` 复制到 `~/.agents/skills/ai-dev-flow/`。这是 Codex 的用户级 skill 目录。
+把 `skills/` 下的三个目录 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`。这是 Codex 的用户级 skill 目录。
 
-Claude Code 的用户级 skill 目录是 `~/.claude/skills/`（也支持项目里的 `.claude/skills/`），需要建一个目录链接指向同一份文件（Windows 下不需要管理员权限）：
+Claude Code 的用户级 skill 目录是 `~/.claude/skills/`（也支持项目里的 `.claude/skills/`），每个目录建一个目录链接指向同一份文件（Windows 下不需要管理员权限）：
 
 ```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" -Target "$env:USERPROFILE\.agents\skills\ai-dev-flow"
+foreach ($n in 'ai-dev-flow', 'next', 'week') {
+    New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\$n" -Target "$env:USERPROFILE\.agents\skills\$n"
+}
 ```
+
+通知和状态页（可选）：
+
+- 要推到手机，就在本机写 `%APPDATA%\ai-dev-flow\notify.json`（不入库）：`{ "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"] }`。不写就只弹系统通知。
+- 会话等权限或等输入时弹通知：在 `~/.claude/settings.json` 的 `hooks.Notification` 里加一条命令 `pwsh -NoProfile -File <~/.agents/skills/ai-dev-flow 的完整路径>/scripts/notify.ps1 -Hook`。
+- 每天的状态页：用 Windows 计划任务定时运行 `pwsh -NoProfile -File <同上>/scripts/daily.ps1 -Config <总览仓库>\projects.json`。
 
 其他工具按各自的 skill 目录安装。同一个 skill 不要在同一个工具能扫到的两个目录里各放一份，否则会重复出现在 skill 列表里。
 
@@ -102,6 +115,7 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\ai-dev-flow" 
 
 ## 版本
 
+- **2.2.0**（2026-11-01）：日常推进改成"一项一会话"：新增 `/next` 和 `/week` 两个入口，取消常驻的主会话、总览会话和每晚定时任务；派出去的活在会话里等到结束才收工，每次收尾都更新队列并发通知。新增 `scripts/daily.ps1`（状态页加通知，给计划任务跑）和 `scripts/notify.ps1`（系统通知加 Bark 推送）；`status.ps1` 新增最后活动时间、可领的项、本周目标和"可能停滞"提示。复盘改为攒够 20 个提交或满 7 天时由 `/next` 触发，每日摘要改称复盘摘要。
 - **2.1.0**（2026-10-31）：新增 `portfolio` 模块（多项目总览：项目清单、统一收件箱和全局上限、合并摘要、跨项目教训升级）和只读的状态收集脚本 `scripts/status.ps1`；关联项目先定合同再开工，合同测试放进提供方的 verify；每日摘要写进 `.agents/digest/`，反复弹的审批给出具体的权限规则建议。2.0.0 之后加的派活脚本 `scripts/dispatch.ps1` 也计入本版。
 - **2.0.0**（2026-10-29）：按"harness + 回路"重组。档位改按可逆性 × 可验证性分；新增信任等级 L0–L3；新增 `harness`（项目验证能力）和 `garden`（每晚复盘、教训升级）模块；证据改写进提交正文；独立验证只报能证明的 P0–P2；合并后主干红了往前修或 revert。
 - **1.1.0**（2026-10-18）：新增自动推进模块（后台子 agent＋worktree 接力，项目可授权核对后自动合并）；审查模块补充首选审查方不可用时的顺序，审查模型不得低于执行方。
