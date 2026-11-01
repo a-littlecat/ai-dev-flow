@@ -90,7 +90,7 @@ function Read-Queue([string]$file) {
         $state = $states | Where-Object { $raw.StartsWith($_, [StringComparison]::Ordinal) } | Select-Object -First 1
         [pscustomobject]@{
             Id     = & $get '#'
-            Goal   = & $get '目标'
+            Goal   = $(if ($cols -contains '目标') { & $get '目标' } else { & $get '项' })
             Tier   = (& $get '档') -replace '\*', ''
             Deps   = & $get '依赖'
             State  = if ($state) { $state } else { '其他' }
@@ -105,7 +105,7 @@ function Get-ProjectStatus($p) {
         DependsOn = @($p.dependsOn | Where-Object { $_ })
         Trust = $null; Trunk = $null; Head = $null; HeadDate = $null
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
-        Queue = $null; Waiting = @(); Digest = $null
+        Queue = $null; Waiting = @(); Doing = @(); Other = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @()
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
@@ -169,8 +169,10 @@ function Get-ProjectStatus($p) {
         foreach ($s in $states + '其他') { $counts[$s] = @($items | Where-Object State -eq $s).Count }
         $r.Queue = $counts
         $r.Waiting = @($items | Where-Object State -eq '待用户')
+        $r.Doing = @($items | Where-Object State -eq '在做')
         $other = @($items | Where-Object State -eq '其他')
-        if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "#$($_.Id)（$(Short $_.Detail 20)）" }) -join '、')) }
+        $r.Other = $other
+        if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "#$(Short $_.Id 12)（$(Short $_.Detail 20)）" }) -join '、')) }
         $done = @($items | Where-Object State -eq '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $open = @($items | Where-Object State -ne '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $r.Available = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {

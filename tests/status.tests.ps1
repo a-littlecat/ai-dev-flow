@@ -144,6 +144,7 @@ try {
     Check 'available: deps done, none, or deleted; not open, foreign or number-less' ($pa.Available -eq 3)
     Check 'goals: by items, open item, manual done' ((($pa.Goals | ForEach-Object { "$($_.Text)=$($_.Done)" }) -join ';') -eq '目标一=True;目标二=False;手动勾的 <x>=True')
     Check 'last activity takes the newest of branches and runs' ($pa.LastActivity -eq $runTime.ToString('yyyy-MM-dd HH:mm'))
+    Check 'doing and nonstandard items listed' ((($pa.Doing | ForEach-Object Id) -join ',') -eq '4' -and (($pa.Other | ForEach-Object Id) -join ',') -eq '5')
     Check 'not stalled while active' (-not ($pa.Problems -match '^可能停滞'))
     $pb0 = $j.Projects | Where-Object Name -eq 'b'
     Check 'last activity from commits when no runs' ($pb0.LastActivity -eq (G -C $b log -1 '--format=%cd' '--date=format:%Y-%m-%d %H:%M') -and $pb0.IdleMinutes -ge 0)
@@ -201,9 +202,13 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -NoNotify
     $html = if (Test-Path -LiteralPath $page) { Get-Content -LiteralPath $page -Raw -Encoding UTF8 } else { '' }
     Check 'daily: page written' ($LASTEXITCODE -eq 0 -and $html -match '<title>项目状态</title>')
-    Check 'daily: waiting items with how to answer' ($html -match '#2</b> <span class="muted">\[看一眼\]</span> 看界面：等你看截图' -and $html -match '/next #2 按你的')
+    Check 'daily: waiting items in plain words with how to answer' ($html -match '<b>项目 A</b> #2 看界面：等你看截图' -and $html -match '/next #2 你的答复')
+    Check 'daily: one-line summary, raw queue hints folded away' ($html -match '有 4 件事等你定' -and $html -match '正在做：#4 跑回归' -and $html -match '1 项的状态写法不标准' -and $html -notmatch '队列里状态认不出')
     Check 'daily: html escaped' ($html -match '手动勾的 &lt;x&gt;' -and $html -notmatch '<x>')
-    Check 'daily: summary chips' ($html -match '待你 <b>4</b>')
+    $nd = pwsh -NoProfile -File $daily -Config $cfg -Out $page -DryRun | Out-String
+    Check 'daily: notification title and plain lines' ($nd -match 'title: 🟡 要你管 4 件事' -and $nd -match '项目 A：#2 看界面 等你定' -and $nd -match '另有 2 件等你定' -and $nd -match 'bark: (yes|no)')
+    $ns = pwsh -NoProfile -File $daily -Config $cfg -Out $page -DryRun -StaleMinutes 0 | Out-String
+    Check 'daily: stalled item named in the notification' ($ns -match '项目 A：#4 跑回归 已 .*没动静，可能停了')
     Push-Location $root
     try { $null = pwsh -NoProfile -File $daily -Config $cfg -Out 'bare.html' -NoNotify } finally { Pop-Location }
     Check 'daily: bare -Out file name' ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $root 'bare.html')))
