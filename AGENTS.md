@@ -7,7 +7,7 @@
 - **信任等级**：未写，按总览第 4 节为 L0（合并前问用户）。等级由用户在这里改。
 - **队列**：`docs/queue.md`，只由编排会话维护。
 - **检查**：
-  - 改了 `skills/ai-dev-flow/scripts/` 下的 `status.ps1`、`daily.ps1` 或 `notify.ps1`：跑 `pwsh -NoProfile -File tests/status.tests.ps1`，退出码 0 才算通过。测试里 notify 只走 `-DryRun`；真的弹通知、推到手机，要在本机实发一次。
+  - 改了 `skills/ai-dev-flow/scripts/` 下的 `status.ps1`、`daily.ps1`、`notify.ps1` 或 `watch.ps1`：跑 `pwsh -NoProfile -File tests/status.tests.ps1`，退出码 0 才算通过。测试里 notify 只走 `-DryRun`；真的弹通知、推到手机，要在本机实发一次。
   - `skills/ai-dev-flow/scripts/dispatch.ps1` 还没有自动检查，改它要靠独立审查实跑。
   - 只改文档的，按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。

@@ -30,9 +30,10 @@ skills/ai-dev-flow/
   scripts/status.ps1       collect every project's status from the portfolio repo's project list (read-only)
   scripts/daily.ps1        write the status as one HTML page and send a notification; meant for a scheduled task
   scripts/notify.ps1       desktop notification; things that need you also go to your phone (Bark)
+  scripts/watch.ps1        hourly stall check; only projects that newly stalled go to your phone
 skills/next/SKILL.md       /next: in a project, work through the queue item after item until you are needed, then wrap up and notify
 skills/week/SKILL.md       /week: the weekly review, in the portfolio repo
-tests/status.tests.ps1     checks for status.ps1: pwsh -NoProfile -File tests/status.tests.ps1
+tests/status.tests.ps1     checks for status.ps1, daily.ps1, notify.ps1 and watch.ps1: pwsh -NoProfile -File tests/status.tests.ps1
 ```
 
 The modules are not separate skills. The hub reads only the one it needs at the moment.
@@ -113,6 +114,7 @@ Notifications and the status page (optional):
 - To reach your phone, write `%APPDATA%\ai-dev-flow\notify.json` locally (never commit it): `{ "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"] }`. Without it, only desktop notifications are shown.
 - To be notified when a session waits for a permission or for input, add the command `pwsh -NoProfile -File <full path of ~/.agents/skills/ai-dev-flow>/scripts/notify.ps1 -Hook` under `hooks.Notification` in `~/.claude/settings.json`.
 - For the daily status page, have Windows Task Scheduler run `pwsh -NoProfile -File <same path>/scripts/daily.ps1 -Config <portfolio repo>\projects.json`.
+- For stall alerts, also have it run `pwsh -NoProfile -File <same path>/scripts/watch.ps1 -Config <portfolio repo>\projects.json` every hour.
 
 For other tools, install into their own skill directory. Don't put two copies of the same skill where one tool scans both locations, or it will appear twice in the skill list.
 
@@ -125,6 +127,7 @@ For other tools, install into their own skill directory. Don't put two copies of
 
 ## Versions
 
+- **2.4.0** (2026-11-01): fewer notifications, stalls caught sooner. `notify.ps1 -Hook` now looks at the event type: the "waiting for your input" reminder after a minute of no input is dropped, and a session that failed to resume after the usage limit reset goes to your phone. New `scripts/watch.ps1`, run hourly by a scheduled task, pushes to your phone only when a project newly looks stalled.
 - **2.3.0** (2026-11-01): `/next` keeps going by default: when an item is done it takes the next one; when an item needs you it notifies you first and carries on with work that doesn't depend on the answer. It wraps up when nothing is left to take, after 5 items, when quota runs low or when the context gets long. The retrospective is a quick step before starting work instead of taking a whole session, and review, fixes, re-review and merge of one item all happen in the same session. `/next 连做` is replaced by `/next 只做一项` (one item only).
 - **2.2.0** (2026-11-01): day-to-day work becomes "one item per session". New `/next` and `/week` entries; no more long-running lead sessions, portfolio session or nightly scheduled tasks. Work handed to other agents is awaited inside the session, and every wrap-up updates the queue and sends a notification. New `scripts/daily.ps1` (status page plus notification, for a scheduled task) and `scripts/notify.ps1` (desktop notifications plus Bark push). `status.ps1` adds last activity, available items, this week's goals and a "may have stalled" hint. Retrospectives now run when 20 commits or 7 days have piled up, triggered by `/next`; the daily digest is now the retro digest.
 - **2.1.0** (2026-10-31): new `portfolio` module (several projects at once: project list, one inbox with a global cap, merged digest, cross-project lesson promotion) and a read-only status script, `scripts/status.ps1`. Related projects agree on a contract before building, and the contract tests live in the provider's verify. The daily digest is also written to `.agents/digest/`, and approval prompts that keep recurring get a concrete permission-rule suggestion. The dispatch script `scripts/dispatch.ps1`, added after 2.0.0, is counted in this release.

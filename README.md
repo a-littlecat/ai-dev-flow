@@ -30,9 +30,10 @@ skills/ai-dev-flow/
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
   scripts/daily.ps1        把状态写成一页 HTML 并发通知，给计划任务定时跑
   scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
+  scripts/watch.ps1        每小时查一次停滞，新停住的项目才推到手机
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
-tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
+tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -103,6 +104,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 - 要推到手机，就在本机写 `%APPDATA%\ai-dev-flow\notify.json`（不入库）：`{ "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"] }`。不写就只弹系统通知。
 - 会话等权限或等输入时弹通知：在 `~/.claude/settings.json` 的 `hooks.Notification` 里加一条命令 `pwsh -NoProfile -File <~/.agents/skills/ai-dev-flow 的完整路径>/scripts/notify.ps1 -Hook`。
 - 每天的状态页：用 Windows 计划任务定时运行 `pwsh -NoProfile -File <同上>/scripts/daily.ps1 -Config <总览仓库>\projects.json`。
+- 停滞提醒：再用计划任务每小时运行一次 `pwsh -NoProfile -File <同上>/scripts/watch.ps1 -Config <总览仓库>\projects.json`。
 
 其他工具按各自的 skill 目录安装。同一个 skill 不要在同一个工具能扫到的两个目录里各放一份，否则会重复出现在 skill 列表里。
 
@@ -115,6 +117,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.4.0**（2026-11-01）：通知减噪、停滞早发现。`notify.ps1 -Hook` 按事件类型分：回复完一分钟没输入的提醒不再弹；额度重置后会话没能自动继续的，推到手机。新增 `scripts/watch.ps1`，给计划任务每小时跑，只在项目新变成"可能停滞"时推一次手机。
 - **2.3.0**（2026-11-01）：`/next` 默认一直往下做：一项完成就领下一项，有项要你定时先发通知、再接着做不依赖它的项；遇到没有能领的、做满 5 项、额度快用完或上下文太长才收尾。复盘改成开工前顺手做完，不单独占一个会话；一项里的审、修、复审、合并都在同一个会话里走完。`/next 连做` 由 `/next 只做一项` 代替。
 - **2.2.0**（2026-11-01）：日常推进改成"一项一会话"：新增 `/next` 和 `/week` 两个入口，取消常驻的主会话、总览会话和每晚定时任务；派出去的活在会话里等到结束才收工，每次收尾都更新队列并发通知。新增 `scripts/daily.ps1`（状态页加通知，给计划任务跑）和 `scripts/notify.ps1`（系统通知加 Bark 推送）；`status.ps1` 新增最后活动时间、可领的项、本周目标和"可能停滞"提示。复盘改为攒够 20 个提交或满 7 天时由 `/next` 触发，每日摘要改称复盘摘要。
 - **2.1.0**（2026-10-31）：新增 `portfolio` 模块（多项目总览：项目清单、统一收件箱和全局上限、合并摘要、跨项目教训升级）和只读的状态收集脚本 `scripts/status.ps1`；关联项目先定合同再开工，合同测试放进提供方的 verify；每日摘要写进 `.agents/digest/`，反复弹的审批给出具体的权限规则建议。2.0.0 之后加的派活脚本 `scripts/dispatch.ps1` 也计入本版。

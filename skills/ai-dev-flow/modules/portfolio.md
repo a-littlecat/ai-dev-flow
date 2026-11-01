@@ -102,6 +102,7 @@ pwsh -NoProfile -File <skill>/scripts/daily.ps1 -Config <总览仓库>/projects.
 - 生成一页 HTML（默认 `%LOCALAPPDATA%\ai-dev-flow\status.html`），顶上一句话总结，下面固定三块：① 要你做（等你定的、可能停了的、空着能开工的，每条写好要发的命令）；② 本周目标；③ 各项目，每个一张卡：状态标签（可能停了 / 等你 / 在做 / 空着），加"现在、进度、北极星、接下来、最近完成"五行，计数、提交、清理和原始提示收进"细节"。
 - 然后发一条系统通知，点开就是这一页。有待用户的项或可能停滞的项目时，同时推到手机。
 - 用 Windows 计划任务每天跑两次，默认 9:00 和 18:00。这属于持久配置，第一次要用户同意，同意后写进总览的 `AGENTS.md`。电脑关着就不跑，下次开机后按计划任务的"错过后尽快运行"补跑。
+- 停滞另外每小时查一次：`scripts/watch.ps1 -Config <总览仓库>/projects.json`，也用计划任务跑（默认 9:00–23:00 每小时）。只有项目新变成"可能停滞"时才发一条 `stuck` 通知（会推到手机），同一次停滞不重复发；记录在 `%LOCALAPPDATA%\ai-dev-flow\watch-state.json`。不花模型额度。
 
 通知统一走 `scripts/notify.ps1`：
 
@@ -110,7 +111,8 @@ pwsh -NoProfile -File <skill>/scripts/daily.ps1 -Config <总览仓库>/projects.
   { "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"], "toast": true }
   ```
 - 级别：`info` 提醒、`done` 完成、`user` 要用户看或定、`stuck` 卡住或停在安全点。系统通知每次都弹；`barkLevels` 里的级别才推到手机，默认只推要用户出手的两类。
-- `/next` 每次收尾都会发一条。Claude Code 的 `Notification` hook 也接到它（`notify.ps1 -Hook`），会话等权限或等输入时弹系统通知。改 hook 属于安全设置，用户同意才改。
+- `/next` 每次收尾都会发一条。Claude Code 的 `Notification` hook 也接到它（`notify.ps1 -Hook`），按事件类型分：等权限、等回答的弹系统通知；回复完一分钟没输入的提醒（`idle_prompt`）不发；额度重置后没能自动继续的（`quota_auto_resume_stale`、`quota_auto_resume_disabled`）按 `stuck` 发，会推到手机。改 hook 属于安全设置，用户同意才改。
+- 想在手机上直接批权限、回问题，用 Claude Code 自带的 Remote Control（桌面端 设置 > Code 里打开"Connect new sessions to Remote Control"，再在 `/config` 打开 "Push when actions required"）。它只管连着的会话，会话停了、额度停了它发不出来，这两种仍靠上面的 hook 和 `watch.ps1`。
 
 ## 7. 跨项目教训
 

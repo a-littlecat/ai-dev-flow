@@ -11,7 +11,8 @@ param(
 # 通知：弹一条 Windows 系统通知，级别在本机配置的 barkLevels 里的再推到手机（Bark）。
 #   -Level   info：只是提醒；done：做完或合并了；user：要用户看或定；stuck：卡住、停在安全点
 #   -Open    点通知时打开的文件或网址
-#   -Hook    当 Claude Code 的 Notification hook 用：从标准输入读事件，标题取项目目录名，正文取事件的 message，级别 info
+#   -Hook    当 Claude Code 的 Notification hook 用：从标准输入读事件，标题取项目目录名，正文取事件的 message。按 notification_type 分：
+#            idle_prompt（回复完一分钟没输入）不发；quota_auto_resume_stale / quota_auto_resume_disabled（额度重置后没能自动继续）按 stuck 发；其余按 info 发
 #   -DryRun  只打印会发到哪些渠道，不发
 # 本机配置（不入库，里面有 Bark 的 key）：-Config，或环境变量 AI_DEV_FLOW_NOTIFY，默认 %APPDATA%\ai-dev-flow\notify.json
 #   { "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"], "toast": true }
@@ -23,8 +24,15 @@ if ($Hook) {
     [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
     $raw = [Console]::In.ReadToEnd()
     $evt = if ($raw.Trim()) { $raw | ConvertFrom-Json } else { $null }
+    $type = [string]$evt.notification_type
+    if ($type -eq 'idle_prompt') { if ($DryRun) { 'skip: idle_prompt' }; exit 0 }
+    $hint = @{
+        quota_auto_resume_stale    = '额度已经重置，但会话没有自动继续：回到这个会话按回车'
+        quota_auto_resume_disabled = '会话不再自动继续：额度恢复后回到这个会话发 /next'
+    }[$type]
+    if ($hint) { $Level = 'stuck' }
     if (-not $Title) { $Title = if ($evt.cwd) { Split-Path -Leaf $evt.cwd } else { 'Claude Code' } }
-    if (-not $Body) { $Body = if ($evt.message) { $evt.message } else { '需要你看一下' } }
+    if (-not $Body) { $Body = if ($hint) { $hint } elseif ($evt.message) { $evt.message } else { '需要你看一下' } }
 }
 if (-not $Title) { throw 'notify.ps1 needs -Title (or -Hook)' }
 

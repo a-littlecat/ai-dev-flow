@@ -226,6 +226,32 @@ try {
     Check 'notify: hook event gives project and message, desktop only' ($n3 -match 'title: 项目 A' -and $n3 -match 'body: needs permission' -and $n3 -match 'bark: no')
     $null = pwsh -NoProfile -File $notify -Config $ncfg -Title 'p' -Level urgent -DryRun 2>&1
     Check 'notify: unknown level fails' ($LASTEXITCODE -ne 0)
+    $n4 = '{"cwd":"C:\\x\\项目 A","message":"Claude is waiting for your input","notification_type":"idle_prompt"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: idle reminder is dropped' ($n4 -match 'skip: idle_prompt' -and $n4 -notmatch 'toast:')
+    $n5 = '{"cwd":"C:\\x\\项目 A","message":"x","notification_type":"quota_auto_resume_stale"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: missed auto-resume goes to the phone in plain words' ($n5 -match 'bark: yes' -and $n5 -match 'title: 🔴 项目 A' -and $n5 -match 'body: 额度已经重置.*按回车')
+    $n6 = '{"cwd":"C:\\x\\项目 A","message":"Claude needs your permission","notification_type":"permission_prompt"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: permission prompt stays on the desktop' ($n6 -match 'toast: yes' -and $n6 -match 'bark: no' -and $n6 -match 'body: Claude needs your permission')
+
+    $watch = Join-Path (Split-Path $Script) 'watch.ps1'
+    $wstate = Join-Path $root 'out/watch-state.json'
+    $wq = Join-Path $root 'hq/quiet.json'
+    '{ "toast": false }' | Set-Content -LiteralPath $wq
+    $w0 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -DryRun | Out-String
+    Check 'watch: nothing stalled, nothing sent' ($w0 -match 'no new stall' -and -not (Test-Path -LiteralPath $wstate))
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $w1 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
+    Check 'watch: new stall goes to the phone with what to do' ($w1 -match 'title: 🔴 1 个项目可能停了' -and $w1 -match 'bark: yes' -and $w1 -match '项目 A：#4 跑回归 已 .*没动静.*/next')
+    Check 'watch: dry run keeps no state' (-not (Test-Path -LiteralPath $wstate))
+    $env:AI_DEV_FLOW_NOTIFY = $wq
+    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0
+    Check 'watch: sent stall is remembered' ($LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|')
+    $w2 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
+    Check 'watch: same stall is not sent again' ($w2 -match 'no new stall')
+    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate
+    $w3 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
+    Check 'watch: stall after it cleared is sent again' ($w3 -match '可能停了')
+    Remove-Item Env:AI_DEV_FLOW_NOTIFY
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config $cfg -Project nobody 2>&1
