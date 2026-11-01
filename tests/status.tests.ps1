@@ -202,11 +202,13 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -NoNotify
     $html = if (Test-Path -LiteralPath $page) { Get-Content -LiteralPath $page -Raw -Encoding UTF8 } else { '' }
     Check 'daily: page written' ($LASTEXITCODE -eq 0 -and $html -match '<title>项目状态</title>')
-    Check 'daily: waiting items in plain words with how to answer' ($html -match '<b>项目 A</b> #2 看界面：等你看截图' -and $html -match '/next #2 你的答复')
-    Check 'daily: one-line summary, raw queue hints folded away' ($html -match '有 4 件事等你定' -and $html -match '正在做：#4 跑回归' -and $html -match '1 项的状态写法不标准' -and $html -notmatch '队列里状态认不出')
+    Check 'daily: waiting items in plain words with how to answer' ($html -match '<b>项目 A</b> 等你定 #2 看界面：等你看截图' -and $html -match '/next #2 你的答复')
+    Check 'daily: one-line summary, raw queue hints folded away' ($html -match '<p class="lead">要你管 4 件事；项目 A：等你' -and $html -match '1 项的状态写法不标准' -and $html -notmatch '队列里状态认不出')
+    Check 'daily: fixed rows now, progress, next, recent' ($html -match '<div class="k">现在</div><div>#4 跑回归</div>' -and $html -match '完成 1 / 共 13 项' -and $html -match '<div class="k">接下来</div><div>#8 依赖已完成<br>#11 没有依赖<br>#12 依赖的项已删</div>' -and $html -match '<div class="k">最近完成</div><div>#1 写 a')
+    Check 'daily: goals section' ($html -match '② 本周目标' -and $html -match '完成 2/3')
     Check 'daily: html escaped' ($html -match '手动勾的 &lt;x&gt;' -and $html -notmatch '<x>')
     $nd = pwsh -NoProfile -File $daily -Config $cfg -Out $page -DryRun | Out-String
-    Check 'daily: notification title and plain lines' ($nd -match 'title: 🟡 要你管 4 件事' -and $nd -match '项目 A：#2 看界面 等你定' -and $nd -match '另有 2 件等你定' -and $nd -match 'bark: (yes|no)')
+    Check 'daily: notification title and plain lines' ($nd -match 'title: 🟡 要你管 4 件事' -and $nd -match '项目 A：#2 看界面 等你定' -and $nd -match '项目 A：#7 围栏后的真表 等你定' -and $nd -match 'bark: (yes|no)')
     $ns = pwsh -NoProfile -File $daily -Config $cfg -Out $page -DryRun -StaleMinutes 0 | Out-String
     Check 'daily: stalled item named in the notification' ($ns -match '项目 A：#4 跑回归 已 .*没动静，可能停了')
     Push-Location $root

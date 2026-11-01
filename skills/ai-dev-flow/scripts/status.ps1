@@ -23,6 +23,7 @@ param(
 # 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
+# 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
@@ -105,7 +106,7 @@ function Get-ProjectStatus($p) {
         DependsOn = @($p.dependsOn | Where-Object { $_ })
         Trust = $null; Trunk = $null; Head = $null; HeadDate = $null
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
-        Queue = $null; Waiting = @(); Doing = @(); Other = @(); Digest = $null
+        Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @()
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
@@ -175,13 +176,16 @@ function Get-ProjectStatus($p) {
         if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "#$(Short $_.Id 12)（$(Short $_.Detail 20)）" }) -join '、')) }
         $done = @($items | Where-Object State -eq '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $open = @($items | Where-Object State -ne '完成' | ForEach-Object { $_.Id -replace '^#', '' })
-        $r.Available = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
+        $availItems = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
             $d = ($_.Deps -replace '\*', '').Trim()
             if ($d -match '^(无|-|—|)$') { return $true }
             $nums = @([regex]::Matches($d, '\d+') | ForEach-Object Value)
             if ($d -notmatch '^[#\d\s,，、]+$' -or -not $nums) { return $false }
             -not @($nums | Where-Object { $open -contains $_ }).Count
-        }).Count
+        })
+        $r.Available = $availItems.Count
+        $r.Next = @($availItems | Select-Object -First 3)
+        $r.Recent = @($items | Where-Object State -eq '完成' | Select-Object -Last 3)
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {
         $ids = @($g.items | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' })
