@@ -1,0 +1,1 @@
+覆盖：edaf3f5..e0879fe；Codex（codex exec 默认模型，reasoning high），两轮 → Pass。第一轮审 edaf3f5..bbc6dc9：Pass，附 P2 R1–R5；第二轮复验 bbc6dc9..e0879fe：Pass，R2–R5 已修，R1 剩短 key（<8 字符）不脱敏一条 P2，进队列。跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 50 项全过；验证方改坏 status.ps1 的 Available、daily.ps1 的路径解析、R4 的编号检查 → 对应检查红，恢复后全绿。没采纳：无。
