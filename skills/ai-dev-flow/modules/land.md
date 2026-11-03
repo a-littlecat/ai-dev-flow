@@ -57,4 +57,5 @@ git merge --ff-only <分支>
 - 主干的内容和通过快检的那个 head 相同（快进合并就是这样，`git rev-parse <主干>^{tree} <head>^{tree}` 两行一样），或者只多了纯文档改动，不再跑；否则在主干上跑一次 verify。红了就立刻处理，不等人：原因清楚、改动小的，往前修；原因不清或改动大的，`git revert`。然后在汇报里说明。
 - 关掉队列里对应的那一项。
 - 提醒其他进行中的 worktree 同步主干。
-- 已合并的 worktree 和分支：项目 `AGENTS.md` 授权了清理的就清；没有授权的，在汇报的"要你做"里列一行，等用户发话。push、打 tag、发布同样列在这一行。
+- 已合并的 worktree 和分支当场删，不用问（用户 2026-11-03 定，所有项目默认如此；项目 `AGENTS.md` 写明"不自动清理"的除外）。只删同时满足两条的：分支或分离头的 head 已经是主干的祖先（`git merge-base --is-ancestor <head> <主干>`）；`git -C <worktree> status --short` 没有输出。用 `git worktree remove <worktree>` 和 `git branch -d <分支>` 删，不加 `--force`、不用 `-D`，Git 拒绝的就留着，在汇报里说明。没合并的、有未提交改动或未跟踪文件的，一律不动。
+- push、打 tag、发布，项目 `AGENTS.md` 没授权的，在汇报的"要你做"里列一行，等用户发话。

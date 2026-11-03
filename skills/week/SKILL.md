@@ -30,4 +30,4 @@ description: 每周一次的周会，在多项目总览仓库里开：收齐全�
    - 在 `decisions.md` 里一行一条记下来，附用户原话；
    - 只涉及某一个项目的决定，写进那个项目的 `docs/requests.md`；
    - 跑 `status.ps1 -Mark`，然后提交总览仓库。
-6. 清理只列出来请用户批。批了以后写进各项目的 `docs/requests.md`，由那边下次发 `/next` 时照 `garden.md` 第 4 节删。总览不进项目动手。
+6. 已合并、干净的分支和 worktree 由各项目按 `land.md` 第 6 节自己删，不用请用户批；"待清理"里还剩很多的，在那个项目的 `docs/requests.md` 里提醒一句。其余清理（死代码、文档、队列）只列出来请用户批，批了以后写进各项目的 `docs/requests.md`，由那边下次发 `/next` 时照 `garden.md` 第 4 节做。总览不进项目动手。
