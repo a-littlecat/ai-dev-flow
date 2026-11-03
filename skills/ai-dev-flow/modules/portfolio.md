@@ -103,6 +103,7 @@ pwsh -NoProfile -File <skill>/scripts/daily.ps1 -Config <总览仓库>/projects.
 - 然后发一条系统通知，点开就是这一页。有待用户的项或可能停滞的项目时，同时推到手机。
 - 用 Windows 计划任务每天跑两次，默认 9:00 和 18:00。这属于持久配置，第一次要用户同意，同意后写进总览的 `AGENTS.md`。电脑关着就不跑，下次开机后按计划任务的"错过后尽快运行"补跑。
 - 停滞另外每 15 分钟查一次：`scripts/watch.ps1 -Config <总览仓库>/projects.json`，也用计划任务跑（默认 9:00–23:00 每 15 分钟）。只有项目新变成"可能停滞"时才发一条 `stuck` 通知（会推到手机），停住后最晚约 75 分钟收到，同一次停滞不重复发；记录在 `%LOCALAPPDATA%\ai-dev-flow\watch-state.json`。不花模型额度。
+- 计划任务用 `conhost.exe --headless <pwsh 的完整路径> -NoProfile -File ...` 启动，不直接启动 pwsh：`-WindowStyle Hidden` 挡不住窗口先闪一下，每 15 分钟闪一次会打扰用户。
 
 通知统一走 `scripts/notify.ps1`：
 

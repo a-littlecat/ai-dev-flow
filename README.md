@@ -105,6 +105,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 - 会话等权限或等输入时弹通知：在 `~/.claude/settings.json` 的 `hooks.Notification` 里加一条命令 `pwsh -NoProfile -File <~/.agents/skills/ai-dev-flow 的完整路径>/scripts/notify.ps1 -Hook`。
 - 每天的状态页：用 Windows 计划任务定时运行 `pwsh -NoProfile -File <同上>/scripts/daily.ps1 -Config <总览仓库>\projects.json`。
 - 停滞提醒：再用计划任务每 15 分钟运行一次 `pwsh -NoProfile -File <同上>/scripts/watch.ps1 -Config <总览仓库>\projects.json`。
+- 计划任务里的"程序"填 `conhost.exe`，参数写 `--headless <pwsh 的完整路径> -NoProfile -File ...`。直接填 pwsh 时，即使加了 `-WindowStyle Hidden`，每次运行也会闪一下终端窗口。
 
 其他工具按各自的 skill 目录安装。同一个 skill 不要在同一个工具能扫到的两个目录里各放一份，否则会重复出现在 skill 列表里。
 
@@ -117,6 +118,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.6.0**（2026-11-03）：同一份代码只跑一次快检。验证方在某个 head 上完整跑过快检，就算这个 head 的门禁结果：总览核对时不再重跑，快进合并后也不在主干重跑；只有验证方没跑全，或最终 head 带进了非纯文档改动，才补跑一次。只改文档的不跑全量快检，改成逐条核对文档里的路径和命令。快检超过 10 分钟就排一项提速。计划任务改用 `conhost.exe --headless` 启动，不再每 15 分钟闪一次终端窗口。
 - **2.5.0**（2026-11-01）：`/next` 有空位就补：手上的项在等外部 agent 或慢验证时，把依赖已满足、不改同一批文件的待做项派出去并行做，上限按项目的并行数；不再只在用户要求时才并行。
 - **2.4.1**（2026-11-01）：`/next` 压缩一次上下文不再收尾：重读项目 `AGENTS.md`、队列和 `/next` 的规则后接着做，第二次压缩才收尾。
 - **2.4.0**（2026-11-01）：通知减噪、停滞早发现。`notify.ps1 -Hook` 按事件类型分：回复完一分钟没输入的提醒不再弹；额度重置后会话没能自动继续的，推到手机。新增 `scripts/watch.ps1`，给计划任务每 15 分钟跑，只在项目新变成"可能停滞"时推一次手机。
