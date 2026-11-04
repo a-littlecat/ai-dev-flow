@@ -70,7 +70,7 @@ main{max-width:760px;margin:0 auto;padding:24px 16px 56px}h1{font-size:22px;marg
 .bar{display:inline-block;width:120px;height:8px;background:var(--chip);border-radius:4px;vertical-align:middle;margin-right:8px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--bar)}
 ol{margin:0;padding-left:22px}ol li{margin:0 0 10px}ol li:last-child{margin:0}.how{color:var(--muted);font-size:13px}
 code{background:var(--chip);border-radius:4px;padding:1px 6px;font-size:13px;user-select:all}
-.goals{display:grid;grid-template-columns:auto 1fr;gap:4px 14px}.goals .p{font-weight:600}
+.goals{display:grid;grid-template-columns:auto 1fr;gap:4px 14px}.goals .p{font-weight:600}.goals>*{min-width:0;overflow-wrap:anywhere}
 details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}details div{font-size:13px;color:var(--muted);margin:3px 0;overflow-wrap:anywhere}
 </style></head><body><main>
 <h1>项目状态</h1><div class="muted">$(Enc $s.Generated)</div>
