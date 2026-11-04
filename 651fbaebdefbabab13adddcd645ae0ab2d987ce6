@@ -1,0 +1,1 @@
+覆盖：5002987..651fbae；Claude Opus 5.5 子 agent（high）复验 → Pass（65da5b1 已 Pass，rebase 带进主干的 dispatch.ps1 等改动后复验）；跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 0（head 651fbae）；bc038bf..65da5b1 与 main..651fbae 的 patch-id 相同；主干改动与 daily.ps1、测试无交集；渲染沿用 65da5b1 上的 Edge 无头实测；没采纳：无
