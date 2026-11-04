@@ -1,0 +1,1 @@
+覆盖：bc038bf..8b5228e；沿用 20f727d 的 Pass（Claude Opus 5.5 子 agent，high）；之后只多了文档：skills/ai-dev-flow/modules/build.md，逐条核对：第 4 节第 3 步引用的 verify.md 第 5 节例外存在且写的是 rebase 或修意见都适用，git diff --check →0；没采纳：同 20f727d 的 note
