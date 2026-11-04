@@ -1,0 +1,1 @@
+覆盖：bc038bf..65da5b1；Claude Opus 5.5 子 agent（high）→ Pass；跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 0（head 65da5b1）；Edge 无头渲染两条 400 字符无空格目标，vw 518/1166 下 base 页面撑到约 3100px、head 不超过视口；新断言对 base 页面为 False、head 为 True；没采纳：无
