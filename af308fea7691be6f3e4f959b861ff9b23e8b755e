@@ -1,0 +1,1 @@
+覆盖：f4bfbae..af308fe；首轮 Claude Opus 5.5 子 agent（high）审 c6caa13 → Pass，2 条 P2（VERSION 没升、审查回复没有门禁行）已修；复验 Claude Opus 5.5 子 agent（high）审 f4bfbae..af308fe → Pass，无问题；跑了：pwsh -NoProfile -File tests/dispatch.tests.ps1 → 退出 0（46 项 ok，head af308fe）；改坏：门禁行措辞、related 模式的跑了行 → 两项红，恢复后 diff 为空；没覆盖：没用真实执行方跑 related 模式；没采纳：无
