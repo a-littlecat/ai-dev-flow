@@ -1,0 +1,110 @@
+param([string]$Script = (Join-Path $PSScriptRoot '../skills/ai-dev-flow/scripts/land-check.ps1'), [switch]$Keep)
+# land-check.ps1 的检查：在系统临时目录建一次性仓库，逐个造出合并前的各种状态，断言退出码和原因；退出码 0 才算通过。-Keep 保留仓库便于查看。
+#   pwsh -NoProfile -File tests/land-check.tests.ps1
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$root = Join-Path ([IO.Path]::GetTempPath()) ("land-check-fixture-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$repo = Join-Path $root '项目 A'
+$null = New-Item -ItemType Directory -Force -Path $repo
+$fail = 0
+function Check($name, $cond) { if ($cond) { "ok   $name" } else { "FAIL $name"; $script:fail++ } }
+function G { $o = git -C $repo -c user.name=t -c user.email=t@t -c init.defaultBranch=main -c core.autocrlf=false @args 2>&1; if ($LASTEXITCODE) { throw "git $args`n$o" }; $o }
+function Put([string]$rel, [string]$text) { $p = Join-Path $repo $rel; $null = New-Item -ItemType Directory -Force -Path (Split-Path $p); [IO.File]::WriteAllText($p, $text) }
+function Commit([string]$rel, [string]$text) { Put $rel $text; $null = G add -- $rel; $null = G commit -qm "change $rel"; (G rev-parse HEAD) }
+function Note([string]$sha, [string]$base, [string]$verdict = 'Pass', [string]$head = $sha) { $null = G notes --ref=verify add -f -m "覆盖：$($base.Substring(0, 7))..$($head.Substring(0, 7))；子 agent → $verdict；跑了：verify → 0" $sha }
+function Run([string]$branch) { $o = @(pwsh -NoProfile -File $Script -Branch $branch -Repo $repo 2>&1 | ForEach-Object { "$_" }); [pscustomobject]@{ Out = $o; Text = ($o -join "`n"); Code = $LASTEXITCODE } }
+function Branch([string]$name, [string]$from) { $null = G branch -f $name $from }
+
+try {
+    $null = G init -q
+    $c0 = Commit 'src/a.ps1' "1`n"
+
+    $null = G checkout -q -b ok
+    $b1 = Commit 'src/a.ps1' "2`n"
+    Note $b1 $c0
+    $null = G checkout -q main
+    $r = Run 'ok'
+    Check 'all good: exit 0 and prints the merge command' ($r.Code -eq 0 -and $r.Out[-1] -eq 'git merge --ff-only ok')
+
+    $null = G checkout -q -b nonote ok
+    $b2 = Commit 'src/a.ps1' "3`n"
+    $null = G checkout -q main
+    $r = Run 'nonote'
+    Check 'note only on an older commit: refused, names the older one' ($r.Code -eq 1 -and $r.Text -match "$($b2.Substring(0, 7)) 上没有 verify note" -and $r.Text -match $b1.Substring(0, 7))
+
+    Branch 'wronghead' $b2
+    Note $b2 $c0 'Pass' $b1
+    $r = Run 'wronghead'
+    Check 'note covering another head: refused' ($r.Code -eq 1 -and $r.Text -match '覆盖范围是 \.\.' + $b1.Substring(0, 7))
+
+    Note $b2 $c0 'Fix'
+    $r = Run 'wronghead'
+    Check 'note without Pass: refused' ($r.Code -eq 1 -and $r.Text -match '没有 Pass')
+
+    $null = G notes --ref=verify add -f -m '审过了 → Pass' $b2
+    $r = Run 'wronghead'
+    Check 'note without a 覆盖 range: refused' ($r.Code -eq 1 -and $r.Text -match '没有写 "覆盖')
+
+    $null = G checkout -q -b stacked ok
+    $s2 = Commit 'src/b.ps1' "b`n"
+    Note $s2 $b1
+    $null = G checkout -q main
+    $r = Run 'stacked'
+    Check 'stacked on a verified candidate: passes' ($r.Code -eq 0)
+    $null = G notes --ref=verify remove $b1
+    $r = Run 'stacked'
+    Check 'stacked on an unverified candidate: refused at the lower commit' ($r.Code -eq 1 -and $r.Text -match "$($b1.Substring(0, 7)) 上没有 verify note")
+    Note $b1 $c0
+
+    $null = G checkout -q -b docs main
+    $d1 = Commit 'docs/说明.md' "文档`n"
+    $null = G checkout -q main
+    $r = Run 'docs'
+    Check 'docs-only without a note: passes with a reminder' ($r.Code -eq 0 -and $r.Text -match '只改了文档')
+
+    $null = G checkout -q -b config main
+    $null = Commit 'requirements.txt' "x==1`n"
+    $null = G checkout -q main
+    $r = Run 'config'
+    Check 'config-only (.txt) branch without a note: refused, not treated as docs' ($r.Code -eq 1 -and $r.Text -match '没有 verify note')
+
+    $null = G checkout -q -b ws main
+    $w1 = Commit 'src/c.ps1' "x   `n"
+    Note $w1 $c0
+    $null = G checkout -q main
+    $r = Run 'ws'
+    Check 'diff --check failure: refused' ($r.Code -eq 1 -and $r.Text -match 'diff --check')
+
+    Put 'src/a.ps1' "dirty`n"
+    $r = Run 'ok'
+    Check 'dirty worktree: refused' ($r.Code -eq 1 -and $r.Text -match '工作区不干净')
+    $null = G checkout -q -- src/a.ps1
+    Put 'tmp.txt' "x"
+    $r = Run 'ok'
+    Check 'untracked file counts as dirty' ($r.Code -eq 1 -and $r.Text -match '工作区不干净')
+    Remove-Item -LiteralPath (Join-Path $repo 'tmp.txt')
+
+    $null = G checkout -q ok
+    $r = Run 'ok'
+    Check 'not on the trunk: refused' ($r.Code -eq 1 -and $r.Text -match '当前检出的不是 main')
+    $null = G checkout -q main
+
+    $m1 = Commit 'docs/queue.md' "q`n"
+    $r = Run 'ok'
+    Check 'trunk moved on: cannot fast-forward' ($r.Code -eq 1 -and $r.Text -match '不能快进')
+    $null = G reset -q --hard $c0
+
+    $r = Run 'main'
+    Check 'branch equal to trunk: refused' ($r.Code -eq 1 -and $r.Text -match '没有要合并的')
+
+    $r = Run 'nobody'
+    Check 'unknown branch exits 2' ($r.Code -eq 2)
+    $o = @(pwsh -NoProfile -File $Script -Branch ok -Repo $root 2>&1); $code = $LASTEXITCODE
+    Check 'not a repo exits 2' ($code -eq 2)
+}
+finally {
+    if ($Keep) { "kept: $root" } else {
+    Get-ChildItem -LiteralPath $root -Recurse -Force | ForEach-Object { $_.Attributes = 'Normal' }
+    Remove-Item -LiteralPath $root -Recurse -Force }
+}
+if ($fail) { "$fail check(s) failed"; exit 1 } else { 'all checks passed'; exit 0 }

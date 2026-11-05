@@ -32,10 +32,12 @@ skills/ai-dev-flow/
   scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
   scripts/watch.ps1        每 15 分钟查一次停滞，新停住的项目才推到手机
   scripts/check-md.ps1     文档格式检查：.md 里的控制字符、被拆断的表格行，放进各项目的快检
+  scripts/land-check.ps1   合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
+tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -120,6 +122,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.12.0**（2026-11-05）：新增 `scripts/land-check.ps1`：合并前查 head 上有没有 verify note、note 覆盖的是不是这个 head、结论是不是 Pass、当前在主干、工作区干净、能快进、`diff --check` 通过，任一不满足就拒绝。叠在别的候选分支上的，每一层都查。`land.md` 第 2、3 节改成先跑它。起因：一个项目合并时没挂 note，另一个 note 挂在合并前的旧 head 上，都是复盘才发现。
 - **2.11.0**（2026-11-05）：新增 `scripts/check-md.ps1`：查被跟踪的 `.md` 里的控制字符（单独回车、正文里的 Tab 等）和被拆断的表格行，Windows 路径里的 `\r`、`\n`、`\t` 被当成转义写进文档时当场拦下。各项目在快检里调用它（`harness.md` 第 2 节第 1 条），不用再各写一份。
 - **2.10.1**（2026-11-05）：状态页认"搁置"：不再提示"状态认不出"，不算进完成进度，依赖它的项不可领。队列里没有编号的行会报出来，不再显示成 `# 名字`。
 - **2.10.0**（2026-11-05）：快检超过 10 分钟或本机内存紧张的项目，可以让执行方交活前只跑构建、相关测试和改坏验证，全量快检只由验证方在候选 head 上跑一次（`AGENTS.md` 写明，派活配置写 `"builderVerify": "related"`）。默认不变：快检快的项目，执行方自己跑一次比被打回一轮便宜。

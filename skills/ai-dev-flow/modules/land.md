@@ -12,7 +12,14 @@
 
 ## 2. 合并前
 
-任何一项不满足，就回到 `build.md` 或 `verify.md`，不要硬合：
+任何一项不满足，就回到 `build.md` 或 `verify.md`，不要硬合。能机械判断的几项（检出主干、工作区干净、能快进、`diff --check`、head 上有覆盖它的 Pass note）由脚本查，在主项目工作区运行：
+
+```powershell
+pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk <主干>]
+```
+
+退出码非 0 就不合，按它列的原因回去改。叠在另一个候选分支上的，脚本顺着 note 的覆盖范围往下查，每一层都要有 Pass note。退出 0 只说明这几项满足，下面要人判断的几条（快检是否跑全、慢验证、diff 里只有本项的文件）仍要你核对：
+
 
 - 分支已按 `build.md` 第 4 节定稿：rebase 到主干、整理好提交、写好提交正文。
 - 独立验证结论是 Pass，对应的就是现在的 head，没有未处理的 P0 / P1：`git notes --ref=verify show <head>` 能看到这条记录（`verify.md` 第 6 节），或者按 `verify.md` 第 5 节的例外补的沿用记录。只改纯文档的，按 `verify.md` 第 1 节的例外，逐条核对过文档即可。
@@ -24,7 +31,7 @@
 
 ## 3. 合并
 
-合并时不再改提交，直接快进：
+合并时不再改提交，`land-check.ps1` 退出 0 后直接快进（它最后一行打的就是这条命令）：
 
 ```bash
 git merge --ff-only <分支>
