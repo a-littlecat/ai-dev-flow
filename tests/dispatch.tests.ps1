@@ -78,6 +78,22 @@ try {
     $r = Run 'retry-off' '400,ok+commit'
     Check 'empty retry400Seconds turns retry off' ($r.Count -eq 1 -and $r.Code -eq 1)
 
+    $null = Run 'builder-default' 'ok+commit'
+    $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-default/prompt.md') -Raw
+    Check 'builderVerify default: builder runs full verify' ($prompt -match '完成前在本目录运行 `echo ok`' -and $prompt -match '跑了：verify 结果' -and $prompt -notmatch '不跑完整的')
+
+    Write-Config @{ retry400Seconds = @(); builderVerify = 'related' }
+    $null = Run 'builder-related' 'ok+commit'
+    $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-related/prompt.md') -Raw
+    Check 'builderVerify related: builder skips full verify' ($prompt -match '与改动相关的测试' -and $prompt -match '不跑完整的 `echo ok`' -and $prompt -notmatch '完成前在本目录运行' -and $prompt -match '跑了：构建和相关测试的结果')
+    Check 'builderVerify related: break check still required' ($prompt -match '确认会变红')
+
+    Write-Config @{ retry400Seconds = @(); builderVerify = 'none' }
+    $env:FAKE_PLAN = 'ok+commit'
+    $env:FAKE_COUNTER = Join-Path $root 'builder-bad.count'
+    $out = & (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'builder-bad' -Agent fake -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait 2>&1
+    Check 'builderVerify bad value: refused before starting' ($LASTEXITCODE -ne 0 -and ($out -join ' ') -match 'builderVerify' -and -not (Test-Path -LiteralPath (Join-Path $runs 'builder-bad')))
+
     Write-Config @{ retry400Seconds = @(0) }
     G -C $repo switch -q -c candidate
     Set-Content -LiteralPath (Join-Path $repo 'candidate.txt') -Encoding utf8NoBOM -Value x
@@ -100,6 +116,12 @@ try {
 
     $r = Run 'rev-400' '400,400' @('-Review', 'candidate')
     Check 'failed review also cleaned' (-not (Test-Path -LiteralPath (Wt 'rev-400')) -and $r.Code -eq 1 -and $r.Exit.ReviewWorktree -eq 'removed')
+
+    Write-Config @{ retry400Seconds = @(); builderVerify = 'related' }
+    $null = Run 'rev-related' 'ok' @('-Review', 'candidate')
+    Check 'builderVerify related: reviewer still runs full verify' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '自己运行一次 `echo ok`')
+
+    Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head；因环境原因跑不全的写明哪些没跑')
 
     Write-Config @{ retry400Seconds = @(); keepReviewWorktree = $true }
     $r = Run 'rev-keep' 'ok+evidence' @('-Review', 'candidate')

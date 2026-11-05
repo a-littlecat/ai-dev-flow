@@ -30,6 +30,7 @@ param(
 #   加 -Full：配置了稀疏检出时改为检出全部文件。
 # 执行方遇接口 400 时自动重试：等待秒数取配置的 retry400Seconds，默认 120、300、900，写 [] 就不重试。审查结束自动删它的 worktree，配置 keepReviewWorktree 为 true 时不删。
 # 任务说明之后自动附上固定要求（边界、自查、verify、改坏验证、提交正文、三行交付）；只改文档时免 verify 和改坏验证。
+# 配置 builderVerify 写 related 时，执行方只跑构建和相关测试，完整 verify 只由审查方在候选 head 上跑一次；默认 full。
 # 每次运行的记录在 .agents/runs/<运行名>/：prompt.md、run.log、final.md（执行方最后的回复）、meta.json、exit.json。
 # 脚本本身不 push、不合并。
 $ErrorActionPreference = 'Stop'
@@ -146,6 +147,8 @@ if (-not $Config) { $Config = Join-Path $root 'scripts/dispatch.json' }
 if (-not (Test-Path -LiteralPath $Config)) { throw "No dispatch config: $Config (see ai-dev-flow modules/orchestrate.md)" }
 $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $cfg.verify) { throw 'dispatch config needs "verify"' }
+$builderVerify = if ($cfg.builderVerify) { [string]$cfg.builderVerify } else { 'full' }
+if ($builderVerify -notin 'full', 'related') { throw "dispatch config: builderVerify must be full or related, got '$builderVerify'" }
 $agents = @($cfg.agents.PSObject.Properties.Name)
 if (-not $Name -or -not $Agent -or -not $BriefFile) { throw 'Need -Name, -Agent and -BriefFile (or -List)' }
 if ($Agent -notin $agents) { throw "Unknown agent '$Agent'; config has: $($agents -join ', ')" }
@@ -216,9 +219,10 @@ if ($Review) {
 $(($rules) -join "`n")
 - $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。改坏检查只跑相关的那一段，恢复后不再重跑。" })
 - 对照上面的目标和完成标准审。不报命名、格式、写法偏好。只报 P0–P2，每条附可执行的证明（命令、会失败的测试、具体输入和输出）；拿不出证明的写进"没覆盖"。没有带证明的 P0/P1，就给 Pass。
-- 不写长报告。最后的回复只写下面三行，用白话：
+- 不写长报告。最后的回复只写下面四行，用白话：
 
 结论：Pass 或 Fix
+门禁：verify 的命令、退出码、head；因环境原因跑不全的写明哪些没跑、为什么，由总览补跑；只改文档写"不适用"
 问题：无，或每条一行：P级 ｜ 文件:行 ｜ 问题 ｜ 证明
 没覆盖：一句话
 "@
@@ -230,6 +234,8 @@ else {
         New-Worktree $wt @('-b', $Name, $wt, $baseSha)
     }
     $mode = if ($Continue) { 'continue' } else { 'build' }
+    $builderCheck = if ($builderVerify -eq 'related') { "完成前跑构建和与改动相关的测试，退出码必须是 0，跑了什么列在回复里。不跑完整的 ``$($cfg.verify)``：这个项目由审查方在候选 head 上跑一次，那次才算门禁结果" } else { "完成前在本目录运行 ``$($cfg.verify)``，退出码必须是 0" }
+    $builderRan = if ($builderVerify -eq 'related') { '构建和相关测试的结果' } else { 'verify 结果' }
     $footer = @"
 
 ---
@@ -241,14 +247,14 @@ else {
 $(($rules) -join "`n")
 - 修 bug 要修到所有同类位置。只做目标需要的部分，不留 TODO。
 - 写进文档或回复的每条事实（文件路径、命令、函数在哪个文件、某项能跑通、某项已验收）都要先自己用命令确认过；确认不了的写"未查到"，不要推测。提交前把改动从头核对一遍。
-- 改了代码、脚本或配置：完成前在本目录运行 ``$($cfg.verify)``，退出码必须是 0。再把修复撤掉或改坏一处，跑覆盖这一处的测试，确认会变红（改的是验证脚本、hook、CI 本身的，要从 verify 命令确认变红，可以只跑其中相关的那一段），然后恢复，用 ``git diff --stat`` 确认和改坏前一样。不为改坏再跑一遍完整 verify。
+- 改了代码、脚本或配置：$builderCheck。再把修复撤掉或改坏一处，跑覆盖这一处的测试，确认会变红（改的是验证脚本、hook、CI 本身的，要从 verify 命令确认变红，可以只跑其中相关的那一段），然后恢复，用 ``git diff --stat`` 确认和改坏前一样。不为改坏再跑一遍完整 verify。
 - 只改了文档：不跑 verify，不做改坏验证；把文档里写的路径、命令逐条实际查一遍或跑一遍。
 - 核对过程中产生的临时文件放到系统临时目录下，结束时工作目录里只能有已提交的改动。
 - 提交到本分支。提交正文写四行：为什么 / 跑了（命令 → 结果）/ 改坏验证（撤掉什么 → 哪一步红了；只改文档写"不适用"）/ 没试。
 - 不写长报告。最后的回复只写下面三行，用白话，让不看代码的人也能懂：
 
 结果：做成了什么，或卡在哪
-跑了：verify 结果；改坏验证结果
+跑了：$builderRan；改坏验证结果
 风险：无，或一句话
 "@
 }
