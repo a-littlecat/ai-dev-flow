@@ -1,0 +1,1 @@
+覆盖：7cac6d7..b924a1e；沿用 2918c17 的 Pass（Claude Opus 5.5 子 agent，high：首审 1f58639 Pass 带一条 P2，修后复验 2918c17 Pass）；跑了：pwsh -NoProfile -File tests/check-md.tests.ps1 → 退出 0（15 项）；之后只多了文档：docs/queue.md，全是主干带进来的，不涉及；没采纳：无
