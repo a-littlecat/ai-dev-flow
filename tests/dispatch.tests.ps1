@@ -94,6 +94,44 @@ try {
     $out = & (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'builder-bad' -Agent fake -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait 2>&1
     Check 'builderVerify bad value: refused before starting' ($LASTEXITCODE -ne 0 -and ($out -join ' ') -match 'builderVerify' -and -not (Test-Path -LiteralPath (Join-Path $runs 'builder-bad')))
 
+    Write-Config @{ retry400Seconds = @(); minFreeMemoryMB = 4096 }
+    $env:AI_DEV_FLOW_FREE_MEMORY_MB = '1000'
+    $env:FAKE_PLAN = 'ok+commit'
+    $env:FAKE_COUNTER = Join-Path $root 'mem-low.count'
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'mem-low' -Agent fake -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait 2>&1) -join "`n"
+    Check 'low memory: refused with exit 6 and the reason' ($LASTEXITCODE -eq 6 -and $out -match 'NOT STARTED: free memory 1000 MB is below minFreeMemoryMB 4096')
+    Check 'low memory: nothing started' (-not (Test-Path -LiteralPath (Join-Path $runs 'mem-low')) -and -not (Test-Path -LiteralPath (Wt 'mem-low')) -and -not (git -C $repo branch --list mem-low) -and -not (Test-Path -LiteralPath $env:FAKE_COUNTER))
+    $env:AI_DEV_FLOW_FREE_MEMORY_MB = '4096'
+    $r = Run 'mem-ok' 'ok+commit'
+    Check 'enough memory: dispatched as usual' ($r.Code -eq 0 -and $r.Count -eq 1)
+    Write-Config @{ retry400Seconds = @() }
+    $env:AI_DEV_FLOW_FREE_MEMORY_MB = '1'
+    $r = Run 'mem-unset' 'ok+commit'
+    Check 'no minFreeMemoryMB: memory not checked' ($r.Code -eq 0 -and $r.Count -eq 1)
+    Remove-Item Env:AI_DEV_FLOW_FREE_MEMORY_MB
+
+    # -List：没有 exit.json 的运行，进程在而且是那次启动的才算 running；进程不在、或进程号被别的进程复用了，算 died
+    $self = Get-Process -Id $PID
+    $gone = Start-Process -FilePath $self.Path -ArgumentList '-NoProfile -Command exit' -PassThru -WindowStyle Hidden
+    $gone.WaitForExit()
+    foreach ($case in @(@{ n = 'list-alive'; pid = $PID; started = $self.StartTime }, @{ n = 'list-gone'; pid = $gone.Id; started = (Get-Date) }, @{ n = 'list-reused'; pid = $PID; started = $self.StartTime.AddHours(-3) })) {
+        $null = Run $case.n 'ok+commit'
+        Remove-Item -LiteralPath (Join-Path $runs "$($case.n)/exit.json")
+        $m = Get-Content -LiteralPath (Join-Path $runs "$($case.n)/meta.json") -Raw | ConvertFrom-Json
+        $m.Pid = $case.pid; $m.Started = $case.started.ToString('o')
+        $m | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs "$($case.n)/meta.json") -Encoding utf8NoBOM
+    }
+    $list = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -List -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check '-List: live run is running' ($list -match 'list-alive\s+fake\s+build\s+running')
+    Check '-List: run whose process is gone is died' ($list -match 'list-gone\s+fake\s+build\s+died')
+    Check '-List: reused process id does not count as running' ($list -match 'list-reused\s+fake\s+build\s+died')
+    Write-Config @{ retry400Seconds = @(); minFreeMemoryMB = 4096 }
+    $env:AI_DEV_FLOW_FREE_MEMORY_MB = '1000'
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'mem-low2' -Agent fake -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check 'low memory: names the runs still going, not the dead ones' ($LASTEXITCODE -eq 6 -and $out -match 'Running: list-alive\.' )
+    Remove-Item Env:AI_DEV_FLOW_FREE_MEMORY_MB
+    foreach ($n in 'list-alive', 'list-gone', 'list-reused') { Remove-Item -LiteralPath (Join-Path $runs $n) -Recurse -Force }
+
     Write-Config @{ retry400Seconds = @(0) }
     G -C $repo switch -q -c candidate
     Set-Content -LiteralPath (Join-Path $repo 'candidate.txt') -Encoding utf8NoBOM -Value x
@@ -130,6 +168,7 @@ try {
     Remove-Item -LiteralPath (Join-Path $runs 'rev-running/exit.json')
     $meta = Get-Content -LiteralPath (Join-Path $runs 'rev-running/meta.json') -Raw | ConvertFrom-Json
     $meta.Pid = $PID
+    $meta.Started = (Get-Process -Id $PID).StartTime.ToString('o')
     $meta | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs 'rev-running/meta.json') -Encoding utf8NoBOM
 
     $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"

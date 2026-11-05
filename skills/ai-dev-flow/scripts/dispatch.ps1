@@ -22,6 +22,7 @@ param(
 #   续做  dispatch.ps1 -Name <运行名> -Agent <agent> -BriefFile <要修的意见.md> -Continue <已有分支>
 #         在已有分支的 worktree 里接着做（例如修审查意见），没有 worktree 就为它新开一个。
 #   查看  dispatch.ps1 -List
+#         状态：done / failed / not-done（写代码却没留下提交）/ running / died（没有 exit.json，进程也不在了，多半被杀了）。
 #   清理  dispatch.ps1 -CleanReviews [-Name <运行名>]
 #         删除已结束的审查 worktree；只删 .agents/worktrees 下的分离头，改动过被跟踪文件的留着。
 #         审查的版本还没合进基准分支的，未跟踪文件先复制到 .agents/runs/<运行名>/worktree-files/；已合并的不复制，之前复制的也删掉，只留 final.md 等运行记录。
@@ -30,6 +31,7 @@ param(
 #   加 -Full：配置了稀疏检出时改为检出全部文件。
 # 执行方遇接口 400 时自动重试：等待秒数取配置的 retry400Seconds，默认 120、300、900，写 [] 就不重试。审查结束自动删它的 worktree，配置 keepReviewWorktree 为 true 时不删。
 # 任务说明之后自动附上固定要求（边界、自查、verify、改坏验证、提交正文、三行交付）；只改文档时免 verify 和改坏验证。
+# 配置 minFreeMemoryMB 时，可用内存低于它就不派，退出码 6，并列出还在跑的运行；不写不查。
 # 配置 builderVerify 写 related 时，执行方只跑构建和相关测试，完整 verify 只由审查方在候选 head 上跑一次；默认 full。
 # 每次运行的记录在 .agents/runs/<运行名>/：prompt.md、run.log、final.md（执行方最后的回复）、meta.json、exit.json。
 # 脚本本身不 push、不合并。
@@ -41,6 +43,13 @@ $root = [IO.Path]::GetFullPath($root)
 # worktree 和运行记录一律放在主仓库下：从某个 worktree 里调用时不嵌套，否则 Windows 上路径容易超过 260 字符。
 $repo = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath((git -C $root rev-parse --path-format=absolute --git-common-dir)))
 $runsRoot = Join-Path $repo '.agents/runs'
+# 运行还活着：记下的进程还在，而且是那次启动的（Windows 会复用进程号，只看进程号会把死掉的运行当成还在跑）。
+function Test-RunAlive($meta) {
+    $p = Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue
+    if (-not $p) { return $false }
+    try { $gap = ([datetime]$meta.Started - $p.StartTime).TotalMinutes } catch { return $true }
+    $gap -ge -1 -and $gap -le 5
+}
 
 if ($CleanReviews) {
     [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -71,7 +80,7 @@ if ($CleanReviews) {
         if (-not $meta.Worktree -or -not (Test-Path -LiteralPath $meta.Worktree)) { continue }
         $state = 'removed'
         $wtPath = [IO.Path]::GetFullPath($meta.Worktree)
-        if (-not (Test-Path -LiteralPath $exitFile) -and (Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue)) { "keep $($dir.Name): still running"; continue }
+        if (-not (Test-Path -LiteralPath $exitFile) -and (Test-RunAlive $meta)) { "keep $($dir.Name): still running"; continue }
         if (-not $wtPath.StartsWith($worktreesRoot, [StringComparison]::OrdinalIgnoreCase)) { $state = 'kept: outside .agents/worktrees' }
         elseif (-not (Test-Path -LiteralPath (Join-Path $wtPath '.git'))) {
             # 上次删到一半（文件被占用）：git 已不认它，git -C 会落到主仓库，直接删剩下的目录。证据上次已复制。
@@ -129,7 +138,7 @@ if ($List) {
         $meta = Get-Content -LiteralPath $metaFile -Raw | ConvertFrom-Json
         $exitFile = Join-Path $dir.FullName 'exit.json'
         $exit = if (Test-Path -LiteralPath $exitFile) { Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json } else { $null }
-        $alive = [bool](Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue)
+        $alive = Test-RunAlive $meta
         $state = if ($exit) {
             if ($exit.ExitCode -ne 0) { 'failed' } elseif ($meta.Mode -ne 'review' -and ($exit.NewCommits -eq 0 -or $exit.Uncommitted)) { 'not-done' } else { 'done' }
         } elseif ($alive) { 'running' } else { 'died' }
@@ -153,6 +162,20 @@ $agents = @($cfg.agents.PSObject.Properties.Name)
 if (-not $Name -or -not $Agent -or -not $BriefFile) { throw 'Need -Name, -Agent and -BriefFile (or -List)' }
 if ($Agent -notin $agents) { throw "Unknown agent '$Agent'; config has: $($agents -join ', ')" }
 if ($Name -notmatch '^[a-z0-9][a-z0-9-]{1,60}$') { throw 'Name must be lowercase ASCII letters, digits and hyphens' }
+# 内存不够时不开新活：几项并行加上各自的快检，会把机器拖到杀进程。AI_DEV_FLOW_FREE_MEMORY_MB 给测试注入读数。
+if ($cfg.minFreeMemoryMB) {
+    $freeMB = if ($env:AI_DEV_FLOW_FREE_MEMORY_MB) { [int]$env:AI_DEV_FLOW_FREE_MEMORY_MB }
+              else { try { [int]((Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1024) } catch { $null } }
+    if ($null -eq $freeMB) { Write-Warning 'Cannot read free memory; dispatching without the minFreeMemoryMB check' }
+    elseif ($freeMB -lt [int]$cfg.minFreeMemoryMB) {
+        $running = @(if (Test-Path -LiteralPath $runsRoot) { foreach ($d in Get-ChildItem -LiteralPath $runsRoot -Directory) {
+            $mf = Join-Path $d.FullName 'meta.json'
+            if ((Test-Path -LiteralPath $mf) -and -not (Test-Path -LiteralPath (Join-Path $d.FullName 'exit.json')) -and (Test-RunAlive (Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json))) { $d.Name }
+        } })
+        Write-Output "NOT STARTED: free memory $freeMB MB is below minFreeMemoryMB $($cfg.minFreeMemoryMB). Running: $(if ($running) { $running -join ', ' } else { 'none of ours' }). Wait for one to finish, or free memory, then dispatch again."
+        exit 6
+    }
+}
 $agentCfg = $cfg.agents.$Agent
 $readFirst = if ($cfg.readFirst) { @($cfg.readFirst) } else { @('AGENTS.md') }
 $docsPatterns = if ($cfg.docsOnly) { @($cfg.docsOnly) } else { @('*.md') }

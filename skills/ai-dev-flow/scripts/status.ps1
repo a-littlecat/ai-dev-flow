@@ -26,6 +26,7 @@ param(
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
+# 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了的派活运行。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
@@ -113,7 +114,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @()
+        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @()
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -256,6 +257,19 @@ function Get-ProjectStatus($p) {
         if ($p.status -eq '推进中' -and $r.Queue -and $r.Queue['在做'] -and $r.IdleMinutes -ge $StaleMinutes) {
             $r.Problems.Add("可能停滞：在做 $($r.Queue['在做']) 项，已 $(Format-Idle $r.IdleMinutes)没有动静")
         }
+    }
+    # 死掉的运行：dispatch.ps1 的运行没有 exit.json，记下的进程也不在了（或进程号已被别的进程复用），多半被杀了。只看 7 天内开始的，更早的没人再管。
+    if (Test-Path -LiteralPath $runs) {
+        $r.DeadRuns = @(foreach ($d in Get-ChildItem -LiteralPath $runs -Directory -ErrorAction SilentlyContinue) {
+            $mf = Join-Path $d.FullName 'meta.json'
+            if (-not (Test-Path -LiteralPath $mf) -or (Test-Path -LiteralPath (Join-Path $d.FullName 'exit.json'))) { continue }
+            try { $meta = Get-Content -LiteralPath $mf -Raw -Encoding UTF8 | ConvertFrom-Json; $started = [datetime]$meta.Started } catch { continue }
+            if ($started -lt (Get-Date).AddDays(-7)) { continue }
+            $proc = if ($meta.Pid) { Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue }
+            $alive = $proc -and $(try { $gap = ($started - $proc.StartTime).TotalMinutes; $gap -ge -1 -and $gap -le 5 } catch { $true })
+            if (-not $alive) { $d.Name }
+        })
+        if ($r.DeadRuns) { $r.Problems.Add("派出去的运行死了（没有退出记录，进程也不在）：$(($r.DeadRuns | Select-Object -First 5) -join '、')$(if ($r.DeadRuns.Count -gt 5) { " 等 $($r.DeadRuns.Count) 个" })；用 dispatch.ps1 -List 看") }
     }
     [pscustomobject]$r
 }

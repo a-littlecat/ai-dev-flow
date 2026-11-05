@@ -265,6 +265,27 @@ try {
     Check 'no number: open rows reported, done rows not' ([bool]($pc.Problems -match '没有编号的项：没编号等你、没编号在做$'))
     Check 'no lessons or requests file: nothing due, no hint' (-not $pc.LessonsDue -and -not $pc.Requests -and -not ($pc.Problems -match '教训|请求'))
     Check 'no number: no lone # in the text' ($tc -match '待用户 没编号等你：看报告' -and $tc -notmatch '# 没编号' -and $tc -notmatch '待用户 #\s')
+    Check 'no runs dir: no dead runs' (-not $pc.DeadRuns -and -not ($pc.Problems -match '运行死了'))
+
+    $dd = Join-Path $root '项目 D'
+    G init -q $dd; G -C $dd commit -q --allow-empty -m 'd1'
+    $self = Get-Process -Id $PID
+    $gone = Start-Process -FilePath $self.Path -ArgumentList '-NoProfile -Command exit' -PassThru -WindowStyle Hidden
+    $gone.WaitForExit()
+    foreach ($case in @(@{ n = 'dead'; pid = $gone.Id; started = (Get-Date) }, @{ n = 'alive'; pid = $PID; started = $self.StartTime },
+                        @{ n = 'reused'; pid = $PID; started = $self.StartTime.AddHours(-3) }, @{ n = 'old-dead'; pid = $gone.Id; started = (Get-Date).AddDays(-10) },
+                        @{ n = 'finished'; pid = $gone.Id; started = (Get-Date); exit = $true })) {
+        $rd = Join-Path $dd ".agents/runs/$($case.n)"
+        $null = New-Item -ItemType Directory -Force -Path $rd
+        @{ Name = $case.n; Pid = $case.pid; Started = $case.started.ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $rd 'meta.json') -Encoding utf8NoBOM
+        if ($case.exit) { '{"ExitCode":0}' | Set-Content -LiteralPath (Join-Path $rd 'exit.json') }
+    }
+    $cfgD = Join-Path $root 'projects-d.json'
+    @{ projects = @(@{ name = '项目 D'; path = $dd; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgD -Encoding utf8NoBOM
+    $pd = (pwsh -NoProfile -File $Script -Config $cfgD -Json | ConvertFrom-Json).Projects[0]
+    Check 'dead runs: no exit record and process gone or reused; not alive, finished or older than 7 days' ((@($pd.DeadRuns | Sort-Object) -join ',') -eq 'dead,reused')
+    Check 'dead runs: reported as a hint' ([bool]($pd.Problems -match '^派出去的运行死了（没有退出记录，进程也不在）：(dead、reused|reused、dead)；'))
+
     $pageC = Join-Path $root 'out/status-c.html'
     $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify
     $htmlC = Get-Content -LiteralPath $pageC -Raw -Encoding UTF8
