@@ -1,0 +1,1 @@
+覆盖：af308fe..522ea00；Claude Opus 5.5 子 agent（high）→ Pass，无问题；跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 退出 0（head 522ea00）；改坏：$states 去掉搁置 → 2 项红，没编号筛选去掉完成条件 → 1 项红，恢复后 diff 为空；实跑临时队列：加粗搁置、依赖搁置不可领、-Json 有搁置键、daily 总数不算搁置；没采纳：编号格写成 — 或 - 时显示成 #—、队列文件另有带状态列的说明表会多报未命名，两者都没有真实队列这样写，不排
