@@ -1,0 +1,1 @@
+覆盖：4a1908f..0dcb3f4；Claude Opus 5.5 子 agent（high）→ Pass，无问题；跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 退出 0，check-md.ps1 → 退出 0；改坏：去掉 rev-list 的路径限定 → 两条新检查红，恢复后 diff 为空；实测本仓库未复盘 10（总数 22），反斜杠、空格中文、不存在的队列路径都对；没采纳：queue 配置大小写和实际文件不一致、项目 path 是仓库子目录时口径不同，都没有真实配置这样写；portfolio.md 描述未复盘时没写排除队列，不在完成标准内，不排
