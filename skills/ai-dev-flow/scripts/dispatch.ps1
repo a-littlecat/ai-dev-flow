@@ -53,6 +53,18 @@ if ($CleanReviews) {
         $wtPath = [IO.Path]::GetFullPath($meta.Worktree)
         if (-not (Test-Path -LiteralPath $exitFile) -and (Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue)) { "keep $($dir.Name): still running"; continue }
         if (-not $wtPath.StartsWith($worktreesRoot, [StringComparison]::OrdinalIgnoreCase)) { $state = 'kept: outside .agents/worktrees' }
+        elseif (-not (Test-Path -LiteralPath (Join-Path $wtPath '.git'))) {
+            # 上次删到一半（文件被占用）：git 已不认它，git -C 会落到主仓库，直接删剩下的目录。证据上次已复制。
+            try { Remove-Item -LiteralPath $wtPath -Recurse -Force -ErrorAction Stop }
+            catch { $state = 'kept: leftover directory still in use' }
+            "$($dir.Name): $state"
+            if (Test-Path -LiteralPath $exitFile) {
+                $exit = Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json
+                $exit | Add-Member -NotePropertyName ReviewWorktree -NotePropertyValue $state -Force
+                $exit | ConvertTo-Json | Set-Content -LiteralPath $exitFile -Encoding utf8NoBOM
+            }
+            continue
+        }
         else {
             git -C $wtPath symbolic-ref -q HEAD *> $null
             if ($LASTEXITCODE -eq 0) { $state = 'kept: on a branch' }
@@ -61,13 +73,15 @@ if ($CleanReviews) {
         if ($state -eq 'removed') {
             try {
                 $files = @(git -C $wtPath -c core.quotepath=false ls-files -o --exclude-standard)
-                $bytes = ($files | ForEach-Object { (Get-Item -LiteralPath (Join-Path $wtPath $_) -Force).Length } | Measure-Object -Sum).Sum
+                # 证据可能有几万个文件，用 .NET 直接算大小和复制，cmdlet 逐个调用要十几分钟。
+                [long]$bytes = 0
+                foreach ($f in $files) { $bytes += ([IO.FileInfo](Join-Path $wtPath $f)).Length }
                 if ($bytes -gt $limitBytes) { $state = "kept: untracked files over $([int]($limitBytes / 1MB)) MB" }
                 else {
                     foreach ($f in $files) {
-                        $to = Join-Path $dir.FullName (Join-Path 'worktree-files' $f)
-                        $null = New-Item -ItemType Directory -Force -Path (Split-Path $to -Parent)
-                        Copy-Item -LiteralPath (Join-Path $wtPath $f) -Destination $to -Force
+                        $to = [IO.Path]::Combine($dir.FullName, 'worktree-files', $f)
+                        $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($to))
+                        [IO.File]::Copy((Join-Path $wtPath $f), $to, $true)
                     }
                     git -C $repo worktree remove --force $wtPath 2>&1 | Out-Null
                     if ($LASTEXITCODE) { $state = 'kept: git worktree remove failed' }

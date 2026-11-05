@@ -110,6 +110,31 @@ try {
     Check '-CleanReviews leaves a running review' ((Test-Path -LiteralPath (Wt 'rev-running')) -and $out -match 'keep rev-running: still running')
     Check '-CleanReviews leaves tracked changes' (Test-Path -LiteralPath (Wt 'rev-touched'))
     Check '-CleanReviews leaves build worktrees' (Test-Path -LiteralPath (Wt 'retry-once'))
+
+    # 只删分离头：把 review 记录指到一个在分支上的 worktree
+    $meta = Get-Content -LiteralPath (Join-Path $runs 'rev-touched/meta.json') -Raw | ConvertFrom-Json
+    $meta.Worktree = Wt 'retry-once'
+    $meta | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs 'rev-touched/meta.json') -Encoding utf8NoBOM
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-touched' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check '-CleanReviews never removes a worktree on a branch' ((Test-Path -LiteralPath (Wt 'retry-once')) -and $out -match 'kept: on a branch')
+
+    # 只删 .agents/worktrees 下的
+    $outside = Join-Path $root 'outside'
+    G -C $repo worktree add -q --detach $outside
+    $meta.Worktree = $outside
+    $meta | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs 'rev-touched/meta.json') -Encoding utf8NoBOM
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-touched' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check '-CleanReviews never removes outside .agents/worktrees' ((Test-Path -LiteralPath $outside) -and $out -match 'kept: outside')
+
+    # 上次删到一半：.git 没了，目录还在；主仓库不能受影响
+    $null = Run 'rev-orphan' 'ok' @('-Review', 'candidate')
+    G -C $repo worktree remove --force (Wt 'rev-orphan')
+    $null = New-Item -ItemType Directory -Force -Path (Wt 'rev-orphan')
+    Set-Content -LiteralPath (Join-Path (Wt 'rev-orphan') 'locked.dll') -Value x
+    $mainHead = git -C $repo rev-parse HEAD
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-orphan' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check '-CleanReviews finishes a half-removed worktree' ((-not (Test-Path -LiteralPath (Wt 'rev-orphan'))) -and $out -match 'rev-orphan: removed')
+    Check 'half-removed cleanup leaves the main repo alone' ((git -C $repo rev-parse HEAD) -eq $mainHead -and (Test-Path -LiteralPath (Join-Path $repo 'AGENTS.md')))
 }
 finally {
     if ($Keep) { "kept: $root" } else {

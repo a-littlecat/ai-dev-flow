@@ -62,7 +62,7 @@ git worktree add --detach .agents/worktrees/<运行名> <head>
 
 只改了文档的 diff（改名算删＋增，子模块和链接不算），验证方不跑快检，改成把文档里的路径、命令、源码位置逐条实际查一遍或跑一遍。
 
-用 `dispatch.ps1 -Review` 派的，脚本在审完时自己删临时 worktree：未跟踪文件先复制到 `.agents/runs/<运行名>/worktree-files/`，改动过被跟踪文件的留着不删，`exit.json` 的 `ReviewWorktree` 写着结果，不是 `removed` 的这轮结论作废重来。下面的删除步骤只适用于你自己开的。
+用 `dispatch.ps1 -Review` 派的，脚本在审完时自己删临时 worktree：未跟踪文件先复制到 `.agents/runs/<运行名>/worktree-files/`，改动过被跟踪文件的留着不删，`exit.json` 的 `ReviewWorktree` 写着结果。写 `kept: tracked files changed` 的，改坏检查没恢复，这轮结论作废重来；其他的 `kept`（超大、被占用）不影响结论，之后用 `-CleanReviews` 清。下面的删除步骤只适用于你自己开的。
 
 验证结束后核对两件事：候选分支的 head 没变；`git -C <tmp> status --short` 里没有改动被跟踪的文件（未跟踪的构建产物不算；改坏检查没恢复的，这轮结论作废重来）。然后用 `git worktree remove --force <tmp>` 删掉这个临时 worktree。它是你为验证自己建的，删它不需要用户授权。
 
