@@ -9,7 +9,8 @@ param(
     [switch]$Wait,
     [switch]$Full,
     [switch]$List,
-    [switch]$CleanReviews
+    [switch]$CleanReviews,
+    [switch]$KeepEvidence
 )
 # 派活：把一项任务交给外部 CLI agent（Codex、DSH 等）在后台做，总览只派活、核对、汇报。
 # 在项目仓库里任意目录运行，或用 -Config 指定配置（仓库按配置所在位置找）；
@@ -22,7 +23,9 @@ param(
 #         在已有分支的 worktree 里接着做（例如修审查意见），没有 worktree 就为它新开一个。
 #   查看  dispatch.ps1 -List
 #   清理  dispatch.ps1 -CleanReviews [-Name <运行名>]
-#         删除已结束的审查 worktree；只删 .agents/worktrees 下的分离头，改动过被跟踪文件的留着。未跟踪文件先复制到 .agents/runs/<运行名>/worktree-files/。
+#         删除已结束的审查 worktree；只删 .agents/worktrees 下的分离头，改动过被跟踪文件的留着。
+#         审查的版本还没合进基准分支的，未跟踪文件先复制到 .agents/runs/<运行名>/worktree-files/；已合并的不复制，之前复制的也删掉，只留 final.md 等运行记录。
+#         -KeepEvidence：已合并的也复制（审查刚结束时脚本自己用）。
 #   加 -Wait：等执行方跑完才返回，打印它的最终回复。退出码：执行方的退出码；写代码的轮次没有新提交或留了未提交改动时为 4。
 #   加 -Full：配置了稀疏检出时改为检出全部文件。
 # 执行方遇接口 400 时自动重试：等待秒数取配置的 retry400Seconds，默认 120、300、900，写 [] 就不重试。审查结束自动删它的 worktree，配置 keepReviewWorktree 为 true 时不删。
@@ -42,13 +45,28 @@ if ($CleanReviews) {
     [Console]::OutputEncoding = [Text.Encoding]::UTF8
     $limitBytes = 500MB
     $worktreesRoot = [IO.Path]::GetFullPath((Join-Path $repo '.agents/worktrees')) + [IO.Path]::DirectorySeparatorChar
+    # 查不出来的（基准分支没了、head 不存在）一律按没合并算，证据不删。
+    function Test-Merged($head, $base) {
+        if (-not $head -or -not $base) { return $false }
+        git -C $repo merge-base --is-ancestor $head $base *> $null
+        $LASTEXITCODE -eq 0
+    }
     $dirs = if ($Name) { @(Get-Item -LiteralPath (Join-Path $runsRoot $Name) -ErrorAction SilentlyContinue) } elseif (Test-Path -LiteralPath $runsRoot) { @(Get-ChildItem -LiteralPath $runsRoot -Directory) } else { @() }
     foreach ($dir in $dirs) {
         $metaFile = Join-Path $dir.FullName 'meta.json'
         if (-not (Test-Path -LiteralPath $metaFile)) { continue }
         $meta = Get-Content -LiteralPath $metaFile -Raw | ConvertFrom-Json
-        if ($meta.Mode -ne 'review' -or -not $meta.Worktree -or -not (Test-Path -LiteralPath $meta.Worktree)) { continue }
+        if ($meta.Mode -ne 'review') { continue }
         $exitFile = Join-Path $dir.FullName 'exit.json'
+        $evidence = Join-Path $dir.FullName 'worktree-files'
+        if (-not $KeepEvidence -and (Test-Path -LiteralPath $exitFile) -and (Test-Path -LiteralPath $evidence)) {
+            $finished = Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json
+            if (Test-Merged $finished.Head $meta.Base) {
+                try { Remove-Item -LiteralPath $evidence -Recurse -Force -ErrorAction Stop; "$($dir.Name): merged, evidence deleted" }
+                catch { "$($dir.Name): merged, evidence not deleted: $($_.Exception.Message)" }
+            }
+        }
+        if (-not $meta.Worktree -or -not (Test-Path -LiteralPath $meta.Worktree)) { continue }
         $state = 'removed'
         $wtPath = [IO.Path]::GetFullPath($meta.Worktree)
         if (-not (Test-Path -LiteralPath $exitFile) -and (Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue)) { "keep $($dir.Name): still running"; continue }
@@ -72,7 +90,8 @@ if ($CleanReviews) {
         }
         if ($state -eq 'removed') {
             try {
-                $files = @(git -C $wtPath -c core.quotepath=false ls-files -o --exclude-standard)
+                $dropEvidence = -not $KeepEvidence -and (Test-Merged (git -C $wtPath rev-parse HEAD) $meta.Base)
+                $files = if ($dropEvidence) { @() } else { @(git -C $wtPath -c core.quotepath=false ls-files -o --exclude-standard) }
                 # 证据可能有几万个文件，用 .NET 直接算大小和复制，cmdlet 逐个调用要十几分钟。
                 [long]$bytes = 0
                 foreach ($f in $files) { $bytes += ([IO.FileInfo](Join-Path $wtPath $f)).Length }
@@ -247,7 +266,7 @@ $envLines = if ($agentCfg.env) { foreach ($p in $agentCfg.env.PSObject.Propertie
 $startHead = git -C $wt rev-parse HEAD
 $runner = Join-Path $runDir 'run.ps1'
 $retryDelays = if ($null -ne $cfg.retry400Seconds) { @($cfg.retry400Seconds | ForEach-Object { [int]$_ }) } else { @(120, 300, 900) }
-$cleanArgs = "-NoProfile -File $(& $q $PSCommandPath) -CleanReviews -Name $(& $q $Name)$(if ($Config) { ' -Config ' + (& $q ([IO.Path]::GetFullPath($Config))) })"
+$cleanArgs = "-NoProfile -File $(& $q $PSCommandPath) -CleanReviews -KeepEvidence -Name $(& $q $Name)$(if ($Config) { ' -Config ' + (& $q ([IO.Path]::GetFullPath($Config))) })"
 $cleanLine = if ($mode -eq 'review' -and -not $cfg.keepReviewWorktree) { "Set-Location -LiteralPath $(& $q $repo)`n& (Get-Process -Id `$PID).Path $cleanArgs | Out-Null" } else { '' }
 # 执行方输出 UTF-8；Windows 中文系统控制台默认 GBK，不设置的话管道读进来是乱码。
 # 退出码 0 不代表做完了：另记本轮新增提交数和未提交的改动数，由 -Wait 和 -List 判断。

@@ -118,4 +118,4 @@ codex exec --ephemeral --sandbox workspace-write -m <model> -c model_reasoning_e
 git notes --ref=verify add -f -m "覆盖：<base>..<head>；<验证方模型和推理强度> → Pass；跑了：<命令 → 结果>；没采纳：<意见和理由，没有写无>" <head>
 ```
 
-验证方输出的完整文件放在项目的证据目录或临时目录里，note 里给路径。项目用 PR 合并的，同样的内容写进 PR 描述。
+验证方输出的完整文件放在项目的证据目录或临时目录里，note 里给路径；只放在审查 worktree 里的，合并后会被 `-CleanReviews` 删掉（`land.md` 第 6 节），要长期留的结论写进 note。项目用 PR 合并的，同样的内容写进 PR 描述。

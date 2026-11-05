@@ -19,7 +19,7 @@ G -C $repo commit -q -m init
 $brief = Join-Path $root 'brief.md'
 Set-Content -LiteralPath $brief -Encoding utf8NoBOM -Value '任务'
 
-# 假执行方：按 plan 里这一次的动作行事。400 / err / ok；可加 +commit、+dirty、+evidence、+touch、+ignored。
+# 假执行方：按 plan 里这一次的动作行事。400 / err / ok；可加 +commit、+dirty、+evidence、+touch、+ignored、+big。
 $fake = Join-Path $root 'fake.ps1'
 Set-Content -LiteralPath $fake -Encoding utf8NoBOM -Value @'
 param($final, $counter, $plan)
@@ -31,6 +31,7 @@ if ($step -match 'dirty') { Set-Content -LiteralPath 'dirty.txt' -Value x }
 if ($step -match 'evidence') { $null = New-Item -ItemType Directory -Force -Path evidence; Set-Content -LiteralPath 'evidence/证据 1.txt' -Value proof }
 if ($step -match 'ignored') { $null = New-Item -ItemType Directory -Force -Path bin; Set-Content -LiteralPath 'bin/a.dll' -Value x }
 if ($step -match 'touch') { Set-Content -LiteralPath 'AGENTS.md' -Value changed }
+if ($step -match 'big') { $s = [IO.File]::Create((Join-Path $PWD 'big.bin')); $s.SetLength(501MB); $s.Dispose() }
 if ($step -match '^400') { 'ERROR: {"error":{"message":"Codex: Bad Request"},"status":400,"type":"error"}'; exit 1 }
 if ($step -match '^err') { 'ERROR: something else'; exit 1 }
 Set-Content -LiteralPath $final -Value done
@@ -77,7 +78,11 @@ try {
     Check 'empty retry400Seconds turns retry off' ($r.Count -eq 1 -and $r.Code -eq 1)
 
     Write-Config @{ retry400Seconds = @(0) }
-    G -C $repo branch candidate
+    G -C $repo switch -q -c candidate
+    Set-Content -LiteralPath (Join-Path $repo 'candidate.txt') -Encoding utf8NoBOM -Value x
+    G -C $repo add candidate.txt
+    G -C $repo commit -q -m candidate
+    G -C $repo switch -q main
     $candidateHead = git -C $repo rev-parse candidate
 
     $r = Run 'rev-clean' 'ok+evidence+ignored' @('-Review', 'candidate')
@@ -135,6 +140,35 @@ try {
     $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-orphan' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
     Check '-CleanReviews finishes a half-removed worktree' ((-not (Test-Path -LiteralPath (Wt 'rev-orphan'))) -and $out -match 'rev-orphan: removed')
     Check 'half-removed cleanup leaves the main repo alone' ((git -C $repo rev-parse HEAD) -eq $mainHead -and (Test-Path -LiteralPath (Join-Path $repo 'AGENTS.md')))
+
+    # 没合并的超大目录留着；合并后不再看大小，证据也不留
+    $null = Run 'rev-big' 'ok+big' @('-Review', 'candidate')
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-big' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check 'unmerged and oversized: kept' ((Test-Path -LiteralPath (Wt 'rev-big')) -and $out -match 'over 500 MB')
+    $null = Run 'rev-merged' 'ok+evidence' @('-Review', 'candidate')
+    Check 'before merge: earlier evidence still there' (Test-Path -LiteralPath (Join-Path $runs 'rev-clean/worktree-files'))
+    G -C $repo merge -q --ff-only candidate
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1) -join "`n"
+    Check 'merged: worktree removed without copying' ((-not (Test-Path -LiteralPath (Wt 'rev-merged'))) -and -not (Test-Path -LiteralPath (Join-Path $runs 'rev-merged/worktree-files')))
+    Check 'merged: size no longer matters' (-not (Test-Path -LiteralPath (Wt 'rev-big')))
+    Check 'merged: evidence copied earlier is deleted' (-not (Test-Path -LiteralPath (Join-Path $runs 'rev-clean/worktree-files')))
+    Check 'merged: run records stay' ((Test-Path -LiteralPath (Join-Path $runs 'rev-clean/final.md')) -and (Test-Path -LiteralPath (Join-Path $runs 'rev-clean/exit.json')))
+    Check 'merged: running review still left alone' (Test-Path -LiteralPath (Wt 'rev-running'))
+
+    # 审查刚结束时证据总要留，哪怕审的版本已经合并
+    Write-Config @{ retry400Seconds = @() }
+    $null = Run 'rev-post' 'ok+evidence' @('-Review', 'candidate')
+    Check 'review of a merged head: evidence kept at the end of the run' ((-not (Test-Path -LiteralPath (Wt 'rev-post'))) -and (Test-Path -LiteralPath (Join-Path $runs 'rev-post/worktree-files/evidence/证据 1.txt')))
+
+    # 基准分支查不到：按没合并算，证据不删
+    $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-post' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1
+    Check 'sweep deletes it afterwards' (-not (Test-Path -LiteralPath (Join-Path $runs 'rev-post/worktree-files')))
+    $null = Run 'rev-nobase' 'ok+evidence' @('-Review', 'candidate')
+    $meta = Get-Content -LiteralPath (Join-Path $runs 'rev-nobase/meta.json') -Raw | ConvertFrom-Json
+    $meta.Base = 'no-such-branch'
+    $meta | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs 'rev-nobase/meta.json') -Encoding utf8NoBOM
+    $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-nobase' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1
+    Check 'unknown base: evidence not deleted' (Test-Path -LiteralPath (Join-Path $runs 'rev-nobase/worktree-files/evidence/证据 1.txt'))
 }
 finally {
     if ($Keep) { "kept: $root" } else {
