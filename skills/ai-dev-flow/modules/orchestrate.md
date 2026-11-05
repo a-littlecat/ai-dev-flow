@@ -67,7 +67,7 @@
     }
   }
   ```
-  遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。快检太慢、项目决定执行方不跑全量的（启用条件见 `build.md` 第 3 节），写 `"builderVerify": "related"`；不写等于 `"full"`。内存紧张、派活被杀过的项目写 `"minFreeMemoryMB": <兆字节>`：可用内存低于它，脚本不派，退出码 6，并列出还在跑的运行；等其中一个结束再派，不要硬派。`-List` 里没有退出记录、进程也不在了的运行显示 `died`，多半是被杀了，要重派。
+  遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。快检太慢、项目决定执行方不跑全量的（启用条件见 `build.md` 第 3 节），写 `"builderVerify": "related"`；不写等于 `"full"`。内存紧张、派活被杀过的项目写 `"minFreeMemoryMB": <兆字节>`：可用内存低于它，脚本不派，退出码 6，并列出还在跑的运行；等其中一个结束再派，不要硬派。`-List` 里没有退出记录、进程也不在了的运行显示 `died`，多半是被杀了；同一分支后来没再派过的，要重派。
 
   `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
 - **项目里的入口**：在项目里放一个几行的 `scripts/dispatch.ps1` 转调本 skill 的脚本，`AGENTS.md` 里写这个入口就行，接手的 AI 不用知道 skill 装在哪：

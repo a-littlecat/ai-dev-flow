@@ -274,17 +274,19 @@ try {
     $gone.WaitForExit()
     foreach ($case in @(@{ n = 'dead'; pid = $gone.Id; started = (Get-Date) }, @{ n = 'alive'; pid = $PID; started = $self.StartTime },
                         @{ n = 'reused'; pid = $PID; started = $self.StartTime.AddHours(-3) }, @{ n = 'old-dead'; pid = $gone.Id; started = (Get-Date).AddDays(-10) },
-                        @{ n = 'finished'; pid = $gone.Id; started = (Get-Date); exit = $true })) {
+                        @{ n = 'finished'; pid = $gone.Id; started = (Get-Date); exit = $true },
+                        @{ n = 'superseded'; pid = $gone.Id; started = (Get-Date).AddHours(-2); branch = 'b1' }, @{ n = 'redo'; pid = $gone.Id; started = (Get-Date).AddHours(-1); branch = 'b1'; exit = $true },
+                        @{ n = 'last-on-branch'; pid = $gone.Id; started = (Get-Date).AddHours(-1); branch = 'b2' }, @{ n = 'earlier-on-branch'; pid = $gone.Id; started = (Get-Date).AddHours(-2); branch = 'b2'; exit = $true })) {
         $rd = Join-Path $dd ".agents/runs/$($case.n)"
         $null = New-Item -ItemType Directory -Force -Path $rd
-        @{ Name = $case.n; Pid = $case.pid; Started = $case.started.ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $rd 'meta.json') -Encoding utf8NoBOM
+        @{ Name = $case.n; Branch = $case.branch; Pid = $case.pid; Started = $case.started.ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $rd 'meta.json') -Encoding utf8NoBOM
         if ($case.exit) { '{"ExitCode":0}' | Set-Content -LiteralPath (Join-Path $rd 'exit.json') }
     }
     $cfgD = Join-Path $root 'projects-d.json'
     @{ projects = @(@{ name = '项目 D'; path = $dd; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgD -Encoding utf8NoBOM
     $pd = (pwsh -NoProfile -File $Script -Config $cfgD -Json | ConvertFrom-Json).Projects[0]
-    Check 'dead runs: no exit record and process gone or reused; not alive, finished or older than 7 days' ((@($pd.DeadRuns | Sort-Object) -join ',') -eq 'dead,reused')
-    Check 'dead runs: reported as a hint' ([bool]($pd.Problems -match '^派出去的运行死了（没有退出记录，进程也不在）：(dead、reused|reused、dead)；'))
+    Check 'dead runs: no exit record and process gone or reused; not alive, finished, older than 7 days or redone on the same branch' ((@($pd.DeadRuns | Sort-Object) -join ',') -eq 'dead,last-on-branch,reused')
+    Check 'dead runs: reported as a hint' (@($pd.Problems | Where-Object { $_ -match '^派出去的运行死了（没有退出记录，进程也不在）：' -and $_ -match '\bdead\b' -and $_ -match 'reused' -and $_ -match 'last-on-branch' -and $_ -notmatch 'superseded' }).Count -eq 1)
 
     $pageC = Join-Path $root 'out/status-c.html'
     $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify

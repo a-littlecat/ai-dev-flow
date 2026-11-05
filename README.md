@@ -122,7 +122,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
-- **2.14.0**（2026-11-05）：派活前看内存。`dispatch.json` 写了 `minFreeMemoryMB` 的，可用内存低于它时 `dispatch.ps1` 不派，退出码 6，并列出还在跑的运行。`-List` 判断运行还在不在时，核对进程的启动时间，进程号被别的进程复用的不再显示成 running。`scripts/status.ps1` 把 7 天内没有退出记录、进程也不在了的运行列进"提示"，`-Json` 里是 `DeadRuns`。起因：一个项目派活被杀过两次，两个项目共 22 次运行没有退出记录。
+- **2.14.0**（2026-11-05）：派活前看内存。`dispatch.json` 写了 `minFreeMemoryMB` 的，可用内存低于它时 `dispatch.ps1` 不派，退出码 6，并列出还在跑的运行。`-List` 判断运行还在不在时，核对进程的启动时间，进程号被别的进程复用的不再显示成 running。`scripts/status.ps1` 把 7 天内没有退出记录、进程也不在了、同一分支后来也没再派过的运行列进"提示"，`-Json` 里是 `DeadRuns`。起因：一个项目派活被杀过两次，两个项目共 22 次运行没有退出记录。
 - **2.13.0**（2026-11-05）：跨项目升级不等周会。`scripts/status.ps1` 把各项目 Seen 达到 3、又没写"升级："一行的教训，和 `docs/requests.md` 里还没转的请求写成"提示"，`-Json` 里是 `LessonsDue` 和 `Requests`。项目的教训该改 skill 时，由项目会话直接写进 ai-dev-flow 的 `docs/requests.md`（`portfolio.md` 第 7 节、`garden.md` 第 2 节第 5 步）。起因：`/week` 一次没跑过，几项跨项目的改进记下后一直没人推，两个项目各做了一份重复的格式检查。
 - **2.12.1**（2026-11-05）：复盘触发只数改了队列以外文件的提交，认领、改状态这类队列提交不再算进"攒了 20 个提交"，状态页的"未复盘"同一口径。项目没有 `LESSONS.md` 的，`/next` 开工时先建一个并从头复盘。
 - **2.12.0**（2026-11-05）：新增 `scripts/land-check.ps1`：合并前查 head 上有没有 verify note、note 覆盖的是不是这个 head、结论是不是 Pass、当前在主干、工作区干净、能快进、`diff --check` 通过，任一不满足就拒绝。叠在别的候选分支上的，每一层都查。`land.md` 第 2、3 节改成先跑它。起因：一个项目合并时没挂 note，另一个 note 挂在合并前的旧 head 上，都是复盘才发现。
