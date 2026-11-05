@@ -13,7 +13,7 @@ description: 在当前项目里按队列一项接一项往下做：每项做完�
    队列超过 10 行"完成"时，先把较早的"完成"行删掉，只留最近 10 行，单独提交（`queue: trim done items`）。队列每次开工和每次压缩后都要整份读，留太多很费额度；删掉的提交记录里有，状态脚本把队列里找不到的依赖编号按已完成算。
 2. 项目没有 `AGENTS.md`、verify 或队列的，先按 ai-dev-flow 的 `modules/harness.md` 把它们搭起来，当作第一项。
 3. `docs/requests.md` 里状态是"待转"的，先转进队列，并把状态改成"已转（队列 #编号）"。
-4. 项目 `LESSONS.md` 的 `reviewed-through` 之后已有 20 个以上提交，或者已经过了 7 天：先做复盘（`modules/garden.md` 第 2 节）。复盘是开工前的一步，不算一项，做完接着领正事。
+4. 项目 `LESSONS.md` 的 `reviewed-through` 之后已有 20 个以上提交（只改队列文件的不算，口径见 `garden.md` 第 1 节），或者已经过了 7 天，或者项目还没有 `LESSONS.md`：先做复盘（`modules/garden.md` 第 2 节）。复盘是开工前的一步，不算一项，做完接着领正事。
 
 ## 2. 记下答复
 

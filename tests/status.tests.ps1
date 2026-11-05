@@ -177,6 +177,15 @@ try {
     Check 'stalled: active project with work in progress and no activity' ([bool](($js.Projects | Where-Object Name -eq '项目 A').Problems -match '^可能停滞：在做 1 项') -and -not (($js.Projects | Where-Object Name -eq 'b').Problems -match '^可能停滞'))
     Check '-Since overrides mark' ((($j3.Projects | Where-Object Name -eq '项目 A').NewCount) -eq 3)
     $j4 = pwsh -NoProfile -File $Script -Config $cfg -Json -Project paused | Out-String | ConvertFrom-Json
+    Add-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Value '' -Encoding utf8NoBOM
+    G -C $a add docs/queue.md; G -C $a commit -q -m 'queue: claim'
+    $ju = pwsh -NoProfile -File $Script -Config $cfg -Json -Project '项目 A' | Out-String | ConvertFrom-Json
+    Check 'unreviewed: queue-only and empty commits not counted' ($ju.Projects[0].Unreviewed -eq 1)
+    Set-Content -LiteralPath (Join-Path $a 'code.txt') -Value 'x' -Encoding utf8NoBOM
+    Add-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Value '' -Encoding utf8NoBOM
+    G -C $a add code.txt docs/queue.md; G -C $a commit -q -m 'code and queue'
+    $ju = pwsh -NoProfile -File $Script -Config $cfg -Json -Project '项目 A' | Out-String | ConvertFrom-Json
+    Check 'unreviewed: a commit touching queue and other files counts' ($ju.Projects[0].Unreviewed -eq 2)
     Check '-Project includes paused' (($j4.Projects.Name -join ',') -eq 'paused' -and ($j4.Paused -join ',') -eq 'paused-gone（路径不存在）')
     $j5 = pwsh -NoProfile -File $Script -Config $cfg -Json -Project 'b, 项目 A' | Out-String | ConvertFrom-Json
     Check '-Project takes comma-separated names' (($j5.Projects.Name -join ',') -eq '项目 A,b')

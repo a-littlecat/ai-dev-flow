@@ -9,7 +9,7 @@ param(
     [switch]$Json,
     [int]$StaleMinutes = 60
 )
-# 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交、队列各状态的项数和待用户项、
+# 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件的不算）、队列各状态的项数和待用户项、
 # 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
 # 在总览仓库里任意目录运行，或用 -Config 指定清单（默认 <仓库>/projects.json）。
 #   默认      推进中的项目全量；维护中的只列提交数、队列和待用户项；暂停的只列名字
@@ -152,7 +152,9 @@ function Get-ProjectStatus($p) {
         $text = Get-Content -LiteralPath $lessonsFile -Raw -Encoding UTF8
         $m = [regex]::Match($text, 'reviewed-through:\s*([0-9a-fA-F]{4,40})')
         if ($m.Success) {
-            $count = git -C $path rev-list --count "$($m.Groups[1].Value)..$head" 2>$null
+            # 只改队列文件的提交（认领、改状态）不算：它们占一大半，按总数算会天天触发复盘。
+            $qRel = if ($p.queue) { $p.queue } else { 'docs/queue.md' }
+            $count = git -C $path rev-list --count --full-history "$($m.Groups[1].Value)..$head" -- . ":(exclude)$($qRel -replace '\\', '/')" 2>$null
             if ($LASTEXITCODE) { $r.Problems.Add("LESSONS.md 的 reviewed-through 不是有效提交：$($m.Groups[1].Value)") } else { $r.Unreviewed = [int]$count }
         }
         if ($Lessons) {

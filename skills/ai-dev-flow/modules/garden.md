@@ -6,12 +6,12 @@
 
 ## 1. 什么时候做
 
-- 不设每晚的定时任务。`LESSONS.md` 的 `reviewed-through` 之后攒了 20 个以上提交，或者距上次复盘已经 7 天，下一次 `/next` 开工前先做复盘，做完接着领正事，不单独占一个会话（`skills/next/SKILL.md` 第 1 节）。这样合得多的项目复盘得勤，没动静的项目不白花额度。
+- 不设每晚的定时任务。`LESSONS.md` 的 `reviewed-through` 之后攒了 20 个以上提交（只改队列文件的不算，口径同 `scripts/status.ps1` 的"未复盘"：`git rev-list --count --full-history <reviewed-through>..<主干> -- . ":(exclude)<队列文件>"`），或者距上次复盘已经 7 天，下一次 `/next` 开工前先做复盘，做完接着领正事，不单独占一个会话（`skills/next/SKILL.md` 第 1 节）。这样合得多的项目复盘得勤，没动静的项目不白花额度。
 - 用户说"复盘"时当场做。
 
 ## 2. 复盘
 
-1. 读 `LESSONS.md` 头部的 `reviewed-through: <sha>`，列出从那以后合进主干的全部提交。
+1. 读 `LESSONS.md` 头部的 `reviewed-through: <sha>`，列出从那以后合进主干的全部提交。项目还没有 `LESSONS.md` 的，先按 `harness.md` 第 2 节第 7 条建一个；这次复盘看最近 7 天合进主干的提交（`git log --since="7 days ago" <主干>`），不翻全部历史，做完照第 6 步把 `reviewed-through` 写成最新提交。
 2. 在主干上跑 verify:full（没有 CI 的项目以这次为准）。
 3. 逐个提交找三类问题：
    - **返工了的**：后面有提交在"修复"一行指向它，或者它被 revert 了；
