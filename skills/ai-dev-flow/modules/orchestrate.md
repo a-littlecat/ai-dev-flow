@@ -46,6 +46,7 @@
   pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <运行名> -Agent codex -BriefFile <标准.md> -Review <分支> -Wait  # 审
   pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -Name <运行名> -Agent dsh -BriefFile <意见.md> -Continue <分支> -Wait # 修
   pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -List
+  pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -CleanReviews                                    # 清已结束的审查 worktree
   ```
   `-Wait` 放进你自己的后台任务里跑，跑完你会收到通知。不加 `-Wait` 就不会有通知，要自己另起一个等待任务。**派出去的活还在跑，就不结束回合**：手上没别的事，就前台等它。派完就收工，没人会把你叫醒，这正是 2026-10-31 几个会话无声停下的原因。退出码 4 表示写代码的一轮没留下新提交，或留了未提交的改动；5 表示没写出最终回复；127 表示 agent 命令找不到：先看 `final.md` 和工作区再决定，不要直接派审查。
 - **项目配置** `scripts/dispatch.json`（入库）：
@@ -66,6 +67,8 @@
     }
   }
   ```
+  遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。
+
   `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
 - **项目里的入口**：在项目里放一个几行的 `scripts/dispatch.ps1` 转调本 skill 的脚本，`AGENTS.md` 里写这个入口就行，接手的 AI 不用知道 skill 装在哪：
   ```powershell

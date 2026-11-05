@@ -8,7 +8,8 @@ param(
     [string]$Config,
     [switch]$Wait,
     [switch]$Full,
-    [switch]$List
+    [switch]$List,
+    [switch]$CleanReviews
 )
 # 派活：把一项任务交给外部 CLI agent（Codex、DSH 等）在后台做，总览只派活、核对、汇报。
 # 在项目仓库里任意目录运行，或用 -Config 指定配置（仓库按配置所在位置找）；
@@ -20,8 +21,11 @@ param(
 #   续做  dispatch.ps1 -Name <运行名> -Agent <agent> -BriefFile <要修的意见.md> -Continue <已有分支>
 #         在已有分支的 worktree 里接着做（例如修审查意见），没有 worktree 就为它新开一个。
 #   查看  dispatch.ps1 -List
+#   清理  dispatch.ps1 -CleanReviews [-Name <运行名>]
+#         删除已结束的审查 worktree；只删 .agents/worktrees 下的分离头，改动过被跟踪文件的留着。未跟踪文件先复制到 .agents/runs/<运行名>/worktree-files/。
 #   加 -Wait：等执行方跑完才返回，打印它的最终回复。退出码：执行方的退出码；写代码的轮次没有新提交或留了未提交改动时为 4。
 #   加 -Full：配置了稀疏检出时改为检出全部文件。
+# 执行方遇接口 400 时自动重试：等待秒数取配置的 retry400Seconds，默认 120、300、900，写 [] 就不重试。审查结束自动删它的 worktree，配置 keepReviewWorktree 为 true 时不删。
 # 任务说明之后自动附上固定要求（边界、自查、verify、改坏验证、提交正文、三行交付）；只改文档时免 verify 和改坏验证。
 # 每次运行的记录在 .agents/runs/<运行名>/：prompt.md、run.log、final.md（执行方最后的回复）、meta.json、exit.json。
 # 脚本本身不 push、不合并。
@@ -33,6 +37,53 @@ $root = [IO.Path]::GetFullPath($root)
 # worktree 和运行记录一律放在主仓库下：从某个 worktree 里调用时不嵌套，否则 Windows 上路径容易超过 260 字符。
 $repo = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath((git -C $root rev-parse --path-format=absolute --git-common-dir)))
 $runsRoot = Join-Path $repo '.agents/runs'
+
+if ($CleanReviews) {
+    [Console]::OutputEncoding = [Text.Encoding]::UTF8
+    $limitBytes = 500MB
+    $worktreesRoot = [IO.Path]::GetFullPath((Join-Path $repo '.agents/worktrees')) + [IO.Path]::DirectorySeparatorChar
+    $dirs = if ($Name) { @(Get-Item -LiteralPath (Join-Path $runsRoot $Name) -ErrorAction SilentlyContinue) } elseif (Test-Path -LiteralPath $runsRoot) { @(Get-ChildItem -LiteralPath $runsRoot -Directory) } else { @() }
+    foreach ($dir in $dirs) {
+        $metaFile = Join-Path $dir.FullName 'meta.json'
+        if (-not (Test-Path -LiteralPath $metaFile)) { continue }
+        $meta = Get-Content -LiteralPath $metaFile -Raw | ConvertFrom-Json
+        if ($meta.Mode -ne 'review' -or -not $meta.Worktree -or -not (Test-Path -LiteralPath $meta.Worktree)) { continue }
+        $exitFile = Join-Path $dir.FullName 'exit.json'
+        $state = 'removed'
+        $wtPath = [IO.Path]::GetFullPath($meta.Worktree)
+        if (-not (Test-Path -LiteralPath $exitFile) -and (Get-Process -Id $meta.Pid -ErrorAction SilentlyContinue)) { "keep $($dir.Name): still running"; continue }
+        if (-not $wtPath.StartsWith($worktreesRoot, [StringComparison]::OrdinalIgnoreCase)) { $state = 'kept: outside .agents/worktrees' }
+        else {
+            git -C $wtPath symbolic-ref -q HEAD *> $null
+            if ($LASTEXITCODE -eq 0) { $state = 'kept: on a branch' }
+            elseif (@(git -C $wtPath status --porcelain | Where-Object { $_ -notmatch '^\?\? ' }).Count) { $state = 'kept: tracked files changed' }
+        }
+        if ($state -eq 'removed') {
+            try {
+                $files = @(git -C $wtPath -c core.quotepath=false ls-files -o --exclude-standard)
+                $bytes = ($files | ForEach-Object { (Get-Item -LiteralPath (Join-Path $wtPath $_) -Force).Length } | Measure-Object -Sum).Sum
+                if ($bytes -gt $limitBytes) { $state = "kept: untracked files over $([int]($limitBytes / 1MB)) MB" }
+                else {
+                    foreach ($f in $files) {
+                        $to = Join-Path $dir.FullName (Join-Path 'worktree-files' $f)
+                        $null = New-Item -ItemType Directory -Force -Path (Split-Path $to -Parent)
+                        Copy-Item -LiteralPath (Join-Path $wtPath $f) -Destination $to -Force
+                    }
+                    git -C $repo worktree remove --force $wtPath 2>&1 | Out-Null
+                    if ($LASTEXITCODE) { $state = 'kept: git worktree remove failed' }
+                }
+            }
+            catch { $state = "kept: $($_.Exception.Message)" }
+        }
+        "$($dir.Name): $state"
+        if (Test-Path -LiteralPath $exitFile) {
+            $exit = Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json
+            $exit | Add-Member -NotePropertyName ReviewWorktree -NotePropertyValue $state -Force
+            $exit | ConvertTo-Json | Set-Content -LiteralPath $exitFile -Encoding utf8NoBOM
+        }
+    }
+    exit 0
+}
 
 if ($List) {
     if (-not (Test-Path -LiteralPath $runsRoot)) { 'no runs'; exit 0 }
@@ -126,7 +177,7 @@ if ($Review) {
 ## 固定要求（审查，派活脚本自动附加）
 
 - 你是独立审查方。工作目录是临时 worktree ``$wt``，检出分支 ``$Review`` 的 $headSha。审查范围：``git diff $baseSha..$headSha``。$sparseNote
-- 只在这个目录里工作。不提交，不改任何分支，不碰其他目录。构建产物可以留在这里；做改坏检查时可以临时改源码，改完改回原样，并用 ``git diff --stat`` 确认没有差异。
+- 只在这个目录里工作。不提交，不改任何分支，不碰其他目录。构建产物可以留在这里；做改坏检查时可以临时改源码，改完改回原样，并用 ``git diff --stat`` 确认没有差异。这个目录审完就删，未跟踪的文件（不含 .gitignore 忽略的）会复制到 ``$runDir/worktree-files/``，回复里提到证据文件时写相对这个目录的路径。
 $(($rules) -join "`n")
 - $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。改坏检查只跑相关的那一段，恢复后不再重跑。" })
 - 对照上面的目标和完成标准审。不报命名、格式、写法偏好。只报 P0–P2，每条附可执行的证明（命令、会失败的测试、具体输入和输出）；拿不出证明的写进"没覆盖"。没有带证明的 P0/P1，就给 Pass。
@@ -181,20 +232,38 @@ $command = [regex]::Replace($template, '\{(prompt|final|log|wt|root)\}', { param
 $envLines = if ($agentCfg.env) { foreach ($p in $agentCfg.env.PSObject.Properties) { "`$env:$($p.Name) = $(& $q ([string]$p.Value))" } } else { @() }
 $startHead = git -C $wt rev-parse HEAD
 $runner = Join-Path $runDir 'run.ps1'
+$retryDelays = if ($null -ne $cfg.retry400Seconds) { @($cfg.retry400Seconds | ForEach-Object { [int]$_ }) } else { @(120, 300, 900) }
+$cleanArgs = "-NoProfile -File $(& $q $PSCommandPath) -CleanReviews -Name $(& $q $Name)$(if ($Config) { ' -Config ' + (& $q ([IO.Path]::GetFullPath($Config))) })"
+$cleanLine = if ($mode -eq 'review' -and -not $cfg.keepReviewWorktree) { "Set-Location -LiteralPath $(& $q $repo)`n& (Get-Process -Id `$PID).Path $cleanArgs | Out-Null" } else { '' }
 # 执行方输出 UTF-8；Windows 中文系统控制台默认 GBK，不设置的话管道读进来是乱码。
 # 退出码 0 不代表做完了：另记本轮新增提交数和未提交的改动数，由 -Wait 和 -List 判断。
 # 配置的命令里没有调用外部程序时退出码为空：看最后一条是否成功、有没有找不到的命令。
 # 退出码为 0 却没写出最终回复的，记为 5（例如 agent 启动了但什么都没输出）。
+# 接口 400 多半过几分钟就好（同样的说明隔几分钟再发能通过），所以等一等在原地重试；每次失败的日志留成 run.log.attempt-N。
 Set-Content -LiteralPath $runner -Encoding utf8NoBOM -Value @"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8; `$OutputEncoding = [Text.Encoding]::UTF8
 $($envLines -join "`n")
 Set-Location -LiteralPath $(& $q $wt)
-`$global:LASTEXITCODE = `$null; `$Error.Clear()
+`$delays = @($($retryDelays -join ','))
+`$is400 = `$false
+for (`$attempt = 0; ; `$attempt++) {
+    `$global:LASTEXITCODE = `$null; `$Error.Clear()
 $command
-`$ok = `$?
-`$code = if (`$Error | Where-Object { `$_.FullyQualifiedErrorId -like 'CommandNotFoundException*' }) { 127 } elseif (`$null -ne `$LASTEXITCODE) { `$LASTEXITCODE } elseif (`$ok) { 0 } else { 1 }
-if (`$code -eq 0 -and -not ((Test-Path -LiteralPath $(& $q $final)) -and (Get-Item -LiteralPath $(& $q $final)).Length -gt 0)) { `$code = 5 }
-[ordered]@{ ExitCode = `$code; Finished = (Get-Date).ToString('o'); Head = (git rev-parse HEAD); NewCommits = [int](git rev-list --count $startHead..HEAD); Uncommitted = @(git status --porcelain).Count } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $exitFile) -Encoding utf8NoBOM
+    `$ok = `$?
+    `$code = if (`$Error | Where-Object { `$_.FullyQualifiedErrorId -like 'CommandNotFoundException*' }) { 127 } elseif (`$null -ne `$LASTEXITCODE) { `$LASTEXITCODE } elseif (`$ok) { 0 } else { 1 }
+    if (`$code -eq 0 -and -not ((Test-Path -LiteralPath $(& $q $final)) -and (Get-Item -LiteralPath $(& $q $final)).Length -gt 0)) { `$code = 5 }
+    `$is400 = `$code -ne 0 -and (Test-Path -LiteralPath $(& $q $log)) -and ((Get-Content -LiteralPath $(& $q $log) -Tail 40 -Encoding UTF8) -join "``n") -match '"status"\s*:\s*400'
+    if (-not `$is400 -or `$attempt -ge `$delays.Count) { break }
+    Copy-Item -LiteralPath $(& $q $log) -Destination ($(& $q $log) + ".attempt-`$(`$attempt + 1)") -Force
+    Remove-Item -LiteralPath $(& $q $final) -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds `$delays[`$attempt]
+    if ($(if ($mode -eq 'review') { '$false' } else { '$true' }) -and(@(git status --porcelain).Count -or [int](git rev-list --count $startHead..HEAD)) -and -not ((Get-Content -LiteralPath $(& $q $prompt) -Raw) -match '上一次运行被接口中断')) {
+        Add-Content -LiteralPath $(& $q $prompt) -Encoding utf8NoBOM -Value "``n上一次运行被接口中断，这个目录里可能已有它留下的提交和未提交改动。先看 git log 和 git status，确认符合目标的留下，接着做完。"
+    }
+}
+[ordered]@{ ExitCode = `$code; Finished = (Get-Date).ToString('o'); Head = (git rev-parse HEAD); NewCommits = [int](git rev-list --count $startHead..HEAD); Uncommitted = @(git status --porcelain).Count; Retries = `$attempt; Error400 = [bool]`$is400 } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $exitFile) -Encoding utf8NoBOM
+$cleanLine
+exit `$code
 "@
 # 参数整体传一个带引号的字符串：路径含空格时，数组形式会被拆开。
 $process = Start-Process -FilePath (Get-Command pwsh).Source -ArgumentList "-NoProfile -File `"$runner`"" -WindowStyle Hidden -PassThru
@@ -206,6 +275,7 @@ if ($Wait) {
     $exit = if (Test-Path -LiteralPath $exitFile) { Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json } else { $null }
     Write-Output "finished '$Name': exit $(if ($exit) { $exit.ExitCode } else { 'unknown (no exit.json)' }); head $(if ($exit) { $exit.Head }); new commits $(if ($exit) { $exit.NewCommits }); uncommitted $(if ($exit) { $exit.Uncommitted })"
     if (Test-Path -LiteralPath $final) { Get-Content -LiteralPath $final -Encoding UTF8 | Write-Output }
+    if ($exit.Error400) { Write-Output "接口一直报 400，已重试 $($exit.Retries) 次。等一会儿再派；还不行就改写说明，可能是内容被拒。日志：$log" }
     if (-not $exit) { exit 3 }
     if ($exit.ExitCode) { exit $exit.ExitCode }
     # 写代码的轮次必须留下新提交，否则不算完成，调用方不要接着派审查。
