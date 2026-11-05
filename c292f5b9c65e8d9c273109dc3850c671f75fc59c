@@ -1,0 +1,1 @@
+覆盖：b924a1e..c292f5b；Claude Opus 5.5 子 agent（high）首审 2317b62 → Pass 带两条 P2（.txt 算文档、note 起点没写清），修后复验 c292f5b → Pass，无问题；跑了：pwsh -NoProfile -File tests/land-check.tests.ps1 → 退出 0（17 项），check-md.ps1 → 退出 0；改坏：note 覆盖 head 不比对、起点不往下查、txt 放回文档 → 对应检查红，恢复后 diff 为空；没采纳：note 里不分大小写找 Pass，passed 也会命中，按流程只有 Pass 才写 note，碰不到
