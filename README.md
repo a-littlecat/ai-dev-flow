@@ -31,9 +31,11 @@ skills/ai-dev-flow/
   scripts/daily.ps1        把状态写成一页 HTML 并发通知，给计划任务定时跑
   scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
   scripts/watch.ps1        每 15 分钟查一次停滞，新停住的项目才推到手机
+  scripts/check-md.ps1     文档格式检查：.md 里的控制字符、被拆断的表格行，放进各项目的快检
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
+tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -118,6 +120,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.11.0**（2026-11-05）：新增 `scripts/check-md.ps1`：查被跟踪的 `.md` 里的控制字符（单独回车、正文里的 Tab 等）和被拆断的表格行，Windows 路径里的 `\r`、`\n`、`\t` 被当成转义写进文档时当场拦下。各项目在快检里调用它（`harness.md` 第 2 节第 1 条），不用再各写一份。
 - **2.10.1**（2026-11-05）：状态页认"搁置"：不再提示"状态认不出"，不算进完成进度，依赖它的项不可领。队列里没有编号的行会报出来，不再显示成 `# 名字`。
 - **2.10.0**（2026-11-05）：快检超过 10 分钟或本机内存紧张的项目，可以让执行方交活前只跑构建、相关测试和改坏验证，全量快检只由验证方在候选 head 上跑一次（`AGENTS.md` 写明，派活配置写 `"builderVerify": "related"`）。默认不变：快检快的项目，执行方自己跑一次比被打回一轮便宜。
 - **2.9.0**（2026-11-05）：派活遇接口 400 自动等一等再试，不用手动重派（配置 `retry400Seconds`）。审查结束自动删临时 worktree，证据复制到运行记录；合并后用 `dispatch.ps1 -CleanReviews` 清，已合并的证据直接删，只留结论。`/next` 开工时把队列里"完成"的行减到最近 10 行。

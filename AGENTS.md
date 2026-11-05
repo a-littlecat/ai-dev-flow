@@ -9,7 +9,9 @@
 - **检查**：
   - 改了 `skills/ai-dev-flow/scripts/` 下的 `status.ps1`、`daily.ps1`、`notify.ps1` 或 `watch.ps1`：跑 `pwsh -NoProfile -File tests/status.tests.ps1`，退出码 0 才算通过。测试里 notify 只走 `-DryRun`；真的弹通知、推到手机，要在本机实发一次。
   - 改了 `skills/ai-dev-flow/scripts/dispatch.ps1`：跑 `pwsh -NoProfile -File tests/dispatch.tests.ps1`，退出码 0 才算通过。它用假的执行方，只覆盖 400 重试和审查 worktree 清理，其余部分还要靠独立审查实跑。
-  - 只改文档的，按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
+  - 改了 `skills/ai-dev-flow/scripts/check-md.ps1`：跑 `pwsh -NoProfile -File tests/check-md.tests.ps1`，退出码 0 才算通过。
+  - 改了任何 `.md`：跑 `pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1`，退出码 0 才算通过。
+  - 只改文档的，另按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。
 - **云端会话**：这个仓库有远程，可以在云端会话里做。云端没有用户级 skill，开头写"按 `skills/next/SKILL.md` 做 #n"；云端只推分支，回到本地用 `/next 收云端` 合并（`skills/next/SKILL.md` 第 6、7 节）。
 - **推送**（用户 2026-10-29 定）：改动审查通过、合进 `main`、同步到本机安装之后，把 `main` 和 `refs/notes/verify` 推到 `origin`。推之前做两件事：
