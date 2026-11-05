@@ -117,7 +117,7 @@ foreach ($p in $active) {
            elseif ($p.Available) { "空着，有 $($p.Available) 项可以开工" }
            elseif ($p.Queue) { '没有能做的项' } else { '还没有队列' }
     $prog = if ($p.Queue) {
-        $q = $p.Queue; $total = 0; foreach ($v in $q.PSObject.Properties.Value) { $total += [int]$v }
+        $q = $p.Queue; $total = 0; foreach ($v in $q.PSObject.Properties) { if ($v.Name -ne '搁置') { $total += [int]$v.Value } }
         $done = [int]$q.'完成'; $pct = if ($total) { [math]::Round(100 * $done / $total) } else { 0 }
         "<span class=`"bar`"><span style=`"width:$pct%`"></span></span>完成 $done / 共 $total 项"
     } else { '<span class="muted">—</span>' }
@@ -136,7 +136,7 @@ foreach ($p in $active) {
     $det = [Collections.Generic.List[string]]::new()
     $other = @($p.Other)
     if ($other) { $det.Add("队列里有 $($other.Count) 项的状态写法不标准，下次在这个项目发 /next 会顺手改好") }
-    if ($p.Queue) { $q = $p.Queue; $det.Add("队列：在做 $($q.'在做') · 待做 $($q.'待做')（可领 $($p.Available)） · 待验证 $($q.'待验证') · 等你 $($q.'待用户') · 完成 $($q.'完成')$(if ($q.'其他') { " · 写法不标准 $($q.'其他')" })") }
+    if ($p.Queue) { $q = $p.Queue; $det.Add("队列：在做 $($q.'在做') · 待做 $($q.'待做')（可领 $($p.Available)） · 待验证 $($q.'待验证') · 等你 $($q.'待用户') · 完成 $($q.'完成')$(if ($q.'搁置') { " · 搁置 $($q.'搁置')" })$(if ($q.'其他') { " · 写法不标准 $($q.'其他')" })") }
     if ($p.LastActivity) { $det.Add("最后动静 $($p.LastActivity)（$(Ago $p.IdleMinutes)前）；主干新提交 $($p.NewCount)（$($p.NewSince)）") }
     if ($null -ne $p.Worktrees -and ($p.WorktreesMerged + $p.WorktreesDetached + $p.BranchesMerged)) { $det.Add("可以清理：已合并的分支 $($p.BranchesMerged) 个，临时工作目录 $($p.Worktrees) 个") }
     if ($p.Trust) { $det.Add("信任等级 $($p.Trust)") }

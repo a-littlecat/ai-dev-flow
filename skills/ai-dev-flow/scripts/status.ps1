@@ -51,7 +51,7 @@ if (Test-Path -LiteralPath $marksFile) {
     (Get-Content -LiteralPath $marksFile -Raw -Encoding UTF8 | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $marks[$_.Name] = $_.Value }
 }
 
-$states = '待做', '在做', '待验证', '待用户', '完成'
+$states = '待做', '在做', '待验证', '待用户', '完成', '搁置'
 $statusOrder = @{ '推进中' = 0; '维护' = 1; '暂停' = 2 }
 
 function Format-Idle([int]$m) {
@@ -63,7 +63,10 @@ function Short([string]$s, [int]$n) {
     if ($s.Length -gt $n) { $s.Substring(0, $n - 1) + '…' } else { $s }
 }
 
-# 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 开头，后面可以跟括号说明。
+# 队列项的编号写成 #7；没有编号的返回空，别显示成一个孤零零的 #。
+function Format-Id([string]$id, [int]$n = 12) { $v = ($id -replace '^#', '').Trim(); if ($v) { '#' + (Short $v $n) } else { '' } }
+
+# 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 / 搁置 开头，后面可以跟括号说明。
 # 首尾竖线可有可无；代码块里的不算（围栏按 CommonMark：同种字符、不短于开头、整行只有围栏才算结束；表格外缩进 4 格的行算缩进代码）。
 function Read-Queue([string]$file) {
     $cols = $header = $fence = $null
@@ -173,7 +176,10 @@ function Get-ProjectStatus($p) {
         $r.Doing = @($items | Where-Object State -eq '在做')
         $other = @($items | Where-Object State -eq '其他')
         $r.Other = $other
-        if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "#$(Short $_.Id 12)（$(Short $_.Detail 20)）" }) -join '、')) }
+        if ($other) { $r.Problems.Add("队列里状态认不出的项：" + (($other | ForEach-Object { "$(if ($_.Id) { (Format-Id $_.Id) } else { Short $_.Goal 12 })（$(Short $_.Detail 20)）" }) -join '、')) }
+        # 完成的项没人再回，不用编号；其余的没有编号就没法用 /next #n 点名。
+        $noId = @($items | Where-Object { -not (Format-Id $_.Id) -and $_.State -ne '完成' })
+        if ($noId) { $r.Problems.Add("队列里没有编号的项：" + (($noId | ForEach-Object { if ($_.Goal) { Short $_.Goal 20 } else { '未命名' } }) -join '、')) }
         $done = @($items | Where-Object State -eq '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $open = @($items | Where-Object State -ne '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $availItems = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
@@ -274,10 +280,10 @@ foreach ($r in $results) {
             if ($r.NewCount -gt 8) { $out.Add("  …另 $($r.NewCount - 8) 条") }
         }
     }
-    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -ne '其他' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
+    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -notin '其他', '搁置' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
     if ($r.Goals) { $out.Add("本周目标 $(@($r.Goals | Where-Object Done).Count)/$($r.Goals.Count)：" + (($r.Goals | ForEach-Object { "$(if ($_.Done) { '✓' } else { '○' }) $(Short $_.Text 40)" }) -join '；')) }
     if ($r.LastActivity) { $out.Add("最后活动 $($r.LastActivity)（$(Format-Idle $r.IdleMinutes)前）") }
-    foreach ($w in $r.Waiting) { $out.Add("  待用户 #$($w.Id)$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
+    foreach ($w in $r.Waiting) { $out.Add("  待用户$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) })$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
     if ($r.Digest -and -not $brief) {
         $out.Add("最近摘要 $($r.Digest.Date)")
         foreach ($l in $r.Digest.Lines) { $out.Add("  $(Short $l 120)") }

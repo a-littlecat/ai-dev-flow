@@ -197,6 +197,44 @@ try {
     Check 'maintenance is brief' ($t -notmatch '(?s)## b · 维护.*工作区')
     Check 'text available and goals' ($t -match '可领 3' -and $t -match '本周目标 2/3：✓ 目标一；○ 目标二；✓ 手动勾的 <x>')
 
+    Check 'no shelved rows: no shelved count in text' ($t -notmatch '搁置')
+    Check 'all rows numbered: no missing-number hint' (-not ($pa.Problems -match '没有编号'))
+
+    $c = Join-Path $root '项目 C'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $c 'docs')
+    G init -q $c
+    @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 先放着 | 无 | 搁置（等数据） |
+| 2 | 依赖搁置的项 | 1 | 待做 |
+| 3 | 能领的项 | 无 | 待做 |
+| 4 | 写法不对 | 无 | 暂停于安全点 |
+| 5 | 做完了 | 无 | 完成 |
+
+| 目标 | 状态 |
+|---|---|
+| 没编号等你 | 待用户（看报告） |
+| 没编号在做 | 在做 |
+| 没编号做完了 | 完成 |
+'@ | Set-Content -LiteralPath (Join-Path $c 'docs/queue.md') -Encoding utf8NoBOM
+    G -C $c add -A; G -C $c commit -q -m 'c1'
+    $cfgC = Join-Path $root 'projects-c.json'
+    @{ projects = @(@{ name = '项目 C'; path = $c; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgC -Encoding utf8NoBOM
+    $pc = (pwsh -NoProfile -File $Script -Config $cfgC -Json | ConvertFrom-Json).Projects[0]
+    $tc = pwsh -NoProfile -File $Script -Config $cfgC | Out-String
+    Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
+    Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
+    Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')
+    Check 'no number: open rows reported, done rows not' ([bool]($pc.Problems -match '没有编号的项：没编号等你、没编号在做$'))
+    Check 'no number: no lone # in the text' ($tc -match '待用户 没编号等你：看报告' -and $tc -notmatch '# 没编号' -and $tc -notmatch '待用户 #\s')
+    $pageC = Join-Path $root 'out/status-c.html'
+    $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify
+    $htmlC = Get-Content -LiteralPath $pageC -Raw -Encoding UTF8
+    Check 'daily: shelved left out of progress, shown in the details' ($htmlC -match '完成 2 / 共 7 项' -and $htmlC -match '&#183; 搁置 1')
+    $wc = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'watch.ps1') -Config $cfgC -State (Join-Path $root 'out/watch-c.json') -StaleMinutes 0 -DryRun | Out-String
+    Check 'watch: no lone # for an unnumbered item' ($wc -match '项目 C：没编号在做' -and $wc -notmatch '# 没编号')
+
     $daily = Join-Path (Split-Path $Script) 'daily.ps1'
     $page = Join-Path $root 'out/status.html'
     $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -NoNotify

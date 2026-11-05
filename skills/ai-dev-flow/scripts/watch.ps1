@@ -43,7 +43,7 @@ $code = 0
 if ($new) {
     $lines = foreach ($k in $new) {
         $p = $now[$k]; $d = @($p.Doing)[0]
-        $what = if ($d) { "#$($d.Id) $(($d.Goal -replace '\s+', ' ').Trim())".Trim() } else { '在做的项' }
+        $what = if ($d) { "$(if ($d.Id) { '#' + ($d.Id -replace '^#', '') }) $(($d.Goal -replace '\s+', ' ').Trim())".Trim() } else { '在做的项' }
         if ($what.Length -gt 30) { $what = $what.Substring(0, 29) + '…' }
         "$(Nick $p.Name)：$what 已 $(Ago $p.IdleMinutes)没动静，回到那个会话看一眼，或新开会话发 /next"
     }
