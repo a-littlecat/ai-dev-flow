@@ -94,7 +94,30 @@ Seen：2（2026-10-29、2026-10-30）
 
 ## 规则二
 Seen：1（2026-10-30）
+
+## 规则三该升级
+Seen：3（2026-10-28、2026-10-29、2026-10-30）
+
+## 规则四已交出去
+Seen：4（2026-10-27、2026-10-28、2026-10-29、2026-10-30）
+升级：已写进 ai-dev-flow 的 docs/requests.md（2026-10-30）
 "@ | Set-Content -LiteralPath (Join-Path $a 'LESSONS.md') -Encoding utf8NoBOM
+@'
+# 收到的请求
+
+## 2026-10-30 已经转了
+- **状态**：已转（队列 #3）
+
+## 2026-10-31 还没转
+- **现象**：x
+- **状态**：待转
+
+## 2026-11-01 忘了写状态
+- **请求**：y
+
+## 2026-11-02 处理完了
+- **状态**：已处理（2.0.0）
+'@ | Set-Content -LiteralPath (Join-Path $a 'docs/requests.md') -Encoding utf8NoBOM
 G -C $a add -A; G -C $a commit -q -m 'c2 中文提交'
 G -C $a branch merged-one
 G -C $a worktree add -q (Join-Path $root 'wt-merged') merged-one
@@ -155,7 +178,9 @@ try {
     Check 'unreviewed = 1' ($pa.Unreviewed -eq 1)
     Check 'new commits on trunk only' ($pa.NewCount -eq 2 -and -not ($pa.NewCommits -match 'side only'))
     Check 'chinese subject decoded' ([bool]($pa.NewCommits -match 'c2 中文提交'))
-    Check 'lessons with seen' ((($pa.Lessons | ForEach-Object { "$($_.Seen):$($_.Title)" }) -join ';') -eq '2:规则一;1:规则二')
+    Check 'lessons with seen' ((($pa.Lessons | ForEach-Object { "$($_.Seen):$($_.Title)" }) -join ';') -eq '2:规则一;1:规则二;3:规则三该升级;4:规则四已交出去')
+    Check 'lessons due: seen 3 without an upgrade line, reported' ((($pa.LessonsDue | ForEach-Object { "$($_.Seen):$($_.Title)" }) -join ';') -eq '3:规则三该升级' -and [bool]($pa.Problems -match '^教训 Seen 达到 3 还没升级：规则三该升级（Seen 3）$'))
+    Check 'requests: pending and missing state listed, transferred and handled not' ((($pa.Requests | ForEach-Object { "$($_.Title)=$($_.State)" }) -join ';') -eq '2026-10-31 还没转=待转;2026-11-01 忘了写状态=未写状态' -and [bool]($pa.Problems -match '^还没转进队列的请求 2 条：2026-10-31 还没转、2026-11-01 忘了写状态$'))
     Check 'latest digest lines' ($pa.Digest.Date -eq '2026-10-31' -and ($pa.Digest.Lines -join ';') -eq '北极星：9（昨天 7）')
     Check 'worktrees' ($pa.Worktrees -eq 3 -and $pa.WorktreesMerged -eq 2 -and $pa.WorktreesDetached -eq 1 -and $pa.WorktreesMissing -eq 1)
     Check 'merged branches exclude trunk' ($pa.BranchesMerged -eq 2)
@@ -170,6 +195,7 @@ try {
     (Get-Item -LiteralPath $run).LastWriteTime = (Get-Date).AddHours(-3)
     $j2 = pwsh -NoProfile -File $Script -Config $cfg -Json | Out-String | ConvertFrom-Json
     $pa2 = $j2.Projects | Where-Object Name -eq '项目 A'
+    Check 'lessons due and requests without -Lessons' ($pa2.LessonsDue.Count -eq 1 -and $pa2.Requests.Count -eq 2 -and -not $pa2.Lessons)
     Check 'mark: only commits after it' ($pa2.NewCount -eq 1 -and $pa2.NewSince -like '自上次标记*')
     $j3 = pwsh -NoProfile -File $Script -Config $cfg -Json -Since '2000-01-01' | Out-String | ConvertFrom-Json
     Check 'stale only past -StaleMinutes' (-not (($j2.Projects | Where-Object Name -eq '项目 A').Problems -match '^可能停滞'))
@@ -207,6 +233,7 @@ try {
     Check 'text available and goals' ($t -match '可领 3' -and $t -match '本周目标 2/3：✓ 目标一；○ 目标二；✓ 手动勾的 <x>')
 
     Check 'no shelved rows: no shelved count in text' ($t -notmatch '搁置')
+    Check 'text hints for lessons due and pending requests' ($t -match '提示：教训 Seen 达到 3 还没升级：规则三该升级' -and $t -match '提示：还没转进队列的请求 2 条')
     Check 'all rows numbered: no missing-number hint' (-not ($pa.Problems -match '没有编号'))
 
     $c = Join-Path $root '项目 C'
@@ -236,6 +263,7 @@ try {
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
     Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')
     Check 'no number: open rows reported, done rows not' ([bool]($pc.Problems -match '没有编号的项：没编号等你、没编号在做$'))
+    Check 'no lessons or requests file: nothing due, no hint' (-not $pc.LessonsDue -and -not $pc.Requests -and -not ($pc.Problems -match '教训|请求'))
     Check 'no number: no lone # in the text' ($tc -match '待用户 没编号等你：看报告' -and $tc -notmatch '# 没编号' -and $tc -notmatch '待用户 #\s')
     $pageC = Join-Path $root 'out/status-c.html'
     $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify

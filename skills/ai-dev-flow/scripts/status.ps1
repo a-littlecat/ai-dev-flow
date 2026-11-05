@@ -10,7 +10,7 @@ param(
     [int]$StaleMinutes = 60
 )
 # 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件的不算）、队列各状态的项数和待用户项、
-# 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
+# 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标、该升级的教训、还没转的请求。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
 # 在总览仓库里任意目录运行，或用 -Config 指定清单（默认 <仓库>/projects.json）。
 #   默认      推进中的项目全量；维护中的只列提交数、队列和待用户项；暂停的只列名字
 #   -Since    新提交从这个时间算（git 的写法：'24 hours ago'、'2026-10-30'）；不给就从上次 -Mark 记下的位置算，没有记录按 24 小时
@@ -24,6 +24,8 @@ param(
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
+# 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
+# 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
@@ -111,7 +113,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @()
+        Lessons = @(); LessonsDue = @(); Requests = @()
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -157,12 +159,28 @@ function Get-ProjectStatus($p) {
             $count = git -C $path rev-list --count --full-history "$($m.Groups[1].Value)..$head" -- . ":(exclude)$($qRel -replace '\\', '/')" 2>$null
             if ($LASTEXITCODE) { $r.Problems.Add("LESSONS.md 的 reviewed-through 不是有效提交：$($m.Groups[1].Value)") } else { $r.Unreviewed = [int]$count }
         }
-        if ($Lessons) {
-            $r.Lessons = @(foreach ($sec in ($text -split '(?m)^(?=##\s)') | Where-Object { $_ -match '^##\s' }) {
-                $seen = [regex]::Match($sec, 'Seen[：:]\s*(\d+)')
-                [pscustomobject]@{ Seen = if ($seen.Success) { [int]$seen.Groups[1].Value } else { $null }; Title = (($sec -split '\r?\n')[0] -replace '^##\s+', '').Trim() }
-            })
-        }
+        $all = @(foreach ($sec in ($text -split '(?m)^(?=##\s)') | Where-Object { $_ -match '^##\s' }) {
+            $seen = [regex]::Match($sec, 'Seen[：:]\s*(\d+)')
+            [pscustomobject]@{ Seen = if ($seen.Success) { [int]$seen.Groups[1].Value } else { $null }; Title = (($sec -split '\r?\n')[0] -replace '^##\s+', '').Trim()
+                               Handed = $sec -match '(?m)^\s*升级[：:]' }
+        })
+        if ($Lessons) { $r.Lessons = @($all | Select-Object Seen, Title) }
+        # 写了"升级："一行的已经交出去（改成测试、写进标准，或请求了 ai-dev-flow），不再催。
+        $r.LessonsDue = @($all | Where-Object { $_.Seen -ge 3 -and -not $_.Handed } | Select-Object Seen, Title)
+        if ($r.LessonsDue) { $r.Problems.Add('教训 Seen 达到 3 还没升级：' + (($r.LessonsDue | ForEach-Object { "$(Short $_.Title 30)（Seen $($_.Seen)）" }) -join '、')) }
+    }
+
+    $requestsFile = Join-Path $path 'docs/requests.md'
+    if (Test-Path -LiteralPath $requestsFile) {
+        $text = Get-Content -LiteralPath $requestsFile -Raw -Encoding UTF8
+        $r.Requests = @(foreach ($sec in ($text -split '(?m)^(?=##\s)') | Where-Object { $_ -match '^##\s' }) {
+            $m = [regex]::Match($sec, '(?m)^\s*(?:[-*]\s*)?\**状态\**\s*[：:]\s*\**\s*(.*?)\s*$')
+            $state = if ($m.Success) { $m.Groups[1].Value } else { '' }
+            if (-not $state -or $state.StartsWith('待转', [StringComparison]::Ordinal)) {
+                [pscustomobject]@{ Title = (($sec -split '\r?\n')[0] -replace '^##\s+', '').Trim(); State = if ($state) { $state } else { '未写状态' } }
+            }
+        })
+        if ($r.Requests) { $r.Problems.Add("还没转进队列的请求 $($r.Requests.Count) 条：" + (($r.Requests | ForEach-Object { Short $_.Title 30 }) -join '、')) }
     }
 
     $done = @()
