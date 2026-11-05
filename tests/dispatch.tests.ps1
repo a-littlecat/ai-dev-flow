@@ -31,6 +31,7 @@ if ($step -match 'dirty') { Set-Content -LiteralPath 'dirty.txt' -Value x }
 if ($step -match 'evidence') { $null = New-Item -ItemType Directory -Force -Path evidence; Set-Content -LiteralPath 'evidence/证据 1.txt' -Value proof }
 if ($step -match 'ignored') { $null = New-Item -ItemType Directory -Force -Path bin; Set-Content -LiteralPath 'bin/a.dll' -Value x }
 if ($step -match 'touch') { Set-Content -LiteralPath 'AGENTS.md' -Value changed }
+if ($step -match 'move') { git checkout -q --detach main }
 if ($step -match 'big') { $s = [IO.File]::Create((Join-Path $PWD 'big.bin')); $s.SetLength(501MB); $s.Dispose() }
 if ($step -match '^400') { 'ERROR: {"error":{"message":"Codex: Bad Request"},"status":400,"type":"error"}'; exit 1 }
 if ($step -match '^err') { 'ERROR: something else'; exit 1 }
@@ -169,6 +170,23 @@ try {
     $meta | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runs 'rev-nobase/meta.json') -Encoding utf8NoBOM
     $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-nobase' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1
     Check 'unknown base: evidence not deleted' (Test-Path -LiteralPath (Join-Path $runs 'rev-nobase/worktree-files/evidence/证据 1.txt'))
+
+    # 审查方把 worktree 切到了主干，审的版本其实没合并：证据不删
+    G -C $repo switch -q -c candidate2
+    Set-Content -LiteralPath (Join-Path $repo 'candidate2.txt') -Encoding utf8NoBOM -Value x
+    G -C $repo add candidate2.txt
+    G -C $repo commit -q -m candidate2
+    G -C $repo switch -q main
+    $null = Run 'rev-moved' 'ok+evidence+move' @('-Review', 'candidate2')
+    $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-moved' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1
+    Check 'reviewer moved its HEAD to main: unmerged evidence stays' (Test-Path -LiteralPath (Join-Path $runs 'rev-moved/worktree-files/evidence/证据 1.txt'))
+
+    # 运行异常死掉（没有 exit.json、进程不在），审的版本已合并：证据照样复制
+    Write-Config @{ retry400Seconds = @(); keepReviewWorktree = $true }
+    $null = Run 'rev-died' 'ok+evidence' @('-Review', 'candidate')
+    Remove-Item -LiteralPath (Join-Path $runs 'rev-died/exit.json')
+    $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -CleanReviews -Name 'rev-died' -Config (Join-Path $repo 'scripts/dispatch.json') 2>&1
+    Check 'died run with a merged head: evidence copied before removing' ((-not (Test-Path -LiteralPath (Wt 'rev-died'))) -and (Test-Path -LiteralPath (Join-Path $runs 'rev-died/worktree-files/evidence/证据 1.txt')))
 }
 finally {
     if ($Keep) { "kept: $root" } else {

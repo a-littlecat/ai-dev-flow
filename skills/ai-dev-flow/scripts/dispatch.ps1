@@ -61,7 +61,8 @@ if ($CleanReviews) {
         $evidence = Join-Path $dir.FullName 'worktree-files'
         if (-not $KeepEvidence -and (Test-Path -LiteralPath $exitFile) -and (Test-Path -LiteralPath $evidence)) {
             $finished = Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json
-            if (Test-Merged $finished.Head $meta.Base) {
+            # 旧记录没有 ReviewedHead，退回用结束时的 head。
+            if (Test-Merged $(if ($meta.ReviewedHead) { $meta.ReviewedHead } else { $finished.Head }) $meta.Base) {
                 try { Remove-Item -LiteralPath $evidence -Recurse -Force -ErrorAction Stop; "$($dir.Name): merged, evidence deleted" }
                 catch { "$($dir.Name): merged, evidence not deleted: $($_.Exception.Message)" }
             }
@@ -90,7 +91,8 @@ if ($CleanReviews) {
         }
         if ($state -eq 'removed') {
             try {
-                $dropEvidence = -not $KeepEvidence -and (Test-Merged (git -C $wtPath rev-parse HEAD) $meta.Base)
+                # 没有 exit.json 的是异常死掉的运行，不确定审完没有，证据照样复制。
+                $dropEvidence = -not $KeepEvidence -and (Test-Path -LiteralPath $exitFile) -and (Test-Merged $(if ($meta.ReviewedHead) { $meta.ReviewedHead } else { git -C $wtPath rev-parse HEAD }) $meta.Base)
                 $files = if ($dropEvidence) { @() } else { @(git -C $wtPath -c core.quotepath=false ls-files -o --exclude-standard) }
                 # 证据可能有几万个文件，用 .NET 直接算大小和复制，cmdlet 逐个调用要十几分钟。
                 [long]$bytes = 0
@@ -300,7 +302,7 @@ exit `$code
 "@
 # 参数整体传一个带引号的字符串：路径含空格时，数组形式会被拆开。
 $process = Start-Process -FilePath (Get-Command pwsh).Source -ArgumentList "-NoProfile -File `"$runner`"" -WindowStyle Hidden -PassThru
-[ordered]@{ Name = $Name; Agent = $Agent; Mode = $mode; Sparse = [bool]$sparse; Branch = $(if ($Review) { $Review } elseif ($Continue) { $Continue } else { $Name }); Worktree = $wt; Base = $Base; BaseSha = $baseSha; Started = (Get-Date).ToString('o'); Pid = $process.Id } |
+[ordered]@{ Name = $Name; Agent = $Agent; Mode = $mode; Sparse = [bool]$sparse; Branch = $(if ($Review) { $Review } elseif ($Continue) { $Continue } else { $Name }); Worktree = $wt; Base = $Base; BaseSha = $baseSha; ReviewedHead = $(if ($Review) { $headSha }); Started = (Get-Date).ToString('o'); Pid = $process.Id } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runDir 'meta.json') -Encoding utf8NoBOM
 Write-Output "started $Agent $mode '$Name' (pid $($process.Id)); worktree $wt; records $runDir"
 if ($Wait) {
