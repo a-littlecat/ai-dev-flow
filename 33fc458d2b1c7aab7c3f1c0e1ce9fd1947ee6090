@@ -1,0 +1,1 @@
+覆盖：c382f94..33fc458；Claude Opus 5.5 子 agent（全新上下文，high）三轮 → Pass（d5e46ca Fix：R1 P1 等你误判＋R2–R5；43c5b9a Fix：N1 P1 再说误判＋N2–N5；33fc458 Pass）；跑了：pwsh -NoProfile -File tests/status.tests.ps1 → 退出 0，check-md.ps1 → 退出 0（head 33fc458）；没跑：无；没采纳：合并后等 CI 跑通再推送 这类仍标像搁置（现只影响排序和标签，不影响计数和推送）；portfolio.md 第 6 节首条标签列表没列刚有动静（下一条已写）
