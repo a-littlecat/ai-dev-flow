@@ -130,6 +130,7 @@ foreach ($p in $active) {
     $now = if (IsStalled $p) { "$(Lines $doing)<br><span class=`"muted`">$(Ago $p.IdleMinutes)没动静</span>" }
            elseif ($doing) { Lines $doing }
            elseif ((Asks $p).Count) { "等你定：$(Lines (Asks $p))" }
+           elseif ($p.Available -and (Recent $p)) { "刚有动静（$(Ago $p.IdleMinutes)前），有 $($p.Available) 项可领" }
            elseif ($p.Available) { "空着，有 $($p.Available) 项可以开工" }
            elseif ($p.Queue) { '没有能做的项' } else { '还没有队列' }
     $prog = if ($p.Queue) {
@@ -168,9 +169,9 @@ Set-Content -LiteralPath $Out -Value $b.ToString() -Encoding utf8NoBOM
 $Out
 
 if (-not $NoNotify) {
-    # 每件要你管的事一个键；和上次推过的比，有新的才推手机
+    # 每件要你管的事一个键（项目、编号、目标、问题前 60 字）；和上次推过的比，有新的才推手机。同一项换了问题算新的
     $events = @(
-        foreach ($w in $waiting) { [pscustomobject]@{ Key = "$($w.Project)|$(Label $w.Item)|$(Cut $w.Item.Goal 40)"; Line = "$(Nick $w.Project)：$(Item $w.Item) 等你定"; Ask = $true } }
+        foreach ($w in $waiting) { [pscustomobject]@{ Key = "$($w.Project)|$(Label $w.Item)|$(Cut $w.Item.Goal 40)|$(Cut $w.Item.Detail 60)"; Line = "$(Nick $w.Project)：$(Item $w.Item) 等你定"; Ask = $true } }
         foreach ($p in $stalled) { $d = @($p.Doing)[0]; [pscustomobject]@{ Key = "$($p.Name)|停滞|$((@($p.Doing) | ForEach-Object { $_.Id }) -join ',')|$($p.LastActivity)"; Line = "$(Nick $p.Name)：$(if ($d) { Item $d } else { '在做的项' }) 已 $(Ago $p.IdleMinutes)没动静，可能停了"; Ask = $false } }
     )
     $pushed = @(if (Test-Path -LiteralPath $State) {
