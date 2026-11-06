@@ -78,6 +78,32 @@ try {
     Check 'skipped check on the lower commit of a stack: refused' ($r.Code -eq 1 -and $r.Text -match "$($b1.Substring(0, 7)) 的 note 写了没跑：全量快检")
     Note $b1 $c0
 
+    $base7 = "覆盖：$($c0.Substring(0, 7))..$($b1.Substring(0, 7))；子 agent → Pass；跑了：verify → 0"
+    foreach ($case in @(
+            @{ n = 'half-width colons count'; t = '；没跑:宿主测试'; code = 1 },
+            @{ n = 'rerun "→ 0 passed, 3 failed" does not count'; t = '；没跑：宿主测试；补跑：npm test → 0 passed, 3 failed'; code = 1 },
+            @{ n = 'rerun "→ 0（head）" counts'; t = '；没跑：宿主测试；补跑：npm test → 0（abc）'; code = 0 },
+            @{ n = '"没跑：无。" passes'; t = '；没跑：无。没采纳：无'; code = 0 },
+            @{ n = '"没跑：不适用" passes'; t = '；没跑：不适用'; code = 0 },
+            @{ n = 'empty 没跑 does not swallow the next line'; t = "；没跑：`n说明：见上"; code = 0 })) {
+        $null = G notes --ref=verify add -f -m "$base7$($case.t)" $b1
+        $r = Run 'notrun'
+        Check "skipped field: $($case.n)" ($r.Code -eq $case.code)
+    }
+    Note $b1 $c0
+
+    $null = G notes --ref=verify add -f -m "$base7；没跑：宿主测试（沙箱拦了）" $b1
+    $null = G checkout -q -b carry ok
+    $x1 = Commit 'docs/x.md' "x`n"
+    $null = G checkout -q main
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($x1.Substring(0, 7))；沿用 $($b1.Substring(0, 7)) 的 Pass（子 agent）；之后只多了文档：docs/x.md；没采纳：无" $x1
+    $r = Run 'carry'
+    Check 'carried-over note inherits an unrerun skipped check: refused' ($r.Code -eq 1 -and $r.Text -match "写了没跑：宿主测试（沙箱拦了）（沿用的 $($b1.Substring(0, 7)) 的 note 里）")
+    $null = G notes --ref=verify append -m "补跑：verify.ps1 → 退出 0（$($x1.Substring(0, 7))）" $x1
+    $r = Run 'carry'
+    Check 'carried-over note with a rerun on the new head: passes' ($r.Code -eq 0)
+    Note $b1 $c0
+
     $null = G checkout -q -b docs main
     $d1 = Commit 'docs/说明.md' "文档`n"
     $null = G checkout -q main

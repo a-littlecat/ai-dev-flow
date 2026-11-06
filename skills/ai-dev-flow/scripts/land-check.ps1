@@ -12,12 +12,22 @@ param(
 #      note 挂在旧 head 上、或覆盖的是别的 head，都算没有。覆盖范围的起点不在主干里的（叠在另一个候选分支上），
 #      起点那个提交也要有符合要求的 note，一直接到主干。分支相对主干只改了 .md、.markdown 的，
 #      按 verify.md 第 1 节不要求 note，这一项跳过并提示逐条核对文档。
-#   5. note 写了"没跑：<检查（原因）>"、又不是"无"的，要有"补跑：<命令> → 退出 0"（land.md 第 2 节：跑不全的合并前补跑）。没写"没跑："的老 note 按无处理。
+#   5. note 写了"没跑：<检查（原因）>"、又不是"无 / 没有 / 不适用"的，要有"补跑：<命令> → 退出 0"（land.md 第 2 节：跑不全的合并前补跑）。没写"没跑："的老 note 按无处理。
+#      按 verify.md 第 5 节写的沿用 note（"沿用 <sha>"），把那个 sha 的 note 也算进来：原 note 没跑又没补跑的，沿用了也要补跑。冒号全角半角都认。
 #   pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk main] [-Repo <主项目目录>]
 # 全部满足退出 0，最后一行是可以直接运行的合并命令；有不满足的逐条打出原因，退出 1；参数或仓库不对，退出 2。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
+# "没跑："后面写的检查；没写这一项，或写的是 无 / 没有 / 不适用，返回空。只看同一行，到分号为止。
+function Get-Skipped([string]$t) {
+    $m = [regex]::Match($t, '没跑[：:][ \t　]*([^；;\r\n]*)')
+    if (-not $m.Success) { return '' }
+    $v = $m.Groups[1].Value.Trim()
+    if ($v -match '^(无|没有|不适用)?(?=$|[。.，,（(\s])') { '' } else { $v }
+}
+# "补跑：<命令> → 退出 0"：认"退出 0 / 退出码 0"，或"→ 0"后面紧跟结尾或标点（"→ 0 passed, 3 failed"不算）。
+function Test-Rerun([string]$t) { $t -match '补跑[：:][^；;\r\n]*(退出(码)?[ \t　]*0(?!\d)|→[ \t　]*0(?=[ \t　]*($|[（(；;。，,])))' }
 function Invoke-Git([string[]]$a) { $o = @(git -C $Repo -c core.quotePath=false @a 2>$null); [pscustomobject]@{ Out = $o; Code = $LASTEXITCODE } }
 
 $top = Invoke-Git @('rev-parse', '--show-toplevel')
@@ -67,10 +77,16 @@ else {
         $b = $Matches[1]; $h = $Matches[2]
         if (-not $at.StartsWith($h.ToLower())) { $bad.Add("$s7 的 note 写的覆盖范围是 ..$h，不是这个提交"); break }
         if ($text -notmatch 'Pass') { $bad.Add("$s7 的 note 里没有 Pass 结论"); break }
-        if ($text -match '没跑：\s*([^；;\r\n]*)' -and $Matches[1].Trim() -notmatch '^(无|没有)?$') {
-            $skipped = $Matches[1].Trim()
-            if ($text -notmatch '补跑：[^；;\r\n]*(退出(码)?|→)\s*0(?!\d)') { $bad.Add("$s7 的 note 写了没跑：$skipped，还没有补跑：按 land.md 第 2 节在这个 head 上补跑，再用 git notes --ref=verify append 补一句 `"补跑：<命令> → 退出 0`""); break }
+        $skipped = Get-Skipped $text; $rerun = Test-Rerun $text; $from = ''
+        if ($text -match '沿用[ \t　]*([0-9a-fA-F]{7,40})') {
+            $orig = Invoke-Git @('notes', '--ref=verify', 'show', $Matches[1])
+            if (-not $orig.Code -and $orig.Out) {
+                $ot = $orig.Out -join "`n"
+                if (-not $skipped) { $skipped = Get-Skipped $ot; if ($skipped) { $from = "（沿用的 $($Matches[1]) 的 note 里）" } }
+                if (Test-Rerun $ot) { $rerun = $true }
+            }
         }
+        if ($skipped -and -not $rerun) { $bad.Add("$s7 的 note 写了没跑：$skipped$from，还没有补跑：按 land.md 第 2 节在这个 head 上补跑，再用 git notes --ref=verify append 补一句 `"补跑：<命令> → 退出 0`""); break }
         $base = (Invoke-Git @('rev-parse', '--verify', '--quiet', "$b^{commit}")).Out
         if (-not $base) { $bad.Add("$s7 的 note 覆盖范围的起点 $b 在仓库里找不到"); break }
         $base = $base[0]
