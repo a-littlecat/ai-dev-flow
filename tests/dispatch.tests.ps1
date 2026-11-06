@@ -159,7 +159,7 @@ try {
     $null = Run 'rev-related' 'ok' @('-Review', 'candidate')
     Check 'builderVerify related: reviewer still runs full verify' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '自己运行一次 `echo ok`')
 
-    Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head；因环境原因跑不全的写明哪些没跑')
+    Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head' -and (Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '(?m)^没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"')
 
     Write-Config @{ retry400Seconds = @(); keepReviewWorktree = $true }
     $r = Run 'rev-keep' 'ok+evidence' @('-Review', 'candidate')

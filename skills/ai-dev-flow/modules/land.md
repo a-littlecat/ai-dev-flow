@@ -12,7 +12,7 @@
 
 ## 2. 合并前
 
-任何一项不满足，就回到 `build.md` 或 `verify.md`，不要硬合。能机械判断的几项（检出主干、工作区干净、能快进、`diff --check`、head 上有覆盖它的 Pass note）由脚本查，在主项目工作区运行：
+任何一项不满足，就回到 `build.md` 或 `verify.md`，不要硬合。能机械判断的几项（检出主干、工作区干净、能快进、`diff --check`、head 上有覆盖它的 Pass note、note 里"没跑："的检查已经补跑）由脚本查，在主项目工作区运行：
 
 ```powershell
 pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk <主干>]
@@ -23,7 +23,7 @@ pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk <�
 
 - 分支已按 `build.md` 第 4 节定稿：rebase 到主干、整理好提交、写好提交正文。
 - 独立验证结论是 Pass，对应的就是现在的 head，没有未处理的 P0 / P1：`git notes --ref=verify show <head>` 能看到这条记录（`verify.md` 第 6 节），或者按 `verify.md` 第 5 节的例外补的沿用记录。只改纯文档的，按 `verify.md` 第 1 节的例外，逐条核对过文档即可。
-- 快检在最终版本上通过过。**同一份代码只跑一次**：验证方在某个 head 上完整跑过快检并通过，这次就算数，你核对时和合并后都不再重跑。只有两种情况你要在最终 head 上补跑一次：验证方因环境原因没跑全；最终 head 和验证方的 head 之间有非纯文档的差别（例如合进主干后带进了别的代码），用 `git diff --name-only <验证方 head> <最终 head>` 看。
+- 快检在最终版本上通过过。**同一份代码只跑一次**：验证方在某个 head 上完整跑过快检并通过，这次就算数，你核对时和合并后都不再重跑。只有两种情况你要在最终 head 上补跑一次：验证方因环境原因没跑全（note 里"没跑："不是"无"，补跑结果按 `verify.md` 第 6 节追加到 note，合并之前做，不留到合并之后）；最终 head 和验证方的 head 之间有非纯文档的差别（例如合进主干后带进了别的代码），用 `git diff --name-only <验证方 head> <最终 head>` 看。
 - 按影响面选出的慢验证，在这个 head 上已经通过；结果对应的 head 和这个 head 之间只差纯文档的，同样算数。结果还没回来的，保持待合并，先做别的。
 - 分支的 head 是主干的直接后代，可以快进。主干在验证期间前进了的，回到 `build.md` 第 4 节重新定稿、按 `verify.md` 第 5 节复验，不拿旧结论合并；rebase 后只多了纯文档改动的，按那里的例外沿用结论。
 - 主项目工作区干净：`git status --short`。

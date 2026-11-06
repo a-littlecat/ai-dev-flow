@@ -56,6 +56,28 @@ try {
     Check 'stacked on an unverified candidate: refused at the lower commit' ($r.Code -eq 1 -and $r.Text -match "$($b1.Substring(0, 7)) 上没有 verify note")
     Note $b1 $c0
 
+    Branch 'notrun' $b1
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($b1.Substring(0, 7))；子 agent → Pass；跑了：verify → 0；没跑：宿主测试（沙箱拦了）" $b1
+    $r = Run 'notrun'
+    Check 'note with a skipped check and no rerun: refused' ($r.Code -eq 1 -and $r.Text -match '写了没跑：宿主测试（沙箱拦了），还没有补跑')
+    $null = G notes --ref=verify append -m "补跑：verify.ps1 → 退出 1（$($b1.Substring(0, 7))）" $b1
+    $r = Run 'notrun'
+    Check 'rerun that failed does not count' ($r.Code -eq 1 -and $r.Text -match '还没有补跑')
+    $null = G notes --ref=verify append -m "补跑：verify.ps1 → 退出 0（$($b1.Substring(0, 7))）" $b1
+    $r = Run 'notrun'
+    Check 'skipped check rerun with exit 0: passes' ($r.Code -eq 0)
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($b1.Substring(0, 7))；子 agent → Pass；跑了：verify → 0；没跑：无" $b1
+    $r = Run 'notrun'
+    Check 'nothing skipped: passes' ($r.Code -eq 0)
+    $null = G checkout -q -b stacknr ok
+    $n2 = Commit 'src/n.ps1' "n`n"
+    Note $n2 $b1
+    $null = G checkout -q main
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($b1.Substring(0, 7))；子 agent → Pass；没跑：全量快检" $b1
+    $r = Run 'stacknr'
+    Check 'skipped check on the lower commit of a stack: refused' ($r.Code -eq 1 -and $r.Text -match "$($b1.Substring(0, 7)) 的 note 写了没跑：全量快检")
+    Note $b1 $c0
+
     $null = G checkout -q -b docs main
     $d1 = Commit 'docs/说明.md' "文档`n"
     $null = G checkout -q main
