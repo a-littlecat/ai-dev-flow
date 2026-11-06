@@ -1,0 +1,1 @@
+覆盖：33fc458..2aa22f3；Claude Opus 5.5 子 agent（全新上下文，high）三轮 → Pass（d3fc128 Fix：沿用 note 丢没跑 P1＋冒号/→0/无的写法 P2；f4380df Pass 附 4 条 P2 已修；2aa22f3 Pass）；跑了：tests/land-check.tests.ps1 → 退出 0，tests/dispatch.tests.ps1 → 退出 0，check-md.ps1 → 退出 0（head 2aa22f3）；改坏验证：顺链读取改成只读一层 → two-level carry-over 红，恢复后 diff 为空；没跑：无；没采纳：多项没跑只补一项也放行、补跑括号里的 head 不核对（设计取舍）
