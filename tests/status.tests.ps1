@@ -247,13 +247,15 @@ try {
 | 3 | 能领的项 | 无 | 待做 |
 | 4 | 写法不对 | 无 | 暂停于安全点 |
 | 5 | 做完了 | 无 | 完成 |
+| 6 | 等别处 | 无 | 待用户（不急，等导图提出再开） |
+| 7 | 长记录 | 无 | 待用户（LONGLOG） |
 
 | 目标 | 状态 |
 |---|---|
 | 没编号等你 | 待用户（看报告） |
 | 没编号在做 | 在做 |
 | 没编号做完了 | 完成 |
-'@ | Set-Content -LiteralPath (Join-Path $c 'docs/queue.md') -Encoding utf8NoBOM
+'@ -replace 'LONGLOG', ('过程' * 160) | Set-Content -LiteralPath (Join-Path $c 'docs/queue.md') -Encoding utf8NoBOM
     G -C $c add -A; G -C $c commit -q -m 'c1'
     $cfgC = Join-Path $root 'projects-c.json'
     @{ projects = @(@{ name = '项目 C'; path = $c; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgC -Encoding utf8NoBOM
@@ -266,6 +268,8 @@ try {
     Check 'no lessons or requests file: nothing due, no hint' (-not $pc.LessonsDue -and -not $pc.Requests -and -not ($pc.Problems -match '教训|请求'))
     Check 'no number: no lone # in the text' ($tc -match '待用户 没编号等你：看报告' -and $tc -notmatch '# 没编号' -and $tc -notmatch '待用户 #\s')
     Check 'no runs dir: no dead runs' (-not $pc.DeadRuns -and -not ($pc.Problems -match '运行死了'))
+    Check 'waiting hints: shelved-like, process log, plain ask untouched' ((($pc.Waiting | ForEach-Object { "$($_.Id)=$($_.Hint)" }) -join ';') -eq '6=像搁置;7=过程记录;=' -and [bool]($pc.Problems -match '^待用户项像是搁置.*：#6；') -and [bool]($pc.Problems -match '^待用户项的状态格写成了过程记录.*：#7；'))
+    Check 'waiting hints: none on ordinary asks' (-not ($pa.Problems -match '^待用户项'))
 
     $dd = Join-Path $root '项目 D'
     G init -q $dd; G -C $dd commit -q --allow-empty -m 'd1'
@@ -291,7 +295,10 @@ try {
     $pageC = Join-Path $root 'out/status-c.html'
     $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify
     $htmlC = Get-Content -LiteralPath $pageC -Raw -Encoding UTF8
-    Check 'daily: shelved left out of progress, shown in the details' ($htmlC -match '完成 2 / 共 7 项' -and $htmlC -match '&#183; 搁置 1')
+    Check 'daily: shelved left out of progress, shown in the details' ($htmlC -match '完成 2 / 共 9 项' -and $htmlC -match '&#183; 搁置 1')
+    Check 'daily: shelved-like ask listed apart with the command to shelve it' ($htmlC -match '像是已经说过先不做：#6 等别处' -and $htmlC -match '<code>#6 改成搁置</code>' -and $htmlC -notmatch '等你定 #6')
+    $ncC = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -State (Join-Path $root 'out/daily-c.json') -DryRun | Out-String
+    Check 'daily: shelved-like ask not counted, mentioned once' ($ncC -match '要你管 2 件事' -and $ncC -match '另有 1 件像是已经说过先不做' -and $ncC -notmatch '#6 等别处 等你定')
     $wc = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'watch.ps1') -Config $cfgC -State (Join-Path $root 'out/watch-c.json') -StaleMinutes 0 -DryRun | Out-String
     Check 'watch: no lone # for an unnumbered item' ($wc -match '项目 C：没编号在做' -and $wc -notmatch '# 没编号')
 
@@ -354,7 +361,37 @@ try {
     $w4 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun 2>$null | Out-String
     $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 2>$null
     Check 'watch: broken state file does not stop alerts and is rewritten' ($w4 -match '可能停了' -and $LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|' -and -not (Test-Path -LiteralPath "$wstate.tmp"))
+    $dstate = Join-Path $root 'out/daily-state.json'
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $d1 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String
+    Check 'daily: first push goes to the phone, dry run keeps no state' ($d1 -match 'bark: yes' -and $d1 -notmatch '新：' -and -not (Test-Path -LiteralPath $dstate))
+    $env:AI_DEV_FLOW_NOTIFY = $wq
+    $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate
+    Check 'daily: pushed asks are remembered' ($LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $dstate -Raw -Encoding UTF8) -match '项目 A\|#2\|看界面')
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $d2 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String
+    Check 'daily: same asks again stay on the desktop' ($d2 -match 'bark: no' -and $d2 -match 'title: .*要你管 4 件事（都推过）')
+    (Get-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 11 \| 没有依赖 \| 绿 \| 自走 \| 无 \| 待做 \|', '| 11 | 没有依赖 | 绿 | 自走 | 无 | 待用户（新问题） |' | Set-Content -LiteralPath (Join-Path $a 'docs/queue.md') -Encoding utf8NoBOM -NoNewline
+    $d3 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String
+    Check 'daily: a new ask goes to the phone, marked and listed first' ($d3 -match 'bark: yes' -and $d3 -match '(?s)body: 新：项目 A：#11 没有依赖 等你定.*项目 A：#2' -and $d3 -notmatch '新：项目 A：#2')
+    '{"pushed":[' | Set-Content -LiteralPath $dstate
+    $d4 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun 2>$null | Out-String
+    Check 'daily: broken state file still pushes' ($d4 -match 'bark: yes')
     Remove-Item Env:AI_DEV_FLOW_NOTIFY
+
+    $e = Join-Path $root '项目 E'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $e 'docs')
+    G init -q $e
+    "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n| 1 | 能领 | 无 | 待做 |" | Set-Content -LiteralPath (Join-Path $e 'docs/queue.md') -Encoding utf8NoBOM
+    G -C $e add -A; G -C $e commit -q -m 'e1'
+    $cfgE = Join-Path $root 'projects-e.json'
+    @{ projects = @(@{ name = '项目 E'; path = $e; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgE -Encoding utf8NoBOM
+    $pageE = Join-Path $root 'out/status-e.html'
+    $e1 = pwsh -NoProfile -File $daily -Config $cfgE -Out $pageE -State (Join-Path $root 'out/daily-e.json') -DryRun | Out-String
+    $htmlE = Get-Content -LiteralPath $pageE -Raw -Encoding UTF8
+    Check 'daily: recent activity without work in progress is not idle' ($htmlE -match '刚有动静' -and $e1 -notmatch '空着')
+    $e2 = pwsh -NoProfile -File $daily -Config $cfgE -Out $pageE -State (Join-Path $root 'out/daily-e.json') -StaleMinutes 0 -DryRun | Out-String
+    Check 'daily: quiet past -StaleMinutes is idle again' ($e2 -match '项目 E 空着，可以发 /next 开工')
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config $cfg -Project nobody 2>&1

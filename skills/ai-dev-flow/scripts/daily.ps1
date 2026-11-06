@@ -3,6 +3,7 @@ param(
     [string]$Config,
     [string]$Out,
     [int]$StaleMinutes = 60,
+    [string]$State,
     [switch]$NoNotify,
     [switch]$DryRun
 )
@@ -10,14 +11,20 @@ param(
 #   -Config   总览仓库的 projects.json（同 status.ps1）
 #   -Out      页面写到哪里，默认 %LOCALAPPDATA%\ai-dev-flow\status.html
 #   -NoNotify 只生成页面
-#   -DryRun   通知只打印不发（传给 notify.ps1）
+#   -State    上次通知推过哪些事，默认 %LOCALAPPDATA%\ai-dev-flow\daily-state.json
+#   -DryRun   通知只打印不发（传给 notify.ps1），也不改 -State
 # 页面固定三块：① 要你做（编号，附要发的命令）② 本周目标 ③ 各项目（状态标签，加 现在 / 进度 / 北极星 / 接下来 / 最近完成 五行，其余收进"细节"）。
 # 有待用户的项或可能停滞的项目时，通知级别为 user（按 notify.json 的配置会推到手机），否则为 info。
+# 只在有上次没推过的事时才用 user：和上次推过的一样，就降成 info，只弹系统通知，不再推手机。通知发不出去时不记，下次照常推。
+# 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）不算要你管的事，单列在页面上，附改成搁置的命令。
+# 推进中的项目没有在做的项、但最近 StaleMinutes 分钟内有动静的，标"刚有动静"，不算空着：会话可能正在两项之间。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $here = $PSScriptRoot
 if (-not $Out) { $Out = Join-Path $env:LOCALAPPDATA 'ai-dev-flow/status.html' }
 $Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
+if (-not $State) { $State = Join-Path $env:LOCALAPPDATA 'ai-dev-flow/daily-state.json' }
+$State = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($State)
 
 $statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes)
 if ($Config) { $statusArgs += '-Config', $Config }
@@ -33,20 +40,25 @@ function Item($i, [int]$n = 24) { $t = "$(if ($i.Id) { '#' + (Cut $i.Id 8) }) $(
 function Lines($list, [int]$n = 28) { $x = @($list | Where-Object { $_ }); if ($x) { ($x | ForEach-Object { Enc (Item $_ $n) }) -join '<br>' } else { '无' } }
 function Answer($i) { if ($i.Id) { "/next #$(($i.Id -replace '^#', '').Trim()) 你的答复" } else { '/next 你的答复' } }
 function IsStalled($p) { [bool](@($p.Problems) -match '^可能停滞') }
-# 状态标签：可能停了 > 等你 > 在做 > 空着 > 没活；维护中的项目单列
+function Asks($p) { @(@($p.Waiting) | Where-Object { $_.Hint -ne '像搁置' }) }
+function Recent($p) { $null -ne $p.IdleMinutes -and $p.IdleMinutes -lt $StaleMinutes }
+function Label($i) { if ($i.Id) { '#' + (($i.Id -replace '^#', '').Trim()) } else { "「$(Cut $i.Goal 20)」" } }
+# 状态标签：可能停了 > 等你 > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
 function State($p) {
     if ($p.Status -eq '维护') { return @('维护中', 'muted') }
     if (IsStalled $p) { return @('可能停了', 'bad') }
-    if (@($p.Waiting).Count) { return @('等你', 'warn') }
+    if ((Asks $p).Count) { return @('等你', 'warn') }
     if (@($p.Doing).Count) { return @('在做', 'ok') }
+    if ($p.Available -and (Recent $p)) { return @('刚有动静', 'ok') }
     if ($p.Available) { return @('空着，可开工', 'idle') }
     @('没有能做的项', 'muted')
 }
 
 $active = @($s.Projects)
-$waiting = @(foreach ($p in $active) { foreach ($w in @($p.Waiting)) { [pscustomobject]@{ Project = $p.Name; Item = $w } } })
+$waiting = @(foreach ($p in $active) { foreach ($w in Asks $p) { [pscustomobject]@{ Project = $p.Name; Item = $w } } })
+$shelvedLike = @(foreach ($p in $active) { foreach ($w in @(@($p.Waiting) | Where-Object { $_.Hint -eq '像搁置' })) { [pscustomobject]@{ Project = $p.Name; Item = $w } } })
 $stalled = @($active | Where-Object { IsStalled $_ })
-$free = @($active | Where-Object { $_.Status -eq '推进中' -and $_.Available -and -not @($_.Doing).Count -and -not (IsStalled $_) })
+$free = @($active | Where-Object { $_.Status -eq '推进中' -and $_.Available -and -not @($_.Doing).Count -and -not (IsStalled $_) -and -not (Recent $_) })
 $n = $waiting.Count + $stalled.Count
 $summary = @(if ($n) { "要你管 $n 件事" } else { '暂时没有要你管的事' }) +
     @($active | Where-Object Status -eq '推进中' | ForEach-Object { "$(Nick $_.Name)：$((State $_)[0])" })
@@ -88,6 +100,10 @@ foreach ($p in $stalled) {
     $d = @($p.Doing)[0]
     $todo.Add("<li><b>$(Enc (Nick $p.Name))</b> 可能停了：$(if ($d) { Enc (Item $d 40) } else { '在做的项' }) 已经 $(Ago $p.IdleMinutes)没动静<div class=`"how`">到这个项目新建会话，发 <code>/next$(if ($d -and $d.Id) { ' #' + (Enc (($d.Id -replace '^#', '').Trim())) })</code> 接着做</div></li>")
 }
+foreach ($w in $shelvedLike) {
+    $i = $w.Item
+    $todo.Add("<li><b>$(Enc (Nick $w.Project))</b> 像是已经说过先不做：$(Enc (Item $i 40))$(if ($i.Detail) { '：' + (Enc (Cut $i.Detail 120)) })<div class=`"how`">不算要你管的事。下次在这个项目发 /next 时带上 <code>$(Enc "$(Label $i) 改成搁置")</code>；其实还要你定的，直接回答案</div></li>")
+}
 foreach ($p in $free) { $todo.Add("<li><b>$(Enc (Nick $p.Name))</b> 空着，有 $($p.Available) 项可以开工<div class=`"how`">到这个项目新建会话，发 <code>/next</code></div></li>") }
 $null = $b.Append('<h2>① 要你做</h2><div class="card">')
 $null = $b.Append($(if ($todo.Count) { '<ol>' + ($todo -join '') + '</ol>' } else { '<span class="muted">暂时没有要你处理的事</span>' }) + '</div>')
@@ -113,7 +129,7 @@ foreach ($p in $active) {
     $doing = @($p.Doing)
     $now = if (IsStalled $p) { "$(Lines $doing)<br><span class=`"muted`">$(Ago $p.IdleMinutes)没动静</span>" }
            elseif ($doing) { Lines $doing }
-           elseif (@($p.Waiting).Count) { "等你定：$(Lines $p.Waiting)" }
+           elseif ((Asks $p).Count) { "等你定：$(Lines (Asks $p))" }
            elseif ($p.Available) { "空着，有 $($p.Available) 项可以开工" }
            elseif ($p.Queue) { '没有能做的项' } else { '还没有队列' }
     $prog = if ($p.Queue) {
@@ -152,16 +168,38 @@ Set-Content -LiteralPath $Out -Value $b.ToString() -Encoding utf8NoBOM
 $Out
 
 if (-not $NoNotify) {
+    # 每件要你管的事一个键；和上次推过的比，有新的才推手机
+    $events = @(
+        foreach ($w in $waiting) { [pscustomobject]@{ Key = "$($w.Project)|$(Label $w.Item)|$(Cut $w.Item.Goal 40)"; Line = "$(Nick $w.Project)：$(Item $w.Item) 等你定"; Ask = $true } }
+        foreach ($p in $stalled) { $d = @($p.Doing)[0]; [pscustomobject]@{ Key = "$($p.Name)|停滞|$((@($p.Doing) | ForEach-Object { $_.Id }) -join ',')|$($p.LastActivity)"; Line = "$(Nick $p.Name)：$(if ($d) { Item $d } else { '在做的项' }) 已 $(Ago $p.IdleMinutes)没动静，可能停了"; Ask = $false } }
+    )
+    $pushed = @(if (Test-Path -LiteralPath $State) {
+        try { (Get-Content -LiteralPath $State -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop).pushed }
+        catch { [Console]::Error.WriteLine("daily.ps1 ignores unreadable state ${State}: $($_.Exception.Message)") }
+    })
+    foreach ($e in $events) { $e | Add-Member -NotePropertyName New -NotePropertyValue ($pushed -notcontains $e.Key) }
+    $fresh = @($events | Where-Object New)
+    $mixed = $fresh.Count -and $fresh.Count -lt $events.Count
+    $show = { param($e) "$(if ($mixed -and $e.New) { '新：' })$($e.Line)" }
+    $asks = @(@($events | Where-Object { $_.Ask -and $_.New }) + @($events | Where-Object { $_.Ask -and -not $_.New }))
     $lines = [Collections.Generic.List[string]]::new()
-    foreach ($w in $waiting | Select-Object -First 5) { $lines.Add("$(Nick $w.Project)：$(Item $w.Item) 等你定") }
-    if ($waiting.Count -gt 5) { $lines.Add("另有 $($waiting.Count - 5) 件等你定，见状态页") }
-    foreach ($p in $stalled) { $d = @($p.Doing)[0]; $lines.Add("$(Nick $p.Name)：$(if ($d) { Item $d } else { '在做的项' }) 已 $(Ago $p.IdleMinutes)没动静，可能停了") }
+    foreach ($e in $asks | Select-Object -First 5) { $lines.Add((& $show $e)) }
+    if ($asks.Count -gt 5) { $lines.Add("另有 $($asks.Count - 5) 件等你定，见状态页") }
+    foreach ($e in $events | Where-Object { -not $_.Ask }) { $lines.Add((& $show $e)) }
+    if ($shelvedLike) { $lines.Add("另有 $($shelvedLike.Count) 件像是已经说过先不做，不算要你管，见状态页") }
     if ($free) { $lines.Add("$((@($free | ForEach-Object { Nick $_.Name })) -join '、') 空着，可以发 /next 开工") }
-    $title = if ($n) { "要你管 $n 件事" } elseif ($free) { '有项目可以开工' } else { '暂时没有要你管的事' }
+    $title = if ($n -and -not $fresh) { "要你管 $n 件事（都推过）" } elseif ($n) { "要你管 $n 件事" } elseif ($free) { '有项目可以开工' } else { '暂时没有要你管的事' }
     if (-not $lines.Count) { $lines.Add('点开看各项目进度') }
-    $level = if ($n) { 'user' } else { 'info' }
+    $level = if ($fresh) { 'user' } else { 'info' }
     $notifyArgs = @('-Title', $title, '-Body', ($lines -join "`n"), '-Level', $level, '-Open', $Out)
     if ($DryRun) { $notifyArgs += '-DryRun' }
     & pwsh -NoProfile -File (Join-Path $here 'notify.ps1') @notifyArgs
-    exit $LASTEXITCODE
+    $code = $LASTEXITCODE
+    if (-not $DryRun -and -not $code) {
+        $null = New-Item -ItemType Directory -Force -Path (Split-Path $State)
+        $tmp = "$State.tmp"
+        [ordered]@{ checked = (Get-Date).ToString('yyyy-MM-dd HH:mm'); pushed = @($events | ForEach-Object Key) } | ConvertTo-Json | Set-Content -LiteralPath $tmp -Encoding utf8NoBOM
+        Move-Item -LiteralPath $tmp -Destination $State -Force
+    }
+    exit $code
 }

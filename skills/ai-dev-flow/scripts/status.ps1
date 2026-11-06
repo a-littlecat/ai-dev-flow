@@ -27,6 +27,7 @@ param(
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
+# 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着不急 / 先停 / 暂停 / 搁置 / 等…提出 这类话的是"像搁置"；都写成"提示"。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
@@ -193,7 +194,17 @@ function Get-ProjectStatus($p) {
         $counts = [ordered]@{}
         foreach ($s in $states + '其他') { $counts[$s] = @($items | Where-Object State -eq $s).Count }
         $r.Queue = $counts
+        # 待用户只写现在要定的（skills/next/SKILL.md 第 5 节）。状态格很长的多半是过程记录；短的里写着先不做、在等别处的，多半该是搁置。
+        foreach ($w in @($items | Where-Object State -eq '待用户')) {
+            $hint = if ($w.Detail.Length -gt 300) { '过程记录' } elseif ($w.Detail -match '不急|先停|先不做|暂停|搁置|不主动做|等.{0,20}(提出|结果|跑通|下来|再开|再做|再定)') { '像搁置' } else { '' }
+            $w | Add-Member -NotePropertyName Hint -NotePropertyValue $hint
+        }
         $r.Waiting = @($items | Where-Object State -eq '待用户')
+        $label = { if ($_.Id) { Format-Id $_.Id } else { Short $_.Goal 20 } }
+        $shelvedLike = @($r.Waiting | Where-Object Hint -eq '像搁置')
+        if ($shelvedLike) { $r.Problems.Add("待用户项像是搁置（写着先不做或在等别处）：$(($shelvedLike | ForEach-Object $label) -join '、')；用户说过先不做的改成 搁置（<恢复条件>）") }
+        $logLike = @($r.Waiting | Where-Object Hint -eq '过程记录')
+        if ($logLike) { $r.Problems.Add("待用户项的状态格写成了过程记录（超过 300 字）：$(($logLike | ForEach-Object $label) -join '、')；只留现在要用户定的，过程写进提交正文") }
         $r.Doing = @($items | Where-Object State -eq '在做')
         $other = @($items | Where-Object State -eq '其他')
         $r.Other = $other
