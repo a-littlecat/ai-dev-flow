@@ -19,15 +19,15 @@ param(
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
-# "没跑："后面写的检查；没写这一项，或写的是 无 / 没有 / 不适用，返回空。只看同一行，到分号为止。
+# "没跑："后面写的检查；没写这一项，写的是 无 / 没有 / 不适用，或照模板写了"同原 note"，返回空（后者再去读沿用的原 note）。只看同一行，到分号为止。
 function Get-Skipped([string]$t) {
     $m = [regex]::Match($t, '没跑[：:][ \t　]*([^；;\r\n]*)')
     if (-not $m.Success) { return '' }
     $v = $m.Groups[1].Value.Trim()
-    if ($v -match '^(无|没有|不适用)?(?=$|[。.，,（(\s])') { '' } else { $v }
+    if (-not $v -or $v -match '^(无|没有|不适用)(?=$|[。.，,（(\s])' -or $v -match '^同原') { '' } else { $v }
 }
 # "补跑：<命令> → 退出 0"：认"退出 0 / 退出码 0"，或"→ 0"后面紧跟结尾或标点（"→ 0 passed, 3 failed"不算）。
-function Test-Rerun([string]$t) { $t -match '补跑[：:][^；;\r\n]*(退出(码)?[ \t　]*0(?!\d)|→[ \t　]*0(?=[ \t　]*($|[（(；;。，,])))' }
+function Test-Rerun([string]$t) { $t -match '(?m)补跑[：:][^；;\r\n]*(退出(码)?[ \t　]*0(?!\d)|→[ \t　]*0(?=[ \t　]*(\r?$|[（(；;。，,])))' }
 function Invoke-Git([string[]]$a) { $o = @(git -C $Repo -c core.quotePath=false @a 2>$null); [pscustomobject]@{ Out = $o; Code = $LASTEXITCODE } }
 
 $top = Invoke-Git @('rev-parse', '--show-toplevel')
@@ -78,13 +78,15 @@ else {
         if (-not $at.StartsWith($h.ToLower())) { $bad.Add("$s7 的 note 写的覆盖范围是 ..$h，不是这个提交"); break }
         if ($text -notmatch 'Pass') { $bad.Add("$s7 的 note 里没有 Pass 结论"); break }
         $skipped = Get-Skipped $text; $rerun = Test-Rerun $text; $from = ''
-        if ($text -match '沿用[ \t　]*([0-9a-fA-F]{7,40})') {
-            $orig = Invoke-Git @('notes', '--ref=verify', 'show', $Matches[1])
-            if (-not $orig.Code -and $orig.Out) {
-                $ot = $orig.Out -join "`n"
-                if (-not $skipped) { $skipped = Get-Skipped $ot; if ($skipped) { $from = "（沿用的 $($Matches[1]) 的 note 里）" } }
-                if (Test-Rerun $ot) { $rerun = $true }
-            }
+        # 沿用可能连着几层（只多文档、rebase 了几次）：一直读到没有"沿用"为止，每层的没跑和补跑都算
+        $t = $text; $hops = @{}
+        while ($t -match '沿用[ \t　]*([0-9a-fA-F]{7,40})' -and -not $hops[$Matches[1].ToLower()] -and $hops.Count -lt 50) {
+            $sha = $Matches[1]; $hops[$sha.ToLower()] = $true
+            $orig = Invoke-Git @('notes', '--ref=verify', 'show', $sha)
+            if ($orig.Code -or -not $orig.Out) { break }
+            $t = $orig.Out -join "`n"
+            if (-not $skipped) { $skipped = Get-Skipped $t; if ($skipped) { $from = "（沿用的 $sha 的 note 里）" } }
+            if (Test-Rerun $t) { $rerun = $true }
         }
         if ($skipped -and -not $rerun) { $bad.Add("$s7 的 note 写了没跑：$skipped$from，还没有补跑：按 land.md 第 2 节在这个 head 上补跑，再用 git notes --ref=verify append 补一句 `"补跑：<命令> → 退出 0`""); break }
         $base = (Invoke-Git @('rev-parse', '--verify', '--quiet', "$b^{commit}")).Out

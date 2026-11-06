@@ -85,7 +85,10 @@ try {
             @{ n = 'rerun "→ 0（head）" counts'; t = '；没跑：宿主测试；补跑：npm test → 0（abc）'; code = 0 },
             @{ n = '"没跑：无。" passes'; t = '；没跑：无。没采纳：无'; code = 0 },
             @{ n = '"没跑：不适用" passes'; t = '；没跑：不适用'; code = 0 },
-            @{ n = 'empty 没跑 does not swallow the next line'; t = "；没跑：`n说明：见上"; code = 0 })) {
+            @{ n = 'empty 没跑 does not swallow the next line'; t = "；没跑：`n说明：见上"; code = 0 },
+            @{ n = 'value starting with a bracket or dot is a real skip'; t = '；没跑：（沙箱拦了）宿主测试'; code = 1 },
+            @{ n = 'value ".github CI" is a real skip'; t = '；没跑：.github CI（沙箱无网络）'; code = 1 },
+            @{ n = 'rerun "→ 0" followed by another note line counts'; t = "；没跑：宿主测试`n补跑：verify.ps1 → 0`n备注：见证据目录"; code = 0 })) {
         $null = G notes --ref=verify add -f -m "$base7$($case.t)" $b1
         $r = Run 'notrun'
         Check "skipped field: $($case.n)" ($r.Code -eq $case.code)
@@ -102,6 +105,25 @@ try {
     $null = G notes --ref=verify append -m "补跑：verify.ps1 → 退出 0（$($x1.Substring(0, 7))）" $x1
     $r = Run 'carry'
     Check 'carried-over note with a rerun on the new head: passes' ($r.Code -eq 0)
+
+    $null = G notes --ref=verify add -f -m "$base7；没跑：宿主测试（沙箱拦了）；补跑：verify.ps1 → 退出 0" $b1
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($x1.Substring(0, 7))；沿用 $($b1.Substring(0, 7)) 的 Pass（子 agent）；没采纳：无" $x1
+    $r = Run 'carry'
+    Check 'carried-over note whose original was rerun: passes' ($r.Code -eq 0)
+
+    $null = G notes --ref=verify add -f -m "$base7；没跑：无" $b1
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($x1.Substring(0, 7))；沿用 $($b1.Substring(0, 7)) 的 Pass（子 agent）；没跑：同原 note；没采纳：同原 note" $x1
+    $r = Run 'carry'
+    Check 'carried-over "没跑：同原 note" reads the original' ($r.Code -eq 0)
+
+    $null = G notes --ref=verify add -f -m "$base7；没跑：宿主测试（沙箱拦了）" $b1
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($x1.Substring(0, 7))；沿用 $($b1.Substring(0, 7)) 的 Pass（子 agent）；没采纳：无" $x1
+    $null = G checkout -q -b carry2 carry
+    $x2 = Commit 'docs/y.md' "y`n"
+    $null = G checkout -q main
+    $null = G notes --ref=verify add -f -m "覆盖：$($c0.Substring(0, 7))..$($x2.Substring(0, 7))；沿用 $($x1.Substring(0, 7)) 的 Pass（子 agent）；没采纳：无" $x2
+    $r = Run 'carry2'
+    Check 'two-level carry-over still finds the unrerun skip' ($r.Code -eq 1 -and $r.Text -match "沿用的 $($b1.Substring(0, 7)) 的 note 里")
     Note $b1 $c0
 
     $null = G checkout -q -b docs main
