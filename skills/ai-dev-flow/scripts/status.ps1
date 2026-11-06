@@ -27,7 +27,7 @@ param(
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
-# 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…"不算）；都写成"提示"。
+# 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…""要不要先停"不算；说明 / 备注列只认 先不做 / 先不改 / 本周暂停 / 不主动做）；都写成"提示"。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
 # 只读各项目：不 fetch，不改项目里的任何文件；git 不拿可选锁，不刷新项目的索引，不和项目会话的提交抢 index.lock。
 $ErrorActionPreference = 'Stop'
@@ -56,8 +56,10 @@ if (Test-Path -LiteralPath $marksFile) {
 }
 
 $states = '待做', '在做', '待验证', '待用户', '完成', '搁置'
-# 待用户项里像"先不做 / 在等别处"的说法。"等你…"是在问用户，不算；"暂停""不急"单独出现常在问句里（要不要暂停、不急着要），只认带停顿的写法。
-$shelvedWords = '不急[，,。；;）)]|不急$|先停|先不做|先不改|先暂停|本周暂停|搁置|不主动做|再说|等(?!你).{0,40}?(提出|结果|跑通|下来|再开|再做|再定)'
+# 待用户项里像"先不做 / 在等别处"的说法。"等你 / 等您 / 等待…"是在问用户，不算；"暂停""不急"单独出现常在问句里（要不要暂停、不急着要），只认带停顿的写法。
+# 说明 / 备注列常写来龙去脉（"搁置过、已恢复"），只认更窄的几个词。判错只影响标签：像搁置的项照常算要你管（daily.ps1）。
+$shelvedWords = '不急[，,。；;）)]|不急$|(?<!要不要)先停|先不做|先不改|(?<!要不要)先暂停|本周暂停|搁置|不主动做|等(?!你|您|待).{0,40}?(提出|结果|跑通|下来|再开|再做|再定)'
+$noteWords = '先不做|先不改|本周暂停|不主动做'
 $statusOrder = @{ '推进中' = 0; '维护' = 1; '暂停' = 2 }
 
 function Format-Idle([int]$m) {
@@ -199,7 +201,7 @@ function Get-ProjectStatus($p) {
         $r.Queue = $counts
         # 待用户只写现在要定的（skills/next/SKILL.md 第 5 节）。状态格很长的多半是过程记录；短的里写着先不做、在等别处的，多半该是搁置。
         foreach ($w in @($items | Where-Object State -eq '待用户')) {
-            $hint = if ($w.Detail.Length -gt 300) { '过程记录' } elseif ("$($w.Detail) $($w.Note)" -match $shelvedWords) { '像搁置' } else { '' }
+            $hint = if ($w.Detail.Length -gt 300) { '过程记录' } elseif ($w.Detail.Trim() -match $shelvedWords -or "$($w.Note)" -match $noteWords) { '像搁置' } else { '' }
             $w | Add-Member -NotePropertyName Hint -NotePropertyValue $hint
         }
         $r.Waiting = @($items | Where-Object State -eq '待用户')

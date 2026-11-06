@@ -252,6 +252,8 @@ try {
 | 8 | 真问题一 | 无 | 待用户（要不要合并：推荐合并；等你说可以就合并、再做 #12） |
 | 9 | 真问题二 | 无 | 待用户（要不要暂停 watch 的计划任务；A 简单但不急着要，推荐 A） |
 | 10 | 用户先不改 | 无 | 待用户（用户："先不改，用一段时间再说"；等 2.6.1 用过一段时间、看停下的频率再定） |
+| 11 | 真问题三 | 无 | 待用户（要不要合并：推荐合并，小问题合并后再说；要不要先停掉 watch；等您确认后合并） |
+| 12 | 只写不急 | 无 | 待用户（不急） |
 
 | 目标 | 状态 |
 |---|---|
@@ -262,6 +264,7 @@ try {
 | 项 | 状态 | 说明 / 提交 |
 |---|---|---|
 | 说明写在别列 | 待用户 | 本周暂停（用户：先停，等本周结果） |
+| 说明只是历史 | 待用户（选 A 还是 B，推荐 A） | 11-01 搁置过，用户 11-05 恢复 |
 '@ -replace 'LONGLOG', ('过程' * 160) | Set-Content -LiteralPath (Join-Path $c 'docs/queue.md') -Encoding utf8NoBOM
     G -C $c add -A; G -C $c commit -q -m 'c1'
     $cfgC = Join-Path $root 'projects-c.json'
@@ -271,11 +274,11 @@ try {
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
     Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')
-    Check 'no number: open rows reported, done rows not' ([bool]($pc.Problems -match '没有编号的项：没编号等你、没编号在做、说明写在别列$'))
+    Check 'no number: open rows reported, done rows not' ([bool]($pc.Problems -match '没有编号的项：没编号等你、没编号在做、说明写在别列、说明只是历史$'))
     Check 'no lessons or requests file: nothing due, no hint' (-not $pc.LessonsDue -and -not $pc.Requests -and -not ($pc.Problems -match '教训|请求'))
     Check 'no number: no lone # in the text' ($tc -match '待用户 没编号等你：看报告' -and $tc -notmatch '# 没编号' -and $tc -notmatch '待用户 #\s')
     Check 'no runs dir: no dead runs' (-not $pc.DeadRuns -and -not ($pc.Problems -match '运行死了'))
-    Check 'waiting hints: shelved-like, process log, plain ask untouched' ((($pc.Waiting | ForEach-Object { "$($_.Id)=$($_.Hint)" }) -join ';') -eq '6=像搁置;7=过程记录;8=;9=;10=像搁置;=;=像搁置' -and [bool]($pc.Problems -match '^待用户项像是搁置.*：#6、#10、说明写在别列；') -and [bool]($pc.Problems -match '^待用户项的状态格写成了过程记录.*：#7；'))
+    Check 'waiting hints: shelved-like, process log, plain ask untouched' ((($pc.Waiting | ForEach-Object { "$($_.Id)=$($_.Hint)" }) -join ';') -eq '6=像搁置;7=过程记录;8=;9=;10=像搁置;11=;12=像搁置;=;=像搁置;=' -and [bool]($pc.Problems -match '^待用户项像是搁置.*：#6、#10、#12、说明写在别列；') -and [bool]($pc.Problems -match '^待用户项的状态格写成了过程记录.*：#7；'))
     Check 'waiting hints: none on ordinary asks' (-not ($pa.Problems -match '^待用户项'))
 
     $dd = Join-Path $root '项目 D'
@@ -302,10 +305,10 @@ try {
     $pageC = Join-Path $root 'out/status-c.html'
     $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -NoNotify
     $htmlC = Get-Content -LiteralPath $pageC -Raw -Encoding UTF8
-    Check 'daily: shelved left out of progress, shown in the details' ($htmlC -match '完成 2 / 共 13 项' -and $htmlC -match '&#183; 搁置 1')
-    Check 'daily: shelved-like ask listed apart with the command to shelve it' ($htmlC -match '像是已经说过先不做：#6 等别处' -and $htmlC -match '<code>#6 改成搁置</code>' -and $htmlC -notmatch '等你定 #6')
+    Check 'daily: shelved left out of progress, shown in the details' ($htmlC -match '完成 2 / 共 16 项' -and $htmlC -match '&#183; 搁置 1')
+    Check 'daily: shelved-like ask still listed, marked, with the command to shelve it' ($htmlC -match '等你定 #6 等别处（像已搁置）' -and $htmlC -match '<code>/next #6 改成搁置</code>' -and $htmlC -match '<code>/next #6 你的答复</code>')
     $ncC = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgC -Out $pageC -State (Join-Path $root 'out/daily-c.json') -DryRun | Out-String
-    Check 'daily: shelved-like ask not counted, mentioned once' ($ncC -match '要你管 4 件事' -and $ncC -match '另有 3 件像是已经说过先不做' -and $ncC -notmatch '#6 等别处 等你定')
+    Check 'daily: shelved-like asks still counted, real asks listed first' ($ncC -match '要你管 10 件事' -and $ncC -match 'body: 项目 C：#7 长记录 等你定' -and $ncC -match '#8 真问题一 等你定' -and $ncC -match '另有 5 件等你定' -and $ncC -notmatch '像已搁置')
     $wc = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'watch.ps1') -Config $cfgC -State (Join-Path $root 'out/watch-c.json') -StaleMinutes 0 -DryRun | Out-String
     Check 'watch: no lone # for an unnumbered item' ($wc -match '项目 C：没编号在做' -and $wc -notmatch '# 没编号')
 
