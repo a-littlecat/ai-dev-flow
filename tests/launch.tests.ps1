@@ -13,7 +13,7 @@ $log = Join-Path $root 'log.txt'
 $cfg = Join-Path $root 'projects.json'
 @{ projects = @(@{ name = '01 导图'; path = $projA; status = '推进中' }, @{ name = 'B 项目'; path = $projB; status = '推进中' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg -Encoding UTF8
 @'
-if ($args[0] -eq 'agents') { Get-Content -LiteralPath $env:FAKE_AGENTS -Raw; exit 0 }
+if ($args[0] -eq 'agents') { if ($env:FAKE_STDERR) { Write-Error 'Starting background service' -ErrorAction Continue }; Get-Content -LiteralPath $env:FAKE_AGENTS -Raw; exit 0 }
 if ($env:FAKE_UNTRUSTED) { 'Error: Workspace not trusted. Run claude in this folder first.'; exit 1 }
 $leak = @(Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC)' } | ForEach-Object { $_.Name }) -join ','
 @("cwd=$((Get-Location).Path)", "args=$($args -join '|')", "leak=$leak") | Set-Content -LiteralPath $env:FAKE_LOG -Encoding UTF8
@@ -23,7 +23,7 @@ $leak = @(Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC
 $fail = 0
 function Check($name, $cond) { if ($cond) { "ok   $name" } else { "FAIL $name"; $script:fail++ } }
 function Agents($list) { ConvertTo-Json -InputObject @($list) -Depth 4 | Set-Content -LiteralPath $agents -Encoding UTF8 }
-function S($cwd, $status = 'idle', $state = $null, $name = 's', $sid = [guid]::NewGuid().ToString()) { [ordered]@{ pid = 1; cwd = $cwd; kind = 'interactive'; sessionId = $sid; name = $name; status = $status; state = $state } }
+function S($cwd, $status = 'idle', $state = $null, $name = 's', $sid = [guid]::NewGuid().ToString(), $procId = 1) { $o = [ordered]@{ cwd = $cwd; kind = 'interactive'; sessionId = $sid; name = $name; status = $status; state = $state }; if ($procId) { $o.pid = $procId }; $o }
 function Run([string[]]$a) {
     Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
     $o = @(pwsh -NoProfile -File $Script @a 2>&1 | ForEach-Object { "$_" })
@@ -48,6 +48,23 @@ try {
     Agents @((S $projA 'busy' $null 'hq' 'caller-session'))
     $r = Run @('-Project', $projA)
     Check 'the calling session itself is ignored' ($r.Code -eq 0)
+
+    Agents @((S "$projA 2" 'busy' 'working' 'sibling'))
+    $r = Run @('-Project', $projA)
+    Check 'a sibling folder sharing the name prefix is not the project' ($r.Code -eq 0)
+
+    Agents @((S $projA 'busy' 'blocked' 'stopped-bg' ([guid]::NewGuid().ToString()) $null), (S $projB 'busy' 'working' 'p1' ([guid]::NewGuid().ToString()) $null), (S $projB 'busy' 'working' 'p2' ([guid]::NewGuid().ToString()) $null), (S $projB 'busy' 'working' 'p3' ([guid]::NewGuid().ToString()) $null))
+    $r = Run @('-Project', $projA)
+    Check 'sessions whose process has stopped neither block the project nor count toward the cap' ($r.Code -eq 0)
+
+    Agents @()
+    $env:FAKE_STDERR = '1'
+    $r = Run @('-Project', $projA)
+    Check 'noise on stderr from claude agents does not break the JSON' ($r.Code -eq 0)
+    Remove-Item env:FAKE_STDERR
+
+    $r = Run @('-Project', $projA, '-Prompt', 'C:/Program Files/Git/next #7 按你的')
+    Check 'a prompt mangled into a path by Git Bash is refused' ($r.Code -eq 1 -and $r.Text -match 'PowerShell' -and -not $r.Log)
 
     Agents @((S $projB 'busy' 'working' 'b1'), (S $root 'busy' $null 'x2'), (S $root 'busy' 'working' 'x3'), (S $root 'idle' $null 'idle1'), (S $root 'idle' 'done' 'done1'))
     $r = Run @('-Project', $projA)
@@ -78,7 +95,7 @@ try {
     Check 'untrusted folder: exit 1 with how to fix' ($r.Code -eq 1 -and $r.Text -match '接受信任')
     Remove-Item env:FAKE_UNTRUSTED
 } finally {
-    foreach ($k in 'AI_DEV_FLOW_CLAUDE', 'FAKE_AGENTS', 'FAKE_LOG', 'FAKE_UNTRUSTED', 'CLAUDE_CODE_USER_EMAIL', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_SESSION_ID') { Remove-Item -LiteralPath "env:$k" -ErrorAction SilentlyContinue }
+    foreach ($k in 'AI_DEV_FLOW_CLAUDE', 'FAKE_AGENTS', 'FAKE_LOG', 'FAKE_UNTRUSTED', 'FAKE_STDERR', 'CLAUDE_CODE_USER_EMAIL', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_SESSION_ID') { Remove-Item -LiteralPath "env:$k" -ErrorAction SilentlyContinue }
     if ($Keep) { "kept: $root" } else { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
 }
 if ($fail) { "$fail failed"; exit 1 }

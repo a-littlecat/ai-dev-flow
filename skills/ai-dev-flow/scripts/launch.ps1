@@ -14,7 +14,9 @@ param(
 #   -Config   总览仓库的 projects.json，用来按名字找项目
 #   -Max      在做的会话（不含空闲、已结束的，也不含调用它的会话）达到这个数就不开，默认 3
 #   -DryRun   只打印会怎么开，不开
-# 开之前看 claude agents --json：这个项目里已经有会话（命令行、后台、桌面都算）就不开，打印它的名字，改用跨会话消息发给它。
+# 开之前看 claude agents --json：这个项目里已经有活着的会话（有进程的命令行、后台、桌面会话都算）就不开，打印它的名字，改用跨会话消息发给它。
+# 进程已经停了的后台会话（列表里没有 pid）收不到消息，不算，照常开新的。
+# 在 PowerShell 里运行。Git Bash 会把以 / 开头的参数（如 -Prompt '/next #7'）改成路径，脚本看到开场指令像盘符路径就拒绝。
 # 开的时候去掉从桌面应用继承来的 CLAUDE_*、ANTHROPIC_* 环境变量，否则新会话可能沿用桌面的登录。
 # 退出码：0 开好了（最后一行是 "launched <id> <名字>"）；3 项目里已有会话；4 在做的会话已到上限；1 其他错误（包括文件夹没被信任）。
 # 测试用环境变量 AI_DEV_FLOW_CLAUDE 换掉 claude 命令。
@@ -40,6 +42,7 @@ if (-not $dir) { Fail "找不到项目：$Project（给文件夹路径，或用 
 if (-not (Test-Path -LiteralPath $dir -PathType Container)) { Fail "项目文件夹不存在：$dir" }
 if (-not $label) { $label = Split-Path -Leaf $dir }
 if (-not $Name) { $Name = "$label next" }
+if ($Prompt -match '^[A-Za-z]:[\\/]') { Fail "开场指令像是被改成了路径：$Prompt（Git Bash 会把 /next 改成路径；在 PowerShell 里运行，或在 Bash 里加 MSYS_NO_PATHCONV=1）" }
 
 $saved = @{}
 Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC)' } | ForEach-Object { $saved[$_.Name] = $_.Value }
@@ -48,9 +51,10 @@ function Restore { foreach ($k in $saved.Keys) { Set-Item -LiteralPath "env:$k" 
 
 try {
     Clean
-    $raw = & $claude agents --json 2>&1 | Out-String
-    if ($LASTEXITCODE) { Fail "claude agents --json 失败：$($raw.Trim())" }
-    $sessions = @(if ($raw.Trim()) { $raw | ConvertFrom-Json })
+    $errs = [Collections.Generic.List[string]]::new()
+    $raw = & $claude agents --json 2>&1 | ForEach-Object { if ($_ -is [Management.Automation.ErrorRecord]) { $errs.Add("$_") } else { $_ } } | Out-String
+    if ($LASTEXITCODE) { Fail "claude agents --json 失败：$((@($errs) + $raw.Trim()) -join ' ')" }
+    $sessions = @(@(if ($raw.Trim()) { $raw | ConvertFrom-Json }) | Where-Object { $_.pid })
     $inside = { param($s) $s.cwd -and ((Norm $s.cwd) -eq $dir -or (Norm $s.cwd).StartsWith("$dir\", [StringComparison]::OrdinalIgnoreCase)) }
     $here = @($sessions | Where-Object { $_.sessionId -ne $self -and (& $inside $_) })
     if ($here.Count) {
