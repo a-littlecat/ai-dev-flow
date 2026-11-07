@@ -348,6 +348,10 @@ try {
     Check 'notify: missed auto-resume goes to the phone in plain words' ($n5 -match 'bark: yes' -and $n5 -match 'title: 🔴 项目 A' -and $n5 -match 'body: 额度已经重置.*按回车')
     $n6 = '{"cwd":"C:\\x\\项目 A","message":"Claude needs your permission","notification_type":"permission_prompt"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
     Check 'notify: permission prompt stays on the desktop' ($n6 -match 'toast: yes' -and $n6 -match 'bark: no' -and $n6 -match 'body: Claude needs your permission')
+    $n7 = '{"cwd":"C:\\x\\项目 A","message":"Bash 要你批准","notification_type":"agent_needs_input"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: background session waiting on you goes to the phone and says where to answer' ($n7 -match 'bark: yes' -and $n7 -match 'title: 🟡 项目 A' -and $n7 -match 'body: 后台会话在等你：Bash 要你批准.*claude agents')
+    $n8 = '{"cwd":"C:\\x\\项目 A","message":"done","notification_type":"agent_completed"}' | pwsh -NoProfile -File $notify -Config $ncfg -Hook -DryRun | Out-String
+    Check 'notify: background session finished stays on the desktop' ($n8 -match 'toast: yes' -and $n8 -match 'bark: no')
 
     $watch = Join-Path (Split-Path $Script) 'watch.ps1'
     $wstate = Join-Path $root 'out/watch-state.json'
