@@ -146,6 +146,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `modules/garden.md` | 复盘、教训升级、复盘摘要、清理 |
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
+| `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；项目里已有会话就不开，改发消息（`portfolio.md` 第 4 节） |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
 | `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
 | `scripts/watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"时推一次手机 |

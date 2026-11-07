@@ -28,6 +28,7 @@ skills/ai-dev-flow/
   modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
   scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
+  scripts/launch.ps1       在一个项目里开命令行后台会话（默认 /next），项目里已有会话就不开
   scripts/daily.ps1        把状态写成一页 HTML 并发通知，给计划任务定时跑
   scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
   scripts/watch.ps1        每 15 分钟查一次停滞，新停住的项目才推到手机
@@ -38,6 +39,7 @@ skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
 tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
+tests/launch.tests.ps1     launch.ps1 的检查：pwsh -NoProfile -File tests/launch.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -83,10 +85,11 @@ tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File test
 
 ### 同时推进几个项目
 
-项目不设常驻会话：你在项目里新建会话、发 `/next`，它按队列一项接一项往下做，直到要你定、卡住、额度快用完或上下文太长才收尾。进度都在队列里，换账号、换会话都能接着做。另建一个只在本地的总览仓库，放你的意图（`INTENT.md`）、项目清单（`projects.json`，含本周目标）、决定记录和跨项目教训：
+项目不设常驻会话：项目会话发 `/next`，按队列一项接一项往下做，直到要你定、卡住、额度快用完或上下文太长才收尾。进度都在队列里，换账号、换会话都能接着做。另建一个只在本地的总览仓库，放你的意图（`INTENT.md`）、项目清单（`projects.json`，含本周目标）、决定记录和跨项目教训。你平时只在总览里说话，它是前台：
 
 - **每天**：计划任务定时跑 `scripts/daily.ps1`，生成一页状态（要你做的、空闲可领的、各项目的目标和进度），再弹一条通知，点开就是这一页。不花模型额度。
-- **平时**：每个会话收尾时都发通知；要你看、要你定或卡住了，会同时推到手机。项目里的问题到项目里答（`/next #编号 答复`）。
+- **平时**：在总览开个短会话问进度、给方向、回答项目的问题。总览把事情写给项目，再替你叫醒那个项目的会话，或者用 `scripts/launch.ps1` 开一个命令行后台会话发 `/next`；在终端运行 `claude agents` 能看到它们。项目会话之间要对方做事，也是自己发消息或开会话，不用你传话。每个会话收尾时都发通知；要你看、要你定或卡住了，会同时推到手机。
+- **两个账号**：桌面应用和命令行可以登录不同的订阅账号，两边共用 `~/.claude`。总览开在桌面，项目会话开在命令行，两份额度同时用。
 - **每周**：在总览仓库里发 `/week`，看一周的进展，定下周目标。同一条教训在几个项目里都出现，就升到 skill 或用户级配置。
 
 做法见 `modules/portfolio.md`。
@@ -107,6 +110,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 - 要推到手机，就在本机写 `%APPDATA%\ai-dev-flow\notify.json`（不入库）：`{ "bark": "https://api.day.app/<key>", "barkLevels": ["user", "stuck"] }`。不写就只弹系统通知。
 - 会话等权限或等输入时弹通知：在 `~/.claude/settings.json` 的 `hooks.Notification` 里加一条命令 `pwsh -NoProfile -File <~/.agents/skills/ai-dev-flow 的完整路径>/scripts/notify.ps1 -Hook`。
+- 由总览开命令行后台会话（`scripts/launch.ps1`）：在 `~/.claude/settings.json` 里加 `"worktree": { "bgIsolation": "none" }`，否则后台会话会进它自己的 worktree，做完还会自己推分支、开草稿 PR；每个项目文件夹先在命令行里运行一次 `claude`，接受信任。
 - 每天的状态页：用 Windows 计划任务定时运行 `pwsh -NoProfile -File <同上>/scripts/daily.ps1 -Config <总览仓库>\projects.json`。
 - 停滞提醒：再用计划任务每 15 分钟运行一次 `pwsh -NoProfile -File <同上>/scripts/watch.ps1 -Config <总览仓库>\projects.json`。
 - 计划任务里的"程序"填 `conhost.exe`，参数写 `--headless <pwsh 的完整路径> -NoProfile -File ...`。直接填 pwsh 时，即使加了 `-WindowStyle Hidden`，每次运行也会闪一下终端窗口。
@@ -122,6 +126,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.17.0**（2026-11-07）：总览当前台，不让用户传话。新增 `scripts/launch.ps1`：在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），去掉从桌面应用继承来的登录变量，用命令行登录的账号；项目里已有会话就不开（退出 3，改发消息），在做的会话到上限就不开（退出 4）。`portfolio.md` 总览从"指挥台"改成"前台"：用户平时只在总览说话，总览写好请求后叫醒或开项目会话（第 4 节"开会话和叫醒会话"），仍不改项目代码和队列、不派执行方、不合并；`orchestrate.md` 第 6 节使用方给提供方提需求也这样叫它接。`notify.ps1 -Hook` 把后台会话等用户（`agent_needs_input`）推到手机。起因：一周里用户多次手动到别的项目会话里发"有待转需求，安排下"、替项目新开会话贴提示词，总览仓库从 11-01 起没再开过会话，事实上的前台是一个项目的主会话，一天压缩三次以上。
 - **2.16.0**（2026-11-06）：跑不全的检查让机器看得见。验证说明和 verify note 加"没跑：<检查（原因）>"一项（全跑了写"无"），补跑后用 `git notes append` 追加"补跑：<命令> → 退出 0"；`land-check.ps1` 看到没跑又没补跑的就不让合，按第 5 节沿用的 note 也顺着"沿用 <sha>"读原 note（`verify.md` 第 3、6 节，`land.md` 第 2 节）。`diagnose.md` 第 4 节加一句：声称更快、更省的，改前改后同条件各量一份，没有两份数字不写。起因：一个项目 126 条 verify note 里 24 条写着"沙箱没跑全"，其中多条是合并之后才补跑，`land-check` 只认 Pass 两个字，拦不住。
 - **2.15.0**（2026-11-06）：推送少打扰。`scripts/daily.ps1` 记下上次推过哪些事（`%LOCALAPPDATA%\ai-dev-flow\daily-state.json`），和上次一样就只弹系统通知、不推手机，有新的才推，新的排前面标"新："。`scripts/status.ps1` 给待用户项打 `Hint`：状态格超过 300 字的是"过程记录"，写着不急、先停、等别处的是"像搁置"，都列进"提示"；"像搁置"的照常算要你管（关键词可能判错，不拿掉），排在最后、标"像已搁置"，附改成搁置的命令。推进中的项目没有在做的项、但刚有动静的标"刚有动静"，不再说空着。起因：一天的推送列了 7 件要你定，真等你定的只有 1 件，其余是已经说过不急、在等别的项目、或你那部分早已做完的项，每天两次重复推到手机。
 - **2.14.0**（2026-11-05）：派活前看内存。`dispatch.json` 写了 `minFreeMemoryMB` 的，可用内存低于它时 `dispatch.ps1` 不派，退出码 6，并列出还在跑的运行。`-List` 判断运行还在不在时，核对进程的启动时间，进程号被别的进程复用的不再显示成 running。`scripts/status.ps1` 把 7 天内没有退出记录、进程也不在了、同一分支后来也没再派过的运行列进"提示"，`-Json` 里是 `DeadRuns`。起因：一个项目派活被杀过两次，两个项目共 22 次运行没有退出记录。
