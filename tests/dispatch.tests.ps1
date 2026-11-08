@@ -35,6 +35,8 @@ if ($step -match 'move') { git checkout -q --detach main }
 if ($step -match 'big') { $s = [IO.File]::Create((Join-Path $PWD 'big.bin')); $s.SetLength(501MB); $s.Dispose() }
 if ($step -match '^400') { 'ERROR: {"error":{"message":"Codex: Bad Request"},"status":400,"type":"error"}'; exit 1 }
 if ($step -match '^err') { 'ERROR: something else'; exit 1 }
+if ($step -match 'timed') { Set-Content -LiteralPath $final -Encoding utf8NoBOM -Value "结论：Pass`n快检用时：725 秒"; exit 0 }
+if ($step -match 'notime') { Set-Content -LiteralPath $final -Encoding utf8NoBOM -Value "结论：Pass`n快检用时：不适用"; exit 0 }
 Set-Content -LiteralPath $final -Value done
 exit 0
 '@
@@ -149,6 +151,15 @@ try {
     Check 'review: result recorded' ($r.Exit.ReviewWorktree -eq 'removed' -and $r.Code -eq 0)
     Check 'review: candidate branch untouched' ((git -C $repo rev-parse candidate) -eq $candidateHead)
     Check 'review: footer says where evidence goes' ((Get-Content -LiteralPath (Join-Path $runs 'rev-clean/prompt.md') -Raw) -match 'worktree-files')
+
+    $vl = Join-Path $repo '.agents/verify-last.json'
+    Check 'verify time: no line in the reply, no record' (-not (Test-Path -LiteralPath $vl))
+    $null = Run 'rev-timed' 'timed' @('-Review', 'candidate')
+    $rec = if (Test-Path -LiteralPath $vl) { Get-Content -LiteralPath $vl -Raw -Encoding UTF8 | ConvertFrom-Json }
+    Check 'verify time: recorded with the reviewed head' ($rec.seconds -eq 725 -and $rec.head -eq $candidateHead -and $rec.date -eq (Get-Date).ToString('yyyy-MM-dd'))
+    $null = Run 'rev-notime' 'notime' @('-Review', 'candidate')
+    Check 'verify time: docs-only reply keeps the last record' ((Get-Content -LiteralPath $vl -Raw -Encoding UTF8 | ConvertFrom-Json).seconds -eq 725)
+    Check 'verify time: the reviewer is asked for it' ((Get-Content -LiteralPath (Join-Path $runs 'rev-timed/prompt.md') -Raw) -match '快检用时：<秒数> 秒')
 
     $r = Run 'rev-touched' 'ok+touch' @('-Review', 'candidate')
     Check 'review with tracked change: worktree kept' ((Test-Path -LiteralPath (Wt 'rev-touched')) -and $r.Exit.ReviewWorktree -eq 'kept: tracked files changed')

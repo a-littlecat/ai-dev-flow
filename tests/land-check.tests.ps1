@@ -172,6 +172,22 @@ try {
     Check 'unknown branch exits 2' ($r.Code -eq 2)
     $o = @(pwsh -NoProfile -File $Script -Branch ok -Repo $root 2>&1); $code = $LASTEXITCODE
     Check 'not a repo exits 2' ($code -eq 2)
+    $vl = Join-Path $repo '.agents/verify-last.json'
+    Check 'verify time: note without it, no record' (-not (Test-Path -LiteralPath $vl))
+    Put '.gitignore' ".agents/`n"; $null = G add .gitignore; $null = G commit -qm ignore
+    $null = G branch -f timed HEAD
+    $null = G checkout -q timed; $tb = Commit 'src/t.ps1' "1`n"; $null = G checkout -q main
+    $mainSha = G rev-parse main
+    $null = G notes --ref=verify add -f -m "覆盖：$($mainSha.Substring(0, 7))..$($tb.Substring(0, 7))；x → Pass；快检用时：725 秒；没跑：无" $tb
+    $rt = Run 'timed'
+    $rec = if (Test-Path -LiteralPath $vl) { Get-Content -LiteralPath $vl -Raw -Encoding UTF8 | ConvertFrom-Json }
+    Check 'verify time: recorded from the note, worktree stays clean' ($rt.Code -eq 0 -and $rec.seconds -eq 725 -and $rec.head -eq $tb -and -not (G status --short))
+    $null = G checkout -q timed; $tc = Commit 'b.md' "x`n"; $null = G checkout -q main
+    $null = G notes --ref=verify add -f -m "覆盖：$($mainSha.Substring(0, 7))..$($tc.Substring(0, 7))；沿用 $($tb.Substring(0, 7)) 的 Pass；没跑：同原 note" $tc
+    Remove-Item -LiteralPath $vl
+    $rt = Run 'timed'
+    Check 'verify time: found through a carried-over note' ($rt.Code -eq 0 -and (Test-Path -LiteralPath $vl) -and (Get-Content -LiteralPath $vl -Raw -Encoding UTF8 | ConvertFrom-Json).head -eq $tc)
+    Remove-Item -LiteralPath $vl
 }
 finally {
     if ($Keep) { "kept: $root" } else {

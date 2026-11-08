@@ -15,6 +15,7 @@ param(
 #   5. note 写了"没跑：<检查（原因）>"、又不是"无 / 没有 / 不适用"的，要有"补跑：<命令> → 退出 0"（land.md 第 2 节：跑不全的合并前补跑）。没写"没跑："的老 note 按无处理。
 #      按 verify.md 第 5 节写的沿用 note（"沿用 <sha>"），把那个 sha 的 note 也算进来：原 note 没跑又没补跑的，沿用了也要补跑。冒号全角半角都认。
 #   pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk main] [-Repo <主项目目录>]
+# 全部满足时，note 里写了"快检用时：<秒> 秒"的（沿用的 note 顺着找），记到 .agents/verify-last.json（只在 .agents 被 Git 忽略时写，不弄脏工作区），状态页和 /next 靠它发现快检太慢。
 # 全部满足退出 0，最后一行是可以直接运行的合并命令；有不满足的逐条打出原因，退出 1；参数或仓库不对，退出 2。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -107,6 +108,18 @@ if ($bad.Count) {
     exit 1
 }
 "可以合并 $Branch（$short）：主干 $Trunk 干净、能快进、diff --check 通过、$(if ($docsOnly -and $noteMissing) { '纯文档' } else { 'verify note 覆盖这个 head' })"
+$t = if ($note.Out) { $note.Out -join "`n" } else { '' }
+$hops = 0
+while ($t -and $t -notmatch '快检用时[：:]\s*\d+\s*秒' -and $t -match '沿用[ \t　]*([0-9a-fA-F]{7,40})' -and $hops++ -lt 50) { $t = (Invoke-Git @('notes', '--ref=verify', 'show', $Matches[1])).Out -join "`n" }
+$sec = [regex]::Match($t, '快检用时[：:]\s*(\d+)\s*秒')
+if ($sec.Success) {
+    $null = git -C $Repo check-ignore -q .agents/verify-last.json 2>$null
+    if (-not $LASTEXITCODE) {
+        $last = Join-Path $top.Out[0] '.agents/verify-last.json'
+        $null = New-Item -ItemType Directory -Force -Path (Split-Path $last)
+        [ordered]@{ head = $head; seconds = [int]$sec.Groups[1].Value; date = (Get-Date).ToString('yyyy-MM-dd'); source = 'land-check' } | ConvertTo-Json | Set-Content -LiteralPath $last -Encoding utf8NoBOM
+    }
+}
 $info | ForEach-Object { "注意：$_" }
 "合并后运行：pwsh -NoProfile -File $(Join-Path $PSScriptRoot 'cleanup.ps1') -Branch $Branch -Trunk $Trunk"
 "git merge --ff-only $Branch"

@@ -243,10 +243,11 @@ $(($rules) -join "`n")
 - $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。改坏检查只跑相关的那一段，恢复后不再重跑。" })
 - 结果是新写的评分、读回、比较工具判出来的：核对它拿已知对、已知错各跑过一例，判定脚本和证据都在提交里；缺了，这次判定不算证据。
 - 对照上面的目标和完成标准审。不报命名、格式、写法偏好。只报 P0–P2，每条附可执行的证明（命令、会失败的测试、具体输入和输出）；拿不出证明的写进"没覆盖"。没有带证明的 P0/P1，就给 Pass。
-- 不写长报告。最后的回复只写下面五行，用白话：
+- 不写长报告。最后的回复只写下面六行，用白话：
 
 结论：Pass 或 Fix
 门禁：verify 的命令、退出码、head；只改文档写"不适用"
+快检用时：<秒数> 秒（这一次完整 verify 从开始到结束；只改文档写"不适用"）
 没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"
 问题：无，或每条一行：P级 ｜ 文件:行 ｜ 问题 ｜ 证明
 没覆盖：一句话
@@ -301,6 +302,9 @@ $startHead = git -C $wt rev-parse HEAD
 $runner = Join-Path $runDir 'run.ps1'
 $retryDelays = if ($null -ne $cfg.retry400Seconds) { @($cfg.retry400Seconds | ForEach-Object { [int]$_ }) } else { @(120, 300, 900) }
 $cleanArgs = "-NoProfile -File $(& $q $PSCommandPath) -CleanReviews -KeepEvidence -Name $(& $q $Name)$(if ($Config) { ' -Config ' + (& $q ([IO.Path]::GetFullPath($Config))) })"
+# 审查方回复里的快检用时记到 .agents/verify-last.json，状态页和 /next 靠它发现快检太慢（harness.md 第 2 节）。
+$verifyLast = Join-Path $root '.agents/verify-last.json'
+$verifyLine = if ($mode -eq 'review') { "if (`$code -eq 0 -and (Test-Path -LiteralPath $(& $q $final))) { `$vm = [regex]::Match((Get-Content -LiteralPath $(& $q $final) -Raw -Encoding UTF8), '\u5feb\u68c0\u7528\u65f6[\uff1a:]\s*(\d+)\s*\u79d2'); if (`$vm.Success) { [ordered]@{ head = '$headSha'; seconds = [int]`$vm.Groups[1].Value; date = (Get-Date).ToString('yyyy-MM-dd'); source = 'dispatch' } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $verifyLast) -Encoding utf8NoBOM } }" } else { '' }
 $cleanLine = if ($mode -eq 'review' -and -not $cfg.keepReviewWorktree) { "Set-Location -LiteralPath $(& $q $repo)`n& (Get-Process -Id `$PID).Path $cleanArgs | Out-Null" } else { '' }
 # 执行方输出 UTF-8；Windows 中文系统控制台默认 GBK，不设置的话管道读进来是乱码。
 # 退出码 0 不代表做完了：另记本轮新增提交数和未提交的改动数，由 -Wait 和 -List 判断。
@@ -329,6 +333,7 @@ $command
     }
 }
 [ordered]@{ ExitCode = `$code; Finished = (Get-Date).ToString('o'); Head = (git rev-parse HEAD); NewCommits = [int](git rev-list --count $startHead..HEAD); Uncommitted = @(git status --porcelain).Count; Retries = `$attempt; Error400 = [bool]`$is400 } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $exitFile) -Encoding utf8NoBOM
+$verifyLine
 $cleanLine
 exit `$code
 "@

@@ -8,7 +8,8 @@ param(
     [switch]$Mark,
     [switch]$Json,
     [int]$StaleMinutes = 60,
-    [int]$CleanupOver = 10
+    [int]$CleanupOver = 10,
+    [int]$SlowVerifyMinutes = 10
 )
 # 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件的不算）、队列各状态的项数和待用户项、
 # 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标、该升级的教训、还没转的请求。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
@@ -21,6 +22,7 @@ param(
 #   -Mark     把各项目当前的主干位置记为下次的起点（周会时用），记在 <清单所在目录>/.agents/status-marks.json
 #   -Json     输出 JSON
 #   -StaleMinutes  推进中的项目有"在做"的项、最后活动又早于这么多分钟前，提示"可能停滞"（默认 60）
+#   -SlowVerifyMinutes  快检超过这么多分钟算太慢（默认 10，harness.md 第 2 节）；项目 AGENTS.md 写"快检提速阈值：<分钟> 分钟"的以项目为准
 #   -CleanupOver   已合进主干的分支或 worktree 超过这么多个，提示运行 cleanup.ps1（默认 10）
 # 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
@@ -28,6 +30,7 @@ param(
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
+# 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
 # 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…""要不要先停"不算；说明 / 备注列只认 先不做 / 先不改 / 本周暂停 / 不主动做）；都写成"提示"。
@@ -59,8 +62,9 @@ if (Test-Path -LiteralPath $marksFile) {
 }
 
 $states = '待做', '在做', '待验证', '待用户', '完成', '搁置'
-# 常见的另一种写法归到标准状态。"暂停于安全点"是接力（/next 第 3 节当待做），不算搁置；"部分已定"这类说不准的不归，照常提示。
-$stateAliases = @(@('^(已合并|已完成)', '完成'), @('^进行中', '在做'), @('^暂停(?!于)', '搁置'))
+# 常见的另一种写法归到标准状态。只认这个词单独写或后面跟括号：归错会放行依赖、藏掉提示，说不准的（"已完成部分""暂停于安全点""部分已定"）不归，照常提示。
+# 暂停里写着安全点、接力的是接力（/next 第 3 节当待做），不算搁置。
+$stateAliases = @(@('^(已合并|已完成)(?=$|[（(\s])', '完成'), @('^进行中(?=$|[（(\s])', '在做'), @('^暂停(?=$|[（(\s])(?!.*(安全点|接力))', '搁置'))
 # 待用户项里像"先不做 / 在等别处"的说法。"等你 / 等您 / 等待…"是在问用户，不算；"暂停""不急"单独出现常在问句里（要不要暂停、不急着要），只认带停顿的写法。
 # 说明 / 备注列常写来龙去脉（"搁置过、已恢复"），只认更窄的几个词。判错只影响标签：像搁置的项照常算要你管（daily.ps1）。
 $shelvedWords = '不急[，,。；;）)]|不急$|(?<!要不要)先停|先不做|先不改|(?<!要不要)先暂停|本周暂停|搁置|不主动做|等(?!你|您|待).{0,40}?(提出|结果|跑通|下来|再开|再做|再定)'
@@ -127,7 +131,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @()
+        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -198,6 +202,7 @@ function Get-ProjectStatus($p) {
     }
 
     $done = @()
+    $items = @()
     $queueRel = if ($p.queue) { $p.queue } else { 'docs/queue.md' }
     $queueFile = Join-Path $path $queueRel
     if (Test-Path -LiteralPath $queueFile) {
@@ -237,6 +242,20 @@ function Get-ProjectStatus($p) {
         $r.Next = @($availItems | Select-Object -First 3)
         $r.Recent = @($items | Where-Object State -eq '完成' | Select-Object -Last 3)
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
+    $verifyFile = Join-Path $path '.agents/verify-last.json'
+    if (Test-Path -LiteralPath $verifyFile) {
+        try { $r.VerifySeconds = [int](Get-Content -LiteralPath $verifyFile -Raw -Encoding UTF8 | ConvertFrom-Json).seconds } catch { $r.VerifySeconds = $null }
+        $limit = $SlowVerifyMinutes
+        $agentsFile = Join-Path $path 'AGENTS.md'
+        if (Test-Path -LiteralPath $agentsFile) {
+            $lm = [regex]::Match((Get-Content -LiteralPath $agentsFile -Raw -Encoding UTF8), '快检提速阈值\**[：:]\s*\**\s*(\d+)\s*分钟')
+            if ($lm.Success) { $limit = [int]$lm.Groups[1].Value }
+        }
+        $speedUp = @($items | Where-Object { $_.State -ne '完成' -and "$($_.Goal)" -match '快检提速' })
+        if ($p.status -eq '推进中' -and $r.VerifySeconds -gt $limit * 60 -and -not $speedUp) {
+            $r.Problems.Add("快检最近一次用了 $([math]::Round($r.VerifySeconds / 60)) 分钟，超过 $limit 分钟，队列里没有快检提速的项：下次 /next 开场自动加（skills/next/SKILL.md 第 1 节）")
+        }
+    }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {
         $ids = @($g.items | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' })
         $byItems = $ids.Count -and $done -and -not @($ids | Where-Object { $done -notcontains $_ }).Count

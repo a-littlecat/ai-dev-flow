@@ -274,6 +274,45 @@ try {
     @{ projects = @(@{ name = '项目 C'; path = $c; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgC -Encoding utf8NoBOM
     $pc = (pwsh -NoProfile -File $Script -Config $cfgC -Json | ConvertFrom-Json).Projects[0]
     $tc = pwsh -NoProfile -File $Script -Config $cfgC | Out-String
+    $slow = Join-Path $root 'slow'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $slow 'docs'), (Join-Path $slow '.agents')
+    G init -q $slow
+    Set-Content -LiteralPath (Join-Path $slow '.gitignore') -Encoding utf8NoBOM -Value '.agents/'
+    Set-Content -LiteralPath (Join-Path $slow 'AGENTS.md') -Encoding utf8NoBOM -Value '- **信任等级 L1**'
+    $slowQ = { param($state) "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n| 1 | 别的事 | 无 | 待做 |`n| 2 | 快检提速：并行 | 无 | $state |" | Set-Content -LiteralPath (Join-Path $slow 'docs/queue.md') -Encoding utf8NoBOM }
+    & $slowQ '完成'
+    G -C $slow add -A; G -C $slow commit -q -m 's1'
+    $cfgSlow = Join-Path $root 'projects-slow.json'
+    $slowCfg = { param($status) @{ projects = @(@{ name = '慢'; path = $slow; status = $status }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgSlow -Encoding utf8NoBOM }
+    $slowRun = { (pwsh -NoProfile -File $Script -Config $cfgSlow -All -Json | ConvertFrom-Json).Projects[0] }
+    $slowHint = { param($q) [bool](@($q.Problems) -match '快检最近一次') }
+    & $slowCfg '推进中'
+    Check 'slow verify: no record, no hint' (-not (& $slowHint (& $slowRun)))
+    Set-Content -LiteralPath (Join-Path $slow '.agents/verify-last.json') -Encoding utf8NoBOM -Value '{"head":"abc","seconds":601,"date":"2026-11-08"}'
+    $q = & $slowRun
+    Check 'slow verify: over 10 minutes, only a finished speed-up item: hint' ((& $slowHint $q) -and $q.VerifySeconds -eq 601)
+    $page = Join-Path $root 'out/status-slow.html'
+    $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgSlow -Out $page -NoNotify
+    Check 'slow verify: the daily page shows the hint' ((Get-Content -LiteralPath $page -Raw -Encoding UTF8) -match '快检最近一次')
+    & $slowQ '待做'
+    Check 'slow verify: a speed-up item waiting: no hint' (-not (& $slowHint (& $slowRun)))
+    & $slowQ '在做（r2）'
+    Check 'slow verify: a speed-up item in progress: no hint' (-not (& $slowHint (& $slowRun)))
+    & $slowQ '完成'
+    Set-Content -LiteralPath (Join-Path $slow '.agents/verify-last.json') -Encoding utf8NoBOM -Value '{"head":"abc","seconds":600,"date":"2026-11-08"}'
+    Check 'slow verify: exactly 10 minutes: no hint' (-not (& $slowHint (& $slowRun)))
+    Set-Content -LiteralPath (Join-Path $slow '.agents/verify-last.json') -Encoding utf8NoBOM -Value '{"head":"abc","seconds":1200,"date":"2026-11-08"}'
+    & $slowCfg '维护'
+    Check 'slow verify: project not being pushed: no hint' (-not (& $slowHint (& $slowRun)))
+    & $slowCfg '推进中'
+    Set-Content -LiteralPath (Join-Path $slow 'AGENTS.md') -Encoding utf8NoBOM -Value "- **信任等级 L1**`n- **快检提速阈值**：30 分钟（要跑宿主软件）"
+    Check 'slow verify: threshold in AGENTS.md wins' (-not (& $slowHint (& $slowRun)))
+    Set-Content -LiteralPath (Join-Path $slow 'AGENTS.md') -Encoding utf8NoBOM -Value "- **信任等级 L1**`n- **快检提速阈值**：15 分钟"
+    Check 'slow verify: threshold in AGENTS.md also lowers the bar' (& $slowHint (& $slowRun))
+    Set-Content -LiteralPath (Join-Path $slow '.agents/verify-last.json') -Encoding utf8NoBOM -Value '{"seconds":'
+    $q = & $slowRun
+    Check 'slow verify: broken record is ignored' (-not (& $slowHint $q) -and $null -eq $q.VerifySeconds)
+
     $alias = Join-Path $root 'alias'
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $alias 'docs')
     G init -q $alias
@@ -288,13 +327,17 @@ try {
 | 6 | 己 | 无 | 部分已定：选了 A |
 | 7 | 依赖暂停的项 | 4 | 待做 |
 | 8 | 依赖已合并的项 | 1 | 待做 |
+| 9 | 庚 | 无 | 已完成部分 |
+| 10 | 辛 | 无 | 暂停在安全点 |
+| 11 | 壬 | 无 | 暂停（于安全点） |
+| 12 | 癸 | 无 | 已合并到分支，待验证 |
 '@ | Set-Content -LiteralPath (Join-Path $alias 'docs/queue.md') -Encoding utf8NoBOM
     G -C $alias add -A; G -C $alias commit -q -m 'a1'
     $cfgAlias = Join-Path $root 'projects-alias.json'
     @{ projects = @(@{ name = '写法'; path = $alias; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgAlias -Encoding utf8NoBOM
     $pAlias = (pwsh -NoProfile -File $Script -Config $cfgAlias -Json | ConvertFrom-Json).Projects[0]
     Check 'state aliases: counted as the standard state' ($pAlias.Queue.'完成' -eq 2 -and $pAlias.Queue.'在做' -eq 1 -and $pAlias.Queue.'搁置' -eq 1 -and (($pAlias.Doing | ForEach-Object Detail) -join ',') -eq 'r2')
-    Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
+    Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6,9,10,11,12' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
     Check 'state aliases: dependencies follow the standard state' ($pAlias.Next.Id -contains '8' -and $pAlias.Next.Id -notcontains '7')
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
