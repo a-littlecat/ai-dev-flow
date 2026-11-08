@@ -26,6 +26,8 @@ skills/ai-dev-flow/
   modules/orchestrate.md   自动推进：队列、后台子 agent＋worktree、并行上限
   modules/garden.md        复盘、教训升级、复盘摘要、清理
   modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
+  modules/direction.md     新方向先做原型比基准，方向性选择报决定卡
+  templates/decision-card.md  决定卡模板
   scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
   scripts/launch.ps1       在一个项目里开命令行后台会话（默认 /next），按清单决定新开、发消息还是开在桌面

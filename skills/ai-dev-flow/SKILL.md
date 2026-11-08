@@ -21,6 +21,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 |---|---|
 | `/next`（可带答复、编号、"只做一项""收云端"） | 照 `skills/next/SKILL.md`：按队列一项接一项做，直到需要用户才收尾、发通知 |
 | 想做、改、修某件事 | 按第 2 节定档，读 `modules/build.md`，一直做到下一个需要用户的地方 |
+| 新方向（换路线或核心做法、新增子系统、预计 3 天以上或 10 个队列项以上），或者要改评分口径、北极星、上线范围 | 读 `modules/direction.md`：先做原型和基准比，报决定卡，用户定了才排进队列 |
 | "继续" | 接着做进行中的那一项；没有就从队列里领下一项 |
 | "继续推进""自动推进"，或项目已授权自动推进 | 读 `modules/orchestrate.md` |
 | "现在到哪了" | 按第 6 节给三行汇报 |
@@ -63,7 +64,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 
 1. **单向门**要授权。
 2. **看一眼**档要用户看。
-3. **方向要选**：几种做法结果明显不同，选错了返工很大。能撤回的小选择自己定，在汇报里带一句。
+3. **方向要选**：几种做法结果明显不同，选错了返工很大。能撤回的小选择自己定，在汇报里带一句。换路线或核心做法、新增或砍掉子系统、改评分口径或北极星、改上线范围、投入超预算，任何信任等级都不能自己定，一律报决定卡（`modules/direction.md` 第 3 节）。
 4. **卡住了**：缺只有用户能提供的东西；或者同一项从头重来以后仍然通不过验证（`build.md` 第 5 节）。
 
 找用户时：
@@ -123,6 +124,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | 独立验证的结论 | 挂在被验证提交上的 git note（`refs/notes/verify`），见 `verify.md` 第 6 节 |
 | 待办和进行中的项 | 队列：有远程用 issues，没有用 `docs/queue.md` |
 | 跨多天的计划、单向门的方案 | `docs/plans/<主题>.md` |
+| 要用户定的方向性选择 | 决定卡 `docs/decisions/<日期>-<主题>.md`，模板是 `templates/decision-card.md` |
 | 反复出现的问题 | `LESSONS.md`，由复盘维护 |
 | 已经定下的规则 | 能机械化的写成 lint、测试、hook；不能的写进 `docs/code-standards.md` |
 | 疑难问题的解法 | `docs/solutions/<主题>.md` |
@@ -145,6 +147,8 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、DSH 等）写或审，项目配置在 `scripts/dispatch.json` |
 | `modules/garden.md` | 复盘、教训升级、复盘摘要、清理 |
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
+| `modules/direction.md` | 新方向先做原型比基准，方向性选择报决定卡 |
+| `templates/decision-card.md` | 决定卡模板 |
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
 | `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面（`portfolio.md` 第 4 节） |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
