@@ -80,6 +80,7 @@ try {
 
     $null = Run 'builder-default' 'ok+commit'
     $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-default/prompt.md') -Raw
+    Check 'builder: new judge tools run on known truth first' ($prompt -match '已知对、已知错各跑一例')
     Check 'builderVerify default: builder runs full verify' ($prompt -match '完成前在本目录运行 `echo ok`' -and $prompt -match '跑了：verify 结果' -and $prompt -notmatch '不跑完整的')
 
     Write-Config @{ retry400Seconds = @(); builderVerify = 'related' }
@@ -159,6 +160,7 @@ try {
     $null = Run 'rev-related' 'ok' @('-Review', 'candidate')
     Check 'builderVerify related: reviewer still runs full verify' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '自己运行一次 `echo ok`')
 
+    Check 'review: judge tools were run on known truth' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '已知对、已知错各跑过一例')
     Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head' -and (Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '(?m)^没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"')
 
     Write-Config @{ retry400Seconds = @(); keepReviewWorktree = $true }
