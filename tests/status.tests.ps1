@@ -486,6 +486,56 @@ try {
     Check 'daily: recent activity without work in progress is not idle' ($htmlE -match '刚有动静' -and $htmlE -match '<div class="k">现在</div><div>刚有动静（' -and $htmlE -notmatch '空着' -and $e1 -notmatch '空着')
     $e2 = pwsh -NoProfile -File $daily -Config $cfgE -Out $pageE -State (Join-Path $root 'out/daily-e.json') -StaleMinutes 0 -DryRun | Out-String
     Check 'daily: quiet past -StaleMinutes is idle again' ($e2 -match '项目 E 空着，可以发 /next 开工')
+    # 基准和方向：判定本身在 tests/direction.tests.ps1，这里只看 status.ps1 接过来以后的效果
+    function New-DirRepo([string]$name, [string]$queue, $bench) {
+        $x = Join-Path $root $name
+        $null = New-Item -ItemType Directory -Force -Path (Join-Path $x 'docs')
+        G init -q $x
+        $queue | Set-Content -LiteralPath (Join-Path $x 'docs/queue.md') -Encoding utf8NoBOM
+        if ($bench -is [string]) { $bench | Set-Content -LiteralPath (Join-Path $x 'docs/benchmark.json') -Encoding utf8NoBOM }
+        elseif ($bench) { $bench | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $x 'docs/benchmark.json') -Encoding utf8NoBOM }
+        G -C $x add -A; G -C $x commit -q -m 'init'
+        $x
+    }
+    $day = { param($n) (Get-Date).AddDays($n).ToString('yyyy-MM-dd') }
+    $qHead = "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n"
+    $f = New-DirRepo '项目 F' ($qHead + "| 1 | [方向 A] 停掉的 | 无 | 待做 |`n| 2 | [方向原型 A] 停掉的原型 | 无 | 待做 |`n| 3 | [方向 B] 正常 | 无 | 待做 |`n| 4 | 普通项 | 无 | 待做 |`n| 5 | [方向 没定] 还没定 | 无 | 待做 |`n| 6 | [方向原型 C] 没登记 | 无 | 待做 |`n| 7 | [方向 旧] 完成的不管 | 无 | 完成 |") ([ordered]@{
+        northStar = '差异比例'
+        baseline = [ordered]@{ model = '模型 X'; date = (& $day -1) }
+        directions = @(
+            [ordered]@{ name = 'A'; state = '进行中'; started = (& $day -60); budgetDays = 5 },
+            [ordered]@{ name = 'B'; state = '进行中'; started = (& $day 0); budgetDays = 30 })
+        runs = @(,[ordered]@{ date = (& $day -1); gap = 0.3 })
+    })
+    $g1 = New-DirRepo '项目 G' ($qHead + '| 1 | 普通项 | 无 | 待做 |') $null
+    $g2 = New-DirRepo '项目 G2' ($qHead + "| 1 | 登记基准 | 无 | 待做 |`n| 2 | 补流程图 | 无 | 在做 |") $null
+    $g3 = New-DirRepo '项目 G3' ($qHead + '| 1 | 普通项 | 无 | 待做 |') $null
+    $g4 = New-DirRepo '项目 G4' ($qHead + '| 1 | 普通项 | 无 | 待做 |') '{ 坏的'
+    $g5 = New-DirRepo '项目 G5' ($qHead + '| 1 | 普通项 | 无 | 待做 |') ([ordered]@{ notApplicable = '工具仓库' })
+    $cfgF = Join-Path $root 'projects-f.json'
+    @{ projects = @(
+        @{ name = '项目 F'; path = $f; status = '推进中' }, @{ name = '项目 G'; path = $g1; status = '推进中' }, @{ name = '项目 G2'; path = $g2; status = '推进中' },
+        @{ name = '项目 G3'; path = $g3; status = '维护' }, @{ name = '项目 G4'; path = $g4; status = '维护' }, @{ name = '项目 G5'; path = $g5; status = '推进中' }) } |
+        ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgF -Encoding utf8NoBOM
+    $jf = pwsh -NoProfile -File $Script -Config $cfgF -Json | Out-String | ConvertFrom-Json
+    $get = { param($n) $jf.Projects | Where-Object Name -eq $n }
+    $pf = & $get '项目 F'
+    Check 'direction: a stopped direction leaves its items out of the available ones' ($pf.Available -eq 4 -and (@($pf.Next | ForEach-Object Id) -join ',') -eq '3,4,5')
+    Check 'direction: the stop reason is a hint' (($pf.Problems -join '|') -match '方向 A 要停：预算 5 天花完了')
+    Check 'direction: a healthy direction is not stopped' (($pf.Problems -join '|') -notmatch '方向 B 要停' -and @($pf.Direction.Stopped).Count -eq 1)
+    Check 'direction: a formal item for an unapproved direction is flagged' (($pf.Problems -join '|') -match '\[方向 没定\].*不是进行中')
+    Check 'direction: a prototype item without a registered direction is flagged' (($pf.Problems -join '|') -match '\[方向原型 C\].*不是原型或进行中')
+    Check 'direction: done items and approved ones are not flagged' (($pf.Problems -join '|') -notmatch '方向 旧|\[方向 B\]|\[方向原型 A\]')
+    $pg = & $get '项目 G'
+    Check 'direction: active project without a baseline or flow page gets hints' (($pg.Problems -join '|') -match '还没登记基准' -and ($pg.Problems -join '|') -match '还没有流程图' -and $pg.Available -eq 1)
+    Check 'direction: already queued, no hint' (((& $get '项目 G2').Problems -join '|') -notmatch '还没登记基准|还没有流程图')
+    Check 'direction: a project in maintenance is not asked to register' (((& $get '项目 G3').Problems -join '|') -notmatch '还没登记基准|还没有流程图')
+    Check 'direction: a broken file is flagged even in maintenance' (((& $get '项目 G4').Problems -join '|') -match 'benchmark.json 读不了')
+    Check 'direction: notApplicable has no hints' (((& $get '项目 G5').Problems -join '|') -notmatch '基准|流程图' -and (& $get '项目 G5').Direction.Benchmark -eq 'notApplicable')
+    $tf = pwsh -NoProfile -File $Script -Config $cfgF -Project '项目 F' | Out-String
+    Check 'direction: text output shows baseline and gap' ($tf -match '基准：模型 X' -and $tf -match '差距 0\.3' -and $LASTEXITCODE -eq 0)
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
+
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config $cfg -Project nobody 2>&1

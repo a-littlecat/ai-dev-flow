@@ -32,6 +32,8 @@ param(
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
+# 基准和方向（Direction）：判定都在 direction.ps1（modules/direction.md），这里接过来。要停的方向，它的 [方向 X]、[方向原型 X] 项不算可领；队列里有 [方向 X] 项、
+#   方向却没写成"进行中"的（没定就排了）提示。推进中的项目把 Actions 写成提示；benchmark.json 写错的任何状态都提示。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
 # 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…""要不要先停"不算；说明 / 备注列只认 先不做 / 先不改 / 本周暂停 / 不主动做）；都写成"提示"。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
@@ -132,7 +134,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null
+        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -202,6 +204,14 @@ function Get-ProjectStatus($p) {
         if ($r.Requests) { $r.Problems.Add("还没转进队列的请求 $($r.Requests.Count) 条：" + (($r.Requests | ForEach-Object { Short $_.Title 30 }) -join '、')) }
     }
 
+    $stoppedDirs = @()
+    try {
+        $r.Direction = & (Join-Path $PSScriptRoot 'direction.ps1') -Repo $path -Json | Out-String | ConvertFrom-Json
+        $stoppedDirs = @($r.Direction.Stopped | ForEach-Object { $_.Name })
+    } catch { $r.Problems.Add("direction.ps1 出错：$($_.Exception.Message)") }
+    $global:LASTEXITCODE = 0
+    $tagRe = '^\s*\[方向(原型)?\s+([^\]]+?)\s*\]'
+
     $done = @()
     $items = @()
     $queueRel = if ($p.queue) { $p.queue } else { 'docs/queue.md' }
@@ -239,10 +249,29 @@ function Get-ProjectStatus($p) {
             if ($d -notmatch '^[#\d\s,，、]+$' -or -not $nums) { return $false }
             -not @($nums | Where-Object { $open -contains $_ }).Count
         })
+        $availItems = @($availItems | Where-Object { $t = [regex]::Match("$($_.Goal)", $tagRe); -not ($t.Success -and $stoppedDirs -contains $t.Groups[2].Value) })
         $r.Available = $availItems.Count
         $r.Next = @($availItems | Select-Object -First 3)
         $r.Recent = @($items | Where-Object State -eq '完成' | Select-Object -Last 3)
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
+    if ($r.Direction) {
+        $openGoals = @($items | Where-Object { $_.State -notin '完成', '搁置' } | ForEach-Object { "$($_.Goal)" })
+        foreach ($a in @($r.Direction.Actions)) {
+            if ($p.status -ne '推进中' -and $a -notmatch '^改好') { continue }
+            # 已经排进队列的不再催
+            if ($a -match '加一项 (登记基准|流程图)') { $what = $Matches[1]; if (@($openGoals | Where-Object { $_ -match $what }).Count) { continue } }
+            $r.Problems.Add($a)
+        }
+        $dirs = @($r.Direction.Directions)
+        foreach ($goal in $openGoals) {
+            $t = [regex]::Match($goal, $tagRe)
+            if (-not $t.Success) { continue }
+            $name = $t.Groups[2].Value
+            $state = @($dirs | Where-Object { $_.Name -eq $name } | ForEach-Object { $_.State })
+            $ok = if ($t.Groups[1].Value) { $state -contains '原型' -or $state -contains '进行中' } else { $state -contains '进行中' }
+            if (-not $ok) { $r.Problems.Add("队列里有 $($t.Value.Trim()) 的项，docs/benchmark.json 的方向 $name 却不是$(if ($t.Groups[1].Value) { '原型或' })进行中：用户定了才排（direction.md 第 2 节）") }
+        }
+    }
     $verifyFile = Join-Path $path '.agents/verify-last.json'
     if (Test-Path -LiteralPath $verifyFile) {
         try { $r.VerifySeconds = [int](Get-Content -LiteralPath $verifyFile -Raw -Encoding UTF8 | ConvertFrom-Json).seconds } catch { $r.VerifySeconds = $null }
@@ -340,7 +369,7 @@ if ($Mark) {
 }
 
 if ($Json) {
-    [pscustomobject]@{ Generated = (Get-Date -Format 'yyyy-MM-dd HH:mm'); Config = $Config; Projects = $results; Paused = $paused } | ConvertTo-Json -Depth 6
+    [pscustomobject]@{ Generated = (Get-Date -Format 'yyyy-MM-dd HH:mm'); Config = $Config; Projects = $results; Paused = $paused } | ConvertTo-Json -Depth 12
     exit 0
 }
 
@@ -368,6 +397,12 @@ foreach ($r in $results) {
     if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -notin '其他', '搁置' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
     if ($r.Goals) { $out.Add("本周目标 $(@($r.Goals | Where-Object Done).Count)/$($r.Goals.Count)：" + (($r.Goals | ForEach-Object { "$(if ($_.Done) { '✓' } else { '○' }) $(Short $_.Text 40)" }) -join '；')) }
     if ($r.LastActivity) { $out.Add("最后活动 $($r.LastActivity)（$(Format-Idle $r.IdleMinutes)前）") }
+    if ($r.Direction -and $r.Direction.Benchmark -eq 'ok' -and -not $brief) {
+        $d = $r.Direction
+        $trend = @($d.Trend | Select-Object -Last 6 | ForEach-Object { $_.Gap }) -join ' → '
+        $out.Add("基准：$($d.Baseline.Model)（$($d.Baseline.Date)）；差距 $(if ($null -ne $d.Gap) { "$($d.Gap)（$($d.LastRun)）" } else { '还没量' })$(if ($trend) { "；按周 $trend" })")
+    }
+    foreach ($c in @($r.Direction.Cards | Where-Object { $_ })) { $out.Add("  决定卡 $(Short $c.Title 60)：$($c.File)") }
     foreach ($w in $r.Waiting) { $out.Add("  待用户$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) })$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
     if ($r.Digest -and -not $brief) {
         $out.Add("最近摘要 $($r.Digest.Date)")

@@ -26,10 +26,11 @@ skills/ai-dev-flow/
   modules/orchestrate.md   自动推进：队列、后台子 agent＋worktree、并行上限
   modules/garden.md        复盘、教训升级、复盘摘要、清理
   modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
-  modules/direction.md     新方向先做原型比基准，方向性选择报决定卡
+  modules/direction.md     新方向先做原型比基准，方向性选择报决定卡，基准和收敛
   templates/decision-card.md  决定卡模板
   scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
+  scripts/direction.ps1    读一个项目的基准、预算、决定卡和流程图，判断方向要不要停（只读）
   scripts/launch.ps1       在一个项目里开命令行后台会话（默认 /next），按清单决定新开、发消息还是开在桌面
   scripts/daily.ps1        把状态写成一页 HTML 并发通知，给计划任务定时跑
   scripts/notify.ps1       系统通知；要你出手的再推到手机（Bark）
@@ -40,6 +41,7 @@ skills/ai-dev-flow/
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
+tests/direction.tests.ps1  direction.ps1 的检查：pwsh -NoProfile -File tests/direction.tests.ps1
 tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
 tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
 tests/launch.tests.ps1     launch.ps1 的检查：pwsh -NoProfile -File tests/launch.tests.ps1

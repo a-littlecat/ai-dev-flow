@@ -125,6 +125,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | 待办和进行中的项 | 队列：有远程用 issues，没有用 `docs/queue.md` |
 | 跨多天的计划、单向门的方案 | `docs/plans/<主题>.md` |
 | 要用户定的方向性选择 | 决定卡 `docs/decisions/<日期>-<主题>.md`，模板是 `templates/decision-card.md` |
+| 基准、差距、方向的预算 | `docs/benchmark.json`（`modules/direction.md` 第 4 节） |
 | 反复出现的问题 | `LESSONS.md`，由复盘维护 |
 | 已经定下的规则 | 能机械化的写成 lint、测试、hook；不能的写进 `docs/code-standards.md` |
 | 疑难问题的解法 | `docs/solutions/<主题>.md` |
@@ -147,9 +148,10 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、DSH 等）写或审，项目配置在 `scripts/dispatch.json` |
 | `modules/garden.md` | 复盘、教训升级、复盘摘要、清理 |
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
-| `modules/direction.md` | 新方向先做原型比基准，方向性选择报决定卡 |
+| `modules/direction.md` | 新方向先做原型比基准，方向性选择报决定卡，基准和收敛 |
 | `templates/decision-card.md` | 决定卡模板 |
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
+| `scripts/direction.ps1` | 读一个项目的基准、预算、决定卡和流程图，判断方向要不要停、有什么要补，只读（`modules/direction.md` 第 5 节） |
 | `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面（`portfolio.md` 第 4 节） |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
 | `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
