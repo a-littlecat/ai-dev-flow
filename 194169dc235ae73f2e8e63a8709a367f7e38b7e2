@@ -1,0 +1,1 @@
+覆盖：9258f60..194169d；Claude Opus 5.5 子 agent（全新上下文，high）→ Pass，无问题；跑了：tests/dispatch.tests.ps1 → 退出 0，check-md.ps1 → 退出 0；改坏：去掉 dispatch.ps1 两句 → 两条新检查红，恢复后哈希一致；没跑：无；没采纳：无
