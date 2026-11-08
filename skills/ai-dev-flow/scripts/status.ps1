@@ -56,6 +56,8 @@ if (Test-Path -LiteralPath $marksFile) {
 }
 
 $states = '待做', '在做', '待验证', '待用户', '完成', '搁置'
+# 常见的另一种写法归到标准状态。"暂停于安全点"是接力（/next 第 3 节当待做），不算搁置；"部分已定"这类说不准的不归，照常提示。
+$stateAliases = @(@('^(已合并|已完成)', '完成'), @('^进行中', '在做'), @('^暂停(?!于)', '搁置'))
 # 待用户项里像"先不做 / 在等别处"的说法。"等你 / 等您 / 等待…"是在问用户，不算；"暂停""不急"单独出现常在问句里（要不要暂停、不急着要），只认带停顿的写法。
 # 说明 / 备注列常写来龙去脉（"搁置过、已恢复"），只认更窄的几个词。判错只影响标签：像搁置的项照常算要你管（daily.ps1）。
 $shelvedWords = '不急[，,。；;）)]|不急$|(?<!要不要)先停|先不做|先不改|(?<!要不要)先暂停|本周暂停|搁置|不主动做|等(?!你|您|待).{0,40}?(提出|结果|跑通|下来|再开|再做|再定)'
@@ -100,6 +102,8 @@ function Read-Queue([string]$file) {
         $get = { param($name) $i = [array]::IndexOf($cols, $name); if ($i -ge 0 -and $i -lt $cells.Count) { $cells[$i] } else { '' } }
         $raw = ((& $get '状态') -replace '\*', '').Trim()
         $state = $states | Where-Object { $raw.StartsWith($_, [StringComparison]::Ordinal) } | Select-Object -First 1
+        $len = "$state".Length
+        if (-not $state) { foreach ($a in $stateAliases) { $m = [regex]::Match($raw, $a[0]); if ($m.Success) { $state = $a[1]; $len = $m.Length; break } } }
         [pscustomobject]@{
             Id     = & $get '#'
             Goal   = $(if ($cols -contains '目标') { & $get '目标' } else { & $get '项' })
@@ -107,7 +111,7 @@ function Read-Queue([string]$file) {
             Deps   = & $get '依赖'
             Note   = $(foreach ($c in $cols) { if ($c -match '^(说明|备注)') { & $get $c; break } })
             State  = if ($state) { $state } else { '其他' }
-            Detail = if ($state) { $raw.Substring($state.Length).Trim() -replace '^[（(]', '' -replace '[）)]$', '' } else { $raw }
+            Detail = if ($state) { $raw.Substring($len).Trim() -replace '^[（(]', '' -replace '[）)]$', '' } else { $raw }
         }
     }
 }

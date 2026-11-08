@@ -22,7 +22,7 @@ Set-Content -LiteralPath (Join-Path $a '.gitignore') -Encoding utf8NoBOM -Value 
 | 2 | 看界面 | 截图 | 看一眼 | 无 | **待用户**（等你看截图） |
 | 3 | 推远程 | 授权 | 单向门 | 无 | 待用户 |
 | 4 | 跑回归 | 绿 | 自走 | 1 | 在做（r2） |
-| 5 | 拼写错 | 绿 | 自走 | 无 | 进行中 |
+| 5 | 说不准 | 绿 | 自走 | 无 | 部分已定：选了 A |
 | 8 | 依赖已完成 | 绿 | 自走 | 1 | 待做 |
 | 9 | 依赖还在做 | 绿 | 自走 | #4、1 | 待做 |
 | 10 | 依赖别的项目 | 绿 | 自走 | 天正 #22 | 待做 |
@@ -271,6 +271,28 @@ try {
     @{ projects = @(@{ name = '项目 C'; path = $c; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgC -Encoding utf8NoBOM
     $pc = (pwsh -NoProfile -File $Script -Config $cfgC -Json | ConvertFrom-Json).Projects[0]
     $tc = pwsh -NoProfile -File $Script -Config $cfgC | Out-String
+    $alias = Join-Path $root 'alias'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $alias 'docs')
+    G init -q $alias
+    @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 甲 | 无 | 已合并（11-06） |
+| 2 | 乙 | 无 | 已完成 |
+| 3 | 丙 | 无 | 进行中（r2） |
+| 4 | 丁 | 无 | 暂停（等数据） |
+| 5 | 戊 | 无 | 暂停于安全点 |
+| 6 | 己 | 无 | 部分已定：选了 A |
+| 7 | 依赖暂停的项 | 4 | 待做 |
+| 8 | 依赖已合并的项 | 1 | 待做 |
+'@ | Set-Content -LiteralPath (Join-Path $alias 'docs/queue.md') -Encoding utf8NoBOM
+    G -C $alias add -A; G -C $alias commit -q -m 'a1'
+    $cfgAlias = Join-Path $root 'projects-alias.json'
+    @{ projects = @(@{ name = '写法'; path = $alias; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgAlias -Encoding utf8NoBOM
+    $pAlias = (pwsh -NoProfile -File $Script -Config $cfgAlias -Json | ConvertFrom-Json).Projects[0]
+    Check 'state aliases: counted as the standard state' ($pAlias.Queue.'完成' -eq 2 -and $pAlias.Queue.'在做' -eq 1 -and $pAlias.Queue.'搁置' -eq 1 -and (($pAlias.Doing | ForEach-Object Detail) -join ',') -eq 'r2')
+    Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
+    Check 'state aliases: dependencies follow the standard state' ($pAlias.Next.Id -contains '8' -and $pAlias.Next.Id -notcontains '7')
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
     Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')
