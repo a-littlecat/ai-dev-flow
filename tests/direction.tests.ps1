@@ -97,6 +97,8 @@ try {
     Check 'a prototype over budget stops even when the gap is fine' (@($r.Stopped).Count -eq 1 -and $r.Stopped[0].Reason -match '^原型')
     $r = Run (New-Repo (Base @() @((D 'P' '原型' '2026-11-29' 3))))
     Check 'a prototype in budget and unmeasured is fine' (-not @($r.Stopped).Count)
+    $r = Run (New-Repo (Base @((Pt '2026-11-16' 0.3), (Pt '2026-11-23' 0.3), (Pt '2026-11-30' 0.3)) @((D 'P' '原型' '2026-11-29' 3))))
+    Check 'only a prototype: the project is not judged as a whole yet' ($r.Code -eq 0)
     $r = Run (New-Repo (Base @((Pt '2026-11-16' 0.3), (Pt '2026-11-23' 0.3), (Pt '2026-11-30' 0.3)) @((D 'A' '结束' -days 1))))
     Check 'a finished direction is not judged by itself' (-not @($r.Stopped).Count -and ($r.Actions -join '') -match '连续 2 周没缩小')
 
@@ -107,6 +109,59 @@ try {
     Check 'no direction: quiet asks for a measurement' (($r.Actions -join '') -match '28 天没量')
     $r = Run (New-Repo (Base @((Pt '2026-11-30' 0.3))))
     Check 'fresh baseline and run: nothing to do' ($r.Code -eq 0 -and $r.Baseline.AgeDays -eq 10)
+
+    # 放弃或继续以后重新算（审查 F1）
+    $flat = @((Pt '2026-11-16' 0.3), (Pt '2026-11-23' 0.3), (Pt '2026-11-30' 0.3))
+    $r = Run (New-Repo (Base $flat @((D 'A' '结束' -extra @{ decided = '2026-11-30' }))))
+    Check 'an abandoned direction does not keep asking for a review' ($r.Code -eq 0 -and -not ($r.Actions -join ''))
+    $top = Base $flat; $top['decided'] = '2026-11-30'
+    $r = Run (New-Repo $top)
+    Check 'no direction: a top-level decided restarts the window' ($r.Code -eq 0)
+    $top['decided'] = '11/30'
+    $r = Run (New-Repo $top)
+    Check 'no direction: a bad top-level decided is reported' (($r.Problems -join '') -match '顶层 decided' -and $r.Code -eq 3)
+
+    # 原型等用户定不算要停（审查 F2）
+    $repo = New-Repo (Base @((Pt '2026-11-30' (-0.2))) @((D 'P' '原型' '2026-11-20' 3)))
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $repo 'docs/decisions')
+    $cardFile = Join-Path $repo 'docs/decisions/2026-11-24-p.md'
+    Set-Content -LiteralPath $cardFile -Encoding utf8NoBOM -Value "# 决定卡：开不开 P`n`n状态：待定`n方向：P"
+    $r = Run $repo
+    Check 'a prototype waiting on a pending card is not stopped' (-not @($r.Stopped).Count -and $r.Code -eq 0)
+    Set-Content -LiteralPath $cardFile -Encoding utf8NoBOM -Value "# 决定卡：开不开 P`n`n状态：已定（2026-11-25）`n方向：P"
+    $r = Run $repo
+    Check 'a settled card no longer holds off a prototype over budget' (@($r.Stopped).Count -eq 1)
+    Set-Content -LiteralPath $cardFile -Encoding utf8NoBOM -Value "# 决定卡：别的`n`n状态：待定`n方向：Q"
+    $r = Run $repo
+    Check 'a pending card for another direction does not count' (@($r.Stopped).Count -eq 1)
+
+    # 旧的比过基准不算数（审查 F5）
+    $r = Run (New-Repo (Base @((Pt '2026-10-01' (-0.1))) @((D 'A' -days 5))))
+    Check 'an old beat from before the direction started does not count' (@($r.Stopped).Count -eq 1 -and $r.Stopped[0].Reason -match '预算 5 天' -and $r.Stopped[0].Reason -match '没量')
+    $r = Run (New-Repo (Base @((Pt '2026-11-15' (-0.1))) @((D 'A' -days 5))))
+    Check 'a beat before the baseline rerun does not count' (@($r.Stopped).Count -eq 1 -and $r.Stopped[0].Reason -match '预算 5 天')
+    $r = Run (New-Repo (Base @((Pt '2026-11-16' (-0.1))) @((D 'A'))))
+    Check 'beaten but 14 days quiet stops' (@($r.Stopped).Count -eq 1 -and $r.Stopped[0].Reason -match '14 天没量')
+
+    # 写错不放行（审查 F6）
+    $r = Run (New-Repo (Base @((Pt '2026-11-30' 0.3)) @((D 'A' -extra @{ budgetQuota = '100'; spentQuota = '500' }))))
+    Check 'a quota written as text is reported' (($r.Problems -join '|') -match 'budgetQuota 要写数字' -and ($r.Problems -join '|') -match 'spentQuota 要写数字' -and $r.Code -eq 3)
+    $na = Base $flat; $na['notApplicable'] = $false
+    $r = Run (New-Repo $na)
+    Check 'notApplicable false is reported and exempts nothing' ($r.Benchmark -eq 'ok' -and ($r.Problems -join '') -match 'notApplicable' -and ($r.Actions -join '') -match '连续 2 周没缩小')
+
+    # worktree 里找主检出 .agents/ 下的图（审查 F7）
+    $main = New-Repo (Base @(,([ordered]@{ date = '2026-11-30'; gap = 0.3; image = '.agents/pics/a.png' })))
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $main '.agents/pics')
+    Set-Content -LiteralPath (Join-Path $main '.agents/pics/a.png') -Encoding utf8NoBOM -Value 'x'
+    Set-Content -LiteralPath (Join-Path $main '.gitignore') -Encoding utf8NoBOM -Value '.agents/'
+    git -c init.defaultBranch=main init -q $main; git -C $main add -A 2>$null; git -C $main -c user.name=t -c user.email=t@t commit -qm x
+    $wt = Join-Path $root 'wt-of-main'
+    git -C $main worktree add -q --detach $wt 2>$null
+    $r = Run $wt
+    Check 'an image under .agents in the main checkout is found from a worktree' ($r.Code -eq 0 -and $r.ImageUrl -like '*/.agents/pics/a.png' -and $r.ImageUrl -notlike '*wt-of-main*')
+    $r = Run $main
+    Check 'and from the main checkout' ($r.Code -eq 0 -and $r.ImageUrl -like '*/.agents/pics/a.png')
 
     # 基准过期
     $old = Base @((Pt '2026-11-30' 0.3)); $old.baseline.date = '2026-10-29'

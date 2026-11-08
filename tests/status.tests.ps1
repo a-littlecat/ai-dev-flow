@@ -499,12 +499,13 @@ try {
     }
     $day = { param($n) (Get-Date).AddDays($n).ToString('yyyy-MM-dd') }
     $qHead = "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n"
-    $f = New-DirRepo '项目 F' ($qHead + "| 1 | [方向 A] 停掉的 | 无 | 待做 |`n| 2 | [方向原型 A] 停掉的原型 | 无 | 待做 |`n| 3 | [方向 B] 正常 | 无 | 待做 |`n| 4 | 普通项 | 无 | 待做 |`n| 5 | [方向 没定] 还没定 | 无 | 待做 |`n| 6 | [方向原型 C] 没登记 | 无 | 待做 |`n| 7 | [方向 旧] 完成的不管 | 无 | 完成 |") ([ordered]@{
+    $f = New-DirRepo '项目 F' ($qHead + "| 1 | [方向 A] 停掉的 | 无 | 待做 |`n| 2 | [方向原型 A] 停掉的原型 | 无 | 待做 |`n| 3 | [方向 B] 正常 | 无 | 待做 |`n| 4 | 普通项 | 无 | 待做 |`n| 5 | [方向 没定] 还没定 | 无 | 待做 |`n| 6 | [方向原型 C] 没登记 | 无 | 待做 |`n| 7 | [方向 旧] 完成的不管 | 无 | 完成 |`n| 8 | **[方向 A]** 粗体也认 | 无 | 待做 |`n| 9 | [方向 放弃了] 留着的 | 无 | 待做 |") ([ordered]@{
         northStar = '差异比例'
         baseline = [ordered]@{ model = '模型 X'; date = (& $day -1) }
         directions = @(
             [ordered]@{ name = 'A'; state = '进行中'; started = (& $day -60); budgetDays = 5 },
-            [ordered]@{ name = 'B'; state = '进行中'; started = (& $day 0); budgetDays = 30 })
+            [ordered]@{ name = 'B'; state = '进行中'; started = (& $day 0); budgetDays = 30 },
+            [ordered]@{ name = '放弃了'; state = '结束'; started = (& $day -60); budgetDays = 5 })
         runs = @(,[ordered]@{ date = (& $day -1); gap = 0.3 })
     })
     $g1 = New-DirRepo '项目 G' ($qHead + '| 1 | 普通项 | 无 | 待做 |') $null
@@ -520,6 +521,7 @@ try {
     $jf = pwsh -NoProfile -File $Script -Config $cfgF -Json | Out-String | ConvertFrom-Json
     $get = { param($n) $jf.Projects | Where-Object Name -eq $n }
     $pf = & $get '项目 F'
+    Check 'direction: items of a stopped or finished direction, bold tags too, are out' ((@($pf.Next | ForEach-Object Id) -join ',') -eq '3,4,5' -and @($pf.Next + $pf.Recent | Where-Object { $_.Goal -match '粗体|留着' }).Count -eq 0)
     Check 'direction: a stopped direction leaves its items out of the available ones' ($pf.Available -eq 4 -and (@($pf.Next | ForEach-Object Id) -join ',') -eq '3,4,5')
     Check 'direction: the stop reason is a hint' (($pf.Problems -join '|') -match '方向 A 要停：预算 5 天花完了')
     Check 'direction: a healthy direction is not stopped' (($pf.Problems -join '|') -notmatch '方向 B 要停' -and @($pf.Direction.Stopped).Count -eq 1)
@@ -537,7 +539,7 @@ try {
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
 
     # 状态页带图
-    $h = New-DirRepo '项目 H' ($qHead + "| 1 | 方向复盘 | 无 | 待做 |`n| 2 | 要不要换路线 | 无 | 待用户（决定卡 docs/decisions/2026-11-30-换路线.md：推荐换） |") ([ordered]@{
+    $h = New-DirRepo '项目 H' ($qHead + "| 1 | 方向复盘：A<b> | 无 | 待做 |`n| 2 | 要不要换路线 | 无 | 待用户（决定卡 docs/decisions/2026-11-30-换路线.md：推荐换） |") ([ordered]@{
         northStar = '差异比例'
         baseline = [ordered]@{ model = '模型 <X>'; date = (& $day -1); cost = '12 元'; minutes = 40 }
         directions = @(,[ordered]@{ name = 'A<b>'; state = '进行中'; started = (& $day -60); budgetDays = 5 })
@@ -549,7 +551,7 @@ try {
     Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-29-没人提.md') -Encoding utf8NoBOM -Value "# 决定卡：没人提的卡`n`n状态：待定"
     Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-01-定了.md') -Encoding utf8NoBOM -Value "# 决定卡：早定了的卡`n`n状态：已定（2026-11-02）"
     $cfgH = Join-Path $root 'projects-h.json'
-    @{ projects = @(@{ name = '项目 H'; path = $h; status = '推进中' }, @{ name = '项目 G'; path = $g1; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgH -Encoding utf8NoBOM
+    @{ projects = @(@{ name = '项目 H'; path = $h; status = '推进中' }, @{ name = '项目 G'; path = $g1; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '推进中' }, @{ name = '歇着的'; path = $g3; status = '暂停' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgH -Encoding utf8NoBOM
     $pageH = Join-Path $root 'out/status-h.html'
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
     $env:AI_DEV_FLOW_NOTIFY = Join-Path $root 'out/no-notify.json'
@@ -562,6 +564,7 @@ try {
     Check 'page: a card named by a waiting item sits under it, opened' ($html -match '(?s)等你定 #2 要不要换路线.*?<details class="dc" open><summary>决定卡：换不换路线</summary>.*?</li>')
     Check 'page: a card image shows as a thumbnail and card text is escaped' ($html -match '走一半&lt;img src=x&gt;' -and $html -notmatch '<img src=x>' -and ([regex]::Matches($html, 'class="thumb"')).Count -ge 2)
     Check 'page: a card nobody named gets its own line' ($html -match '有一张决定卡等你定<details class="dc" open><summary>决定卡：没人提的卡' -and $dh -match '决定卡 没人提的卡 等你定')
+    Check 'page: the paused line survives a stopped direction' ($html -match '暂停：歇着的')
     Check 'page: settled cards are not listed' ($html -notmatch '早定了的卡')
     Check 'page: a stopped direction is listed with its reason, escaped' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">')
     Check 'page: the count includes loose cards and stopped directions' ($html -match '要你管 3 件事')
@@ -573,10 +576,17 @@ try {
     Check 'page: a flow page gets a link' ($htmlFlow -match '<div class="k">流程图</div><div><a href="file:///[^"]*/docs/flow\.html"')
     Check 'page: no chart for a project without runs' ([regex]::Matches($html, '<svg class="spark"').Count -eq 1)
     # 已有人在处理的方向复盘不再催
-    (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘 \| 无 \| 待做 \|', '| 1 | 方向复盘 | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM
+    (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘：A<b> \| 无 \| 待做 \|', '| 1 | 方向复盘：A<b> | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM
     $dh2 = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -State (Join-Path $root 'out/daily-h.json') -DryRun | Out-String
     $html2 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
     Check 'page: a stopped direction under review is not asked again' ($html2 -match '要你管 2 件事' -and $dh2 -notmatch '方向 A<b> 要停' -and $html2 -match '<div class="alert">')
+    # 复盘 A 不会把同项目别的要停方向藏掉
+    $hj = Get-Content -LiteralPath (Join-Path $h 'docs/benchmark.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $hj.directions = @($hj.directions) + [pscustomobject]@{ name = 'C2'; state = '进行中'; started = (& $day -60); budgetDays = 5 }
+    $hj | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $h 'docs/benchmark.json') -Encoding utf8NoBOM
+    $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
+    $html3 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
+    Check 'page: reviewing one direction does not hide another stopped one' ($html3 -match '</b> 方向 C2 要停' -and $html3 -notmatch '</b> 方向 A&lt;b&gt; 要停')
     Remove-Item Env:AI_DEV_FLOW_NOTIFY
 
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1

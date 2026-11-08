@@ -34,7 +34,7 @@ Seen：<不同日期的数量>（<日期列表>）
    升级本身是一项自走档的改动，照常证明、验证、合并。升级完的教训从 `LESSONS.md` 移走；暂时移不走的（等别处的改动发版），在这条里加一行 `升级：<交给了谁、哪天>`，状态脚本就不再把它列为"还没升级"。
    该改的是 skill 的（换个项目也一样会犯），不在本项目各做一份，直接写进 ai-dev-flow 仓库的 `docs/requests.md`，写法见 `portfolio.md` 第 7 节。多项目总览已把某条列为跨项目教训的（总览仓库的 `LESSONS.md` 里有，或总览转来了请求），项目这边照常记证据和 Seen，由总览统一升到 skill 或用户级配置。其余的照本步升级。
 6. 更新 `reviewed-through` 为本次看到的最新提交。
-7. 更新北极星数字（口径见项目 `AGENTS.md`）；有 `docs/benchmark.json` 的，这周还没量差距就量一次，追加一条 `runs`（`direction.md` 第 4 节）。
+7. 更新北极星数字（口径见项目 `AGENTS.md`）；登记了基准的（`docs/benchmark.json` 不是 `notApplicable`），这周还没量差距就量一次，追加一条 `runs`（`direction.md` 第 4 节）。
 
 ## 3. 复盘摘要
 

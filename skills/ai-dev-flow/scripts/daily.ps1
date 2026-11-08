@@ -19,7 +19,7 @@ param(
 # 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）照常算要你管，排在最后、标"像已搁置"，附改成搁置的命令；判断靠关键词，可能判错，所以不拿掉。
 # 推进中的项目没有在做的项、但最近 StaleMinutes 分钟内有动静的，标"刚有动静"，不算空着：会话可能正在两项之间。
 # 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（并排图缩略图，点开看大图）、"差距趋势"（按周小图）、"流程图"（docs/flow.html 的链接）三行；
-# 待定的决定卡显示在① 要你做：挂在提到它的待用户项下面，没有这样的项就单独一条。方向要停、又没有在处理的（待用户或在做的项目标写着"方向复盘"）也进①。
+# 待定的决定卡显示在① 要你做：挂在提到它的待用户项下面，没有这样的项就单独一条。方向要停、又没有在处理的（待用户或在做的项目标写着"方向复盘：<这个方向>"）也进①。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $here = $PSScriptRoot
@@ -47,10 +47,10 @@ function Recent($p) { $null -ne $p.IdleMinutes -and $p.IdleMinutes -lt $StaleMin
 function Label($i) { if ($i.Id) { '#' + (($i.Id -replace '^#', '').Trim()) } else { "「$(Cut $i.Goal 20)」" } }
 function Num([double]$v) { $v.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture) }
 function Thumb([string]$url, [string]$alt) { "<a href=`"$(Enc $url)`" target=`"_blank`" title=`"点开看大图`"><img class=`"thumb`" loading=`"lazy`" src=`"$(Enc $url)`" alt=`"$(Enc $alt)`"></a>" }
-# 方向要停、还没人在处理：待用户或在做的项里没有"方向复盘"。
+# 方向要停、还没人在处理：待用户或在做的项里没有"方向复盘：<这个方向>"。
 function StoppedOpen($p) {
-    $busy = @(@($p.Waiting) + @($p.Doing) | Where-Object { "$($_.Goal)" -match '方向复盘' }).Count
-    if ($busy) { @() } else { @(@($p.Direction.Stopped) | Where-Object { $_ }) }
+    $open = @(@($p.Waiting) + @($p.Doing) | ForEach-Object { "$($_.Goal)" })
+    @(@($p.Direction.Stopped) | Where-Object { $_ } | Where-Object { $re = '方向复盘[：:]\s*' + [regex]::Escape($_.Name); -not @($open | Where-Object { $_ -match $re }).Count })
 }
 # 按周差距小图：一条线，虚线是基准（差距 0），低于虚线就是比过了；每个点悬停看数，最后一点标数。
 function Spark($trend) {
@@ -88,7 +88,7 @@ function State($p) {
     if ($p.Status -eq '维护') { return @('维护中', 'muted') }
     if (IsStalled $p) { return @('可能停了', 'bad') }
     if ((Asks $p).Count) { return @('等你', 'warn') }
-    if ((StoppedOpen $p).Count) { return @('方向要停', 'bad') }
+    if (@(StoppedOpen $p).Count) { return @('方向要停', 'bad') }
     if (@($p.Doing).Count) { return @('在做', 'ok') }
     if ($p.Available -and (Recent $p)) { return @('刚有动静', 'ok') }
     if ($p.Available) { return @('空着，可开工', 'idle') }
@@ -149,7 +149,7 @@ foreach ($w in $waiting) {
     $todo.Add("<li><b>$(Enc (Nick $w.Project))</b> 等你定 $(Enc (Item $i 40))$(if ($i.Hint -eq '像搁置') { '（像已搁置）' })$why<div class=`"how`">$how</div>$attached</li>")
 }
 foreach ($c in $looseCards) { $todo.Add("<li><b>$(Enc (Nick $c.Project))</b> 有一张决定卡等你定$(CardBody $c.Card)<div class=`"how`">到这个项目新建会话，发 <code>/next 决定卡 $(Enc (Split-Path $c.Card.File -Leaf)) 你的答复</code></div></li>") }
-foreach ($s in $stops) { $todo.Add("<li><b>$(Enc (Nick $s.Project))</b> 方向 $(Enc $s.Dir.Name) 要停：$(Enc (Cut $s.Dir.Reason 120))<div class=`"how`">到这个项目新建会话，发 <code>/next</code>：先复盘，再报决定卡给你定</div></li>") }
+foreach ($stop in $stops) { $todo.Add("<li><b>$(Enc (Nick $stop.Project))</b> 方向 $(Enc $stop.Dir.Name) 要停：$(Enc (Cut $stop.Dir.Reason 120))<div class=`"how`">到这个项目新建会话，发 <code>/next</code>：先复盘，再报决定卡给你定</div></li>") }
 foreach ($p in $stalled) {
     $d = @($p.Doing)[0]
     $todo.Add("<li><b>$(Enc (Nick $p.Name))</b> 可能停了：$(if ($d) { Enc (Item $d 40) } else { '在做的项' }) 已经 $(Ago $p.IdleMinutes)没动静<div class=`"how`">到这个项目新建会话，发 <code>/next$(if ($d -and $d.Id) { ' #' + (Enc (($d.Id -replace '^#', '').Trim())) })</code> 接着做</div></li>")
@@ -237,7 +237,7 @@ if (-not $NoNotify) {
     $events = @(
         foreach ($w in $waiting) { [pscustomobject]@{ Key = "$($w.Project)|$(Label $w.Item)|$(Cut $w.Item.Goal 40)|$(Cut $w.Item.Detail 60)"; Line = "$(Nick $w.Project)：$(Item $w.Item) 等你定$(if ($w.Item.Hint -eq '像搁置') { '（像已搁置）' })"; Ask = $true } }
         foreach ($c in $looseCards) { [pscustomobject]@{ Key = "$($c.Project)|决定卡|$($c.Card.File)"; Line = "$(Nick $c.Project)：决定卡 $(Cut $c.Card.Title 30) 等你定"; Ask = $true } }
-        foreach ($s in $stops) { [pscustomobject]@{ Key = "$($s.Project)|方向要停|$($s.Dir.Name)"; Line = "$(Nick $s.Project)：方向 $($s.Dir.Name) 要停，$(Cut $s.Dir.Reason 40)"; Ask = $true } }
+        foreach ($stop in $stops) { [pscustomobject]@{ Key = "$($stop.Project)|方向要停|$($stop.Dir.Name)"; Line = "$(Nick $stop.Project)：方向 $($stop.Dir.Name) 要停，$(Cut $stop.Dir.Reason 40)"; Ask = $true } }
         foreach ($p in $stalled) { $d = @($p.Doing)[0]; [pscustomobject]@{ Key = "$($p.Name)|停滞|$((@($p.Doing) | ForEach-Object { $_.Id }) -join ',')|$($p.LastActivity)"; Line = "$(Nick $p.Name)：$(if ($d) { Item $d } else { '在做的项' }) 已 $(Ago $p.IdleMinutes)没动静，可能停了"; Ask = $false } }
     )
     $pushed = @(if (Test-Path -LiteralPath $State) {

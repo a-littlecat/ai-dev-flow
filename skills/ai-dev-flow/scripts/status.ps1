@@ -32,7 +32,7 @@ param(
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
-# 基准和方向（Direction）：判定都在 direction.ps1（modules/direction.md），这里接过来。要停的方向，它的 [方向 X]、[方向原型 X] 项不算可领；队列里有 [方向 X] 项、
+# 基准和方向（Direction）：判定都在 direction.ps1（modules/direction.md），这里接过来。要停或已结束的方向，它的 [方向 X]、[方向原型 X] 项不算可领；队列里有 [方向 X] 项、
 #   方向却没写成"进行中"的（没定就排了）提示。推进中的项目把 Actions 写成提示；benchmark.json 写错的任何状态都提示。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
 # 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…""要不要先停"不算；说明 / 备注列只认 先不做 / 先不改 / 本周暂停 / 不主动做）；都写成"提示"。
@@ -207,10 +207,10 @@ function Get-ProjectStatus($p) {
     $stoppedDirs = @()
     try {
         $r.Direction = & (Join-Path $PSScriptRoot 'direction.ps1') -Repo $path -Json | Out-String | ConvertFrom-Json
-        $stoppedDirs = @($r.Direction.Stopped | ForEach-Object { $_.Name })
+        $stoppedDirs = @(@($r.Direction.Stopped | ForEach-Object { $_.Name }) + @(@($r.Direction.Directions) | Where-Object { $_.State -eq '结束' } | ForEach-Object { $_.Name }))
     } catch { $r.Problems.Add("direction.ps1 出错：$($_.Exception.Message)") }
     $global:LASTEXITCODE = 0
-    $tagRe = '^\s*\[方向(原型)?\s+([^\]]+?)\s*\]'
+    $tagRe = '^[\s*]*\[方向(原型)?\s+([^\]]+?)\s*\]'
 
     $done = @()
     $items = @()
