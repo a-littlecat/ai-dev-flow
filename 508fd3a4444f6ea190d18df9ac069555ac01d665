@@ -1,0 +1,1 @@
+覆盖：abe8a6a..508fd3a；Claude Opus 5.5 子 agent（全新上下文，high）→ Pass；跑了：tests/run-all.ps1 → 退出 0（两次），tests/run-all.tests.ps1 → 退出 0；快检用时：324 秒；改坏：测试里造一条失败 → run-all 退出 1，恢复后干净；没跑：无；没采纳：卡住那一轮仍删别的已合并内容，文档写的是不清记录，确实没清，也不丢数据；check-md 失败时 run-all 不打问题行，日志路径打出来了，多一步而已
