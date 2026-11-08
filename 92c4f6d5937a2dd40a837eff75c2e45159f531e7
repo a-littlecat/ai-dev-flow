@@ -1,0 +1,1 @@
+覆盖：9e9418a..92c4f6d；沿用 508fd3a 的 Pass（Claude Opus 5.5 子 agent，high）；之后只多了文档：docs/queue.md 全是主干带进来的；AGENTS.md 把用时改成约 5 分钟，和审查方量到的 298～328 秒核对过；没跑：同原 note；没采纳：同原 note
