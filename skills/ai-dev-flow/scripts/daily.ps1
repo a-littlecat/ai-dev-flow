@@ -18,7 +18,7 @@ param(
 # 只在有上次没推过的事时才用 user：和上次推过的一样，就降成 info，只弹系统通知，不再推手机。通知发不出去时不记，下次照常推。
 # 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）照常算要你管，排在最后、标"像已搁置"，附改成搁置的命令；判断靠关键词，可能判错，所以不拿掉。
 # 推进中的项目没有在做的项、但最近 StaleMinutes 分钟内有动静的，标"刚有动静"，不算空着：会话可能正在两项之间。
-# 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（并排图缩略图，点开看大图）、"差距趋势"（按周小图）两行；
+# 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（并排图缩略图，点开看大图）、"差距趋势"（按周小图）、"流程图"（docs/flow.html 的链接）三行；
 # 待定的决定卡显示在① 要你做：挂在提到它的待用户项下面，没有这样的项就单独一条。方向要停、又没有在处理的（待用户或在做的项目标写着"方向复盘"）也进①。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -208,6 +208,8 @@ foreach ($p in $active) {
     } elseif ($bench -and $bench.Benchmark -eq 'none' -and $p.Status -eq '推进中') {
         $null = $b.Append('<div class="k">和基准比</div><div class="muted">还没登记基准</div>')
     }
+    if ($bench -and $bench.FlowUrl) { $null = $b.Append("<div class=`"k`">流程图</div><div><a href=`"$(Enc $bench.FlowUrl)`" target=`"_blank`">打开看这个项目怎么运转</a></div>") }
+    elseif ($bench -and $bench.Benchmark -ne 'notApplicable' -and $p.Status -eq '推进中') { $null = $b.Append('<div class="k">流程图</div><div class="muted">还没有</div>') }
     $null = $b.Append("<div class=`"k`">接下来</div><div>$(Lines $p.Next)</div>")
     $null = $b.Append("<div class=`"k`">最近完成</div><div>$(Lines $p.Recent)</div>")
     $null = $b.Append('</div>')

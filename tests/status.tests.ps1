@@ -566,6 +566,11 @@ try {
     Check 'page: a stopped direction is listed with its reason, escaped' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">')
     Check 'page: the count includes loose cards and stopped directions' ($html -match '要你管 3 件事')
     Check 'page: no baseline says so; notApplicable shows no row' ($html -match '还没登记基准' -and ([regex]::Matches($html, '<div class="k">和基准比</div>')).Count -eq 2)
+    Check 'page: no flow page says so' ($html -match '<div class="k">流程图</div><div class="muted">还没有</div>')
+    Set-Content -LiteralPath (Join-Path $h 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
+    $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
+    $htmlFlow = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
+    Check 'page: a flow page gets a link' ($htmlFlow -match '<div class="k">流程图</div><div><a href="file:///[^"]*/docs/flow\.html"')
     Check 'page: no chart for a project without runs' ([regex]::Matches($html, '<svg class="spark"').Count -eq 1)
     # 已有人在处理的方向复盘不再催
     (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘 \| 无 \| 待做 \|', '| 1 | 方向复盘 | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM

@@ -170,6 +170,17 @@ try {
     Check 'a card image outside the repo becomes text and a problem' (@($lines | Where-Object { $_.Type -eq 'text' -and $_.Text -match '图打不开' }).Count -eq 1 -and ($r.Problems -join '') -match '仓库外')
     Check 'the title and status lines are not repeated in the body' (-not @($lines | Where-Object { $_.Text -match '换不换路线|状态' }).Count)
 
+    # 模板和本仓库自己的那页：流程图要有的几样都在；模板不能被当成一张待定的卡
+    $here = Join-Path $PSScriptRoot '..'
+    foreach ($page in 'skills/ai-dev-flow/templates/flow.html', 'docs/flow.html') {
+        $t = Get-Content -LiteralPath (Join-Path $here $page) -Raw -Encoding UTF8
+        Check "$page has steps, who, what passes, how to measure, weak spots" ($t -match 'class="step"' -and $t -match 'class="who ' -and $t -match 'class="pass"' -and $t -match '<dt>怎么量</dt>' -and $t -match '<dt>短板</dt>')
+    }
+    $card = Get-Content -LiteralPath (Join-Path $here 'skills/ai-dev-flow/templates/decision-card.md') -Raw -Encoding UTF8
+    Check 'decision card template has what a card needs' ($card -match '状态：待定' -and $card -match '## 选项' -and $card -match '做法' -and $card -match '质量 / 成本 / 时间' -and $card -match '风险' -and $card -match '## 推荐' -and $card -match '## 不定的代价' -and $card -match '!\[')
+    $r = Run $here
+    Check 'this repository needs no baseline and has its flow page' ($r.Benchmark -eq 'notApplicable' -and $r.FlowUrl -and $r.Code -eq 0)
+
     # 文本输出
     $repo = New-Repo (Base @((Pt '2026-11-30' 0.3)))
     $text = pwsh -NoProfile -File $Script -Repo $repo -Today '2026-11-30' | Out-String

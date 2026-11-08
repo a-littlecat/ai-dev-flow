@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ai-dev-flow：流程图</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--fg:#1d1d1b;--muted:#6f6f69;--line:#e4e4df;--model:#3d5a99;--modelbg:#e6ecf8;--program:#17703a;--programbg:#e2f3e7;--person:#a85d00;--personbg:#fdf1dc;--external:#6f6f69;--externalbg:#efefea}
+@media (prefers-color-scheme:dark){:root{--bg:#151514;--card:#1f1f1d;--fg:#ececea;--muted:#a0a09a;--line:#33332f;--model:#93b0ee;--modelbg:#1c2740;--program:#6ad08c;--programbg:#15301f;--person:#f5b24a;--personbg:#3a2c12;--external:#a0a09a;--externalbg:#2a2a27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,"Microsoft YaHei",sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 56px}h1{font-size:22px;margin:0 0 6px}h2{font-size:16px;margin:28px 0 8px}.muted{color:var(--muted);font-size:13px}
+.who{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.model{color:var(--model);background:var(--modelbg)}.program{color:var(--program);background:var(--programbg)}.person{color:var(--person);background:var(--personbg)}.external{color:var(--external);background:var(--externalbg)}
+.flow{list-style:none;margin:16px 0 0;padding:0}
+.step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.step h3{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;margin:0 0 4px}.step p{margin:0 0 6px}
+.step dl{display:grid;grid-template-columns:4em 1fr;gap:2px 10px;margin:0;font-size:14px}.step dt{color:var(--muted)}.step dd{margin:0;min-width:0}
+.pass{color:var(--muted);font-size:13px;padding:6px 0 6px 22px;position:relative}.pass::before{content:"↓";position:absolute;left:6px;color:var(--fg);font-size:15px}
+</style>
+</head>
+<body>
+<main>
+<h1>ai-dev-flow：从一句话到合进主干</h1>
+<p>用户说要什么，这套流程把它变成队列里的一项，一直做到验证通过、合并、复盘。用户只管方向、品味和撤不回的事。</p>
+<p class="muted">谁做：<span class="who model">模型</span> <span class="who program">程序</span> <span class="who person">人</span> <span class="who external">外部服务</span>　　更新于 2026-11-08</p>
+
+<ol class="flow">
+  <li class="step">
+    <h3>1. 提要求 <span class="who person">人</span></h3>
+    <p>用户在项目里说要做什么，或者总览把决定和请求写进项目的请求记录。</p>
+    <dl><dt>怎么量</dt><dd>用户有没有被反复问；有没有在会话之间传话</dd><dt>短板</dt><dd>用户要开会话发 /next，没开就不动</dd></dl>
+  </li>
+  <li class="pass">传给下一步：一句话的要求，或者请求记录里的一节</li>
+  <li class="step">
+    <h3>2. 排队列、定档 <span class="who model">模型</span></h3>
+    <p>写成队列里的一项：目标、完成标准、档位。方向性的选择在这里停下，报决定卡给用户定。</p>
+    <dl><dt>怎么量</dt><dd>完成标准能不能被机器判定</dd><dt>短板</dt><dd>档位和"算不算方向性选择"靠模型判断</dd></dl>
+  </li>
+  <li class="pass">传给下一步：队列里的一行</li>
+  <li class="step">
+    <h3>3. 做和证明 <span class="who model">模型</span> <span class="who program">程序</span></h3>
+    <p>执行方在自己的工作目录里改，跑检查，亲手改坏一次确认测试会红，写好提交正文。</p>
+    <dl><dt>怎么量</dt><dd>快检退出码和用时；改坏时哪个测试红了</dd><dt>短板</dt><dd>检查的样例总比真实情况少</dd></dl>
+  </li>
+  <li class="pass">传给下一步：定稿的提交，只给目标、完成标准和改动，不给执行方的自述</li>
+  <li class="step">
+    <h3>4. 独立验证 <span class="who model">模型</span> <span class="who program">程序</span></h3>
+    <p>全新上下文的验证方自己重跑快检，专门找问题，只报拿得出证明的。结论挂在提交上。</p>
+    <dl><dt>怎么量</dt><dd>合并后 48 小时内的返工率</dd><dt>短板</dt><dd>同一厂商的模型可能犯同样的错；只有撤不回的事才跨厂商</dd></dl>
+  </li>
+  <li class="pass">传给下一步：对应这个版本的 Pass 结论</li>
+  <li class="step">
+    <h3>5. 合并 <span class="who person">人</span> <span class="who program">程序</span></h3>
+    <p>机械检查过了，按信任等级合：低等级问用户，高等级直接合。合完自动删工作目录和分支。</p>
+    <dl><dt>怎么量</dt><dd>被用户打回的比例；单向门事故数</dd><dt>短板</dt><dd>用户看不懂技术改动时，打回率总是 0，所以还要看返工率</dd></dl>
+  </li>
+  <li class="pass">传给下一步：主干上的提交和验证记录</li>
+  <li class="step">
+    <h3>6. 复盘和周会 <span class="who model">模型</span> <span class="who person">人</span></h3>
+    <p>攒够 20 个提交或 7 天复盘一次，反复出现的问题升级成脚本或规则。周会看各项目的差距趋势，定下周目标。</p>
+    <dl><dt>怎么量</dt><dd>教训出现的次数；差距有没有缩小</dd><dt>短板</dt><dd>要有人开周会，没开就看不到跨项目的问题</dd></dl>
+  </li>
+</ol>
+
+<h2>最后交出去的是什么</h2>
+<p>一个每条规则都做进脚本或文档、安装到本机的 skill。它本身没有能和通用模型并排比的交付物，所以这个仓库不登记基准（<code>docs/benchmark.json</code> 写明了原因）；效果看的是各项目的差距和返工率。</p>
+</main>
+</body>
+</html>

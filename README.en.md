@@ -26,8 +26,11 @@ skills/ai-dev-flow/
   modules/orchestrate.md   auto-advance: queue, background subagents in worktrees, parallel limits
   modules/garden.md        retrospective, lesson promotion, retro digest, cleanup
   modules/portfolio.md     several projects at once: project list, status page and notifications, inbox, weekly review, cross-project lessons
+  modules/direction.md     try new directions as throwaway prototypes, decision cards, baseline and convergence, a one-page flow chart
+  templates/               decision card and flow chart templates
   scripts/dispatch.ps1     hand an item to an external CLI agent (Codex, DSH, ...) to build or review
   scripts/status.ps1       collect every project's status from the portfolio repo's project list (read-only)
+  scripts/direction.ps1    read a project's baseline, budgets, decision cards and flow page; say whether a direction must stop (read-only)
   scripts/daily.ps1        write the status as one HTML page and send a notification; meant for a scheduled task
   scripts/notify.ps1       desktop notification; things that need you also go to your phone (Bark)
   scripts/watch.ps1        stall check every 15 minutes; only projects that newly stalled go to your phone

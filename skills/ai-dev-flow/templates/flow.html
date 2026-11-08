@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title><项目名>：流程图</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--fg:#1d1d1b;--muted:#6f6f69;--line:#e4e4df;--model:#3d5a99;--modelbg:#e6ecf8;--program:#17703a;--programbg:#e2f3e7;--person:#a85d00;--personbg:#fdf1dc;--external:#6f6f69;--externalbg:#efefea}
+@media (prefers-color-scheme:dark){:root{--bg:#151514;--card:#1f1f1d;--fg:#ececea;--muted:#a0a09a;--line:#33332f;--model:#93b0ee;--modelbg:#1c2740;--program:#6ad08c;--programbg:#15301f;--person:#f5b24a;--personbg:#3a2c12;--external:#a0a09a;--externalbg:#2a2a27}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,"Microsoft YaHei",sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 56px}h1{font-size:22px;margin:0 0 6px}h2{font-size:16px;margin:28px 0 8px}.muted{color:var(--muted);font-size:13px}
+.who{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.model{color:var(--model);background:var(--modelbg)}.program{color:var(--program);background:var(--programbg)}.person{color:var(--person);background:var(--personbg)}.external{color:var(--external);background:var(--externalbg)}
+.flow{list-style:none;margin:16px 0 0;padding:0}
+.step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.step h3{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;margin:0 0 4px}.step p{margin:0 0 6px}
+.step dl{display:grid;grid-template-columns:4em 1fr;gap:2px 10px;margin:0;font-size:14px}.step dt{color:var(--muted)}.step dd{margin:0;min-width:0}
+.pass{color:var(--muted);font-size:13px;padding:6px 0 6px 22px;position:relative}.pass::before{content:"↓";position:absolute;left:6px;color:var(--fg);font-size:15px}
+</style>
+</head>
+<body>
+<main>
+<!-- 照着改：一步一个 li.step，步骤之间一个 li.pass。谁做只用四种：model 模型、program 程序、person 人、external 外部服务；一步有几方就写几个。 -->
+<h1><项目名>：从输入到输出</h1>
+<p><一两句白话：这个项目拿什么进来，交出什么去。></p>
+<p class="muted">谁做：<span class="who model">模型</span> <span class="who program">程序</span> <span class="who person">人</span> <span class="who external">外部服务</span>　　更新于 <YYYY-MM-DD></p>
+
+<ol class="flow">
+  <li class="step">
+    <h3>1. <这一步叫什么> <span class="who program">程序</span></h3>
+    <p><白话：这一步做什么。></p>
+    <dl><dt>怎么量</dt><dd><这一步好不好看什么数或什么样例></dd><dt>短板</dt><dd><已知做得不好的地方；没有写"暂无"></dd></dl>
+  </li>
+  <li class="pass">传给下一步：<传什么数据，白话></li>
+  <li class="step">
+    <h3>2. <这一步叫什么> <span class="who model">模型</span></h3>
+    <p><白话：这一步做什么。></p>
+    <dl><dt>怎么量</dt><dd><…></dd><dt>短板</dt><dd><…></dd></dl>
+  </li>
+</ol>
+
+<h2>最后交出去的是什么</h2>
+<p><最终交付物；它和基准比的差距怎么量（和 docs/benchmark.json 的 northStar 一致）。></p>
+</main>
+</body>
+</html>
