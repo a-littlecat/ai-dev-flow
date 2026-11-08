@@ -18,6 +18,8 @@ param(
 # 只在有上次没推过的事时才用 user：和上次推过的一样，就降成 info，只弹系统通知，不再推手机。通知发不出去时不记，下次照常推。
 # 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）照常算要你管，排在最后、标"像已搁置"，附改成搁置的命令；判断靠关键词，可能判错，所以不拿掉。
 # 推进中的项目没有在做的项、但最近 StaleMinutes 分钟内有动静的，标"刚有动静"，不算空着：会话可能正在两项之间。
+# 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（并排图缩略图，点开看大图）、"差距趋势"（按周小图）两行；
+# 待定的决定卡显示在① 要你做：挂在提到它的待用户项下面，没有这样的项就单独一条。方向要停、又没有在处理的（待用户或在做的项目标写着"方向复盘"）也进①。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $here = $PSScriptRoot
@@ -43,11 +45,50 @@ function IsStalled($p) { [bool](@($p.Problems) -match '^可能停滞') }
 function Asks($p) { @(@($p.Waiting) | Where-Object { $_.Hint -ne '像搁置' }) + @(@($p.Waiting) | Where-Object { $_.Hint -eq '像搁置' }) }
 function Recent($p) { $null -ne $p.IdleMinutes -and $p.IdleMinutes -lt $StaleMinutes }
 function Label($i) { if ($i.Id) { '#' + (($i.Id -replace '^#', '').Trim()) } else { "「$(Cut $i.Goal 20)」" } }
+function Num([double]$v) { $v.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture) }
+function Thumb([string]$url, [string]$alt) { "<a href=`"$(Enc $url)`" target=`"_blank`" title=`"点开看大图`"><img class=`"thumb`" loading=`"lazy`" src=`"$(Enc $url)`" alt=`"$(Enc $alt)`"></a>" }
+# 方向要停、还没人在处理：待用户或在做的项里没有"方向复盘"。
+function StoppedOpen($p) {
+    $busy = @(@($p.Waiting) + @($p.Doing) | Where-Object { "$($_.Goal)" -match '方向复盘' }).Count
+    if ($busy) { @() } else { @(@($p.Direction.Stopped) | Where-Object { $_ }) }
+}
+# 按周差距小图：一条线，虚线是基准（差距 0），低于虚线就是比过了；每个点悬停看数，最后一点标数。
+function Spark($trend) {
+    $t = @(@($trend) | Where-Object { $_ } | Select-Object -Last 12)
+    if (-not $t.Count) { return '' }
+    $gaps = @($t | ForEach-Object { [double]$_.Gap })
+    $stat = $gaps | Measure-Object -Minimum -Maximum
+    $lo = [math]::Min(0, $stat.Minimum); $hi = [math]::Max(0, $stat.Maximum)
+    if ($hi -eq $lo) { $hi = $lo + 1 }
+    $w = 270; $h = 64; $mx = 10; $my = 10; $right = 72
+    $xs = @(for ($i = 0; $i -lt $t.Count; $i++) { if ($t.Count -gt 1) { $mx + $i * ($w - $mx - $right) / ($t.Count - 1) } else { $mx } })
+    $ys = @(foreach ($g in $gaps) { $h - $my - ($g - $lo) / ($hi - $lo) * ($h - 2 * $my) })
+    $zero = $h - $my - (0 - $lo) / ($hi - $lo) * ($h - 2 * $my)
+    $line = (0..($t.Count - 1) | ForEach-Object { "$(Num $xs[$_]),$(Num $ys[$_])" }) -join ' '
+    $dots = (0..($t.Count - 1) | ForEach-Object {
+        "<g><title>$(Enc $t[$_].Week)（$(Enc $t[$_].Date)）：$(Num $gaps[$_])</title><circle cx=`"$(Num $xs[$_])`" cy=`"$(Num $ys[$_])`" r=`"10`" fill=`"transparent`"/><circle cx=`"$(Num $xs[$_])`" cy=`"$(Num $ys[$_])`" r=`"4`" fill=`"var(--idle)`" stroke=`"var(--card)`" stroke-width=`"2`"/></g>" }) -join ''
+    $lastX = $xs[-1] + 8; $lastY = $ys[-1] + 4
+    "<svg class=`"spark`" width=`"$w`" height=`"$h`" viewBox=`"0 0 $w $h`" role=`"img`" aria-label=`"按周差距：$(Enc (($gaps | ForEach-Object { Num $_ }) -join ' → '))`">" +
+    "<line x1=`"0`" x2=`"$($w - $right)`" y1=`"$(Num $zero)`" y2=`"$(Num $zero)`" stroke=`"var(--muted)`" stroke-width=`"1`" stroke-dasharray=`"3 3`"/>" +
+    "<text x=`"$($w - 26)`" y=`"$(Num ($zero + 4))`" font-size=`"11`" fill=`"var(--muted)`">基准</text>" +
+    $(if ($t.Count -gt 1) { "<polyline points=`"$line`" fill=`"none`" stroke=`"var(--idle)`" stroke-width=`"2`" stroke-linejoin=`"round`" stroke-linecap=`"round`"/>" }) +
+    "$dots<text x=`"$(Num $lastX)`" y=`"$(Num $lastY)`" font-size=`"11`" fill=`"var(--fg)`">$(Num $gaps[-1])</text></svg>"
+}
+# 决定卡正文：标题、文字、图，最多 60 行；打开就能看，不用再开文件。
+function CardBody($c) {
+    $rows = (@(@($c.Lines) | Where-Object { $_ } | Select-Object -First 60) | ForEach-Object {
+        if ($_.Type -eq 'image') { Thumb $_.Url $_.Alt }
+        elseif ($_.Type -eq 'h') { "<div class=`"ch`">$(Enc $_.Text)</div>" }
+        else { "<div>$(Enc $_.Text)</div>" }
+    }) -join ''
+    "<details class=`"dc`" open><summary>决定卡：$(Enc $c.Title)</summary>$rows<div class=`"how`">$(Enc $c.File)</div></details>"
+}
 # 状态标签：可能停了 > 等你 > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
 function State($p) {
     if ($p.Status -eq '维护') { return @('维护中', 'muted') }
     if (IsStalled $p) { return @('可能停了', 'bad') }
     if ((Asks $p).Count) { return @('等你', 'warn') }
+    if ((StoppedOpen $p).Count) { return @('方向要停', 'bad') }
     if (@($p.Doing).Count) { return @('在做', 'ok') }
     if ($p.Available -and (Recent $p)) { return @('刚有动静', 'ok') }
     if ($p.Available) { return @('空着，可开工', 'idle') }
@@ -59,7 +100,14 @@ $waiting = @(foreach ($p in $active) { foreach ($w in Asks $p) { [pscustomobject
 $waiting = @(@($waiting | Where-Object { $_.Item.Hint -ne '像搁置' }) + @($waiting | Where-Object { $_.Item.Hint -eq '像搁置' }))
 $stalled = @($active | Where-Object { IsStalled $_ })
 $free = @($active | Where-Object { $_.Status -eq '推进中' -and $_.Available -and -not @($_.Doing).Count -and -not (IsStalled $_) -and -not (Recent $_) })
-$n = $waiting.Count + $stalled.Count
+$cards = @(foreach ($p in $active) { foreach ($c in @($p.Direction.Cards) | Where-Object { $_ }) {
+    $leaf = Split-Path $c.File -Leaf
+    $owner = @(@($p.Waiting) | Where-Object { "$($_.Detail)".Contains($leaf) })[0]
+    [pscustomobject]@{ Project = $p.Name; Card = $c; Owner = $owner }
+} })
+$looseCards = @($cards | Where-Object { -not $_.Owner })
+$stops = @(foreach ($p in $active) { foreach ($d in StoppedOpen $p) { [pscustomobject]@{ Project = $p.Name; Dir = $d } } })
+$n = $waiting.Count + $stalled.Count + $looseCards.Count + $stops.Count
 $summary = @(if ($n) { "要你管 $n 件事" } else { '暂时没有要你管的事' }) +
     @($active | Where-Object Status -eq '推进中' | ForEach-Object { "$(Nick $_.Name)：$((State $_)[0])" })
 
@@ -82,6 +130,8 @@ main{max-width:760px;margin:0 auto;padding:24px 16px 56px}h1{font-size:22px;marg
 .bar{display:inline-block;width:120px;height:8px;background:var(--chip);border-radius:4px;vertical-align:middle;margin-right:8px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--bar)}
 ol{margin:0;padding-left:22px}ol li{margin:0 0 10px}ol li:last-child{margin:0}.how{color:var(--muted);font-size:13px}
 code{background:var(--chip);border-radius:4px;padding:1px 6px;font-size:13px;user-select:all}
+.grid>*{min-width:0}.thumb{display:block;max-width:100%;max-height:180px;margin:4px 0;border:1px solid var(--line);border-radius:6px}.spark{display:block;max-width:100%}a{color:var(--idle)}.alert{color:var(--bad);margin-top:4px}
+.dc{margin-top:6px}.dc summary{font-size:14px;color:var(--fg);font-weight:600}.dc div{color:var(--fg);font-size:14px}.dc .ch{font-weight:600;margin-top:8px}.dc .how{color:var(--muted);font-size:13px}
 .goals{display:grid;grid-template-columns:auto 1fr;gap:4px 14px}.goals .p{font-weight:600}.goals>*{min-width:0;overflow-wrap:anywhere}
 details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}details div{font-size:13px;color:var(--muted);margin:3px 0;overflow-wrap:anywhere}
 </style></head><body><main>
@@ -95,8 +145,11 @@ foreach ($w in $waiting) {
     $i = $w.Item
     $why = if ($i.Detail) { '：' + (Enc (Cut $i.Detail 120)) } else { '' }
     $how = if ($i.Hint -eq '像搁置') { "像是已经说过先不做：是的话发 <code>$(Enc "/next $(Label $i) 改成搁置")</code>；还要你定的，发 <code>$(Enc (Answer $i))</code>" } else { "到这个项目新建会话，发 <code>$(Enc (Answer $i))</code>；同意推荐就回 <code>按你的</code>" }
-    $todo.Add("<li><b>$(Enc (Nick $w.Project))</b> 等你定 $(Enc (Item $i 40))$(if ($i.Hint -eq '像搁置') { '（像已搁置）' })$why<div class=`"how`">$how</div></li>")
+    $attached = (@($cards | Where-Object { $_.Project -eq $w.Project -and $_.Owner -and $_.Owner.Id -eq $i.Id -and $_.Owner.Goal -eq $i.Goal }) | ForEach-Object { CardBody $_.Card }) -join ''
+    $todo.Add("<li><b>$(Enc (Nick $w.Project))</b> 等你定 $(Enc (Item $i 40))$(if ($i.Hint -eq '像搁置') { '（像已搁置）' })$why<div class=`"how`">$how</div>$attached</li>")
 }
+foreach ($c in $looseCards) { $todo.Add("<li><b>$(Enc (Nick $c.Project))</b> 有一张决定卡等你定$(CardBody $c.Card)<div class=`"how`">到这个项目新建会话，发 <code>/next 决定卡 $(Enc (Split-Path $c.Card.File -Leaf)) 你的答复</code></div></li>") }
+foreach ($s in $stops) { $todo.Add("<li><b>$(Enc (Nick $s.Project))</b> 方向 $(Enc $s.Dir.Name) 要停：$(Enc (Cut $s.Dir.Reason 120))<div class=`"how`">到这个项目新建会话，发 <code>/next</code>：先复盘，再报决定卡给你定</div></li>") }
 foreach ($p in $stalled) {
     $d = @($p.Doing)[0]
     $todo.Add("<li><b>$(Enc (Nick $p.Name))</b> 可能停了：$(if ($d) { Enc (Item $d 40) } else { '在做的项' }) 已经 $(Ago $p.IdleMinutes)没动静<div class=`"how`">到这个项目新建会话，发 <code>/next$(if ($d -and $d.Id) { ' #' + (Enc (($d.Id -replace '^#', '').Trim())) })</code> 接着做</div></li>")
@@ -143,6 +196,18 @@ foreach ($p in $active) {
     $null = $b.Append("<div class=`"k`">现在</div><div>$now</div>")
     $null = $b.Append("<div class=`"k`">进度</div><div>$prog</div>")
     $null = $b.Append("<div class=`"k`">北极星</div><div>$starHtml</div>")
+    $bench = $p.Direction
+    if ($bench -and $bench.Benchmark -eq 'ok') {
+        $gapText = if ($null -ne $bench.Gap) { "差距 $(Num $bench.Gap)（$(Enc $bench.LastRun)）$(if ($bench.Note) { '：' + (Enc (Cut $bench.Note 60)) })" } else { '<span class="muted">还没量</span>' }
+        $base = if ($bench.Baseline) { "<div class=`"how`">基准：$(Enc $bench.Baseline.Model)，$(Enc $bench.Baseline.Date)$(if ($bench.Baseline.Cost) { '，' + (Enc $bench.Baseline.Cost) })$(if ($bench.Baseline.Minutes) { '，' + (Enc $bench.Baseline.Minutes) + ' 分钟' })</div>" }
+        $pic = if ($bench.ImageUrl) { Thumb $bench.ImageUrl "$(Nick $p.Name) 和基准的并排图" } else { '<div class="how">这次没有并排图</div>' }
+        $null = $b.Append("<div class=`"k`">和基准比</div><div>$gapText$base$pic</div>")
+        $weeks = @(@($bench.Trend) | Where-Object { $_ } | Select-Object -Last 12)
+        if ($weeks) { $null = $b.Append("<div class=`"k`">差距趋势</div><div>$(Spark $weeks)<div class=`"how`">按周：$(($weeks | ForEach-Object { Num $_.Gap }) -join ' → ')</div></div>") }
+        foreach ($d in @($bench.Stopped) | Where-Object { $_ }) { $null = $b.Append("<div class=`"k`">方向</div><div class=`"alert`">$(Enc $d.Name) 要停：$(Enc (Cut $d.Reason 120))</div>") }
+    } elseif ($bench -and $bench.Benchmark -eq 'none' -and $p.Status -eq '推进中') {
+        $null = $b.Append('<div class="k">和基准比</div><div class="muted">还没登记基准</div>')
+    }
     $null = $b.Append("<div class=`"k`">接下来</div><div>$(Lines $p.Next)</div>")
     $null = $b.Append("<div class=`"k`">最近完成</div><div>$(Lines $p.Recent)</div>")
     $null = $b.Append('</div>')
@@ -169,6 +234,8 @@ if (-not $NoNotify) {
     # 每件要你管的事一个键（项目、编号、目标、问题前 60 字）；和上次推过的比，有新的才推手机。同一项换了问题算新的
     $events = @(
         foreach ($w in $waiting) { [pscustomobject]@{ Key = "$($w.Project)|$(Label $w.Item)|$(Cut $w.Item.Goal 40)|$(Cut $w.Item.Detail 60)"; Line = "$(Nick $w.Project)：$(Item $w.Item) 等你定$(if ($w.Item.Hint -eq '像搁置') { '（像已搁置）' })"; Ask = $true } }
+        foreach ($c in $looseCards) { [pscustomobject]@{ Key = "$($c.Project)|决定卡|$($c.Card.File)"; Line = "$(Nick $c.Project)：决定卡 $(Cut $c.Card.Title 30) 等你定"; Ask = $true } }
+        foreach ($s in $stops) { [pscustomobject]@{ Key = "$($s.Project)|方向要停|$($s.Dir.Name)"; Line = "$(Nick $s.Project)：方向 $($s.Dir.Name) 要停，$(Cut $s.Dir.Reason 40)"; Ask = $true } }
         foreach ($p in $stalled) { $d = @($p.Doing)[0]; [pscustomobject]@{ Key = "$($p.Name)|停滞|$((@($p.Doing) | ForEach-Object { $_.Id }) -join ',')|$($p.LastActivity)"; Line = "$(Nick $p.Name)：$(if ($d) { Item $d } else { '在做的项' }) 已 $(Ago $p.IdleMinutes)没动静，可能停了"; Ask = $false } }
     )
     $pushed = @(if (Test-Path -LiteralPath $State) {

@@ -536,6 +536,44 @@ try {
     Check 'direction: text output shows baseline and gap' ($tf -match '基准：模型 X' -and $tf -match '差距 0\.3' -and $LASTEXITCODE -eq 0)
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
 
+    # 状态页带图
+    $h = New-DirRepo '项目 H' ($qHead + "| 1 | 方向复盘 | 无 | 待做 |`n| 2 | 要不要换路线 | 无 | 待用户（决定卡 docs/decisions/2026-11-30-换路线.md：推荐换） |") ([ordered]@{
+        northStar = '差异比例'
+        baseline = [ordered]@{ model = '模型 <X>'; date = (& $day -1); cost = '12 元'; minutes = 40 }
+        directions = @(,[ordered]@{ name = 'A<b>'; state = '进行中'; started = (& $day -60); budgetDays = 5 })
+        runs = @([ordered]@{ date = (& $day -21); gap = 0.5 }, [ordered]@{ date = (& $day -14); gap = 0.4 }, [ordered]@{ date = (& $day -7); gap = -0.2 }, [ordered]@{ date = (& $day 0); gap = 0.3; image = 'docs/pics/最新 图.png'; note = '第一版<script>' })
+    })
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $h 'docs/pics'), (Join-Path $h 'docs/decisions')
+    Set-Content -LiteralPath (Join-Path $h 'docs/pics/最新 图.png') -Value 'x' -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-30-换路线.md') -Encoding utf8NoBOM -Value "# 决定卡：换不换路线`n`n状态：待定`n`n## 选项`n`n走一半<img src=x>`n`n![A 并排](../pics/最新 图.png)"
+    Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-29-没人提.md') -Encoding utf8NoBOM -Value "# 决定卡：没人提的卡`n`n状态：待定"
+    Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-01-定了.md') -Encoding utf8NoBOM -Value "# 决定卡：早定了的卡`n`n状态：已定（2026-11-02）"
+    $cfgH = Join-Path $root 'projects-h.json'
+    @{ projects = @(@{ name = '项目 H'; path = $h; status = '推进中' }, @{ name = '项目 G'; path = $g1; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgH -Encoding utf8NoBOM
+    $pageH = Join-Path $root 'out/status-h.html'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
+    $env:AI_DEV_FLOW_NOTIFY = Join-Path $root 'out/no-notify.json'
+    '{ "bark": "https://example.invalid/k", "barkLevels": ["user", "stuck"] }' | Set-Content -LiteralPath $env:AI_DEV_FLOW_NOTIFY -Encoding utf8NoBOM
+    $dh = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -State (Join-Path $root 'out/daily-h.json') -DryRun | Out-String
+    $html = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
+    Check 'page: the side-by-side thumbnail links to the full image' ($html -match '<a href="file:///[^"]*%E5%9B%BE\.png" target="_blank"[^>]*><img class="thumb" loading="lazy" src="file:///[^"]*%E5%9B%BE\.png"')
+    Check 'page: gap, baseline and note are shown and escaped' ($html -match '差距 0\.3（' -and $html -match '第一版&lt;script&gt;' -and $html -match '基准：模型 &lt;X&gt;，' -and $html -match '12 元，40 分钟' -and $html -notmatch '<script>')
+    Check 'page: weekly trend has a chart with one point per week and the numbers in text' ($html -match '<svg class="spark"' -and ([regex]::Matches($html, '<g><title>')).Count -eq 4 -and $html -match '按周：0\.5 → 0\.4 → -0\.2 → 0\.3' -and $html -match '<polyline ')
+    Check 'page: a card named by a waiting item sits under it, opened' ($html -match '(?s)等你定 #2 要不要换路线.*?<details class="dc" open><summary>决定卡：换不换路线</summary>.*?</li>')
+    Check 'page: a card image shows as a thumbnail and card text is escaped' ($html -match '走一半&lt;img src=x&gt;' -and $html -notmatch '<img src=x>' -and ([regex]::Matches($html, 'class="thumb"')).Count -ge 2)
+    Check 'page: a card nobody named gets its own line' ($html -match '有一张决定卡等你定<details class="dc" open><summary>决定卡：没人提的卡' -and $dh -match '决定卡 没人提的卡 等你定')
+    Check 'page: settled cards are not listed' ($html -notmatch '早定了的卡')
+    Check 'page: a stopped direction is listed with its reason, escaped' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">')
+    Check 'page: the count includes loose cards and stopped directions' ($html -match '要你管 3 件事')
+    Check 'page: no baseline says so; notApplicable shows no row' ($html -match '还没登记基准' -and ([regex]::Matches($html, '<div class="k">和基准比</div>')).Count -eq 2)
+    Check 'page: no chart for a project without runs' ([regex]::Matches($html, '<svg class="spark"').Count -eq 1)
+    # 已有人在处理的方向复盘不再催
+    (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘 \| 无 \| 待做 \|', '| 1 | 方向复盘 | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM
+    $dh2 = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -State (Join-Path $root 'out/daily-h.json') -DryRun | Out-String
+    $html2 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
+    Check 'page: a stopped direction under review is not asked again' ($html2 -match '要你管 2 件事' -and $dh2 -notmatch '方向 A<b> 要停' -and $html2 -match '<div class="alert">')
+    Remove-Item Env:AI_DEV_FLOW_NOTIFY
+
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
     Check 'missing config fails' ($LASTEXITCODE -ne 0)
     $null = pwsh -NoProfile -File $Script -Config $cfg -Project nobody 2>&1
