@@ -42,6 +42,7 @@ tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/
 tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
 tests/launch.tests.ps1     launch.ps1 的检查：pwsh -NoProfile -File tests/launch.tests.ps1
 tests/cleanup.tests.ps1    cleanup.ps1 的检查：pwsh -NoProfile -File tests/cleanup.tests.ps1
+tests/run-all.ps1          并行跑全部检查，最后一行是快检用时：pwsh -NoProfile -File tests/run-all.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。
@@ -128,6 +129,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.18.1**（2026-11-08）：`cleanup.ps1` 上次试占用没改回的目录，再跑时先改回，改不回就不清任何记录、退出 1。`land-check.ps1` 在项目关了未跟踪文件显示时也认得工作区不干净。本仓库新增 `tests/run-all.ps1` 并行跑全部检查。
 - **2.18.0**（2026-11-08）：把六条靠自觉的规定做实。新增 `scripts/cleanup.ps1`：合并后删已合进主干、没有未提交改动的 worktree 和分支，`land-check.ps1` 通过时打出这一行，`/next` 每项收尾时调用，`status.ps1` 超过 `-CleanupOver`（默认 10）个时提示。快检用时由 `dispatch.ps1`、`land-check.ps1` 记到 `.agents/verify-last.json`，超过阈值（默认 10 分钟，项目 `AGENTS.md` 可改）`status.ps1` 提示、`/next` 开场自动排一项"快检提速"。`launch.ps1 -New` 有旧会话也新开，清单加 `wake`、`session` 按项目决定新开、发消息还是开在桌面。`status.ps1` 把已合并、已完成、进行中、暂停归到标准状态。新写的判定工具先拿已知对、已知错各跑一例，脚本和证据一起入库。派活一次只交一件能独立验证的事。
 - **2.17.0**（2026-11-07）：总览当前台，不让用户传话。新增 `scripts/launch.ps1`：在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），去掉从桌面应用继承来的登录变量，用命令行登录的账号；项目里已有会话就不开（退出 3，改发消息），在做的会话到上限就不开（退出 4）。`portfolio.md` 总览从"指挥台"改成"前台"：用户平时只在总览说话，总览写好请求后叫醒或开项目会话（第 4 节"开会话和叫醒会话"），仍不改项目代码和队列、不派执行方、不合并；`orchestrate.md` 第 6 节使用方给提供方提需求也这样叫它接。`notify.ps1 -Hook` 把后台会话等用户（`agent_needs_input`）推到手机。起因：一周里用户多次手动到别的项目会话里发"有待转需求，安排下"、替项目新开会话贴提示词，总览仓库从 11-01 起没再开过会话，事实上的前台是一个项目的主会话，一天压缩三次以上。
 - **2.16.0**（2026-11-06）：跑不全的检查让机器看得见。验证说明和 verify note 加"没跑：<检查（原因）>"一项（全跑了写"无"），补跑后用 `git notes append` 追加"补跑：<命令> → 退出 0"；`land-check.ps1` 看到没跑又没补跑的就不让合，按第 5 节沿用的 note 也顺着"沿用 <sha>"读原 note（`verify.md` 第 3、6 节，`land.md` 第 2 节）。`diagnose.md` 第 4 节加一句：声称更快、更省的，改前改后同条件各量一份，没有两份数字不写。起因：一个项目 126 条 verify note 里 24 条写着"沙箱没跑全"，其中多条是合并之后才补跑，`land-check` 只认 Pass 两个字，拦不住。

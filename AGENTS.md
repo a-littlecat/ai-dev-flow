@@ -14,6 +14,7 @@
   - 改了 `skills/ai-dev-flow/scripts/land-check.ps1`：跑 `pwsh -NoProfile -File tests/land-check.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/launch.ps1`：跑 `pwsh -NoProfile -File tests/launch.tests.ps1`，退出码 0 才算通过。它用假的 `claude` 命令；真的开后台会话、看它用哪个账号，要在本机实开一次。
   - 改了 `skills/ai-dev-flow/scripts/cleanup.ps1`：跑 `pwsh -NoProfile -File tests/cleanup.tests.ps1`，退出码 0 才算通过。
+  - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-08 约 5 分钟，串行时 10～12 分钟）；验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
   - 改了任何 `.md`：跑 `pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1`，退出码 0 才算通过。
   - 只改文档的，另按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。

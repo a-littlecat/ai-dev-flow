@@ -18,7 +18,7 @@ param(
 # 用 git worktree remove 和 git branch -d，不加 --force、不用 -D，Git 拒绝的就留着并说明。没合并的一律不动，也不列。
 # 项目 AGENTS.md 写了"不自动清理"的什么也不做（land.md 第 6 节）。
 # 目录已经不在的 worktree 记录用 git worktree prune 清掉。审查 worktree 里留着未跟踪证据的，由 dispatch.ps1 -CleanReviews 处理。
-# 退出码：0 做完了（有留着的也是 0）；1 试占用时目录没能改回原名，输出里写着现在在哪，要手工改回；2 参数或仓库不对。
+# 退出码：0 做完了（有留着的也是 0）；1 试占用时目录没能改回原名（这次或上次留下的），输出里写着现在在哪，要手工改回，改回前不清任何记录；2 参数或仓库不对。
 $ErrorActionPreference = 'Stop'
 # git status 默认会刷新 index，这个脚本一跑，所有 worktree 都成了"刚有动静"。
 $env:GIT_OPTIONAL_LOCKS = '0'
@@ -106,7 +106,21 @@ function Get-LastTouch($t) {
 $here = Norm (Get-Location).Path
 $removedTrees = 0; $removedBranches = 0
 $kept = [Collections.Generic.List[string]]::new()
-$pruned = @($trees | Select-Object -Skip 1 | Where-Object Prunable)
+# 上次试占用改不回原名的（原路径没了、.cleanup-probe 还在）：记录看着像目录已不在，prune 了就再也找不回。先改回；改不回这一轮不 prune，再报一遍。
+foreach ($t in @($trees | Select-Object -Skip 1 | Where-Object Prunable)) {
+    $path = Norm $t.Path
+    $probe = "$path.cleanup-probe"
+    if (-not (Test-Path -LiteralPath $probe)) { continue }
+    if ($DryRun) { "注意：$probe 要改回 $path（真跑时会先试）"; continue }
+    $back = $false
+    for ($i = 0; $i -lt 30 -and -not $back; $i++) {
+        try { [IO.Directory]::Move($probe, $path); $back = $true } catch { Start-Sleep -Milliseconds 200 }
+    }
+    if ($back) { "把 $probe 改回了原名" } else { $stuck.Add("$probe 要手工改回 $path") }
+}
+$trees = @(Read-Trees $main.Path)
+$pruned = @($trees | Select-Object -Skip 1 | Where-Object Prunable | Where-Object { -not (Test-Path -LiteralPath "$(Norm $_.Path).cleanup-probe") })
+if ($stuck.Count -or ($DryRun -and @($trees | Where-Object { $_.Prunable -and (Test-Path -LiteralPath "$(Norm $_.Path).cleanup-probe") }).Count)) { $pruned = @() }
 if ($pruned -and -not $DryRun) { $null = Git-Out $main.Path @('worktree', 'prune') }
 if ($pruned) { "$(if ($DryRun) { '会清掉' } else { '清掉了' })目录已不在的 worktree 记录 $($pruned.Count) 条" }
 

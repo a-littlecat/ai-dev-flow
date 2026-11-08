@@ -172,11 +172,33 @@ try {
     try { $null = Remove-Item -LiteralPath $run -Recurse -Force; $o = @(pwsh -NoProfile -File $Script -IdleMinutes 0 2>&1 | ForEach-Object { "$_" }) } finally { Pop-Location }
     Check 'run from inside a worktree: finds the repo, keeps the one it stands in' ((Test-Path -LiteralPath (Wt 'running')) -and ($o -join "`n") -match '留着：running.*当前')
 
+    # 上次试占用没改回：原路径没了、probe 还在
+    $null = G worktree add -q -b probed (Wt 'probed')
+    Put (Wt 'probed') 'wip.txt' 'wip'
+    $null = G worktree add -q -b gonetoo (Wt 'gonetoo')
+    Remove-Item -LiteralPath (Wt 'gonetoo') -Recurse -Force
+    $probe = "$(Wt 'probed').cleanup-probe"
+    Move-Item -LiteralPath (Wt 'probed') -Destination $probe
+    $holder2 = Start-Process pwsh -ArgumentList '-NoProfile', '-Command', 'Start-Sleep 300' -WorkingDirectory $probe -PassThru -WindowStyle Hidden
+    Start-Sleep -Seconds 2
+    $r = Run @('-DryRun')
+    Check 'stuck under the probe name, dry run: says so, nothing moved' ($r.Code -eq 0 -and $r.Text -match 'cleanup-probe.*要改回' -and (Test-Path -LiteralPath $probe))
+    $r = Run @()
+    $list = (G worktree list --porcelain) -join "`n"
+    Check 'stuck and cannot go back: exit 1, says where, nothing pruned' ($r.Code -eq 1 -and $r.Text -match '要你处理：.*cleanup-probe' -and (HasBranch 'probed') -and $list -match 'wt-probed' -and $list -match 'wt-gonetoo')
+    Stop-Process -Id $holder2.Id -Force; $holder2 = $null
+    Start-Sleep -Seconds 1
+    $r = Run @()
+    $list = (G worktree list --porcelain) -join "`n"
+    Check 'stuck, then free: goes back, work and record intact, branch kept' ($r.Code -eq 0 -and $r.Text -match '改回了原名' -and (Test-Path -LiteralPath (Join-Path (Wt 'probed') 'wip.txt')) -and (HasBranch 'probed') -and $list -match 'wt-probed' -and -not (Test-Path -LiteralPath $probe))
+    Check 'stuck, then free: the other missing record is pruned as usual' ($list -notmatch 'wt-gonetoo')
+
     $r = Run @('-Trunk', 'nope')
     Check 'unknown trunk: exit 2' ($r.Code -eq 2 -and $r.Text -match '找不到主干')
     $o = @(pwsh -NoProfile -File $Script -Repo (Join-Path $root 'nowhere') 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE
     Check 'not a repository: exit 2' ($code -eq 2)
 } finally {
+    if ($holder2) { Stop-Process -Id $holder2.Id -Force -ErrorAction SilentlyContinue }
     if ($holder) { Stop-Process -Id $holder.Id -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }
     Remove-Item env:AI_DEV_FLOW_CLAUDE -ErrorAction SilentlyContinue
     if ($Keep) { "kept: $root" } else {

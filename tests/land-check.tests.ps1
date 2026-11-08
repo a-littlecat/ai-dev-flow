@@ -172,6 +172,12 @@ try {
     Check 'unknown branch exits 2' ($r.Code -eq 2)
     $o = @(pwsh -NoProfile -File $Script -Branch ok -Repo $root 2>&1); $code = $LASTEXITCODE
     Check 'not a repo exits 2' ($code -eq 2)
+    $null = G config status.showUntrackedFiles no
+    Put 'wip.txt' 'x'
+    $r = Run 'ok'
+    Check 'showUntrackedFiles=no: an untracked file still counts as dirty' ($r.Code -eq 1 -and $r.Text -match '工作区不干净.*wip\.txt')
+    Remove-Item -LiteralPath (Join-Path $repo 'wip.txt')
+    $null = G config --unset status.showUntrackedFiles
     $vl = Join-Path $repo '.agents/verify-last.json'
     Check 'verify time: note without it, no record' (-not (Test-Path -LiteralPath $vl))
     $null = G branch -f timed0 HEAD

@@ -44,7 +44,7 @@ $info = [Collections.Generic.List[string]]::new()
 
 $cur = (Invoke-Git @('symbolic-ref', '--quiet', '--short', 'HEAD')).Out
 if ("$cur" -ne $Trunk) { $bad.Add("当前检出的不是 $Trunk（是 $(if ($cur) { $cur } else { '分离头' })）：在主项目工作区切到主干再合并") }
-$dirty = (Invoke-Git @('status', '--short')).Out
+$dirty = (Invoke-Git @('status', '--short', '--untracked-files=normal')).Out
 if ($dirty) { $bad.Add("工作区不干净（$(@($dirty).Count) 处）：$((@($dirty) | Select-Object -First 3) -join '；')") }
 
 if ($head -eq $trunkSha) { $bad.Add("$Branch 和 $Trunk 是同一个提交，没有要合并的") }
