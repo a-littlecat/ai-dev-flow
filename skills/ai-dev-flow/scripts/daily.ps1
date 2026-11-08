@@ -13,8 +13,8 @@ param(
 #   -NoNotify 只生成页面
 #   -State    上次通知推过哪些事，默认 %LOCALAPPDATA%\ai-dev-flow\daily-state.json
 #   -DryRun   通知只打印不发（传给 notify.ps1），也不改 -State
-# 页面：顶上一句话、四个数字、全部项目一览（一个项目一行，点了跳到卡片）；下面三块：要你做（按项目分组，问题、推荐、要发的命令分开）、本周目标、各项目
-# （状态标签、进度，加 现在 / 北极星 / 接下来 / 最近完成，空的不显示，其余收进"细节"；维护中的项目收起来）。队列原文的 Markdown 记号不上页面，长句只显示第一句，悬停看全文。
+# 页面：顶上一句话、四个数字、全部项目的流水线（待做到完成）、一览表（一个项目一行，进度按阶段分色，点了跳到卡片）；下面三块：要你做（按项目分组，问题、推荐、要发的命令分开）、本周目标、各项目
+# （状态标签、进度，加一张思维导图：北极星 / 方向 / 现在 / 等你定 / 接下来 / 最近完成，空的不显示，流程图可以就地展开，其余收进"细节"；维护中的项目收起来）。页尾有名词说明。动画只用 CSS，系统设了减少动态效果就不动。队列原文的 Markdown 记号不上页面，长句只显示第一句，悬停看全文。
 # 有待用户的项或可能停滞的项目时，通知级别为 user（按 notify.json 的配置会推到手机），否则为 info。
 # 只在有上次没推过的事时才用 user：和上次推过的一样，就降成 info，只弹系统通知，不再推手机。通知发不出去时不记，下次照常推。
 # 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）照常算要你管，排在最后、标"像已搁置"，附改成搁置的命令；判断靠关键词，可能判错，所以不拿掉。
@@ -42,10 +42,12 @@ function Ago($m) { if ($null -eq $m) { '' } elseif ($m -lt 60) { "$m 分钟" } e
 function Item($i, [int]$n = 24) { $t = "$(if ($i.Id) { '#' + (Cut $i.Id 8) }) $(Cut $i.Goal $n)".Trim(); if ($t) { $t } else { '未命名的一项' } }
 # 队列原文里的 Markdown 记号不上页面。
 function Plain([string]$t) { (($t -replace '\*\*|`', '') -replace '\s+', ' ').Trim() }
-# 短标题：到第一句为止（第一句太短的不断），超长再截断；全文放在悬停提示里。
+# 短标题：去掉全角括号里的补充说明，到第一句为止（第一句太短的不断），超长再截断；全文放在悬停提示里。冒号不断：常常是"需求：具体内容"，断了就认不出是哪一项。
 function Brief([string]$t, [int]$n = 42) {
     $p = Plain $t
-    $m = [regex]::Match($p, '[。；;：:（(]')
+    $q = ($p -replace '（[^（）]*）', '').Trim()
+    if ($q) { $p = $q }
+    $m = [regex]::Match($p, '[。；;]')
     if ($m.Success -and $m.Index -ge 4) { $p = $p.Substring(0, $m.Index) }
     Cut $p $n
 }
@@ -129,8 +131,8 @@ $summary = @(if ($n) { "要你管 $n 件事" } else { '暂时没有要你管的�
 
 $b = [Text.StringBuilder]::new()
 $style = @'
-:root{--bg:#f5f5f1;--card:#fff;--fg:#1d1d1b;--muted:#6b6b65;--line:#e5e5df;--warn:#9a5500;--warnbg:#fdf1dc;--bad:#b42318;--badbg:#fde7e4;--ok:#17703a;--okbg:#e2f3e7;--idle:#3d5a99;--idlebg:#e6ecf8;--chip:#efefea;--bar:#2f7d4f;--shadow:0 1px 2px rgba(0,0,0,.05)}
-@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1f1f1d;--fg:#ececea;--muted:#a3a39c;--line:#33332f;--warn:#f5b24a;--warnbg:#3a2c12;--bad:#f87171;--badbg:#3b1714;--ok:#6ad08c;--okbg:#15301f;--idle:#93b0ee;--idlebg:#1c2740;--chip:#2a2a27;--bar:#4fae75;--shadow:none}}
+:root{--bg:#f5f5f1;--card:#fff;--fg:#1d1d1b;--muted:#6b6b65;--line:#e5e5df;--warn:#9a5500;--warnbg:#fdf1dc;--bad:#b42318;--badbg:#fde7e4;--ok:#17703a;--okbg:#e2f3e7;--idle:#3d5a99;--idlebg:#e6ecf8;--chip:#efefea;--bar:#2f7d4f;--doing:#0e8a8a;--shadow:0 1px 2px rgba(0,0,0,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1f1f1d;--fg:#ececea;--muted:#a3a39c;--line:#33332f;--warn:#f5b24a;--warnbg:#3a2c12;--bad:#f87171;--badbg:#3b1714;--ok:#6ad08c;--okbg:#15301f;--idle:#93b0ee;--idlebg:#1c2740;--chip:#2a2a27;--bar:#4fae75;--doing:#4fc4c4;--shadow:none}}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 system-ui,"Microsoft YaHei",sans-serif}
 main{max-width:880px;margin:0 auto;padding:28px 16px 64px;overflow-wrap:anywhere}a{color:var(--idle)}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}h1{font-size:15px;font-weight:600;color:var(--muted);margin:0}.top .muted{font-size:13px}
@@ -141,8 +143,9 @@ h2{font-size:17px;margin:34px 0 10px}.muted{color:var(--muted)}.ok{color:var(--o
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0;box-shadow:var(--shadow)}
 .tag{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .tag.bad{color:var(--bad);background:var(--badbg)}.tag.warn{color:var(--warn);background:var(--warnbg)}.tag.ok{color:var(--ok);background:var(--okbg)}.tag.idle{color:var(--idle);background:var(--idlebg)}.tag.muted{color:var(--muted);background:var(--chip)}
-.bar{display:inline-block;width:100px;height:7px;background:var(--chip);border-radius:4px;vertical-align:middle;margin-right:8px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--bar);border-radius:4px}.prog{font-size:13px;color:var(--muted);white-space:nowrap}
-.list{margin-top:14px;padding:4px 0}.row{display:grid;grid-template-columns:minmax(90px,150px) 104px 190px 1fr;gap:12px;align-items:center;padding:9px 18px;color:inherit;text-decoration:none;border-top:1px solid var(--line)}.row:first-child{border-top:0}.row:hover{background:var(--chip)}.row b{font-weight:600}.row .what{font-size:13px;color:var(--muted);min-width:0}.row .tag{justify-self:start}
+.bar{display:inline-flex;gap:2px;width:120px;height:8px;background:var(--chip);border-radius:4px;vertical-align:middle;margin-right:8px;overflow:hidden;transform-origin:left;animation:grow .7s ease-out}.seg{display:block;height:100%}.seg.done,.st.done i{background:var(--bar)}.seg.verify,.st.verify i{background:var(--idle)}.seg.doing,.st.doing i{background:var(--doing)}.seg.ask,.st.ask i{background:var(--warn)}.st.todo i{background:var(--muted)}.seg.doing{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.35) 0 4px,transparent 4px 8px);background-size:200% 100%;animation:stripes 1.6s linear infinite}.prog{font-size:13px;color:var(--muted);white-space:nowrap}
+.pipe{display:flex;align-items:stretch;margin:12px 0 0}.st{flex:1 1 0;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.st i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.st b{font-size:19px;line-height:1.2}.st span{display:block;font-size:13px;font-weight:600}.st small{display:block;font-size:12px;color:var(--muted);line-height:1.35}.st.none{opacity:.6}.ar{flex:0 0 18px;align-self:center;height:2px;background:var(--line)}.ar.flow{background:repeating-linear-gradient(90deg,var(--doing) 0 5px,transparent 5px 10px);background-size:20px 2px;animation:dash 1s linear infinite}
+.list{margin-top:12px;padding:4px 0}.row.head{font-size:12px;font-weight:600;color:var(--muted);padding-top:6px;padding-bottom:6px}.row.head:hover{background:none}.row{display:grid;grid-template-columns:minmax(90px,150px) 104px 190px 1fr;gap:12px;align-items:center;padding:9px 18px;color:inherit;text-decoration:none;border-top:1px solid var(--line)}.row:first-child{border-top:0}.row:hover{background:var(--chip)}.row b{font-weight:600}.row .what{font-size:13px;color:var(--muted);min-width:0}.row .tag{justify-self:start}
 .ask-group h3{font-size:16px;margin:0 0 8px}.asks{list-style:none;margin:0;padding:0}.asks>li{padding:10px 0;border-top:1px solid var(--line)}.asks>li:first-child{border-top:0;padding-top:0}.asks>li:last-child{padding-bottom:0}
 .q{font-weight:600}.why{font-size:14px;margin-top:2px}.rec{font-size:14px;margin-top:4px;color:var(--ok);font-weight:600}.how{color:var(--muted);font-size:13px;margin-top:6px}
 .num{color:var(--muted);font-size:13px;font-weight:400}
@@ -151,16 +154,22 @@ code{background:var(--chip);border-radius:5px;padding:2px 7px;font-size:13px;use
 .goals{display:grid;grid-template-columns:minmax(90px,150px) 1fr;gap:12px 16px}.goals .p{font-weight:600}.goals>*{min-width:0;overflow-wrap:anywhere}.goals .sub{font-weight:400;font-size:13px;color:var(--muted)}
 .proj-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}.proj-h h3{font-size:17px;margin:0}.proj-h .right{margin-left:auto;font-size:13px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .k{color:var(--muted);font-size:13px;font-weight:600}
-.now{background:var(--bg);border-radius:8px;padding:9px 12px;margin-bottom:12px}.now ul{margin-top:2px}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 22px;margin-top:12px}
+.mm{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center}.mm-root{background:var(--fg);color:var(--bg);font-weight:600;font-size:14px;border-radius:10px;padding:8px 12px;max-width:130px;text-align:center}.mm-b{list-style:none;margin:0;padding:0 0 0 20px;position:relative;min-width:0}.mm-b::before{content:"";position:absolute;left:0;top:50%;width:20px;height:2px;background:var(--line)}
+.mm-b>li{position:relative;display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:center;padding:6px 0 6px 20px}.mm-b>li::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line)}.mm-b>li:first-child::before{top:50%}.mm-b>li:last-child::before{bottom:50%}.mm-b>li:only-child::before{display:none}.mm-b>li::after{content:"";position:absolute;left:0;top:50%;width:20px;height:2px;background:var(--line)}
+.mm-b>li>.k{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:3px 6px;text-align:center;font-size:12px}.b-star>.k{border-color:var(--idle);color:var(--idle)}.b-ask>.k{border-color:var(--warn);color:var(--warn)}.b-now>.k{color:var(--fg)}.b-now.live>.k{border-color:var(--doing);color:var(--doing)}.b-now.stale>.k{border-color:var(--bad);color:var(--bad)}.b-done>.k{color:var(--ok)}
+.b-now.live>.k::before,.b-now.stale>.k::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px;background:currentColor}.b-now.live>.k::before{animation:pulse 1.6s ease-in-out infinite}
+.mm-b>li>div,.mm-b>li>ul{min-width:0;font-size:14px;margin:0}
+.flowbox iframe{display:block;width:100%;height:440px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.gloss{margin-top:26px}.gloss dl{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 12px;margin:8px 0 0;font-size:14px}.gloss dt{font-weight:600}.gloss dd{margin:0;color:var(--muted)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes stripes{to{background-position:40px 0}}@keyframes dash{to{background-position:20px 0}}@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.5}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
 .items{list-style:none;margin:3px 0 0;padding:0;font-size:14px}.items li{padding:2px 0}
-.star{margin-bottom:10px;font-size:14px}
 .bench{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 18px;border-top:1px solid var(--line);margin-top:12px;padding-top:12px}.bench>*{min-width:0}.gap{font-size:16px;font-weight:600}.thumb{display:block;max-width:100%;max-height:200px;margin:4px 0;border:1px solid var(--line);border-radius:8px}.spark{display:block;max-width:100%;margin-top:8px}
 .alert{color:var(--bad);font-weight:600;font-size:14px;margin-top:10px}.missing{font-size:13px;color:var(--muted);margin-top:12px}
 details{margin-top:12px}summary{cursor:pointer;color:var(--muted);font-size:13px}details div{font-size:13px;color:var(--muted);margin:3px 0}
 .dc{margin:10px 0 2px;padding:10px 14px;border-left:3px solid var(--warn);background:var(--bg);border-radius:0 8px 8px 0}.dc summary{font-size:14px;color:var(--fg);font-weight:600}.dc div{color:var(--fg);font-size:14px}.dc .ch{font-weight:600;margin-top:10px}.dc .meta,.dc .how{color:var(--muted);font-size:13px}
 .maint>summary{font-size:15px;font-weight:600;color:var(--fg);margin:6px 0}
-@media (max-width:640px){.lead{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr auto;gap:2px 10px}.row .prog,.row .what{grid-column:1 / -1}.bench{grid-template-columns:minmax(0,1fr)}.goals{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.lead{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}.pipe{flex-direction:column}.ar{flex:0 0 12px;align-self:flex-start;width:2px;height:12px;margin-left:16px}.ar.flow{background:var(--doing);animation:none}.mm{grid-template-columns:minmax(0,1fr);justify-items:start}.mm-root{max-width:none;margin-bottom:4px}.mm-b{padding-left:8px;width:100%}.mm-b::before{display:none}.mm-b>li{grid-template-columns:minmax(0,1fr);gap:3px;padding-left:16px}.mm-b>li:first-child::before{top:0}.mm-b>li::after{width:12px;top:16px}.mm-b>li>.k{justify-self:start}.row.head{display:none}.row{grid-template-columns:1fr auto;gap:2px 10px}.row .prog,.row .what{grid-column:1 / -1}.bench{grid-template-columns:minmax(0,1fr)}.goals{grid-template-columns:minmax(0,1fr)}}
 '@
 $tiles = @(
     @(($waiting.Count + $looseCards.Count), '件等你定', 'warn'),
@@ -173,13 +182,28 @@ $null = $b.Append("<div class=`"top`"><h1>项目状态</h1><span class=`"muted`"
 $null = $b.Append("<p class=`"lead$(if (-not $n) { ' calm' })`">$(Enc $summary[0])</p>")
 $null = $b.Append('<div class="tiles">' + (($tiles | ForEach-Object { "<div class=`"tile $(if ($_[0]) { $_[2] } else { 'zero' })`"><b>$($_[0])</b><span>$($_[1])</span></div>" }) -join '') + '</div>')
 
+# 流水线：全部项目的活儿流到哪一段了。颜色和进度条的分段一样，兼作图例。
+$stages = @(@('待做', 'todo', '待做', '排好了，等开工'), @('在做', 'doing', '在做', '正在写和证明'), @('待验证', 'verify', '待验证', '独立审查中'), @('待用户', 'ask', '等你', '要你拍板或看一眼'), @('完成', 'done', '完成', '合进主干了'))
+$pipe = [Collections.Generic.List[string]]::new()
+foreach ($st in $stages) {
+    $c = 0; foreach ($p in $active) { if ($p.Queue) { $c += [int]$p.Queue.($st[0]) } }
+    if ($pipe.Count) { $pipe.Add("<div class=`"ar$(if ($prev) { ' flow' })`"></div>") }
+    $pipe.Add("<div class=`"st $($st[1])$(if (-not $c) { ' none' })`"><i></i><b>$c</b><span>$($st[2])</span><small>$($st[3])</small></div>")
+    $prev = $c
+}
+$null = $b.Append('<div class="pipe">' + ($pipe -join '') + '</div>')
+
 # 全部项目一览：一个项目一行，点了跳到它的卡片
 $anchor = @{}; $idx = 0; foreach ($p in $active) { $anchor[[string]$p.Name] = "p$idx"; $idx++ }
 function Progress($p, [switch]$Long) {
     if (-not $p.Queue) { return '<span class="prog">还没有队列</span>' }
     $q = $p.Queue; $total = 0; foreach ($v in $q.PSObject.Properties) { if ($v.Name -ne '搁置') { $total += [int]$v.Value } }
-    $done = [int]$q.'完成'; $pct = if ($total) { [math]::Round(100 * $done / $total) } else { 0 }
-    "<span class=`"prog`"><span class=`"bar`"><span style=`"width:$pct%`"></span></span>$(if ($Long) { "完成 $done / 共 $total 项" } else { "$done / $total" })</span>"
+    $done = [int]$q.'完成'
+    $segs = foreach ($st in @(@('完成', 'done'), @('待验证', 'verify'), @('在做', 'doing'), @('待用户', 'ask'))) {
+        $c = [int]$q.($st[0])
+        if ($c -and $total) { "<span class=`"seg $($st[1])`" style=`"width:$([math]::Round(100 * $c / $total, 1))%`" title=`"$($st[0]) $c`"></span>" }
+    }
+    "<span class=`"prog`"><span class=`"bar`">$($segs -join '')</span>$(if ($Long) { "完成 $done / 共 $total 项" } else { "$done / $total" })</span>"
 }
 function NowLine($p) {
     $doing = @($p.Doing)
@@ -190,7 +214,7 @@ function NowLine($p) {
     elseif ($p.Available) { "有 $($p.Available) 项可以开工" }
     elseif ($p.Queue) { '暂时没有能做的项' } else { '还没有队列' }
 }
-$null = $b.Append('<div class="card list" style="padding:4px 0">')
+$null = $b.Append('<div class="card list" style="padding:4px 0"><div class="row head"><span>项目</span><span>状态</span><span>进度（颜色同上）</span><span>现在</span></div>')
 foreach ($p in $active) {
     $st = State $p
     $null = $b.Append("<a class=`"row`" href=`"#$($anchor[[string]$p.Name])`"><b>$(Enc (Nick $p.Name))</b><span class=`"tag $($st[1])`">$(Enc $st[0])</span>$(Progress $p)<span class=`"what`">$(Enc (NowLine $p))</span></a>")
@@ -199,13 +223,17 @@ $null = $b.Append('</div>')
 
 # 要你做：按项目分组。一项一个问题，推荐单独一行，命令可以点选复制。
 $groups = [ordered]@{}
+$hasRec = @{}
 function Add-Ask([string]$project, [string]$html) { if (-not $groups.Contains($project)) { $groups[$project] = [Collections.Generic.List[string]]::new() }; $groups[$project].Add($html) }
 foreach ($w in $waiting) {
     $i = $w.Item
-    $d = (Plain $i.Detail) -replace '决定卡\s+\S+\.md\s*[：:]?\s*', ''
-    $rec = [regex]::Match($d, '推荐[^。；;]*')
-    $why = (($(if ($rec.Success) { $d.Remove($rec.Index, $rec.Length) } else { $d })) -replace '[；;，,]\s*(?=[。；;，,])', '').Trim(' ', '；', ';', '。', '，', ',', '：', ':')
     $attached = (@($cards | Where-Object { $_.Project -eq $w.Project -and $_.Owner -and $_.Owner.Id -eq $i.Id -and $_.Owner.Goal -eq $i.Goal }) | ForEach-Object { CardBody $_.Card }) -join ''
+    # 卡就显示在这一项下面时，路径不用再写一遍；没挂上的卡只有这句话告诉用户它在哪。
+    $d = Plain $i.Detail
+    if ($attached) { $d = $d -replace '决定卡\s+\S+\.md\s*[：:]?\s*', '' }
+    $rec = [regex]::Match($d, '(?<!不)推荐[^。；;]*')
+    if ($rec.Success) { $hasRec[[string]$w.Project] = $true }
+    $why = (($(if ($rec.Success) { $d.Remove($rec.Index, $rec.Length) } else { $d })) -replace '[；;，,]\s*(?=[。；;，,])', '').Trim(' ', '；', ';', '。', '，', ',', '：', ':')
     $how = if ($i.Hint -eq '像搁置') { "像是已经说过先不做：是的话发 <code>$(Enc "/next $(Label $i) 改成搁置")</code>；还要你定的，发 <code>$(Enc (Answer $i))</code>" } else { "发 <code>$(Enc (Answer $i))</code>" }
     Add-Ask $w.Project ("<li><div class=`"q`">$(ItemHtml $i 60)$(if ($i.Hint -eq '像搁置') { ' <span class="tag muted">像已搁置</span>' })</div>" +
         $(if ($why) { "<div class=`"why`">$(Enc (Cut $why 200))</div>" }) + $(if ($rec.Success) { "<div class=`"rec`">$(Enc (Cut $rec.Value 140))</div>" }) + "<div class=`"how`">$how</div>$attached</li>")
@@ -221,7 +249,7 @@ if ($groups.Count) {
     # 和上面的一览同一顺序
     $known = @($active | ForEach-Object { [string]$_.Name } | Where-Object { $groups.Contains($_) })
     foreach ($key in @($known) + @($groups.Keys | Where-Object { $known -notcontains $_ })) {
-        $null = $b.Append("<div class=`"card ask-group`"><h3>$(Enc (Nick $key))</h3><ol class=`"asks`">$($groups[$key] -join '')</ol><div class=`"how`">到这个项目新建会话，发上面的命令；同意推荐就回 <code>按你的</code></div></div>")
+        $null = $b.Append("<div class=`"card ask-group`"><h3>$(Enc (Nick $key))</h3><ol class=`"asks`">$($groups[$key] -join '')</ol><div class=`"how`">到这个项目新建会话，发上面的命令$(if ($hasRec[[string]$key]) { '；同意推荐就回 <code>按你的</code>' })</div></div>")
     }
 } else { $null = $b.Append('<div class="card"><span class="muted">暂时没有要你处理的事</span></div>') }
 if ($free) { $null = $b.Append("<div class=`"free`">有空可以开工：$(($free | ForEach-Object { Enc "$(Nick $_.Name)（$($_.Available) 项）" }) -join '、')。到这个项目新建会话，发 <code>/next</code></div>") }
@@ -254,15 +282,18 @@ function ProjectCard($p) {
     $flow = if ($bench -and $bench.FlowUrl) { "<a href=`"$(Enc $bench.FlowUrl)`" target=`"_blank`">流程图</a>" }
     $x = [Text.StringBuilder]::new()
     $null = $x.Append("<div class=`"card`" id=`"$($anchor[[string]$p.Name])`"><div class=`"proj-h`"><h3>$(Enc (Nick $p.Name))</h3><span class=`"tag $($st[1])`">$(Enc $st[0])</span><span class=`"right`">$flow$(Progress $p -Long)$(if ($null -ne $p.Priority) { "<span>优先级 $($p.Priority)</span>" })</span></div>")
-    $null = $x.Append("<div class=`"now`"><span class=`"k`">现在</span><div>$now</div></div>")
+    $branch = [Collections.Generic.List[string]]::new()
     $star = @(@($p.Digest.Lines) | Where-Object { $_ -match '^北极星' }) | Select-Object -First 1
-    if ($star) { $null = $x.Append("<div class=`"star`"><span class=`"k`">北极星</span> $(Enc (Cut (Plain ($star -replace '^北极星[：:]\s*', '')) 110)) <span class=`"muted`">（$(Enc $p.Digest.Date) 复盘）</span></div>") }
-    if ($p.Next -or $p.Recent) {
-        $null = $x.Append('<div class="cols">')
-        if ($p.Next) { $null = $x.Append("<div><span class=`"k`">接下来</span>$(ListHtml $p.Next)</div>") }
-        if ($p.Recent) { $null = $x.Append("<div><span class=`"k`">最近完成</span>$(ListHtml $p.Recent)</div>") }
-        $null = $x.Append('</div>')
-    }
+    if ($star) { $branch.Add("<li class=`"b-star`"><span class=`"k`">北极星</span><div>$(Enc (Cut (Plain ($star -replace '^北极星[：:]\s*', '')) 110)) <span class=`"muted`">（$(Enc $p.Digest.Date) 复盘）</span></div></li>") }
+    $dirs = @(if ($bench) { @($bench.Directions) | Where-Object { $_ } })
+    if ($dirs) { $branch.Add("<li class=`"b-dir`"><span class=`"k`">方向</span><div>$(($dirs | ForEach-Object { Enc "$($_.Name)（$($_.State)）" }) -join '、')</div></li>") }
+    $liveClass = if (IsStalled $p) { ' stale' } elseif ($doing) { ' live' } else { '' }
+    $branch.Add("<li class=`"b-now$liveClass`"><span class=`"k`">现在</span><div>$now</div></li>")
+    $askItems = @(Asks $p)
+    if ($askItems) { $branch.Add("<li class=`"b-ask`"><span class=`"k`">等你定</span>$(ListHtml $askItems)</li>") }
+    if ($p.Next) { $branch.Add("<li class=`"b-next`"><span class=`"k`">接下来</span>$(ListHtml $p.Next)</li>") }
+    if ($p.Recent) { $branch.Add("<li class=`"b-done`"><span class=`"k`">最近完成</span>$(ListHtml $p.Recent)</li>") }
+    $null = $x.Append("<div class=`"mm`"><div class=`"mm-root`">$(Enc (Nick $p.Name))</div><ul class=`"mm-b`">$($branch -join '')</ul></div>")
     if ($bench -and $bench.Benchmark -eq 'ok') {
         $gapNote = if ($bench.Note) { '<div class="why">' + (Enc (Cut (Plain $bench.Note) 60)) + '</div>' } else { '' }
         $gapText = if ($null -ne $bench.Gap) { '<div class="gap">差距 ' + (Num $bench.Gap) + '<span class="muted" style="font-weight:400;font-size:13px">（' + (Enc $bench.LastRun) + '）</span></div>' + $gapNote } else { '<div class="muted">还没量</div>' }
@@ -273,6 +304,7 @@ function ProjectCard($p) {
         $null = $x.Append("<div class=`"bench`"><div><span class=`"k`">和基准比</span>$gapText$base$trend</div><div><span class=`"k`">并排图（点开看大图）</span>$pic</div></div>")
         foreach ($d in @($bench.Stopped) | Where-Object { $_ }) { $null = $x.Append("<div class=`"alert`">方向 $(Enc $d.Name) 要停：$(Enc (Cut $d.Reason 120))</div>") }
     }
+    if ($bench -and $bench.FlowUrl) { $null = $x.Append("<details class=`"flowbox`"><summary>展开流程图：这个项目从输入到输出，每一步谁做</summary><iframe src=`"$(Enc $bench.FlowUrl)`" loading=`"lazy`" sandbox title=`"$(Enc (Nick $p.Name)) 的流程图`"></iframe></details>") }
     if ($bench -and $bench.Benchmark -ne 'notApplicable' -and $p.Status -eq '推进中') {
         $lack = @(if ($bench.Benchmark -eq 'none') { '还没登记基准' }; if (-not $bench.FlowUrl) { '还没有流程图' })
         if ($lack) { $null = $x.Append("<div class=`"missing`">$($lack -join '，')：下次在这个项目发 /next 会自动加</div>") }
@@ -299,6 +331,7 @@ if ($kept) {
     $null = $b.Append('</details>')
 }
 if (@($s.Paused)) { $null = $b.Append("<div class=`"muted`" style=`"font-size:13px;margin-top:14px`">暂停：$(Enc ((@($s.Paused) | ForEach-Object { Nick $_ }) -join '、'))</div>") }
+$null = $b.Append('<details class="gloss"><summary>这些词是什么意思</summary><dl><dt>北极星</dt><dd>这个项目最终要做好的那个数，用它判断方向对不对。</dd><dt>基准</dt><dd>直接用通用模型能做到的结果。项目要比它好才有意义。</dd><dt>差距</dt><dd>最新结果和基准差多少。越低越好，到 0 以下就比过了。</dd><dt>方向</dt><dd>一条要花预算试的路线。差距连续 2 周没缩小，或者预算花完还没比过基准，就停下复盘。</dd><dt>决定卡</dt><dd>要你拍板时的一页材料：选项、代价和推荐。</dd><dt>待验证</dt><dd>改完了，等全新上下文的审查方专门挑错。</dd><dt>流程图</dt><dd>这个项目从输入到输出分几步，每一步是模型、程序、人还是外部服务做的。</dd></dl></details>')
 $null = $b.Append('</main></body></html>')
 
 $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Out)

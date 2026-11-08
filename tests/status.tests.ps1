@@ -552,9 +552,10 @@ try {
     Set-Content -LiteralPath (Join-Path $h 'docs/decisions/2026-11-01-定了.md') -Encoding utf8NoBOM -Value "# 决定卡：早定了的卡`n`n状态：已定（2026-11-02）"
     $cfgH = Join-Path $root 'projects-h.json'
     @{ projects = @(@{ name = '项目 H'; path = $h; status = '推进中' }, @{ name = '项目 G'; path = $g1; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '推进中' }, @{ name = '歇着的'; path = $g3; status = '暂停' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgH -Encoding utf8NoBOM
-    $md = New-DirRepo '项目 MD' ($qHead + "| 1 | **实验**：第一句 看 ``b`` 第二句 | 无 | 在做 |`n| 2 | 这是一个相当长的第一句话：后面还有别的 | 无 | 待做 |`n| 3 | 带<img src=x>和`"引号`"的目标 | 无 | 待做 |") ([ordered]@{ notApplicable = 'x' })
+    $md = New-DirRepo '项目 MD' ($qHead + "| 1 | **实验**：第一句 看 ``b`` 第二句 | 无 | 在做 |`n| 2 | 这是一个相当长的第一句话。后面还有别的 | 无 | 待做 |`n| 3 | 带<img src=x>和`"引号`"的目标 | 无 | 待做 |`n| 4 | 等一下 | 无 | 待用户（要定；推荐 A） |`n| 5 | 写过的 | 无 | 完成 |") ([ordered]@{ notApplicable = 'x' })
+    $nr = New-DirRepo '项目 NR' ($qHead + "| 1 | 需求（2026-11-05，补充）：多于两扇的门 | 无 | 待用户（等你看截图） |`n| 2 | 比例·1:100 短尺寸 | 无 | 待用户（决定卡 实测/某目录/决定卡.md：要定路线） |`n| 3 | 按钮改成 https://x.test 了 | 无 | 待用户（看一下；不推荐改成 B） |`n| 4 | 写过的二 | 无 | 完成 |") ([ordered]@{ notApplicable = 'x' })
     $cfgMd = Join-Path $root 'projects-md.json'
-    @{ projects = @(@{ name = '项目 MD'; path = $md; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '维护' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgMd -Encoding utf8NoBOM
+    @{ projects = @(@{ name = '项目 MD'; path = $md; status = '推进中' }, @{ name = '项目 NR'; path = $nr; status = '推进中' }, @{ name = '项目 G5'; path = $g5; status = '维护' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgMd -Encoding utf8NoBOM
     $pageMd = Join-Path $root 'out/status-md.html'
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $root 'out')
     $null = pwsh -NoProfile -File $daily -Config $cfgMd -Out $pageMd -NoNotify
@@ -572,7 +573,21 @@ try {
     Check 'page: a card image shows as a thumbnail and card text is escaped' ($html -match '走一半&lt;img src=x&gt;' -and $html -notmatch '<img src=x>' -and ([regex]::Matches($html, 'class="thumb"')).Count -ge 2)
     Check 'page: a card nobody named gets its own line' ($html -match '有一张决定卡等你定</div><details class="dc" open><summary>决定卡：没人提的卡' -and $dh -match '决定卡 没人提的卡 等你定')
     Check 'page: the paused line survives a stopped direction' ($html -match '暂停：歇着的')
-    Check 'page: queue markdown stays off the page, full text on hover, maintenance folded' ($htmlMd -match '<span title="实验：第一句 看 b 第二句">实验：第一句 看 b 第二句</span>' -and $htmlMd -notmatch '\*\*实验' -and $htmlMd -match '<span title="这是一个相当长的第一句话：后面还有别的">这是一个相当长的第一句话</span>' -and $htmlMd -match '<details class="maint"><summary>维护中的项目（1 个）</summary>')
+    Check 'page: queue markdown stays off the page, full text on hover, maintenance folded' ($htmlMd -match '<span title="实验：第一句 看 b 第二句">实验：第一句 看 b 第二句</span>' -and $htmlMd -notmatch '\*\*实验' -and $htmlMd -match '<span title="这是一个相当长的第一句话。后面还有别的">这是一个相当长的第一句话</span>' -and $htmlMd -match '<details class="maint"><summary>维护中的项目（1 个）</summary>')
+    Check 'page: a short title keeps the content after a colon, inside a ratio and a url' ($htmlMd -match '>需求：多于两扇的门</span>' -and $htmlMd -match '>比例&#183;1:100 短尺寸</span>' -and $htmlMd -match '>按钮改成 https://x\.test 了</span>')
+    Check 'page: a card not attached to the item keeps its path' ($htmlMd -match '<div class="why">决定卡 实测/某目录/决定卡\.md：要定路线</div>')
+    Check 'page: not recommended is not shown as a recommendation' ($htmlMd -notmatch '<div class="rec">推荐改成' -and $htmlMd -match '看一下；不推荐改成 B')
+    Check 'page: reply with the recommendation only where one exists' ($htmlMd -match '(?s)<h3>项目 MD</h3>.*?<div class="rec">推荐 A</div>.*?同意推荐就回' -and $htmlMd -match '(?s)<h3>项目 NR</h3><ol class="asks">.*?</ol><div class="how">到这个项目新建会话，发上面的命令</div>')
+    $tileAsk = [int][regex]::Match($html, '<b>(\d+)</b><span>件等你定').Groups[1].Value
+    $tileBad = [int][regex]::Match($html, '<b>(\d+)</b><span>处可能有问题').Groups[1].Value
+    Check 'page: the numbers add up to the headline' ($html -match '<p class="lead">要你管 (\d+) 件事</p>' -and ($tileAsk + $tileBad) -eq [int]$Matches[1] -and $tileAsk -gt 0)
+    $stripDone = [int][regex]::Match($htmlMd, '<div class="st done[^"]*"><i></i><b>(\d+)</b><span>完成</span>').Groups[1].Value
+    $cardDone = 0; foreach ($m in [regex]::Matches($htmlMd, '完成 (\d+) / 共 \d+ 项')) { $cardDone += [int]$m.Groups[1].Value }
+    Check 'page: the pipeline adds up across project cards' ($cardDone -ge 2 -and $stripDone -eq $cardDone -and $htmlMd -match '<div class="st ask[^"]*"><i></i><b>\d+</b><span>等你</span>')
+    Check 'page: progress bar is split by stage' ($htmlMd -match '<span class="seg done" style="width:[\d.]+%" title="完成 \d+">' -and $htmlMd -match '<span class="seg doing"' -and $htmlMd -match '<div class="row head">')
+    Check 'page: each project is a mind map, and working items are alive' ($htmlMd -match '<div class="mm"><div class="mm-root">项目 MD</div><ul class="mm-b">' -and $htmlMd -match '<li class="b-now live"><span class="k">现在</span>' -and $htmlMd -match '(?s)<h3>项目 NR</h3><span[^>]*>[^<]*</span>.*?<li class="b-ask"><span class="k">等你定</span><ul class="items">')
+    Check 'page: animation only in css, off when motion is reduced' ($htmlMd -match '@media \(prefers-reduced-motion:reduce\)\{\*\{animation:none' -and $htmlMd -notmatch '<script')
+    Check 'page: words explained' ($htmlMd -match '<details class="gloss"><summary>这些词是什么意思</summary>' -and $htmlMd -match '<dt>北极星</dt>' -and $htmlMd -match '<dt>决定卡</dt>')
     Check 'page: goal text is escaped in the text and the hover title' ($htmlMd -match '<span title="带&lt;img src=x&gt;和&quot;引号&quot;的目标">带&lt;img src=x&gt;和&quot;引号&quot;的目标</span>' -and $htmlMd -notmatch '<img src=x>')
     Check 'page: settled cards are not listed' ($html -notmatch '早定了的卡')
     Check 'page: a stopped direction is listed with its reason, escaped' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">')
@@ -582,7 +597,7 @@ try {
     Set-Content -LiteralPath (Join-Path $h 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
     $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
     $htmlFlow = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
-    Check 'page: a flow page gets a link' ($htmlFlow -match '<a href="file:///[^"]*/docs/flow\.html" target="_blank">流程图</a>')
+    Check 'page: a flow page gets a link and opens in place without scripts' ($htmlFlow -match '<a href="file:///[^"]*/docs/flow\.html" target="_blank">流程图</a>' -and $htmlFlow -match '<details class="flowbox"><summary>[^<]*</summary><iframe src="file:///[^"]*/docs/flow\.html" loading="lazy" sandbox ')
     Check 'page: no chart for a project without runs' ([regex]::Matches($html, '<svg class="spark"').Count -eq 1)
     # 已有人在处理的方向复盘不再催
     (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘：A<b> \| 无 \| 待做 \|', '| 1 | 方向复盘：A<b> | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM
