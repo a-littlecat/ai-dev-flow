@@ -104,6 +104,15 @@ try {
     $null = New-Item -ItemType Directory -Force -Path (Join-Path (Wt 'withbin') 'bin')
     Put (Wt 'withbin') 'bin/a.dll' 'x'
     Age (Wt 'withbin')
+    # 关了显示未跟踪文件的项目：未跟踪文件照样算
+    $null = G worktree add -q -b hidden (Wt 'hidden')
+    $null = git -C (Wt 'hidden') config status.showUntrackedFiles no
+    Put (Wt 'hidden') 'wip.txt' 'wip'
+    Age (Wt 'hidden')
+    # 旁边有上次试占用留下的目录：留着，说明
+    $null = G worktree add -q -b leftover (Wt 'leftover')
+    Age (Wt 'leftover')
+    $null = New-Item -ItemType Directory -Force -Path "$(Wt 'leftover').cleanup-probe"
     # 长期分支：已合并也不删
     foreach ($n in 'release/1.0', 'develop', 'backup-before-rewrite') { $null = G branch $n }
     # 目录已经不在的记录：prune
@@ -114,6 +123,7 @@ try {
     $r = Run @('-DryRun', '-Branch', 'just')
     Check 'dry run: exit 0, says what it would delete' ($r.Code -eq 0 -and $r.Text -match '会删 worktree：done' -and $r.Text -match '会删分支：merged-plain')
     Check 'dry run: lists the branch of a worktree it would remove' ($r.Text -match '会删分支：done')
+    Check 'dry run: does not try the busy check, it would rename the folder' ($r.Text -match '会删 worktree：occupied')
     Check 'dry run: nothing changed' (((G worktree list --porcelain) -join "`n") -eq $before -and (HasBranch 'merged-plain') -and (HasBranch 'done'))
 
     $r = Run @('-Branch', 'just')
@@ -135,6 +145,8 @@ try {
     Check 'session whose process stopped does not count' (-not (Test-Path -LiteralPath (Wt 'stopped')))
     Check 'directory held by another process: every file kept, branch kept' ((Test-Path -LiteralPath (Join-Path (Wt 'occupied') 'a.txt')) -and (HasBranch 'occupied') -and $r.Text -match '留着：occupied.*占用' -and -not (Test-Path -LiteralPath "$(Wt 'occupied').cleanup-probe"))
     Check 'nested worktree: outer kept, inner work kept' ((Test-Path -LiteralPath (Join-Path (Wt 'outer') 'nested/inner/wip.txt')) -and (HasBranch 'outer') -and $r.Text -match '留着：outer.*嵌')
+    Check 'showUntrackedFiles=no: untracked file still kept' ((Test-Path -LiteralPath (Join-Path (Wt 'hidden') 'wip.txt')) -and $r.Text -match '留着：hidden.*未跟踪')
+    Check 'leftover probe folder: kept, says where' ((Test-Path -LiteralPath (Wt 'leftover')) -and (HasBranch 'leftover') -and $r.Text -match '留着：leftover.*cleanup-probe')
     Check 'ignored evidence: kept, named' ((Test-Path -LiteralPath (Join-Path (Wt 'evidence') 'out/a.png')) -and (HasBranch 'evidence') -and $r.Text -match '留着：evidence.*被忽略.*out')
     Check 'ignored build output: removed' (-not (Test-Path -LiteralPath (Wt 'withbin')) -and -not (HasBranch 'withbin'))
     Check 'long-lived branches: kept, listed' ((HasBranch 'release/1.0') -and (HasBranch 'develop') -and (HasBranch 'backup-before-rewrite') -and $r.Text -match '留着：分支 release/1\.0.*长期')

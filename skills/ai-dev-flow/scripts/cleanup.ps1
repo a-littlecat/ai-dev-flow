@@ -11,14 +11,14 @@ param(
 #   -Branch       刚合并的分支（可以几个）：它的 worktree 不看"最近有没有动静"，直接按下面的条件删
 #   -Trunk        主干。不给时取 origin/HEAD，没有就取 main 或 master（两个都有时取主检出所在的那个）；判断不了，或主检出不在主干上，退出 2，不猜
 #   -IdleMinutes  没点名的 worktree 最近这么多分钟内有动静就不动（默认 60）：刚开出来、还没提交的 worktree，head 也在主干上，可能正有会话在用
-#   -DryRun       只列出会删什么
+#   -DryRun       只列出会删什么，什么都不动，所以也不试目录有没有被占用
 # worktree 只删同时满足的：head 是主干的祖先；git status --short 没有输出（未跟踪文件也算有）；被忽略的文件都是构建产物（$buildDirs，其余的如证据、.env 不能丢）；
 # 里面没有嵌套别的 worktree；没上锁；不是当前所在目录；没有还在跑的派活；claude agents 里没有会话在里面；目录没被别的进程占用。
 # 分支只删已合进主干的；主干、origin/HEAD 指的分支和长期分支（$longLived）不删，列出来，要删手工删。
 # 用 git worktree remove 和 git branch -d，不加 --force、不用 -D，Git 拒绝的就留着并说明。没合并的一律不动，也不列。
 # 项目 AGENTS.md 写了"不自动清理"的什么也不做（land.md 第 6 节）。
 # 目录已经不在的 worktree 记录用 git worktree prune 清掉。审查 worktree 里留着未跟踪证据的，由 dispatch.ps1 -CleanReviews 处理。
-# 退出码：0 做完了（有留着的也是 0）；2 参数或仓库不对。
+# 退出码：0 做完了（有留着的也是 0）；1 试占用时目录没能改回原名，输出里写着现在在哪，要手工改回；2 参数或仓库不对。
 $ErrorActionPreference = 'Stop'
 # git status 默认会刷新 index，这个脚本一跑，所有 worktree 都成了"刚有动静"。
 $env:GIT_OPTIONAL_LOCKS = '0'
@@ -84,9 +84,17 @@ if (Get-Command $claude -ErrorAction SilentlyContinue) {
 }
 function Test-Inside([string]$child, [string]$parent) { $child -eq $parent -or $child.StartsWith("$parent\", [StringComparison]::OrdinalIgnoreCase) -or $child.StartsWith("$parent/", [StringComparison]::OrdinalIgnoreCase) }
 # Windows 上有进程把工作目录放在里面时，git worktree remove 会先删光文件、最后才失败。先试着改名：改不动就是被占用，一点没动。
-function Test-Busy([string]$path) {
+# 改过去以后，扫描目录的程序（IDE 搜索、同步盘、杀软）可能挡住改回，所以多试几秒；还不行就如实报，不再动它。返回留着的原因，能删返回空。
+$stuck = [Collections.Generic.List[string]]::new()
+function Get-BusyReason([string]$path) {
     $probe = "$path.cleanup-probe"
-    try { [IO.Directory]::Move($path, $probe); [IO.Directory]::Move($probe, $path); $false } catch { $true }
+    if (Test-Path -LiteralPath $probe) { return "旁边有上次试占用留下的 $probe，看一眼再处理" }
+    try { [IO.Directory]::Move($path, $probe) } catch { return '目录被别的进程占用' }
+    for ($i = 0; $i -lt 30; $i++) {
+        try { [IO.Directory]::Move($probe, $path); return '' } catch { Start-Sleep -Milliseconds 200 }
+    }
+    $stuck.Add("$probe 要手工改回 $path")
+    '目录被占用，没能改回原名'
 }
 # 这个 worktree 最近一次有动静的时间：它在 .git/worktrees 下的 HEAD、index，加上目录本身（有文件进出时会变）。
 function Get-LastTouch($t) {
@@ -117,14 +125,15 @@ foreach ($t in @($trees | Select-Object -Skip 1 | Where-Object { -not $_.Prunabl
     elseif ($sessionDirs | Where-Object { Test-Inside $_ $path }) { $why = '有会话在里面' }
     elseif ($trees | Where-Object { -not $_.Prunable -and -not $removedPaths[(Norm $_.Path)] -and (Norm $_.Path) -ne $path -and (Test-Inside (Norm $_.Path) $path) }) { $why = '里面还嵌着别的 worktree' }
     else {
-        $st = Git-Out $t.Path @('status', '--short', '--ignored')
+        # 写明 --untracked-files：项目配了 status.showUntrackedFiles=no 时，默认看不到未跟踪文件，会被当成干净删掉。
+        $st = Git-Out $t.Path @('status', '--short', '--ignored', '--untracked-files=normal')
         $ignored = @($st.Out | Where-Object { $_ -like '!! *' } | ForEach-Object { $_.Substring(3).Trim('"') } | Where-Object { -not (@($_ -split '/' | Where-Object { $buildDirs -contains $_ }).Count) })
         if ($st.Code) { $why = '读不了状态' }
         elseif ($st.Out | Where-Object { $_ -and $_ -notlike '!! *' }) { $why = '有未提交改动或未跟踪文件' }
         elseif ($ignored) { $why = "有被忽略的文件：$(($ignored | Select-Object -First 3) -join '、')" }
         elseif (-not ($t.Branch -and $Branch -contains $t.Branch) -and ((Get-Date) - (Get-LastTouch $t)).TotalMinutes -lt $IdleMinutes) { $why = "$IdleMinutes 分钟内有动静，可能有会话在用" }
     }
-    if (-not $why -and (Test-Busy $path)) { $why = '目录被别的进程占用' }
+    if (-not $why -and -not $DryRun) { $why = Get-BusyReason $path }
     if ($why) { $kept.Add("$name（$($t.Path)）：$why"); continue }
     if ($DryRun) { "会删 worktree：$name（$($t.Path)）"; $removedTrees++; if ($t.Branch) { $gone[$t.Branch] = $true }; continue }
     $rm = Git-Out $main.Path @('worktree', 'remove', $t.Path)
@@ -155,4 +164,5 @@ foreach ($b in (Git-Out $main.Path @('branch', '--merged', $trunkSha, '--format=
 
 "$(if ($DryRun) { '会删' } else { '删了' }) worktree $removedTrees 个、分支 $removedBranches 个；留着 $($kept.Count) 个"
 $kept | ForEach-Object { "留着：$_" }
+if ($stuck.Count) { $stuck | ForEach-Object { "要你处理：$_" }; exit 1 }
 exit 0
