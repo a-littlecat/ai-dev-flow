@@ -72,6 +72,40 @@ try {
     $null = New-Item -ItemType Directory -Force -Path $run2
     @{ Worktree = (Wt 'finished'); Pid = $PID } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $run2 'meta.json') -Encoding utf8NoBOM
     '{}' | Set-Content -LiteralPath (Join-Path $run2 'exit.json') -Encoding utf8NoBOM
+    # 有会话在里面的（claude agents 列出来，有进程）：不动；进程已停的不算
+    $null = G worktree add -q -b insession (Wt 'insession')
+    Age (Wt 'insession')
+    $null = G worktree add -q -b stopped (Wt 'stopped')
+    Age (Wt 'stopped')
+    $fake = Join-Path $root 'claude.ps1'
+    $agentsJson = Join-Path $root 'agents.json'
+    ConvertTo-Json -InputObject @(@{ cwd = (Wt 'insession'); pid = 1 }, @{ cwd = (Wt 'stopped') }) | Set-Content -LiteralPath $agentsJson -Encoding utf8NoBOM
+    "Get-Content -LiteralPath '$agentsJson' -Raw" | Set-Content -LiteralPath $fake -Encoding utf8NoBOM
+    $env:AI_DEV_FLOW_CLAUDE = $fake
+    # 别的进程把工作目录放在里面：不动，一个文件都不能少
+    $null = G worktree add -q -b occupied (Wt 'occupied')
+    Age (Wt 'occupied')
+    $holder = Start-Process pwsh -ArgumentList '-NoProfile', '-Command', 'Start-Sleep 300' -WorkingDirectory (Wt 'occupied') -PassThru -WindowStyle Hidden
+    Start-Sleep -Seconds 2
+    # 嵌套：外层已合并、干净，里面嵌着有未跟踪文件的 worktree：外层不能删
+    $null = G worktree add -q -b outer (Wt 'outer')
+    Age (Wt 'outer')
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $repo '.git/info')
+    Add-Content -LiteralPath (Join-Path $repo '.git/info/exclude') -Value 'nested/' -Encoding utf8NoBOM
+    $null = G worktree add -q -b inner (Join-Path (Wt 'outer') 'nested/inner')
+    Put (Join-Path (Wt 'outer') 'nested/inner') 'wip.txt' 'wip'
+    # 被忽略的文件：证据不能丢；构建产物可以删
+    Add-Content -LiteralPath (Join-Path $repo '.git/info/exclude') -Value "out/`nbin/`n.env" -Encoding utf8NoBOM
+    $null = G worktree add -q -b evidence (Wt 'evidence')
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path (Wt 'evidence') 'out')
+    Put (Wt 'evidence') 'out/a.png' 'x'
+    Age (Wt 'evidence')
+    $null = G worktree add -q -b withbin (Wt 'withbin')
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path (Wt 'withbin') 'bin')
+    Put (Wt 'withbin') 'bin/a.dll' 'x'
+    Age (Wt 'withbin')
+    # 长期分支：已合并也不删
+    foreach ($n in 'release/1.0', 'develop', 'backup-before-rewrite') { $null = G branch $n }
     # 目录已经不在的记录：prune
     $null = G worktree add -q -b vanished (Wt 'vanished')
     Remove-Item -LiteralPath (Wt 'vanished') -Recurse -Force
@@ -97,7 +131,27 @@ try {
     Check 'dispatch still running: kept' ((Test-Path -LiteralPath (Wt 'running')) -and (HasBranch 'running') -and $r.Text -match '留着：running.*派活')
     Check 'missing directory: record pruned' (-not ((G worktree list --porcelain) -join "`n" -match 'wt-vanished') -and $r.Text -match '目录已不在')
     Check 'trunk stays' ((HasBranch 'main') -and ((G symbolic-ref --short HEAD) -eq 'main'))
-    Check 'counts in the summary' ($r.Text -match '留着 5 个')
+    Check 'session in the worktree: kept, reason given' ((Test-Path -LiteralPath (Wt 'insession')) -and (HasBranch 'insession') -and $r.Text -match '留着：insession.*会话')
+    Check 'session whose process stopped does not count' (-not (Test-Path -LiteralPath (Wt 'stopped')))
+    Check 'directory held by another process: every file kept, branch kept' ((Test-Path -LiteralPath (Join-Path (Wt 'occupied') 'a.txt')) -and (HasBranch 'occupied') -and $r.Text -match '留着：occupied.*占用' -and -not (Test-Path -LiteralPath "$(Wt 'occupied').cleanup-probe"))
+    Check 'nested worktree: outer kept, inner work kept' ((Test-Path -LiteralPath (Join-Path (Wt 'outer') 'nested/inner/wip.txt')) -and (HasBranch 'outer') -and $r.Text -match '留着：outer.*嵌')
+    Check 'ignored evidence: kept, named' ((Test-Path -LiteralPath (Join-Path (Wt 'evidence') 'out/a.png')) -and (HasBranch 'evidence') -and $r.Text -match '留着：evidence.*被忽略.*out')
+    Check 'ignored build output: removed' (-not (Test-Path -LiteralPath (Wt 'withbin')) -and -not (HasBranch 'withbin'))
+    Check 'long-lived branches: kept, listed' ((HasBranch 'release/1.0') -and (HasBranch 'develop') -and (HasBranch 'backup-before-rewrite') -and $r.Text -match '留着：分支 release/1\.0.*长期')
+
+    $null = G checkout -q -b feat
+    Commit 'feat.txt'
+    $r = Run @()
+    Check 'main checkout off trunk, no -Trunk: exit 2, nothing deleted' ($r.Code -eq 2 -and $r.Text -match '不在主干' -and (HasBranch 'main') -and (HasBranch 'develop'))
+    $r = Run @('-Trunk', 'feat', '-DryRun')
+    Check 'trunk branch itself is never listed for deletion, even with another -Trunk' ($r.Text -notmatch '会删分支：main' -and $r.Text -match '分支 main.*长期')
+    $null = G checkout -q main
+    $null = G branch -D feat
+
+    Set-Content -LiteralPath (Join-Path $repo 'AGENTS.md') -Value '合并后不自动清理' -Encoding utf8NoBOM
+    $r = Run @('-IdleMinutes', '0')
+    Check 'AGENTS.md says no automatic cleanup: nothing deleted' ($r.Code -eq 0 -and $r.Text -match '不自动清理' -and (Test-Path -LiteralPath (Wt 'fresh')))
+    Remove-Item -LiteralPath (Join-Path $repo 'AGENTS.md')
 
     $r = Run @('-IdleMinutes', '0')
     Check 'idle 0: the fresh worktree goes too' (-not (Test-Path -LiteralPath (Wt 'fresh')))
@@ -111,6 +165,8 @@ try {
     $o = @(pwsh -NoProfile -File $Script -Repo (Join-Path $root 'nowhere') 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE
     Check 'not a repository: exit 2' ($code -eq 2)
 } finally {
+    if ($holder) { Stop-Process -Id $holder.Id -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }
+    Remove-Item env:AI_DEV_FLOW_CLAUDE -ErrorAction SilentlyContinue
     if ($Keep) { "kept: $root" } else {
         Get-ChildItem -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Attributes = 'Normal' } catch {} }
         Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue

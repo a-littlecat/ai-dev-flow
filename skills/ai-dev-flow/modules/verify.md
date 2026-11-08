@@ -55,7 +55,7 @@
 
 验证放在后台跑，等待期间继续做别的事。
 
-先为验证方开一个临时 worktree，检出要合并的 head（用 `scripts/dispatch.ps1 -Review` 派给外部 agent 时，脚本会自动开好）：
+先在主项目工作区（不要在别的 worktree 里，否则会嵌套）为验证方开一个临时 worktree，检出要合并的 head（用 `scripts/dispatch.ps1 -Review` 派给外部 agent 时，脚本会自动开好）：
 
 ```bash
 git worktree add --detach .agents/worktrees/<运行名> <head>

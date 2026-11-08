@@ -121,6 +121,6 @@ if ($sec.Success) {
     }
 }
 $info | ForEach-Object { "注意：$_" }
-"合并后运行：pwsh -NoProfile -File $(Join-Path $PSScriptRoot 'cleanup.ps1') -Branch $Branch -Trunk $Trunk"
+"合并后运行：pwsh -NoProfile -File `"$(Join-Path $PSScriptRoot 'cleanup.ps1')`" -Branch $Branch -Trunk $Trunk -Repo `"$($top.Out[0])`""
 "git merge --ff-only $Branch"
 exit 0

@@ -303,7 +303,7 @@ $runner = Join-Path $runDir 'run.ps1'
 $retryDelays = if ($null -ne $cfg.retry400Seconds) { @($cfg.retry400Seconds | ForEach-Object { [int]$_ }) } else { @(120, 300, 900) }
 $cleanArgs = "-NoProfile -File $(& $q $PSCommandPath) -CleanReviews -KeepEvidence -Name $(& $q $Name)$(if ($Config) { ' -Config ' + (& $q ([IO.Path]::GetFullPath($Config))) })"
 # 审查方回复里的快检用时记到 .agents/verify-last.json，状态页和 /next 靠它发现快检太慢（harness.md 第 2 节）。
-$verifyLast = Join-Path $root '.agents/verify-last.json'
+$verifyLast = Join-Path $repo '.agents/verify-last.json'
 $verifyLine = if ($mode -eq 'review') { "if (`$code -eq 0 -and (Test-Path -LiteralPath $(& $q $final))) { `$vm = [regex]::Match((Get-Content -LiteralPath $(& $q $final) -Raw -Encoding UTF8), '\u5feb\u68c0\u7528\u65f6[\uff1a:]\s*(\d+)\s*\u79d2'); if (`$vm.Success) { [ordered]@{ head = '$headSha'; seconds = [int]`$vm.Groups[1].Value; date = (Get-Date).ToString('yyyy-MM-dd'); source = 'dispatch' } | ConvertTo-Json | Set-Content -LiteralPath $(& $q $verifyLast) -Encoding utf8NoBOM } }" } else { '' }
 $cleanLine = if ($mode -eq 'review' -and -not $cfg.keepReviewWorktree) { "Set-Location -LiteralPath $(& $q $repo)`n& (Get-Process -Id `$PID).Path $cleanArgs | Out-Null" } else { '' }
 # 执行方输出 UTF-8；Windows 中文系统控制台默认 GBK，不设置的话管道读进来是乱码。

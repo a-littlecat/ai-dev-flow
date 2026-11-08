@@ -12,7 +12,7 @@
 
 ## 2. 最低要求（升到 L1 之前要有）
 
-1. **verify（快）**：一条命令，例如 `scripts/verify` 或 `npm run verify`，包含格式化、类型检查、lint、单测和关键回归，目标 2 分钟内跑完。退出码 0 才算通过，失败时要打出能定位的信息。超过 10 分钟就排一项提速（这两个数只写在这里，`status.ps1` 的默认值同此；项目要改，在 `AGENTS.md` 写"快检提速阈值：<分钟> 分钟"并写明理由）。用时不用项目自己记：审查方回复和 verify note 里的"快检用时"由 `dispatch.ps1`、`land-check.ps1` 记到 `.agents/verify-last.json`，`status.ps1` 超阈值时提示，`/next` 开场自动排（`skills/next/SKILL.md` 第 1 节）。提速之前可以先让执行方不跑全量，见 `build.md` 第 3 节。提速的做法：先量出每个测试的耗时，从最慢的下手；互不依赖的分组并行（并行安全见第 9 条），共用的构建加缓存；只有宿主软件里才能证明的移进 verify:full。覆盖的检查一项不减，改完按改门禁的规则独立验证（`verify.md` 第 1 节）。快检里加一步文档格式检查：`pwsh -NoProfile -File <skill>/scripts/check-md.ps1 -Repo .`（`<skill>` 是 `$env:AI_DEV_FLOW`，默认 `~/.agents/skills/ai-dev-flow`），退出码非 0 就算快检失败。它查被跟踪的 `.md` 里的控制字符和被拆断的表格行：会话用命令行内联写含 Windows 路径的文字时，`\r`、`\n`、`\t` 会被当成转义写进去，把队列表的行拆断，状态脚本就认不出那一项。不要在项目里另写一份。
+1. **verify（快）**：一条命令，例如 `scripts/verify` 或 `npm run verify`，包含格式化、类型检查、lint、单测和关键回归，目标 2 分钟内跑完。退出码 0 才算通过，失败时要打出能定位的信息。超过 10 分钟就排一项提速（这两个数以这里为准，`status.ps1` 的默认值跟着它；项目要改，在 `AGENTS.md` 写"快检提速阈值：<分钟> 分钟"并写明理由）。用时不用项目自己记：审查方回复和 verify note 里的"快检用时"由 `dispatch.ps1`、`land-check.ps1` 记到 `.agents/verify-last.json`，`status.ps1` 超阈值时提示，`/next` 开场自动排（`skills/next/SKILL.md` 第 1 节）。提速之前可以先让执行方不跑全量，见 `build.md` 第 3 节。提速的做法：先量出每个测试的耗时，从最慢的下手；互不依赖的分组并行（并行安全见第 9 条），共用的构建加缓存；只有宿主软件里才能证明的移进 verify:full。覆盖的检查一项不减，改完按改门禁的规则独立验证（`verify.md` 第 1 节）。快检里加一步文档格式检查：`pwsh -NoProfile -File <skill>/scripts/check-md.ps1 -Repo .`（`<skill>` 是 `$env:AI_DEV_FLOW`，默认 `~/.agents/skills/ai-dev-flow`），退出码非 0 就算快检失败。它查被跟踪的 `.md` 里的控制字符和被拆断的表格行：会话用命令行内联写含 Windows 路径的文字时，`\r`、`\n`、`\t` 会被当成转义写进去，把队列表的行拆断，状态脚本就认不出那一项。不要在项目里另写一份。
 2. **verify:full（慢）**：e2e、全平台、真实宿主软件。可以慢，但必须无人值守。慢而且独占资源的，做成队列（第 5 节）。
 3. **能操作产品**，按项目类型选：
    - Web：Playwright 脚本，加截图

@@ -25,7 +25,7 @@ try {
     $null = G checkout -q main
     $r = Run 'ok'
     Check 'all good: exit 0 and prints the merge command' ($r.Code -eq 0 -and $r.Out[-1] -eq 'git merge --ff-only ok')
-    Check 'all good: says to clean up after merging' ($r.Text -match '合并后运行：.*cleanup\.ps1 -Branch ok -Trunk main')
+    Check 'all good: says to clean up after merging' ($r.Text -match '合并后运行：.*cleanup\.ps1" -Branch ok -Trunk main -Repo ".*项目 A"')
 
     $null = G checkout -q -b nonote ok
     $b2 = Commit 'src/a.ps1' "3`n"
@@ -174,6 +174,12 @@ try {
     Check 'not a repo exits 2' ($code -eq 2)
     $vl = Join-Path $repo '.agents/verify-last.json'
     Check 'verify time: note without it, no record' (-not (Test-Path -LiteralPath $vl))
+    $null = G branch -f timed0 HEAD
+    $null = G checkout -q timed0; $t0 = Commit 'src/t0.ps1' "1`n"; $null = G checkout -q main
+    $m0 = G rev-parse main
+    $null = G notes --ref=verify add -f -m "覆盖：$($m0.Substring(0, 7))..$($t0.Substring(0, 7))；x → Pass；快检用时：9 秒；没跑：无" $t0
+    $rt = Run 'timed0'
+    Check 'verify time: .agents not ignored, nothing written' ($rt.Code -eq 0 -and -not (Test-Path -LiteralPath $vl))
     Put '.gitignore' ".agents/`n"; $null = G add .gitignore; $null = G commit -qm ignore
     $null = G branch -f timed HEAD
     $null = G checkout -q timed; $tb = Commit 'src/t.ps1' "1`n"; $null = G checkout -q main

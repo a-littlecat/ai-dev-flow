@@ -331,13 +331,16 @@ try {
 | 10 | 辛 | 无 | 暂停在安全点 |
 | 11 | 壬 | 无 | 暂停（于安全点） |
 | 12 | 癸 | 无 | 已合并到分支，待验证 |
+| 13 | 子 | 无 | 已完成 部分 |
+| 14 | 丑 | 无 | 已合并（到分支，待验证） |
+| 15 | 寅 | 无 | 暂停（要不要继续，等你定） |
 '@ | Set-Content -LiteralPath (Join-Path $alias 'docs/queue.md') -Encoding utf8NoBOM
     G -C $alias add -A; G -C $alias commit -q -m 'a1'
     $cfgAlias = Join-Path $root 'projects-alias.json'
     @{ projects = @(@{ name = '写法'; path = $alias; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgAlias -Encoding utf8NoBOM
     $pAlias = (pwsh -NoProfile -File $Script -Config $cfgAlias -Json | ConvertFrom-Json).Projects[0]
     Check 'state aliases: counted as the standard state' ($pAlias.Queue.'完成' -eq 2 -and $pAlias.Queue.'在做' -eq 1 -and $pAlias.Queue.'搁置' -eq 1 -and (($pAlias.Doing | ForEach-Object Detail) -join ',') -eq 'r2')
-    Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6,9,10,11,12' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
+    Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6,9,10,11,12,13,14,15' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
     Check 'state aliases: dependencies follow the standard state' ($pAlias.Next.Id -contains '8' -and $pAlias.Next.Id -notcontains '7')
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))

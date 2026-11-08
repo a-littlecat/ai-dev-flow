@@ -159,6 +159,14 @@ try {
     Check 'verify time: recorded with the reviewed head' ($rec.seconds -eq 725 -and $rec.head -eq $candidateHead -and $rec.date -eq (Get-Date).ToString('yyyy-MM-dd'))
     $null = Run 'rev-notime' 'notime' @('-Review', 'candidate')
     Check 'verify time: docs-only reply keeps the last record' ((Get-Content -LiteralPath $vl -Raw -Encoding UTF8 | ConvertFrom-Json).seconds -eq 725)
+    Remove-Item -LiteralPath $vl
+    $fromWt = Join-Path $root 'from-worktree'
+    G -C $repo worktree add -q --detach $fromWt main
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $fromWt 'scripts')
+    Copy-Item -LiteralPath (Join-Path $repo 'scripts/dispatch.json') -Destination (Join-Path $fromWt 'scripts/dispatch.json') -Force
+    $env:FAKE_PLAN = 'timed'; $env:FAKE_COUNTER = Join-Path $root 'rev-fromwt.count'
+    $null = & (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'rev-fromwt' -Agent fake -BriefFile $brief -Config (Join-Path $fromWt 'scripts/dispatch.json') -Review candidate -Wait 2>&1
+    Check 'verify time: dispatched from a worktree, recorded in the main repo' ((Test-Path -LiteralPath $vl) -and -not (Test-Path -LiteralPath (Join-Path $fromWt '.agents/verify-last.json')))
     Check 'verify time: the reviewer is asked for it' ((Get-Content -LiteralPath (Join-Path $runs 'rev-timed/prompt.md') -Raw) -match '快检用时：<秒数> 秒')
 
     $r = Run 'rev-touched' 'ok+touch' @('-Review', 'candidate')
