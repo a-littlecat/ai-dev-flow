@@ -8,6 +8,7 @@
 - **队列**：`docs/queue.md`，只由编排会话维护。
 - **检查**：
   - 改了 `skills/ai-dev-flow/scripts/` 下的 `status.ps1`、`daily.ps1`、`notify.ps1` 或 `watch.ps1`：跑 `pwsh -NoProfile -File tests/status.tests.ps1`，退出码 0 才算通过。测试里 notify 只走 `-DryRun`；真的弹通知、推到手机，要在本机实发一次。
+  - 改了 `status.ps1` 解析队列或别的文档的写法：另外对本机总览清单只读跑一次 `status.ps1 -Config <总览仓库>/projects.json -All -Json`，看真实队列的结果对不对，写进提交正文。夹具里的写法总是比真实队列少（10-31、11-05、11-06、11-08 四次都是真实写法没考虑到）。
   - 改了 `skills/ai-dev-flow/scripts/dispatch.ps1`：跑 `pwsh -NoProfile -File tests/dispatch.tests.ps1`，退出码 0 才算通过。它用假的执行方，只覆盖 400 重试和审查 worktree 清理，其余部分还要靠独立审查实跑。
   - 改了 `skills/ai-dev-flow/scripts/check-md.ps1`：跑 `pwsh -NoProfile -File tests/check-md.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/land-check.ps1`：跑 `pwsh -NoProfile -File tests/land-check.tests.ps1`，退出码 0 才算通过。
