@@ -11,7 +11,9 @@ $fake = Join-Path $root 'claude.ps1'
 $agents = Join-Path $root 'agents.json'
 $log = Join-Path $root 'log.txt'
 $cfg = Join-Path $root 'projects.json'
-@{ projects = @(@{ name = '01 导图'; path = $projA; status = '推进中' }, @{ name = 'B 项目'; path = $projB; status = '推进中' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg -Encoding UTF8
+@{ projects = @(@{ name = '01 导图'; path = $projA; status = '推进中' }, @{ name = 'B 项目'; path = $projB; status = '推进中' },
+    @{ name = '叫醒'; path = $projA; status = '推进中'; wake = 'message' }, @{ name = '新开'; path = $projA; status = '推进中'; wake = 'new'; session = 'cli' }, @{ name = '桌面'; path = $projA; status = '推进中'; session = 'desktop' },
+    @{ name = '错 session'; path = $projA; status = '推进中'; session = 'web' }, @{ name = '错 wake'; path = $projA; status = '推进中'; wake = 'later' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg -Encoding UTF8
 @'
 if ($args[0] -eq 'agents') { if ($env:FAKE_STDERR) { Write-Error 'Starting background service' -ErrorAction Continue }; Get-Content -LiteralPath $env:FAKE_AGENTS -Raw; exit 0 }
 if ($env:FAKE_UNTRUSTED) { 'Error: Workspace not trusted. Run claude in this folder first.'; exit 1 }
@@ -41,6 +43,23 @@ try {
     $r = Run @('-Project', $projA)
     Check 'existing session in the project (path case differs): not launched, exit 3, names it' ($r.Code -eq 3 -and $r.Text -match '导图主会话' -and -not $r.Log)
 
+    $r = Run @('-Project', $projA, '-New')
+    Check '-New: existing session listed, new one launched' ($r.Code -eq 0 -and $r.Text -match '已有会话：导图主会话' -and $r.Text -notmatch '改用跨会话消息' -and $r.Out[-1] -match '^launched ' -and $r.Log)
+    $r = Run @('-Project', '新开', '-Config', $cfg)
+    Check 'wake new in the list: launches next to the old session' ($r.Code -eq 0 -and $r.Log)
+    $r = Run @('-Project', '01 导图', '-Config', $cfg)
+    Check 'wake not written in the list counts as new' ($r.Code -eq 0 -and $r.Log)
+    $r = Run @('-Project', '叫醒', '-Config', $cfg)
+    Check 'wake message in the list: exit 3, nothing launched' ($r.Code -eq 3 -and -not $r.Log)
+    $r = Run @('-Project', '叫醒', '-Config', $cfg, '-New')
+    Check '-New overrides wake message' ($r.Code -eq 0 -and $r.Log)
+    $r = Run @('-Project', '桌面', '-Config', $cfg, '-New', '-Prompt', '/next #7')
+    Check 'session desktop: exit 5, says how to open it, nothing launched' ($r.Code -eq 5 -and $r.Text -match '桌面应用' -and $r.Text -match '/next #7' -and -not $r.Log)
+    $r = Run @('-Project', '错 session', '-Config', $cfg)
+    Check 'bad session value: exit 1, nothing launched' ($r.Code -eq 1 -and $r.Text -match 'cli 或 desktop' -and -not $r.Log)
+    $r = Run @('-Project', '错 wake', '-Config', $cfg)
+    Check 'bad wake value: exit 1, nothing launched' ($r.Code -eq 1 -and $r.Text -match 'new 或 message' -and -not $r.Log)
+
     Agents @((S (Join-Path $projA '.agents/worktrees/x') 'busy' 'working' 'wt'))
     $r = Run @('-Project', $projA)
     Check 'session inside a subfolder counts as the project''s' ($r.Code -eq 3 -and $r.Text -match 'wt')
@@ -69,6 +88,8 @@ try {
     Agents @((S $projB 'busy' 'working' 'b1'), (S $root 'busy' $null 'x2'), (S $root 'busy' 'working' 'x3'), (S $root 'idle' $null 'idle1'), (S $root 'idle' 'done' 'done1'))
     $r = Run @('-Project', $projA)
     Check 'three working sessions elsewhere: cap reached, exit 4, nothing launched' ($r.Code -eq 4 -and $r.Text -match '3 个' -and -not $r.Log)
+    $r = Run @('-Project', $projA, '-New')
+    Check '-New: the cap still applies' ($r.Code -eq 4 -and -not $r.Log)
     $r = Run @('-Project', $projA, '-Max', '4')
     Check 'idle and finished sessions do not count toward the cap' ($r.Code -eq 0)
 

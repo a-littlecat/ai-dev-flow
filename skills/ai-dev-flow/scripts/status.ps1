@@ -118,7 +118,7 @@ function Read-Queue([string]$file) {
 
 function Get-ProjectStatus($p) {
     $r = [ordered]@{
-        Name = $p.name; Status = $p.status; Priority = $p.priority; Session = $p.session
+        Name = $p.name; Status = $p.status; Priority = $p.priority
         DependsOn = @($p.dependsOn | Where-Object { $_ })
         Trust = $null; Trunk = $null; Head = $null; HeadDate = $null
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
@@ -329,7 +329,6 @@ foreach ($r in $results) {
     if ($null -ne $r.Priority) { $head += "优先级 $($r.Priority)" }
     if ($r.Trust) { $head += $r.Trust }
     if ($r.DependsOn) { $head += "依赖 $($r.DependsOn -join '、')" }
-    if ($r.Session -and -not $brief) { $head += "主会话「$($r.Session)」" }
     $out.Add('')
     $out.Add("## $($head -join ' · ')")
     if ($r.Head) {
