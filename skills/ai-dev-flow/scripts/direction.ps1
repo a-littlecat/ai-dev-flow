@@ -35,9 +35,14 @@ function Date-Text($d) { if ($d) { $d.ToString('yyyy-MM-dd') } }
 
 # 主检出的根目录。.agents/ 不进 worktree，在 worktree 里跑时那里的图要回主检出找。
 function Get-MainRoot {
+    $top = git -C $repoFull rev-parse --path-format=absolute --show-toplevel 2>$null
+    $dir = git -C $repoFull rev-parse --path-format=absolute --git-dir 2>$null
     $common = git -C $repoFull rev-parse --path-format=absolute --git-common-dir 2>$null
     $global:LASTEXITCODE = 0
-    if ($common) { Split-Path ([IO.Path]::GetFullPath($common)) -Parent }
+    # 只认普通 worktree：项目就是这个工作区的根（不是大仓库里的子目录），主检出是 <根>/.git（不是 bare 仓库）。其他情况不回退，报图不存在。
+    if (-not $top -or -not $common -or $dir -eq $common -or (Split-Path $common -Leaf) -ne '.git') { return }
+    if ([IO.Path]::GetFullPath($top).TrimEnd('\', '/') -ne $repoFull) { return }
+    Split-Path ([IO.Path]::GetFullPath($common)) -Parent
 }
 
 # 图：相对 $base 的路径，要在仓库里、文件存在。返回 file: 地址；不行返回 $null 并记问题。
@@ -144,10 +149,10 @@ if ($b -and $b.notApplicable -is [string] -and $b.notApplicable.Trim()) {
         foreach ($q in 'budgetQuota', 'spentQuota') { if ($null -ne $x.$q -and $null -eq (Read-Number $x.$q)) { $problems.Add("方向 $name 的 $q 要写数字：$($x.$q)") } }
         $reasons = [Collections.Generic.List[string]]::new()
         $used = $null
+        if ($null -ne $x.decided -and -not (Read-Date $x.decided)) { $problems.Add("方向 $name 的 decided 要写 yyyy-MM-dd：$($x.decided)") }
         if ($state -ne '结束') {
             if (-not $started) { $problems.Add("方向 $name 要写 started（yyyy-MM-dd）") }
             if (-not $budgetDays -or $budgetDays -le 0) { $problems.Add("方向 $name 要写预算 budgetDays（天数）") }
-            if ($null -ne $x.decided -and -not (Read-Date $x.decided)) { $problems.Add("方向 $name 的 decided 要写 yyyy-MM-dd：$($x.decided)") }
             if ($started) { $used = [int]($now - $started).TotalDays }
             $decided = Read-Date $x.decided
             $since = if ($started -and $decided -and $decided -gt $started) { $decided } else { $started }

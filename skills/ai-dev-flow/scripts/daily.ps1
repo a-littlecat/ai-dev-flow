@@ -50,7 +50,7 @@ function Thumb([string]$url, [string]$alt) { "<a href=`"$(Enc $url)`" target=`"_
 # 方向要停、还没人在处理：待用户或在做的项里没有"方向复盘：<这个方向>"。
 function StoppedOpen($p) {
     $open = @(@($p.Waiting) + @($p.Doing) | ForEach-Object { "$($_.Goal)" })
-    @(@($p.Direction.Stopped) | Where-Object { $_ } | Where-Object { $re = '方向复盘[：:]\s*' + [regex]::Escape($_.Name); -not @($open | Where-Object { $_ -match $re }).Count })
+    @(@($p.Direction.Stopped) | Where-Object { $_ } | Where-Object { $re = '方向复盘[：:]\s*' + [regex]::Escape($_.Name) + '(?=$|[\s，,。；;（(])'; -not @($open | Where-Object { $_ -match $re }).Count })
 }
 # 按周差距小图：一条线，虚线是基准（差距 0），低于虚线就是比过了；每个点悬停看数，最后一点标数。
 function Spark($trend) {

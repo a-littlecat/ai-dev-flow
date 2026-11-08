@@ -163,6 +163,29 @@ try {
     $r = Run $main
     Check 'and from the main checkout' ($r.Code -eq 0 -and $r.ImageUrl -like '*/.agents/pics/a.png')
 
+    # 回主检出找图只限普通 worktree（复审 N2）
+    $mono = Join-Path $root 'mono'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $mono 'docs'), (Join-Path $mono 'projA/docs')
+    Set-Content -LiteralPath (Join-Path $mono 'docs/pic.png') -Encoding utf8NoBOM -Value 'x'
+    Set-Content -LiteralPath (Join-Path $mono 'projA/docs/flow.html') -Encoding utf8NoBOM -Value '<html></html>'
+    (Base @(,([ordered]@{ date = '2026-11-30'; gap = 0.3; image = 'docs/pic.png' }))) | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $mono 'projA/docs/benchmark.json') -Encoding utf8NoBOM
+    git -c init.defaultBranch=main init -q $mono; git -C $mono add -A 2>$null; git -C $mono -c user.name=t -c user.email=t@t commit -qm x
+    $r = Run (Join-Path $mono 'projA')
+    Check 'a subfolder project does not borrow an image from the enclosing repo' (-not $r.ImageUrl -and ($r.Problems -join '') -match '不存在')
+    $bareParent = Join-Path $root 'bareparent'
+    $null = New-Item -ItemType Directory -Force -Path $bareParent
+    Set-Content -LiteralPath (Join-Path $bareParent 'outside.png') -Encoding utf8NoBOM -Value 'x'
+    git clone -q --bare $main (Join-Path $bareParent 'x.git') 2>$null
+    $bareWt = Join-Path $root 'bare-wt'
+    git -C (Join-Path $bareParent 'x.git') worktree add -q --detach $bareWt 2>$null
+    (Base @(,([ordered]@{ date = '2026-11-30'; gap = 0.3; image = 'outside.png' }))) | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $bareWt 'docs/benchmark.json') -Encoding utf8NoBOM
+    $r = Run $bareWt
+    Check 'a worktree of a bare repo does not find an image beside it' (-not $r.ImageUrl -and ($r.Problems -join '') -match '不存在')
+
+    # 已结束方向的 decided 写错要报（复审 N3）
+    $r = Run (New-Repo (Base $flat @((D 'A' '结束' -extra @{ decided = '11/30' }))))
+    Check 'a bad decided on a finished direction is reported' (($r.Problems -join '') -match 'A 的 decided' -and $r.Code -eq 3)
+
     # 基准过期
     $old = Base @((Pt '2026-11-30' 0.3)); $old.baseline.date = '2026-10-29'
     $r = Run (New-Repo $old)

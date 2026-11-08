@@ -582,11 +582,12 @@ try {
     Check 'page: a stopped direction under review is not asked again' ($html2 -match '要你管 2 件事' -and $dh2 -notmatch '方向 A<b> 要停' -and $html2 -match '<div class="alert">')
     # 复盘 A 不会把同项目别的要停方向藏掉
     $hj = Get-Content -LiteralPath (Join-Path $h 'docs/benchmark.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    $hj.directions = @($hj.directions) + [pscustomobject]@{ name = 'C2'; state = '进行中'; started = (& $day -60); budgetDays = 5 }
+    $hj.directions = @($hj.directions) + [pscustomobject]@{ name = 'C2'; state = '进行中'; started = (& $day -60); budgetDays = 5 } + [pscustomobject]@{ name = 'A'; state = '进行中'; started = (& $day -60); budgetDays = 5 }
     $hj | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $h 'docs/benchmark.json') -Encoding utf8NoBOM
     $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
     $html3 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
     Check 'page: reviewing one direction does not hide another stopped one' ($html3 -match '</b> 方向 C2 要停' -and $html3 -notmatch '</b> 方向 A&lt;b&gt; 要停')
+    Check 'page: a name that is a prefix of the reviewed one is not hidden' ($html3 -match '</b> 方向 A 要停')
     Remove-Item Env:AI_DEV_FLOW_NOTIFY
 
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
