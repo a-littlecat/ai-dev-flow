@@ -34,12 +34,14 @@ skills/ai-dev-flow/
   scripts/watch.ps1        每 15 分钟查一次停滞，新停住的项目才推到手机
   scripts/check-md.ps1     文档格式检查：.md 里的控制字符、被拆断的表格行，放进各项目的快检
   scripts/land-check.ps1   合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进
+  scripts/cleanup.ps1      合并后清理：删已合进主干、没有未提交改动的 worktree 和分支
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
 tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
 tests/launch.tests.ps1     launch.ps1 的检查：pwsh -NoProfile -File tests/launch.tests.ps1
+tests/cleanup.tests.ps1    cleanup.ps1 的检查：pwsh -NoProfile -File tests/cleanup.tests.ps1
 ```
 
 模块不是独立的 skill，由总览按需读取，一次只读当前需要的那一份。

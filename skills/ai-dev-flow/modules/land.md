@@ -64,5 +64,9 @@ git merge --ff-only <分支>
 - 主干的内容和通过快检的那个 head 相同（快进合并就是这样，`git rev-parse <主干>^{tree} <head>^{tree}` 两行一样），或者只多了纯文档改动，不再跑；否则在主干上跑一次 verify。红了就立刻处理，不等人：原因清楚、改动小的，往前修；原因不清或改动大的，`git revert`。然后在汇报里说明。
 - 关掉队列里对应的那一项。
 - 提醒其他进行中的 worktree 同步主干。
-- 已合并的 worktree 和分支当场删，不用问（用户 2026-11-03 定，所有项目默认如此；项目 `AGENTS.md` 写明"不自动清理"的除外）。只删同时满足两条的：分支或分离头的 head 已经是主干的祖先（`git merge-base --is-ancestor <head> <主干>`）；`git -C <worktree> status --short` 没有输出。用 `git worktree remove <worktree>` 和 `git branch -d <分支>` 删，不加 `--force`、不用 `-D`，Git 拒绝的就留着，在汇报里说明。没合并的、有未提交改动或未跟踪文件的，一律不动。审查用的临时 worktree 不走这一条：`dispatch.ps1 -Review` 审完自己删，证据复制到运行记录里。合并后在项目仓库里运行 `pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -CleanReviews`（直接调 skill 里的脚本，项目入口脚本不一定转发这个开关）：审查的版本已经合进基准分支的，证据和旧 worktree 直接删，不用问（用户 2026-11-05 定），只留 `final.md`、`exit.json` 等运行记录；没合并的先复制证据再删 worktree；改动过被跟踪文件的不动。证据删掉后找不回来，要查只能重跑。
+- 已合并的 worktree 和分支当场删，不用问（用户 2026-11-03 定，所有项目默认如此；项目 `AGENTS.md` 写明"不自动清理"的除外）。不手工删，在主项目工作区运行脚本（`land-check.ps1` 通过时也会打出这一行）：
+  ```powershell
+  pwsh -NoProfile -File <skill>/scripts/cleanup.ps1 -Branch <刚合并的分支> [-Trunk <主干>]
+  ```
+  只删同时满足的：分支或分离头的 head 已经是主干的祖先；`git status --short` 没有输出；没上锁；没有派活在跑。没点名的 worktree 另外要 60 分钟内没有动静（刚开出来的 worktree，head 也在主干上，可能正有会话在用）。用 `git worktree remove` 和 `git branch -d`，不加 `--force`、不用 `-D`，Git 拒绝的留着，脚本列出原因，在汇报里说明。没合并的、有未提交改动或未跟踪文件的，一律不动。审查用的临时 worktree 留着未跟踪证据的不走这一条：`dispatch.ps1 -Review` 审完自己删，证据复制到运行记录里。合并后在项目仓库里运行 `pwsh -NoProfile -File <skill>/scripts/dispatch.ps1 -CleanReviews`（直接调 skill 里的脚本，项目入口脚本不一定转发这个开关）：审查的版本已经合进基准分支的，证据和旧 worktree 直接删，不用问（用户 2026-11-05 定），只留 `final.md`、`exit.json` 等运行记录；没合并的先复制证据再删 worktree；改动过被跟踪文件的不动。证据删掉后找不回来，要查只能重跑。
 - push、打 tag、发布，项目 `AGENTS.md` 没授权的，在汇报的"要你做"里列一行，等用户发话。

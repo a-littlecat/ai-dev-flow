@@ -25,6 +25,7 @@ try {
     $null = G checkout -q main
     $r = Run 'ok'
     Check 'all good: exit 0 and prints the merge command' ($r.Code -eq 0 -and $r.Out[-1] -eq 'git merge --ff-only ok')
+    Check 'all good: says to clean up after merging' ($r.Text -match '合并后运行：.*cleanup\.ps1 -Branch ok -Trunk main')
 
     $null = G checkout -q -b nonote ok
     $b2 = Commit 'src/a.ps1' "3`n"

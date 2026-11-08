@@ -7,7 +7,8 @@ param(
     [switch]$Lessons,
     [switch]$Mark,
     [switch]$Json,
-    [int]$StaleMinutes = 60
+    [int]$StaleMinutes = 60,
+    [int]$CleanupOver = 10
 )
 # 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件的不算）、队列各状态的项数和待用户项、
 # 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标、该升级的教训、还没转的请求。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
@@ -20,12 +21,14 @@ param(
 #   -Mark     把各项目当前的主干位置记为下次的起点（周会时用），记在 <清单所在目录>/.agents/status-marks.json
 #   -Json     输出 JSON
 #   -StaleMinutes  推进中的项目有"在做"的项、最后活动又早于这么多分钟前，提示"可能停滞"（默认 60）
+#   -CleanupOver   已合进主干的分支或 worktree 超过这么多个，提示运行 cleanup.ps1（默认 10）
 # 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
+# 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
 # 死掉的运行（DeadRuns）：.agents/runs 下 7 天内开始、没有 exit.json、进程也不在了、同一分支后来也没再派过的运行。
 # 待用户项的 Hint：状态格超过 300 字的是"过程记录"；没那么长、写着 不急， / 先停 / 先不改 / 本周暂停 / 搁置 / 等（别处）…提出 这类话的是"像搁置"（"等你…""要不要先停"不算；说明 / 备注列只认 先不做 / 先不改 / 本周暂停 / 不主动做）；都写成"提示"。
 # 本周目标：清单里项目的 goals（[{ "text": "...", "items": ["22"], "done": false }]）；done 为 true，或 items 里的项在队列里都"完成"，算完成。
@@ -256,7 +259,8 @@ function Get-ProjectStatus($p) {
     $r.BranchesMerged = $merged.Count
     $trees = [Collections.Generic.List[object]]::new()
     foreach ($line in git -C $path worktree list --porcelain) {
-        if ($line -like 'worktree *') { $trees.Add([ordered]@{ Branch = $null; Detached = $false; Prunable = $false }) }
+        if ($line -like 'worktree *') { $trees.Add([ordered]@{ Head = $null; Branch = $null; Detached = $false; Prunable = $false }) }
+        elseif ($line -like 'HEAD *') { $trees[-1].Head = $line.Substring(5) }
         elseif ($line -like 'branch refs/heads/*') { $trees[-1].Branch = $line.Substring(18) }
         elseif ($line -eq 'detached') { $trees[-1].Detached = $true }
         elseif ($line -like 'prunable*') { $trees[-1].Prunable = $true }
@@ -266,6 +270,9 @@ function Get-ProjectStatus($p) {
     $r.WorktreesMerged = @($extra | Where-Object { $_.Branch -and $merged -contains $_.Branch }).Count
     $r.WorktreesDetached = @($extra | Where-Object { $_.Detached }).Count
     $r.WorktreesMissing = @($extra | Where-Object { $_.Prunable }).Count
+    # 分离头的 head 已在主干里的也算可以清（审查 worktree 多半是这种）。不逐个看干不干净：几十个 worktree 跑 status 太慢，cleanup.ps1 删的时候会看。
+    $mergedTrees = $r.WorktreesMerged + @($extra | Where-Object { $_.Detached -and -not $_.Prunable -and $_.Head } | Where-Object { git -C $path merge-base --is-ancestor $_.Head $head 2>$null; -not $LASTEXITCODE }).Count
+    if ($r.BranchesMerged -gt $CleanupOver -or $mergedTrees -gt $CleanupOver) { $r.Problems.Add("已合进主干还没删：分支 $($r.BranchesMerged) 个、worktree $mergedTrees 个，超过 $CleanupOver 个：在项目里运行 cleanup.ps1（land.md 第 6 节）") }
 
     $times = @(git -C $path for-each-ref refs/heads --format='%(committerdate:iso-strict)' | Where-Object { $_ } | ForEach-Object { [datetimeoffset]::Parse($_).LocalDateTime })
     $runs = Join-Path $path '.agents/runs'

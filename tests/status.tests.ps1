@@ -184,6 +184,9 @@ try {
     Check 'latest digest lines' ($pa.Digest.Date -eq '2026-10-31' -and ($pa.Digest.Lines -join ';') -eq '北极星：9（昨天 7）')
     Check 'worktrees' ($pa.Worktrees -eq 3 -and $pa.WorktreesMerged -eq 2 -and $pa.WorktreesDetached -eq 1 -and $pa.WorktreesMissing -eq 1)
     Check 'merged branches exclude trunk' ($pa.BranchesMerged -eq 2)
+    Check 'cleanup hint: not at or below the threshold' (-not ($pa.Problems -match 'cleanup.ps1'))
+    $pOver = (pwsh -NoProfile -File $Script -Config $cfg -Project '项目 A' -CleanupOver 1 -Json | ConvertFrom-Json).Projects[0]
+    Check 'cleanup hint: over the threshold, says what to run' ([bool]($pOver.Problems -match '已合进主干还没删.*分支 2 个.*cleanup\.ps1'))
     Check 'uncommitted vs untracked files' ($pa.Uncommitted -eq 1 -and $pa.Untracked -eq 3)
     $pg = $j.Projects | Where-Object Name -eq 'gone'
     Check 'missing path reported' ([bool]($pg.Problems | Where-Object { $_ -like '路径不存在*' }))

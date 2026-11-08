@@ -108,5 +108,6 @@ if ($bad.Count) {
 }
 "可以合并 $Branch（$short）：主干 $Trunk 干净、能快进、diff --check 通过、$(if ($docsOnly -and $noteMissing) { '纯文档' } else { 'verify note 覆盖这个 head' })"
 $info | ForEach-Object { "注意：$_" }
+"合并后运行：pwsh -NoProfile -File $(Join-Path $PSScriptRoot 'cleanup.ps1') -Branch $Branch -Trunk $Trunk"
 "git merge --ff-only $Branch"
 exit 0
