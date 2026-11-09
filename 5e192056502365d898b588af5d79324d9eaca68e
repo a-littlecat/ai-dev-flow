@@ -1,0 +1,1 @@
+覆盖：ff8419dc096d78b1b1687edb910e54dce09e3d0d..5e192056502365d898b588af5d79324d9eaca68e；沿用 1a0001285a536e10ae48594bf4245cd8bd1a4476 的 Pass（claude-opus-5-5 推理强度 high）；之后只多了文档：skills/ai-dev-flow/modules/direction.md，改动的一句没有新增路径、命令和章节引用，check-md.ps1 退出 0；没跑：无；没采纳：同原 note
