@@ -28,6 +28,7 @@ param(
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
+# 全部项（Items，只在 -Json 里）：队列每一项的编号、目标、状态、说明、依赖原文和是否可领（Claimable），状态页画全景图用。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
@@ -132,7 +133,7 @@ function Get-ProjectStatus($p) {
         DependsOn = @($p.dependsOn | Where-Object { $_ })
         Trust = $null; Trunk = $null; Head = $null; HeadDate = $null
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
-        Queue = $null; Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
+        Queue = $null; Items = @(); Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
@@ -251,6 +252,10 @@ function Get-ProjectStatus($p) {
         })
         $availItems = @($availItems | Where-Object { $t = [regex]::Match("$($_.Goal)", $tagRe); -not ($t.Success -and $stoppedDirs -contains $t.Groups[2].Value) })
         $r.Available = $availItems.Count
+        $r.Items = @(foreach ($it in $items) {
+            [pscustomobject]@{ Id = $it.Id; Goal = $it.Goal; State = $it.State; Detail = $it.Detail; Hint = $it.Hint; Deps = $it.Deps
+                               Claimable = [bool]@($availItems | Where-Object { [object]::ReferenceEquals($_, $it) }).Count }
+        })
         $r.Next = @($availItems | Select-Object -First 3)
         $r.Recent = @($items | Where-Object State -eq '完成' | Select-Object -Last 3)
     } else { $r.Problems.Add("没有队列文件 $queueRel") }

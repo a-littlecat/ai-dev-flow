@@ -391,9 +391,9 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfg -Out $page -NoNotify
     $html = if (Test-Path -LiteralPath $page) { Get-Content -LiteralPath $page -Raw -Encoding UTF8 } else { '' }
     Check 'daily: page written' ($LASTEXITCODE -eq 0 -and $html -match '<title>项目状态</title>')
-    Check 'daily: waiting items in plain words with how to answer' ($html -match '(?s)<h3>项目 A</h3><ol class="asks">.*?#2</span> <span title="看界面">看界面</span></div><div class="why">等你看截图</div>' -and $html -match '<code>/next #2 你的答复</code>')
-    Check 'daily: headline, numbers and one row per project, raw queue hints folded away' ($html -match '<p class="lead">要你管 4 件事</p>' -and $html -match '<div class="tile warn"><b>\d+</b><span>件等你定</span>' -and $html -match '<a class="row" href="#p\d+"><b>项目 A</b><span class="tag warn">等你</span>' -and $html -match '1 项的状态写法不标准' -and $html -notmatch '队列里状态认不出')
-    Check 'daily: fixed rows now, progress, next, recent' ($html -match '<span class="k">现在</span><div><ul class="items"><li><span class="num">#4</span> <span title="跑回归">跑回归</span>' -and $html -match '完成 1 / 共 13 项' -and $html -match '(?s)<span class="k">接下来</span><ul class="items"><li>.*?依赖已完成.*?没有依赖.*?依赖的项已删.*?</ul>' -and $html -match '<span class="k">最近完成</span><ul class="items"><li><span class="num">#1</span>')
+    Check 'daily: waiting items in plain words with how to answer' ($html -match '(?s)<div class="meta">项目 A</div><div class="q"><span class="num">#2</span> <span title="看界面">看界面</span></div>.*?<div class="why">等你看截图</div>' -and $html -match '<code>/next #2 你的答复</code>')
+    Check 'daily: headline, one lane per project, raw queue hints folded away' ($html -match '<h1><em>4</em> 个决定等你拍板</h1>' -and $html -match '<a href="#p\d+"><line class="lane"[^>]*/><text class="ln"[^>]*>项目 A</text><text class="lm"[^>]*>[^<]*等你</text>' -and $html -match '1 项的状态写法不标准' -and $html -notmatch '队列里状态认不出')
+    Check 'daily: fixed rows now, progress, next, recent' ($html -match '<dt[^>]*>现在</dt><dd[^>]*><ul class="items"><li><span class="num">#4</span> <span title="跑回归">跑回归</span>' -and $html -match '完成 1 / 共 13 项' -and $html -match '(?s)<dt>接下来</dt><dd><ul class="items"><li>.*?依赖已完成.*?没有依赖.*?依赖的项已删.*?</ul>' -and $html -match '<dt>最近完成</dt><dd><ul class="items"><li><span class="num">#1</span>')
     Check 'daily: goals section' ($html -match '<h2>本周目标</h2>' -and $html -match '完成 2/3')
     Check 'daily: goal cells wrap long paths and links' ($html -match '\.goals>\*\{min-width:0;overflow-wrap:anywhere\}')
     Check 'daily: html escaped' ($html -match '手动勾的 &lt;x&gt;' -and $html -notmatch '<x>')
@@ -483,7 +483,7 @@ try {
     $pageE = Join-Path $root 'out/status-e.html'
     $e1 = pwsh -NoProfile -File $daily -Config $cfgE -Out $pageE -State (Join-Path $root 'out/daily-e.json') -DryRun | Out-String
     $htmlE = Get-Content -LiteralPath $pageE -Raw -Encoding UTF8
-    Check 'daily: recent activity without work in progress is not idle' ($htmlE -match '刚有动静' -and $htmlE -match '<span class="k">现在</span><div>刚有动静（' -and $htmlE -notmatch '空着' -and $e1 -notmatch '空着')
+    Check 'daily: recent activity without work in progress is not idle' ($htmlE -match '刚有动静' -and $htmlE -match '<dt>现在</dt><dd>刚有动静（' -and $htmlE -notmatch '空着' -and $e1 -notmatch '空着')
     $e2 = pwsh -NoProfile -File $daily -Config $cfgE -Out $pageE -State (Join-Path $root 'out/daily-e.json') -StaleMinutes 0 -DryRun | Out-String
     Check 'daily: quiet past -StaleMinutes is idle again' ($e2 -match '项目 E 空着，可以发 /next 开工')
     # 基准和方向：判定本身在 tests/direction.tests.ps1，这里只看 status.ps1 接过来以后的效果
@@ -567,7 +567,7 @@ try {
     $dh = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -State (Join-Path $root 'out/daily-h.json') -DryRun | Out-String
     $html = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
     Check 'page: the side-by-side thumbnail links to the full image' ($html -match '<a href="file:///[^"]*%E5%9B%BE\.png" target="_blank"[^>]*><img class="thumb" loading="lazy" src="file:///[^"]*%E5%9B%BE\.png"')
-    Check 'page: gap, baseline and note are shown and escaped' ($html -match '差距 0\.3<span[^>]*>（' -and $html -match '第一版&lt;script&gt;' -and $html -match '基准：模型 &lt;X&gt;，' -and $html -match '12 元，40 分钟' -and $html -notmatch '<script>')
+    Check 'page: gap, baseline and note are shown and escaped' ($html -match '差距 0\.3<span>（' -and $html -match '第一版&lt;script&gt;' -and $html -match '基准：模型 &lt;X&gt;，' -and $html -match '12 元，40 分钟' -and $html -notmatch '第一版<script>' -and ([regex]::Matches($html, '<script>')).Count -eq 1)
     Check 'page: weekly trend has a chart with one point per week and the numbers in text' ($html -match '<svg class="spark"' -and ([regex]::Matches($html, '<g><title>')).Count -eq 4 -and $html -match '按周：0\.5 → 0\.4 → -0\.2 → 0\.3' -and $html -match '<polyline ')
     Check 'page: a card named by a waiting item sits under it, opened' ($html -match '(?s)#2</span> <span title="要不要换路线">要不要换路线</span>.*?<details class="dc" open><summary>决定卡：换不换路线</summary>.*?</li>')
     Check 'page: a card image shows as a thumbnail and card text is escaped' ($html -match '走一半&lt;img src=x&gt;' -and $html -notmatch '<img src=x>' -and ([regex]::Matches($html, 'class="thumb"')).Count -ge 2)
@@ -576,22 +576,21 @@ try {
     Check 'page: queue markdown stays off the page, full text on hover, maintenance folded' ($htmlMd -match '<span title="实验：第一句 看 b 第二句">实验：第一句 看 b 第二句</span>' -and $htmlMd -notmatch '\*\*实验' -and $htmlMd -match '<span title="这是一个相当长的第一句话。后面还有别的">这是一个相当长的第一句话</span>' -and $htmlMd -match '<details class="maint"><summary>维护中的项目（1 个）</summary>')
     Check 'page: a short title keeps the content after a colon, inside a ratio and a url' ($htmlMd -match '>需求：多于两扇的门</span>' -and $htmlMd -match '>比例&#183;1:100 短尺寸</span>' -and $htmlMd -match '>按钮改成 https://x\.test 了</span>')
     Check 'page: a card not attached to the item keeps its path' ($htmlMd -match '<div class="why">决定卡 实测/某目录/决定卡\.md：要定路线</div>')
-    Check 'page: not recommended is not shown as a recommendation' ($htmlMd -notmatch '<div class="rec">推荐改成' -and $htmlMd -match '看一下；不推荐改成 B')
-    Check 'page: reply with the recommendation only where one exists' ($htmlMd -match '(?s)<h3>项目 MD</h3>.*?<div class="rec">推荐 A</div>.*?同意推荐就回' -and $htmlMd -match '(?s)<h3>项目 NR</h3><ol class="asks">.*?</ol><div class="how">到这个项目新建会话，发上面的命令</div>')
-    $tileAsk = [int][regex]::Match($html, '<b>(\d+)</b><span>件等你定').Groups[1].Value
-    $tileBad = [int][regex]::Match($html, '<b>(\d+)</b><span>处可能有问题').Groups[1].Value
-    Check 'page: the numbers add up to the headline' ($html -match '<p class="lead">要你管 (\d+) 件事</p>' -and ($tileAsk + $tileBad) -eq [int]$Matches[1] -and $tileAsk -gt 0)
-    $stripDone = [int][regex]::Match($htmlMd, '<div class="st done[^"]*"><i></i><b>(\d+)</b><span>完成</span>').Groups[1].Value
+    Check 'page: not recommended is not shown as a recommendation' ($htmlMd -notmatch '<div class="rec"><span>推荐</span>改成' -and $htmlMd -match '看一下；不推荐改成 B')
+    Check 'page: reply with the recommendation only where one exists' ($htmlMd -match '(?s)<div class="meta">项目 MD</div>.*?<div class="rec"><span>推荐</span>A</div><div class="cmd"><code>/next #4 按你的</code>.*?同意推荐就发这条' -and $htmlMd -match '<code>/next #1 你的答复</code>' -and $htmlMd -match '<code>/next #3 你的答复</code>' -and ([regex]::Matches($htmlMd, '同意推荐就发这条')).Count -eq 1)
+    Check 'page: the number in the headline is the number of cards' ($html -match '<h1><em>3</em> 件事要你管</h1>' -and ([regex]::Matches($html, '<li class="card"')).Count -eq 3)
     $cardDone = 0; foreach ($m in [regex]::Matches($htmlMd, '完成 (\d+) / 共 \d+ 项')) { $cardDone += [int]$m.Groups[1].Value }
-    Check 'page: the pipeline adds up across project cards' ($cardDone -ge 2 -and $stripDone -eq $cardDone -and $htmlMd -match '<div class="st ask[^"]*"><i></i><b>\d+</b><span>等你</span>')
-    Check 'page: progress bar is split by stage' ($htmlMd -match '<span class="seg done" style="width:[\d.]+%" title="完成 \d+">' -and $htmlMd -match '<span class="seg doing"' -and $htmlMd -match '<div class="row head">')
-    Check 'page: each project is a mind map, and working items are alive' ($htmlMd -match '<div class="mm"><div class="mm-root">项目 MD</div><ul class="mm-b">' -and $htmlMd -match '<li class="b-now live"><span class="k">现在</span>' -and $htmlMd -match '(?s)<h3>项目 NR</h3><span[^>]*>[^<]*</span>.*?<li class="b-ask"><span class="k">等你定</span><ul class="items">')
-    Check 'page: animation only in css, off when motion is reduced' ($htmlMd -match '@media \(prefers-reduced-motion:reduce\)\{\*\{animation:none' -and $htmlMd -notmatch '<script')
-    Check 'page: words explained' ($htmlMd -match '<details class="gloss"><summary>这些词是什么意思</summary>' -and $htmlMd -match '<dt>北极星</dt>' -and $htmlMd -match '<dt>决定卡</dt>')
+    $headNum = { param($page, $col) [int][regex]::Match($page, "data-col=`"$col`"[^>]*>(\d+)<").Groups[1].Value }
+    Check 'page: the map adds up across project cards' ($cardDone -ge 2 -and (& $headNum $htmlMd '已完成') -eq $cardDone -and (& $headNum $htmlMd '现在') -eq 5 -and (& $headNum $htmlMd '可以开工') -eq 3 -and (& $headNum $htmlMd '被挡住') -eq 0 -and ([regex]::Matches($htmlMd, 'class="tick"')).Count -eq $cardDone)
+    Check 'page: progress bar is split by stage' ($htmlMd -match '<span class="seg done" style="width:[\d.]+%" title="完成 \d+">' -and $htmlMd -match '<span class="seg doing"')
+    Check 'page: each project lists its facts, and working items are alive' ($htmlMd -match '<section class="proj" id="p0"><div class="proj-h"><h3>项目 MD</h3>' -and $htmlMd -match '<dt class="live">现在</dt>' -and $htmlMd -match 'class="chip doing live"' -and $htmlMd -match '(?s)<h3>项目 NR</h3><span[^>]*>[^<]*</span>.*?<dt>等你定</dt><dd><ul class="items">')
+    Check 'page: motion off when reduced, pseudo-elements too' ($htmlMd -match '@media \(prefers-reduced-motion:reduce\)\{\*,\*::before,\*::after\{animation:none!important;transition:none!important\}')
+    Check 'page: one script, no data in it, the copy button only appears with it' (([regex]::Matches($htmlMd, '<script')).Count -eq 1 -and [regex]::Match($htmlMd, '(?s)<script>(.*?)</script>').Groups[1].Value -notmatch '项目 MD|等一下' -and $htmlMd -match '\.cp\{display:none' -and $htmlMd -match '\.js \.cp\{display:inline\}' -and $htmlMd -match '<code>/next #4 按你的</code>')
+    Check 'page: words explained, in the words of direction.md' ($htmlMd -match '<details class="gloss"><summary>这些词是什么意思</summary>' -and $htmlMd -match '<dt>北极星</dt>' -and $htmlMd -match '<dt>决定卡</dt>' -and $htmlMd -match '小于等于 0 就算比过了' -and $htmlMd -match '差距连续 2 周没缩小、14 天没量，或者预算花完')
     Check 'page: goal text is escaped in the text and the hover title' ($htmlMd -match '<span title="带&lt;img src=x&gt;和&quot;引号&quot;的目标">带&lt;img src=x&gt;和&quot;引号&quot;的目标</span>' -and $htmlMd -notmatch '<img src=x>')
     Check 'page: settled cards are not listed' ($html -notmatch '早定了的卡')
-    Check 'page: a stopped direction is listed with its reason, escaped' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">')
-    Check 'page: the count includes loose cards and stopped directions' ($html -match '要你管 3 件事')
+    Check 'page: a stopped direction is listed with its reason, its name escaped everywhere' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">' -and $html -match '<dt>方向</dt><dd>A&lt;b&gt;（进行中）</dd>' -and $html -notmatch 'A<b>')
+    Check 'page: the count includes loose cards and stopped directions' ($html -match '<h1><em>3</em> 件事要你管</h1>')
     Check 'page: no baseline says so; notApplicable shows no row' ($html -match '<div class="missing">还没登记基准，还没有流程图：' -and ([regex]::Matches($html, 'class="missing"')).Count -eq 2 -and ([regex]::Matches($html, '<div class="bench">')).Count -eq 1)
     Check 'page: no flow page says so' ($html -match '<div class="missing">还没有流程图：')
     Set-Content -LiteralPath (Join-Path $h 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
@@ -603,7 +602,7 @@ try {
     (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘：A<b> \| 无 \| 待做 \|', '| 1 | 方向复盘：A<b> | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM
     $dh2 = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -State (Join-Path $root 'out/daily-h.json') -DryRun | Out-String
     $html2 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
-    Check 'page: a stopped direction under review is not asked again' ($html2 -match '要你管 2 件事' -and $dh2 -notmatch '方向 A<b> 要停' -and $html2 -match '<div class="alert">')
+    Check 'page: a stopped direction under review is not asked again' ($html2 -match '<h1><em>2</em> 个决定等你拍板</h1>' -and $dh2 -notmatch '方向 A<b> 要停' -and $html2 -match '<div class="alert">')
     # 复盘 A 不会把同项目别的要停方向藏掉
     $hj = Get-Content -LiteralPath (Join-Path $h 'docs/benchmark.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     $hj.directions = @($hj.directions) + [pscustomobject]@{ name = 'C2'; state = '进行中'; started = (& $day -60); budgetDays = 5 } + [pscustomobject]@{ name = 'A'; state = '进行中'; started = (& $day -60); budgetDays = 5 }
@@ -612,6 +611,51 @@ try {
     $html3 = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
     Check 'page: reviewing one direction does not hide another stopped one' ($html3 -match '<div class="q">方向 C2 要停' -and $html3 -notmatch '<div class="q">方向 A&lt;b&gt; 要停')
     Check 'page: a name that is a prefix of the reviewed one is not hidden' ($html3 -match '<div class="q">方向 A 要停')
+    # 全景图和决定合并
+    $gr = New-DirRepo '项目 GR' ($qHead + "| 1 | 总决定 | 无 | 待用户（要合并；推荐合） |`n| 2 | 子一 | 1 | 待用户（同 #1 一起定；要看样例） |`n| 3 | 子二 | 2 | 待用户（同 #2 一起定） |`n| 4 | 后面的 | 3 | 待做 |`n| 5 | 再后面 | 4 | 搁置（先不做） |`n| 6 | 环甲 | 无 | 待用户（同 #7 一起定） |`n| 7 | 环乙 | 无 | 待用户（同 #6 一起定） |`n| 8 | 别处的依赖 | 别的项目的 #3 | 待做 |`n| 9 | 认不出 | 无 | 暂停于安全点 |`n| 10 | 验证中 | 无 | 待验证（审查中） |`n| 11 | 组不存在 | 无 | 待用户（同 #99 一起定） |") ([ordered]@{ notApplicable = 'x' })
+    $cfgGr = Join-Path $root 'projects-gr.json'
+    @{ projects = @(,@{ name = '项目 GR'; path = $gr; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgGr -Encoding utf8NoBOM
+    $pageGr = Join-Path $root 'out/status-gr.html'
+    $nGr = pwsh -NoProfile -File $daily -Config $cfgGr -Out $pageGr -State (Join-Path $root 'out/daily-gr.json') -DryRun | Out-String
+    $htmlGr = Get-Content -LiteralPath $pageGr -Raw -Encoding UTF8
+    $jGr = (pwsh -NoProfile -File $Script -Config $cfgGr -Json | Out-String | ConvertFrom-Json).Projects[0]
+    Check 'status: Items lists every row with its state, deps and whether it can be claimed' (@($jGr.Items).Count -eq 11 -and (@($jGr.Items | Where-Object Id -eq '8').Deps) -eq '别的项目的 #3' -and -not @($jGr.Items | Where-Object Claimable).Count -and (@($jGr.Items | Where-Object Id -eq '9').State) -eq '其他')
+    Check 'page: "same as #n" items count as one decision, chains too; a cycle or unknown number stays apart' ($htmlGr -match '<h1><em>4</em> 个决定等你拍板</h1>' -and $htmlGr -match '涉及 6 项，后面还有 <b>1</b> 项跟着它们走' -and ([regex]::Matches($htmlGr, '<li class="card"')).Count -eq 4)
+    Check 'page: the notification still counts each item' ($nGr -match '要你管 6 件事')
+    Check 'page: a group answers in one command naming the others' ($htmlGr -match '<code>/next #1 按你的（连同 #2、#3）</code>' -and $htmlGr -match 'data-cmd="/next #1 按你的（连同 #2、#3）"' -and $htmlGr -match 'data-keys="0-0 0-1 0-2"' -and $htmlGr -match '(?s)<span>一起定</span><ul><li><span class="num">#2</span>.*?<em>要看样例</em>')
+    Check 'page: what follows a group counts items outside it, not shelved ones' ($htmlGr -match '(?s)id="d0-0".*?<div class="imp"><b>1</b><span>项跟着它</span>.*?<span>定了之后</span><ul><li><span class="num">#4</span>' -and $htmlGr -match '<a href="#d0-0" class="chip ask" data-k="0-0">.*?\+1</text></a>')
+    Check 'page: dependency lines; none inside a group, a bracket instead' ($htmlGr -match '<g class="edge e-ask" data-a="0-2" data-b="0-3">' -and $htmlGr -notmatch 'data-a="0-0" data-b="0-1"' -and $htmlGr -notmatch 'data-b="0-4"' -and ([regex]::Matches($htmlGr, 'class="bracket"')).Count -eq 1)
+    Check 'page: what is blocked says by what' ($htmlGr -match '后面的</span> <span class="wait">等 #3</span>' -and $htmlGr -match '别处的依赖</span> <span class="wait">等 别的项目的 #3</span>')
+    $grSum = (& $headNum $htmlGr '已完成') + (& $headNum $htmlGr '现在') + (& $headNum $htmlGr '可以开工') + (& $headNum $htmlGr '被挡住')
+    Check 'page: the columns plus what the note leaves out are every item' ($grSum -eq 9 -and (& $headNum $htmlGr '现在') -eq 7 -and $htmlGr -match '另有 1 项搁置；1 项写法不标准，没画在图上' -and $htmlGr -match '6 等你 &#183; 1 待验证' -and $htmlGr -match 'class="chip verify"')
+    # 折叠的项不连线
+    $co = New-DirRepo '项目 CO' ($qHead + "| 1 | 头 | 无 | 待做 |`n| 2 | 甲 | 1 | 待做 |`n| 3 | 乙 | 1 | 待做 |`n| 4 | 丙 | 1 | 待做 |`n| 5 | 丁 | 1 | 待做 |`n| 6 | 戊 | 1 | 待做 |") ([ordered]@{ notApplicable = 'x' })
+    $cfgCo = Join-Path $root 'projects-co.json'
+    @{ projects = @(,@{ name = '项目 CO'; path = $co; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgCo -Encoding utf8NoBOM
+    $pageCo = Join-Path $root 'out/status-co.html'
+    $null = pwsh -NoProfile -File $daily -Config $cfgCo -Out $pageCo -NoNotify
+    $htmlCo = Get-Content -LiteralPath $pageCo -Raw -Encoding UTF8
+    Check 'page: only drawn items get lines, the rest are counted' (([regex]::Matches($htmlCo, '<g class="edge ')).Count -eq 3 -and $htmlCo -match '还有 2 项' -and (& $headNum $htmlCo '被挡住') -eq 5)
+    # 停滞、维护、没队列、名字要转义
+    $null = pwsh -NoProfile -File $daily -Config $cfgMd -Out $pageMd -NoNotify -StaleMinutes 0
+    $htmlStale = Get-Content -LiteralPath $pageMd -Raw -Encoding UTF8
+    Check 'page: a stalled project is not shown as alive and links to its card' ($htmlStale -match '<a href="#s0" class="chip doing stale"' -and $htmlStale -match '<dd class="stale">' -and $htmlStale -notmatch 'chip doing live|<dt class="live">' -and $htmlStale -match '<li class="card" id="s0"[^>]*>.*?可能停了')
+    $old = New-DirRepo '项目 旧' ($qHead + '| 1 | 老的在做 | 无 | 在做 |') ([ordered]@{ notApplicable = 'x' })
+    $env:GIT_COMMITTER_DATE = '2020-01-01T00:00:00'
+    G -C $old commit -q --amend --no-edit
+    Remove-Item Env:GIT_COMMITTER_DATE
+    $none = New-DirRepo '项目 无队列' ($qHead + '| 1 | 普通项 | 无 | 待做 |') ([ordered]@{ notApplicable = 'x' })
+    Remove-Item -LiteralPath (Join-Path $none 'docs/queue.md')
+    $esc = New-DirRepo '项目 a&b' ($qHead + '| 1 | 普通项 | 无 | 待做 |') ([ordered]@{ notApplicable = 'x' })
+    Set-Content -LiteralPath (Join-Path $esc 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
+    $cfgOld = Join-Path $root 'projects-old.json'
+    @{ projects = @(@{ name = '项目 旧'; path = $old; status = '维护' }, @{ name = '项目 无队列'; path = $none; status = '推进中' }, @{ name = '项目<i>"q'; path = $esc; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgOld -Encoding utf8NoBOM
+    $pageOld = Join-Path $root 'out/status-old.html'
+    $null = pwsh -NoProfile -File $daily -Config $cfgOld -Out $pageOld -NoNotify
+    $htmlOld = Get-Content -LiteralPath $pageOld -Raw -Encoding UTF8
+    Check 'page: old work in a maintenance project is counted but not alive' ((& $headNum $htmlOld '现在') -eq 1 -and $htmlOld -match '1 在做' -and $htmlOld -match 'class="chip doing"' -and $htmlOld -notmatch 'chip doing live|chip doing stale|<dt class="live">')
+    Check 'page: a project without a queue says so' ($htmlOld -match '<text class="lm"[^>]*>还没有队列</text>' -and $htmlOld -match '项目 无队列 没读到队列')
+    Check 'page: project names and the flow frame are escaped' ($htmlOld -match '<text class="ln"[^>]*>项目&lt;i&gt;&quot;q</text>' -and $htmlOld -match 'title="项目&lt;i&gt;&quot;q 的流程图"' -and $htmlOld -match '<iframe src="file:///[^"]*a&amp;b/docs/flow\.html"' -and $htmlOld -notmatch '<i>"q')
     Remove-Item Env:AI_DEV_FLOW_NOTIFY
 
     $null = pwsh -NoProfile -File $Script -Config (Join-Path $root 'missing.json') 2>&1
