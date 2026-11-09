@@ -58,7 +58,6 @@ function ItemHtml($i, [int]$n = 42) {
     $num + $(if ($text) { "<span title=`"$(Enc (Plain $i.Goal))`">$(Enc $text)</span>" } else { '未命名的一项' })
 }
 function ListHtml($list) { $x = @($list | Where-Object { $_ }); '<ul class="items">' + (($x | ForEach-Object { "<li>$(ItemHtml $_)</li>" }) -join '') + '</ul>' }
-function Answer($i) { if ($i.Id) { "/next #$(($i.Id -replace '^#', '').Trim()) 你的答复" } else { '/next 你的答复' } }
 function IsStalled($p) { [bool](@($p.Problems) -match '^可能停滞') }
 function Asks($p) { @(@($p.Waiting) | Where-Object { $_.Hint -ne '像搁置' }) + @(@($p.Waiting) | Where-Object { $_.Hint -eq '像搁置' }) }
 function Recent($p) { $null -ne $p.IdleMinutes -and $p.IdleMinutes -lt $StaleMinutes }
@@ -145,7 +144,7 @@ h1 em{font:200 176px/.8 var(--display);letter-spacing:-.05em;color:var(--sig)}
 .spot{fill:var(--band);animation:fade 1s ease both}
 .lane{stroke:var(--rule)}.ln{font-size:15px;font-weight:600;fill:var(--ink)}.lm{font-size:12px;fill:var(--mut)}.lt0{fill:var(--rule)}.lt1{fill:var(--ink);transform-box:fill-box;transform-origin:left;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}
 a:hover .ln{text-decoration:underline}
-.tick{fill:var(--ink);transform-box:fill-box;transform-origin:bottom;animation:tick .4s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d);transition:opacity .15s}.tick:hover{fill:var(--sig)}
+.tick{fill:var(--ink);transform-box:fill-box;transform-origin:bottom;animation:tick .4s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d);transition:opacity .15s}.tick:hover{fill:var(--mut)}
 .chip{cursor:default;transition:opacity .18s}a.chip{cursor:pointer}.chip text{font-size:13px}
 .chip rect{fill:none;stroke-width:1;transition:fill .15s,stroke .15s}
 .chip.ask rect{fill:var(--sig);stroke:var(--sig)}.chip.ask text{fill:var(--on-sig)}.chip.ask .chip-dot{fill:var(--on-sig);stroke:none}.chip.ask .chip-b{font-size:14px;font-weight:700}
@@ -154,7 +153,7 @@ a:hover .ln{text-decoration:underline}
 .chip.nx rect{stroke:var(--rule2)}.chip.nx text{fill:var(--ink);font-size:12.5px}.chip.nx:hover rect{stroke:var(--ink)}
 .chip.lt rect{stroke:var(--rule2);stroke-dasharray:2 3}.chip.lt text{fill:var(--mut);font-size:12.5px}.morec{font-size:12px;fill:var(--faint)}
 .eb{fill:none;stroke:var(--rule2);stroke-width:1;stroke-dasharray:1;animation:draw 1.2s .35s cubic-bezier(.4,0,.2,1) both}.e-ask .eb{stroke:var(--sig)}
-.ef{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-dasharray:1.5 9;opacity:0;stroke:var(--sig)}.edge.hot .ef{opacity:1;animation:flow .9s linear infinite}.edge{transition:opacity .18s}
+.ef{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-dasharray:1.5 9;opacity:0;stroke:var(--sig)}.e-live .ef{stroke:var(--ink)}.edge.hot .ef{opacity:1;animation:flow .9s linear infinite}.edge{transition:opacity .18s}
 .bracket path{fill:none;stroke:var(--sig);stroke-width:1}.bracket text{fill:var(--sig);font-size:12px;writing-mode:vertical-rl}.bracket{transition:opacity .18s}
 #map.focus .chip,#map.focus .tick,#map.focus .edge,#map.focus .bracket{opacity:.14}#map.focus .hot{opacity:1!important}
 .mapnote{display:flex;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--mut)}.legend{display:flex;gap:6px 16px;flex-wrap:wrap}.legend span{display:inline-flex;align-items:center;gap:7px}.legend i{display:block;width:14px;height:9px;border-radius:2px}
@@ -253,11 +252,13 @@ function GroupRoot([string]$id, $askById) {
 }
 $decisions = @(foreach ($mo in $models) {
     $askItems = Of $mo '待用户'
-    $askById = @{}; foreach ($m in $askItems) { if ($m.Id) { $askById[$m.Id] = $m } }
+    $askById = @{}; foreach ($m in $askItems) { if ($m.Id -and -not $askById.ContainsKey($m.Id)) { $askById[$m.Id] = $m } }
     $rootOf = @{}; foreach ($m in $askItems) { if ($m.Id) { $rootOf[$m.Key] = GroupRoot $m.Id $askById } }
     foreach ($m in $askItems) {
-        if ($m.Id -and $rootOf[$m.Key] -ne $m.Id) { continue }
-        $kids = @(if ($m.Id) { $askItems | Where-Object { $_.Key -ne $m.Key -and $_.Id -and $rootOf[$_.Key] -eq $m.Id } })
+        # 重复的编号只有第一项能当根、当子项，后面的各算各的。
+        $first = $m.Id -and $askById[$m.Id].Key -eq $m.Key
+        if ($first -and $rootOf[$m.Key] -ne $m.Id) { continue }
+        $kids = @(if ($first) { $askItems | Where-Object { $_.Key -ne $m.Key -and $_.Id -and $askById[$_.Id].Key -eq $_.Key -and $rootOf[$_.Key] -eq $m.Id } })
         $group = @($m) + $kids
         $inGroup = @{}; foreach ($g in $group) { $inGroup[$g.Key] = $true }
         $down = [ordered]@{}
@@ -433,9 +434,11 @@ function AttachedCards([string]$project, $i) { (@($cards | Where-Object { $_.Pro
 function SplitDetail([string]$detail, [bool]$attached) {
     $d = Plain $detail
     if ($attached) { $d = $d -replace '决定卡\s+\S+\.md\s*[：:]?\s*', '' }
-    $rec = [regex]::Match($d, '(?<!不)推荐[^。；;]*')
-    $why = (($(if ($rec.Success) { $d.Remove($rec.Index, $rec.Length) } else { $d })) -replace '[；;，,]\s*(?=[。；;，,])', '').Trim(' ', '；', ';', '。', '，', ',', '：', ':')
-    @{ Why = $why; Rec = $(if ($rec.Success) { $rec.Value }) }
+    $rec = [regex]::Match($d, '(?<!不|没有|无|暂无|还没|未)推荐[^。；;]*')
+    # "没有推荐""推荐"后面什么都没写，都不算有推荐：命令不能写成"按你的"。
+    $hasRec = $rec.Success -and ($rec.Value -replace '^推荐[：:\s]*', '')
+    $why = (($(if ($hasRec) { $d.Remove($rec.Index, $rec.Length) } else { $d })) -replace '[；;，,]\s*(?=[。；;，,])', '').Trim(' ', '；', ';', '。', '，', ',', '：', ':')
+    @{ Why = $why; Rec = $(if ($hasRec) { $rec.Value }) }
 }
 
 # 要你管：一件一张卡。决定按牵动多少排，像已搁置的排最后。

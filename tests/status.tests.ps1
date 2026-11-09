@@ -636,6 +636,26 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfgCo -Out $pageCo -NoNotify
     $htmlCo = Get-Content -LiteralPath $pageCo -Raw -Encoding UTF8
     Check 'page: only drawn items get lines, the rest are counted' (([regex]::Matches($htmlCo, '<g class="edge ')).Count -eq 3 -and $htmlCo -match '还有 2 项' -and (& $headNum $htmlCo '被挡住') -eq 5)
+    # 排序、传递依赖、重复编号、没有推荐
+    $so = New-DirRepo '项目 SO' ($qHead + "| 1 | 不牵动 | 无 | 待用户（定） |`n| 2 | 牵动多 | 无 | 待用户（定；推荐 A） |`n| 3 | 跟一 | 2 | 待做 |`n| 4 | 跟二 | 3 | 待做 |`n| 5 | 像搁置 | 无 | 待用户（先不做） |`n| 6 | 跟搁置一 | 5 | 待做 |`n| 7 | 跟搁置二 | 6 | 待做 |`n| 8 | 跟搁置三 | 7 | 待做 |`n| 9 | 重复甲 | 无 | 待用户（甲） |`n| 9 | 重复乙 | 无 | 待用户（乙） |`n| 10 | 同组 | 无 | 待用户（同 #9 一起定） |`n| 11 | 没推荐 | 无 | 待用户（还没有推荐；要你定） |`n| 12 | 空推荐 | 无 | 待用户（推荐） |`n| 13 | 完成<i>x | 无 | 完成 |`n| 14 | 暂无 | 无 | 待用户（暂无推荐方案） |") ([ordered]@{ notApplicable = 'x' })
+    $cfgSo = Join-Path $root 'projects-so.json'
+    @{ projects = @(,@{ name = '项目 SO'; path = $so; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgSo -Encoding utf8NoBOM
+    $pageSo = Join-Path $root 'out/status-so.html'
+    $null = pwsh -NoProfile -File $daily -Config $cfgSo -Out $pageSo -NoNotify
+    $htmlSo = Get-Content -LiteralPath $pageSo -Raw -Encoding UTF8
+    $soCmds = @([regex]::Matches($htmlSo, '<div class="cmd"><code>([^<]*)</code>') | ForEach-Object { $_.Groups[1].Value })
+    Check 'page: decisions that move most come first, shelved-like ones last' ($soCmds[0] -eq '/next #2 按你的' -and $soCmds[-1] -eq '/next #5 你的答复')
+    Check 'page: what follows counts the whole chain' ($htmlSo -match '(?s)id="d0-1".*?<div class="imp"><b>2</b><span>项跟着它</span>')
+    Check 'page: a repeated number is one chip each, and only the first takes the group' (([regex]::Matches($htmlSo, 'class="chip ask"')).Count -eq (& $headNum $htmlSo '现在') -and (& $headNum $htmlSo '现在') -eq 9 -and ([regex]::Matches($htmlSo, 'class="bracket"')).Count -eq 1 -and $soCmds -contains '/next #9 你的答复（连同 #10）' -and $soCmds -contains '/next #9 你的答复')
+    Check 'page: no recommendation written means no reply by recommendation' ($soCmds -contains '/next #11 你的答复' -and $soCmds -contains '/next #12 你的答复' -and $soCmds -contains '/next #14 你的答复' -and $htmlSo -match '<div class="why">还没有推荐；要你定</div>' -and ([regex]::Matches($htmlSo, '<div class="rec">')).Count -eq 1)
+    Check 'page: done ticks escape their hover text' ($htmlSo -match '<title>#13 完成&lt;i&gt;x</title>' -and $htmlSo -notmatch '<i>x')
+    Check 'page: the signal colour stays off what does not wait on the user' ($htmlSo -match '\.e-live \.ef\{stroke:var\(--ink\)\}' -and $htmlSo -match '\.tick:hover\{fill:var\(--mut\)\}')
+    $jf2 = (pwsh -NoProfile -File $Script -Config $cfgF -Json | Out-String | ConvertFrom-Json).Projects | Where-Object Name -eq '项目 F'
+    Check 'status: Claimable is the same rule as Available, stopped directions out' (@($jf2.Items | Where-Object Claimable).Count -eq $jf2.Available -and -not (@($jf2.Items | Where-Object Id -eq '1').Claimable) -and (@($jf2.Items | Where-Object Id -eq '3').Claimable))
+    $pageF = Join-Path $root 'out/status-f.html'
+    $null = pwsh -NoProfile -File $daily -Config $cfgF -Out $pageF -NoNotify
+    Check 'page: an item of a stopped direction says why it is blocked' ((Get-Content -LiteralPath $pageF -Raw -Encoding UTF8) -match '停掉的</span> <span class="wait">方向已停</span>')
+    Check 'page: an attached card does not repeat its path' ($html -notmatch '<div class="why">决定卡 docs/decisions/2026-11-30')
     # 停滞、维护、没队列、名字要转义
     $null = pwsh -NoProfile -File $daily -Config $cfgMd -Out $pageMd -NoNotify -StaleMinutes 0
     $htmlStale = Get-Content -LiteralPath $pageMd -Raw -Encoding UTF8
