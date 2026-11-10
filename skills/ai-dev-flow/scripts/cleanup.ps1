@@ -131,7 +131,14 @@ $removedPaths = @{}
 foreach ($t in @($trees | Select-Object -Skip 1 | Where-Object { -not $_.Prunable })) {
     $name = if ($t.Branch) { $t.Branch } else { "分离头 $($t.Head.Substring(0, 7))" }
     $null = git -C $main.Path merge-base --is-ancestor $t.Head $trunkSha 2>$null
-    if ($LASTEXITCODE) { continue }
+    if ($LASTEXITCODE) {
+        if (-not $t.Branch) {
+            $st = Git-Out $t.Path @('status', '--short', '--untracked-files=normal')
+            if ($st.Code -or ($st.Out | Where-Object { $_ })) { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里，还有未提交改动或未跟踪文件，先看一眼再处理") }
+            else { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里，多半是审查用过、候选后来改写了的；确认不要了就 git worktree remove `"$($t.Path)`"") }
+        }
+        continue
+    }
     $path = Norm $t.Path
     $why = $null
     if ($t.Locked) { $why = '上了锁' }

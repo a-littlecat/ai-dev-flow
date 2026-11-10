@@ -66,7 +66,7 @@ git worktree add --detach .agents/worktrees/<运行名> <head>
 
 用 `dispatch.ps1 -Review` 派的，脚本在审完时自己删临时 worktree：未跟踪文件先复制到 `.agents/runs/<运行名>/worktree-files/`，改动过被跟踪文件的留着不删，`exit.json` 的 `ReviewWorktree` 写着结果。写 `kept: tracked files changed` 的，改坏检查没恢复，这轮结论作废重来；其他的 `kept`（超大、被占用）不影响结论，之后用 `-CleanReviews` 清。下面的删除步骤只适用于你自己开的。
 
-验证结束后核对两件事：候选分支的 head 没变；`git -C <tmp> status --short` 里没有改动被跟踪的文件（未跟踪的构建产物不算；改坏检查没恢复的，这轮结论作废重来）。然后用 `git worktree remove --force <tmp>` 删掉这个临时 worktree。它是你为验证自己建的，删它不需要用户授权。
+验证结束后核对两件事：候选分支的 head 没变；`git -C <tmp> status --short` 里没有改动被跟踪的文件（未跟踪的构建产物不算；改坏检查没恢复的，这轮结论作废重来）。然后用 `git worktree remove --force <tmp>` 删掉这个临时 worktree。它是你为验证自己建的，删它不需要用户授权。验证方是子 agent 的，它在交回结论之前自己删，结论里写一句删了哪个；派它的会话收到结论后用 `git worktree list` 看一眼，没删的当场删。候选后来改写了的，这类 worktree 停在不在主干里的分离头上，合并后谁也不会再碰它，`cleanup.ps1` 只列出、不删。
 
 所有验证方式都在 `<tmp>` 里跑，都要能写 `<tmp>`，不要用会挡住构建的只读模式。
 

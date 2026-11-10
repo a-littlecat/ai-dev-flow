@@ -40,6 +40,15 @@ try {
     WtCommit (Wt 'unmerged') 'u.txt'
     Age (Wt 'unmerged')
     $null = G branch plain-unmerged unmerged
+    # 分离头、提交不在主干里（审查用过、候选后来改写了）：列出不删
+    $null = G worktree add -q --detach (Wt 'rewritten') HEAD
+    WtCommit (Wt 'rewritten') 'r.txt'
+    Age (Wt 'rewritten')
+    # 同上，还有未提交改动：列出不删，说先看一眼
+    $null = G worktree add -q --detach (Wt 'rewrittendirty') HEAD
+    WtCommit (Wt 'rewrittendirty') 'rd.txt'
+    Put (Wt 'rewrittendirty') 'rd.txt' 'changed'
+    Age (Wt 'rewrittendirty')
     # 已合并、有未提交改动：不动
     $null = G worktree add -q -b dirty (Wt 'dirty')
     Put (Wt 'dirty') 'a.txt' 'changed'
@@ -122,6 +131,7 @@ try {
     $before = (G worktree list --porcelain) -join "`n"
     $r = Run @('-DryRun', '-Branch', 'just')
     Check 'dry run: exit 0, says what it would delete' ($r.Code -eq 0 -and $r.Text -match '会删 worktree：done' -and $r.Text -match '会删分支：merged-plain')
+    Check 'dry run: lists the detached worktree off trunk too' ($r.Text -match '留着：分离头.*wt-rewritten）')
     Check 'dry run: lists the branch of a worktree it would remove' ($r.Text -match '会删分支：done')
     Check 'dry run: does not try the busy check, it would rename the folder' ($r.Text -match '会删 worktree：occupied')
     Check 'dry run: nothing changed' (((G worktree list --porcelain) -join "`n") -eq $before -and (HasBranch 'merged-plain') -and (HasBranch 'done'))
@@ -134,6 +144,8 @@ try {
     Check 'named branch: removed even though it just moved' (-not (Test-Path -LiteralPath (Wt 'just')) -and -not (HasBranch 'just'))
     Check 'run that finished: its worktree removed' (-not (Test-Path -LiteralPath (Wt 'finished')) -and -not (HasBranch 'finished'))
     Check 'unmerged worktree and branch: untouched, not even listed' ((Test-Path -LiteralPath (Wt 'unmerged')) -and (HasBranch 'unmerged') -and (HasBranch 'plain-unmerged') -and $r.Text -notmatch 'unmerged')
+    Check 'detached off trunk: kept, listed with how to remove' ((Test-Path -LiteralPath (Join-Path (Wt 'rewritten') 'r.txt')) -and $r.Text -match '留着：分离头 [0-9a-f]{7}（[^）]*wt-rewritten）：分离头，提交不在主干里.*git worktree remove')
+    Check 'detached off trunk with changes: kept, says look first' (((Get-Content -LiteralPath (Join-Path (Wt 'rewrittendirty') 'rd.txt') -Raw) -eq 'changed') -and $r.Text -match '留着：分离头 [0-9a-f]{7}（[^）]*wt-rewrittendirty）：分离头，提交不在主干里，还有未提交改动.*先看一眼')
     Check 'uncommitted change: kept, reason given' ((Test-Path -LiteralPath (Join-Path (Wt 'dirty') 'a.txt')) -and (HasBranch 'dirty') -and ((Get-Content -LiteralPath (Join-Path (Wt 'dirty') 'a.txt') -Raw) -eq 'changed') -and $r.Text -match '留着：dirty.*未提交改动')
     Check 'untracked file: kept, reason given' ((Test-Path -LiteralPath (Join-Path (Wt 'untracked') 'new.txt')) -and (HasBranch 'untracked') -and $r.Text -match '留着：untracked.*未跟踪')
     Check 'just opened and not named: kept, reason given' ((Test-Path -LiteralPath (Wt 'fresh')) -and (HasBranch 'fresh') -and $r.Text -match '留着：fresh.*动静')
