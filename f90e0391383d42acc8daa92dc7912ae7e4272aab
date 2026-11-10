@@ -1,0 +1,5 @@
+覆盖：ce89122..f90e039；claude-opus-5-5 子 agent 推理强度 high → Pass（3 条 P2：桌面 exit 5 前不校验也不提模型和强度；SKILL.md、README 的 launch 说明没提；总览清单顶层还没加 effort）
+跑了：pwsh -NoProfile -File tests/run-all.ps1 → 退出 0（head f90e039）
+快检用时：384 秒
+没跑：本机实开 claude --bg（AGENTS.md 要求真开一次）
+改坏验证：8 个改坏副本用 tests/launch.tests.ps1 -Script 逐个跑，全部变红
