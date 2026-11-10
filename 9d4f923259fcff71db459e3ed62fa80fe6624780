@@ -1,0 +1,3 @@
+覆盖：5aecb75..9d4f923；claude-opus-5-5 子 agent 推理强度 high → Pass（审 c385c0d，2 条可选 P2，取 README 一条；之后只多了文档：README.md 一处用词）
+跑了：pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1 → 退出 0；pwsh -NoProfile -File tests/status.tests.ps1 → 退出 0（head c385c0d，执行方和验证方各一次；之后只改文档）
+没跑：不适用（注释和文档）
