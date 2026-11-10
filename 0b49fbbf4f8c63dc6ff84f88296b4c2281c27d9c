@@ -1,0 +1,6 @@
+覆盖：24c3ff5..0b49fbb（6151de6 是 f90e039 rebase 后的版本；c283d06 收上一轮 3 条 P2；0b49fbb 只改文档，结论沿用）；claude-opus-5-5 子 agent 推理强度 high → Pass（3 条 P2：requests.md 临时办法位置已改；portfolio.md 第 4 节第 3 步补 -DryRun 已改；桌面项目文件夹不存在没有用例，排进队列）
+跑了：pwsh -NoProfile -File tests/run-all.ps1 → 退出 0（head c283d06）；审查方 tests/launch.tests.ps1 → 退出 0；check-md.ps1 → 退出 0（head 0b49fbb）
+快检用时：354 秒
+没跑：无
+补跑：本机实开 claude --bg（-Model haiku -Effort low），会话记录里是 claude-haiku-5-5、effort low，回了 ok
+改坏验证：审查方 5 个改坏副本，3 个变红；没抓到的两个（删掉 $hit = $null、exit 5 挪到文件夹存在检查之后）见 P2
