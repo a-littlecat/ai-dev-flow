@@ -37,6 +37,7 @@ skills/ai-dev-flow/
   scripts/watch.ps1        每 15 分钟查一次停滞，新停住的项目才推到手机
   scripts/check-md.ps1     文档格式检查：.md 里的控制字符、被拆断的表格行，放进各项目的快检
   scripts/land-check.ps1   合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进
+  scripts/archive-requests.ps1  请求单里处理完的小节移到 docs/requests-done.md，/next 开场只读还要转的
   scripts/cleanup.ps1      合并后清理：删已合进主干、没有未提交改动的 worktree 和分支
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
 skills/week/SKILL.md       /week：在总览仓库里开周会
@@ -45,6 +46,7 @@ tests/direction.tests.ps1  direction.ps1 的检查：pwsh -NoProfile -File tests
 tests/check-md.tests.ps1   check-md.ps1 的检查：pwsh -NoProfile -File tests/check-md.tests.ps1
 tests/land-check.tests.ps1 land-check.ps1 的检查：pwsh -NoProfile -File tests/land-check.tests.ps1
 tests/launch.tests.ps1     launch.ps1 的检查：pwsh -NoProfile -File tests/launch.tests.ps1
+tests/archive-requests.tests.ps1  archive-requests.ps1 的检查：pwsh -NoProfile -File tests/archive-requests.tests.ps1
 tests/cleanup.tests.ps1    cleanup.ps1 的检查：pwsh -NoProfile -File tests/cleanup.tests.ps1
 tests/run-all.ps1          并行跑全部检查，最后一行是快检用时：pwsh -NoProfile -File tests/run-all.ps1
 ```
@@ -133,6 +135,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.21.0**（2026-11-10）：`/next` 开场少读。新增 `scripts/archive-requests.ps1`：把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场先跑它，请求单只读还要转的；写法说不准的（进行中、通知）留在主文件。导图的请求单 88 KB 里还要转的只有 2 KB。
 - **2.19.4**（2026-11-10）：`cleanup.ps1` 列出停在分离头、提交不在主干里的 worktree（审查用过、候选后来改写了的），过了和删除同样的检查（锁、派活、会话、改动、被忽略的文件、最近有动静）才附删除命令，否则只写原因，都不删；`verify.md` 写明验证方交回结论前删掉自己另开的 worktree，派它的会话再看一眼。
 - **2.19.3**（2026-11-10）：`launch.ps1` 加 `-Model`、`-Effort`，传给 `claude --bg` 的 `--model`、`--effort`；默认从清单读（顶层给全体默认，项目可以覆盖），命令行优先，都没写就不传；`-DryRun` 打印实际用的；开在桌面应用的项目退出 5 时也写上该用的模型和思考强度。
 - **2.19.2**（2026-11-10）：新增 `docs/code-standards.md`，第一条：从人写的文字里猜含义的代码，猜错时只能影响标记，或按严的一边算（复盘升级）。`portfolio.md`、`daily.ps1`、README 里状态页各部分的叫法改成页面现在的写法。

@@ -158,6 +158,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
 | `scripts/watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"时推一次手机 |
 | `scripts/check-md.ps1` | 文档格式检查：`.md` 里的控制字符、被拆断的表格行；各项目放进快检 |
+| `scripts/archive-requests.ps1` | 把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场只读还要转的（`skills/next/SKILL.md` 第 1 节） |
 | `scripts/cleanup.ps1` | 合并后清理：删已合进主干、没有未提交改动的 worktree 和分支（`land.md` 第 6 节） |
 | `scripts/land-check.ps1` | 合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进（`land.md` 第 2 节） |
 | `skills/next`、`skills/week` | 与本 skill 同仓库的两个入口：`/next` 按队列往下做，`/week` 周会 |
