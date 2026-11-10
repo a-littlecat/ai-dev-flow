@@ -15,7 +15,8 @@ param(
 # worktree 只删同时满足的：head 是主干的祖先；git status --short 没有输出（未跟踪文件也算有）；被忽略的文件都是构建产物（$buildDirs，其余的如证据、.env 不能丢）；
 # 里面没有嵌套别的 worktree；没上锁；不是当前所在目录；没有还在跑的派活；claude agents 里没有会话在里面；目录没被别的进程占用。
 # 分支只删已合进主干的；主干、origin/HEAD 指的分支和长期分支（$longLived）不删，列出来，要删手工删。
-# 用 git worktree remove 和 git branch -d，不加 --force、不用 -D，Git 拒绝的就留着并说明。没合并的一律不动，也不列。
+# 用 git worktree remove 和 git branch -d，不加 --force、不用 -D，Git 拒绝的就留着并说明。没合并的一律不动；有分支的也不列，
+# 分离头的列出来不删：多半是审查用过、候选后来改写了的临时 worktree（verify.md 第 3 节），没有分支名，不列就没人看得见。
 # 项目 AGENTS.md 写了"不自动清理"的什么也不做（land.md 第 6 节）。
 # 目录已经不在的 worktree 记录用 git worktree prune 清掉。审查 worktree 里留着未跟踪证据的，由 dispatch.ps1 -CleanReviews 处理。
 # 退出码：0 做完了（有留着的也是 0）；1 试占用时目录没能改回原名（这次或上次留下的），输出里写着现在在哪，要手工改回，改回前不清任何记录；2 参数或仓库不对。
