@@ -153,7 +153,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `templates/decision-card.md`、`templates/flow.html` | 决定卡和流程图的模板 |
 | `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
 | `scripts/direction.ps1` | 读一个项目的基准、预算、决定卡和流程图，判断方向要不要停、有什么要补，只读（`modules/direction.md` 第 5 节） |
-| `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面（`portfolio.md` 第 4 节） |
+| `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面，按 `model`、`effort`（或 `-Model`、`-Effort`）定模型和思考强度（`portfolio.md` 第 4 节） |
 | `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
 | `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
 | `scripts/watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"时推一次手机 |

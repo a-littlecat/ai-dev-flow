@@ -22,7 +22,7 @@ $leak = @(Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC
 @("cwd=$((Get-Location).Path)", "args=$($args -join '|')", "leak=$leak") | Set-Content -LiteralPath $env:FAKE_LOG -Encoding UTF8
 "backgrounded · abc12345 · $($args[2])"
 '@ | Set-Content -LiteralPath $fake -Encoding UTF8
-@{ model = 'opus'; effort = 'medium'; projects = @(@{ name = '默认'; path = $projA }, @{ name = '覆盖'; path = $projB; model = 'sonnet'; effort = 'high' }, @{ name = '错强度'; path = $projB; effort = 'huge' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg2 -Encoding UTF8
+@{ model = 'opus'; effort = 'medium'; projects = @(@{ name = '默认'; path = $projA }, @{ name = '覆盖'; path = $projB; model = 'sonnet'; effort = 'high' }, @{ name = '错强度'; path = $projB; effort = 'huge' }, @{ name = '桌面强度'; path = $projA; session = 'desktop'; effort = 'high' }, @{ name = '桌面错强度'; path = $projA; session = 'desktop'; effort = 'huge' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg2 -Encoding UTF8
 
 $fail = 0
 function Check($name, $cond) { if ($cond) { "ok   $name" } else { "FAIL $name"; $script:fail++ } }
@@ -119,6 +119,12 @@ try {
     Check 'model without a list: passed, effort left out' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|项目 A next|--model|opus|/next')
     $r = Run @('-Project', '错强度', '-Config', $cfg2)
     Check 'bad effort in the list: exit 1, nothing launched' ($r.Code -eq 1 -and $r.Text -match 'xhigh' -and -not $r.Log)
+    $r = Run @('-Project', '桌面错强度', '-Config', $cfg2)
+    Check 'bad effort on a desktop project: exit 1 before exit 5' ($r.Code -eq 1 -and $r.Text -match 'xhigh' -and -not $r.Log)
+    $r = Run @('-Project', '桌面强度', '-Config', $cfg2)
+    Check 'desktop exit 5 says the model and effort to use' ($r.Code -eq 5 -and $r.Text -match '模型 opus' -and $r.Text -match '思考强度 high' -and -not $r.Log)
+    $r = Run @('-Project', '桌面', '-Config', $cfg)
+    Check 'desktop exit 5 with nothing set says default' ($r.Code -eq 5 -and $r.Text -match '模型 用默认' -and $r.Text -match '思考强度 用默认')
     $r = Run @('-Project', '覆盖', '-Config', $cfg2, '-DryRun')
     Check 'dry run prints the model and effort it would use' ($r.Code -eq 0 -and $r.Text -match '(?m)^model: sonnet$' -and $r.Text -match '(?m)^effort: high$' -and $r.Text -match '--model sonnet --effort high' -and -not $r.Log)
 

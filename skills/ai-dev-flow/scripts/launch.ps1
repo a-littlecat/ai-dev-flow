@@ -20,7 +20,7 @@ param(
 #   -Effort   传给 --effort（low、medium、high、xhigh、max）；取值顺序同 -Model
 #   -New      项目里有旧会话也新开，只列出旧会话，不动它们；上限照旧。清单里这个项目的 wake 不是 message 时，等于带了 -New（portfolio.md 第 2 节）
 #   -DryRun   只打印会怎么开（含实际用的模型和思考强度），不开
-# 清单里这个项目写了 "session": "desktop" 的不开，退出 5：命令行开不了桌面会话，由总览用桌面应用的开会话工具开。
+# 清单里这个项目写了 "session": "desktop" 的不开，退出 5：命令行开不了桌面会话，由总览用桌面应用的开会话工具开，输出里写着该用的模型和思考强度。
 # 开之前看 claude agents --json：不是新开时，这个项目里已经有活着的会话（有进程的命令行、后台、桌面会话都算）就不开，打印它的名字，改用跨会话消息发给它。
 # 进程已经停了的后台会话（列表里没有 pid）收不到消息，不算，照常开新的。
 # 在 PowerShell 里运行。Git Bash 会把以 / 开头的参数（如 -Prompt '/next #7'）改成路径，脚本看到开场指令像盘符路径就拒绝。
@@ -37,6 +37,7 @@ function Fail([string]$msg) { [Console]::Error.WriteLine("launch.ps1: $msg"); ex
 
 $label = $null
 $dir = $null
+$hit = $null
 if (Test-Path -LiteralPath $Project -PathType Container) {
     $dir = Norm (Resolve-Path -LiteralPath $Project).ProviderPath
 }
@@ -52,7 +53,6 @@ if ($Config) {
         if ($hit.wake -ne 'message') { $New = $true }
         if (-not $Model -and $hit.model) { $Model = $hit.model }
         if (-not $Effort -and $hit.effort) { $Effort = $hit.effort }
-        if ($hit.session -eq 'desktop') { "$label 写着开在桌面应用：用桌面应用的开会话工具开，工作目录选 $(Norm $hit.path)，开场发 $Prompt"; exit 5 }
     }
 }
 if ($Config) {
@@ -60,6 +60,10 @@ if ($Config) {
     if (-not $Effort -and $manifest.effort) { $Effort = $manifest.effort }
 }
 if ($Effort -and $Effort -notin 'low', 'medium', 'high', 'xhigh', 'max') { Fail "思考强度只能是 low、medium、high、xhigh、max：$Effort" }
+if ($hit -and $hit.session -eq 'desktop') {
+    "$label 写着开在桌面应用：用桌面应用的开会话工具开，工作目录选 $(Norm $hit.path)，开场发 $Prompt；模型 $(if ($Model) { $Model } else { '用默认' })，思考强度 $(if ($Effort) { $Effort } else { '用默认' })"
+    exit 5
+}
 if (-not $dir) { Fail "找不到项目：$Project（给文件夹路径，或用 -Config 按清单里的名字找）" }
 if (-not (Test-Path -LiteralPath $dir -PathType Container)) { Fail "项目文件夹不存在：$dir" }
 if (-not $label) { $label = Split-Path -Leaf $dir }
