@@ -49,6 +49,26 @@ try {
     WtCommit (Wt 'rewrittendirty') 'rd.txt'
     Put (Wt 'rewrittendirty') 'rd.txt' 'changed'
     Age (Wt 'rewrittendirty')
+    # 同上，只有被忽略的证据：只写原因，不给删除命令
+    $null = G worktree add -q --detach (Wt 'rewrittenevidence') HEAD
+    WtCommit (Wt 'rewrittenevidence') 'rewritten-evidence.txt'
+    Put (Wt 'rewrittenevidence') '.gitignore' "out/`n"
+    $null = git -C (Wt 'rewrittenevidence') add .gitignore
+    $null = git -C (Wt 'rewrittenevidence') -c user.name=t -c user.email=t@t commit -qm ignore
+    $null = New-Item -ItemType Directory -Path (Join-Path (Wt 'rewrittenevidence') 'out')
+    Put (Wt 'rewrittenevidence') 'out/shot.png' 'png'
+    Age (Wt 'rewrittenevidence')
+    # 同上，上了锁
+    $null = G worktree add -q --detach (Wt 'rewrittenlocked') HEAD
+    WtCommit (Wt 'rewrittenlocked') 'rewritten-locked.txt'
+    $null = G worktree lock (Wt 'rewrittenlocked')
+    Age (Wt 'rewrittenlocked')
+    # 同上，只有未跟踪文件，而且配了 showUntrackedFiles=no
+    $null = G worktree add -q --detach (Wt 'rewrittenhidden') HEAD
+    WtCommit (Wt 'rewrittenhidden') 'rewritten-hidden.txt'
+    $null = git -C (Wt 'rewrittenhidden') config status.showUntrackedFiles no
+    Put (Wt 'rewrittenhidden') 'wip.txt' 'wip'
+    Age (Wt 'rewrittenhidden')
     # 已合并、有未提交改动：不动
     $null = G worktree add -q -b dirty (Wt 'dirty')
     Put (Wt 'dirty') 'a.txt' 'changed'
@@ -144,8 +164,13 @@ try {
     Check 'named branch: removed even though it just moved' (-not (Test-Path -LiteralPath (Wt 'just')) -and -not (HasBranch 'just'))
     Check 'run that finished: its worktree removed' (-not (Test-Path -LiteralPath (Wt 'finished')) -and -not (HasBranch 'finished'))
     Check 'unmerged worktree and branch: untouched, not even listed' ((Test-Path -LiteralPath (Wt 'unmerged')) -and (HasBranch 'unmerged') -and (HasBranch 'plain-unmerged') -and $r.Text -notmatch 'unmerged')
-    Check 'detached off trunk: kept, listed with how to remove' ((Test-Path -LiteralPath (Join-Path (Wt 'rewritten') 'r.txt')) -and $r.Text -match '留着：分离头 [0-9a-f]{7}（[^）]*wt-rewritten）：分离头，提交不在主干里.*git worktree remove')
-    Check 'detached off trunk with changes: kept, says look first' (((Get-Content -LiteralPath (Join-Path (Wt 'rewrittendirty') 'rd.txt') -Raw) -eq 'changed') -and $r.Text -match '留着：分离头 [0-9a-f]{7}（[^）]*wt-rewrittendirty）：分离头，提交不在主干里，还有未提交改动.*先看一眼')
+    Check 'detached off trunk: kept, listed with how to remove' ((Test-Path -LiteralPath (Join-Path (Wt 'rewritten') 'r.txt')) -and $r.Text -match '(?m)留着：分离头 [0-9a-f]{7}（[^）]*wt-rewritten）：分离头，提交不在主干里，多半.*git -C ''[^'']+'' worktree remove ''[^'']*wt-rewritten''$')
+    Check 'detached off trunk with changes: kept, says look first' (((Get-Content -LiteralPath (Join-Path (Wt 'rewrittendirty') 'rd.txt') -Raw) -eq 'changed') -and $r.Text -match '留着：分离头 [0-9a-f]{7}（[^）]*wt-rewrittendirty）：分离头，提交不在主干里；有未提交改动.*先看一眼')
+    $lines = @($r.Out | Where-Object { $_ -match 'wt-rewritten(evidence|locked|hidden)）' })
+    Check 'detached off trunk with ignored evidence: kept, no remove command' ((Test-Path -LiteralPath (Join-Path (Wt 'rewrittenevidence') 'out/shot.png')) -and $r.Text -match 'wt-rewrittenevidence）：分离头，提交不在主干里；有被忽略的文件：out')
+    Check 'detached off trunk and locked: kept, no remove command' ((Test-Path -LiteralPath (Wt 'rewrittenlocked')) -and $r.Text -match 'wt-rewrittenlocked）：分离头，提交不在主干里；上了锁')
+    Check 'detached off trunk, untracked hidden by showUntrackedFiles=no: no remove command' ((Test-Path -LiteralPath (Join-Path (Wt 'rewrittenhidden') 'wip.txt')) -and $r.Text -match 'wt-rewrittenhidden）：分离头，提交不在主干里；有未提交改动或未跟踪文件')
+    Check 'no remove command for any detached worktree with a reason' ($lines.Count -eq 3 -and -not ($lines | Where-Object { $_ -match 'worktree remove' }))
     Check 'uncommitted change: kept, reason given' ((Test-Path -LiteralPath (Join-Path (Wt 'dirty') 'a.txt')) -and (HasBranch 'dirty') -and ((Get-Content -LiteralPath (Join-Path (Wt 'dirty') 'a.txt') -Raw) -eq 'changed') -and $r.Text -match '留着：dirty.*未提交改动')
     Check 'untracked file: kept, reason given' ((Test-Path -LiteralPath (Join-Path (Wt 'untracked') 'new.txt')) -and (HasBranch 'untracked') -and $r.Text -match '留着：untracked.*未跟踪')
     Check 'just opened and not named: kept, reason given' ((Test-Path -LiteralPath (Wt 'fresh')) -and (HasBranch 'fresh') -and $r.Text -match '留着：fresh.*动静')

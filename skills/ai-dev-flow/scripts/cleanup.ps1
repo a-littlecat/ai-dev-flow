@@ -16,7 +16,8 @@ param(
 # 里面没有嵌套别的 worktree；没上锁；不是当前所在目录；没有还在跑的派活；claude agents 里没有会话在里面；目录没被别的进程占用。
 # 分支只删已合进主干的；主干、origin/HEAD 指的分支和长期分支（$longLived）不删，列出来，要删手工删。
 # 用 git worktree remove 和 git branch -d，不加 --force、不用 -D，Git 拒绝的就留着并说明。没合并的一律不动；有分支的也不列，
-# 分离头的列出来不删：多半是审查用过、候选后来改写了的临时 worktree（verify.md 第 3 节），没有分支名，不列就没人看得见。
+# 分离头的列出来不删：多半是审查用过、候选后来改写了的临时 worktree（verify.md 第 4 节），没有分支名，不列就没人看得见。
+# 它们过同样的检查（锁、派活、会话、改动、被忽略的文件、最近有动静）才附删除命令，命中一项只写原因。
 # 项目 AGENTS.md 写了"不自动清理"的什么也不做（land.md 第 6 节）。
 # 目录已经不在的 worktree 记录用 git worktree prune 清掉。审查 worktree 里留着未跟踪证据的，由 dispatch.ps1 -CleanReviews 处理。
 # 退出码：0 做完了（有留着的也是 0）；1 试占用时目录没能改回原名（这次或上次留下的），输出里写着现在在哪，要手工改回，改回前不清任何记录；2 参数或仓库不对。
@@ -131,14 +132,8 @@ $removedPaths = @{}
 foreach ($t in @($trees | Select-Object -Skip 1 | Where-Object { -not $_.Prunable })) {
     $name = if ($t.Branch) { $t.Branch } else { "分离头 $($t.Head.Substring(0, 7))" }
     $null = git -C $main.Path merge-base --is-ancestor $t.Head $trunkSha 2>$null
-    if ($LASTEXITCODE) {
-        if (-not $t.Branch) {
-            $st = Git-Out $t.Path @('status', '--short', '--untracked-files=normal')
-            if ($st.Code -or ($st.Out | Where-Object { $_ })) { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里，还有未提交改动或未跟踪文件，先看一眼再处理") }
-            else { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里，多半是审查用过、候选后来改写了的；确认不要了就 git worktree remove `"$($t.Path)`"") }
-        }
-        continue
-    }
+    $offTrunk = [bool]$LASTEXITCODE
+    if ($offTrunk -and $t.Branch) { continue }
     $path = Norm $t.Path
     $why = $null
     if ($t.Locked) { $why = '上了锁' }
@@ -154,6 +149,13 @@ foreach ($t in @($trees | Select-Object -Skip 1 | Where-Object { -not $_.Prunabl
         elseif ($st.Out | Where-Object { $_ -and $_ -notlike '!! *' }) { $why = '有未提交改动或未跟踪文件' }
         elseif ($ignored) { $why = "有被忽略的文件：$(($ignored | Select-Object -First 3) -join '、')" }
         elseif (-not ($t.Branch -and $Branch -contains $t.Branch) -and ((Get-Date) - (Get-LastTouch $t)).TotalMinutes -lt $IdleMinutes) { $why = "$IdleMinutes 分钟内有动静，可能有会话在用" }
+    }
+    # 不在主干里的分离头只列不删：过了上面同样的检查才附删除命令，否则只写原因。
+    if ($offTrunk) {
+        $q = { param($s) "'$($s -replace "'", "''")'" }
+        if ($why) { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里；$why，先看一眼再处理") }
+        else { $kept.Add("$name（$($t.Path)）：分离头，提交不在主干里，多半是审查用过、候选后来改写了的；确认不要了就 git -C $(& $q $main.Path) worktree remove $(& $q $t.Path)") }
+        continue
     }
     if (-not $why -and -not $DryRun) { $why = Get-BusyReason $path }
     if ($why) { $kept.Add("$name（$($t.Path)）：$why"); continue }
