@@ -1,0 +1,1 @@
+覆盖：9eff2b1ef0f5c0207e904ffe4c7b22b068c88775..c7fe60b1cc3b0db22348ba1480d2b897070bafd9；沿用 0e0bb37c5729c0a5fa9219718f0a5b259ccad4ea 的 Pass（claude-opus-5-5 子 agent 推理强度 high）；之后只多了文档：docs/queue.md，全是主干带进来的，不涉及逐条核对；没跑：无；没采纳：同 0e0bb37 的 note（节点多或名字很长时标签挤、手机竖排不交替、切换后重画没包 try）
