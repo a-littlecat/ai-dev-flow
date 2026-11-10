@@ -1,0 +1,1 @@
+覆盖：fc98973..bb1351d；沿用 0b49fbb 的 Pass（claude-opus-5-5 子 agent，推理强度 high）；之后只多了文档：docs/queue.md、docs/requests.md，全是主干带进来的，不涉及；没跑：无；补跑：本机实开 claude --bg（-Model haiku -Effort low），会话记录里是 claude-haiku-5-5、effort low；没采纳：无；快检用时：354 秒
