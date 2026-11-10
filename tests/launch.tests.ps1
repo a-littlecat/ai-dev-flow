@@ -11,6 +11,7 @@ $fake = Join-Path $root 'claude.ps1'
 $agents = Join-Path $root 'agents.json'
 $log = Join-Path $root 'log.txt'
 $cfg = Join-Path $root 'projects.json'
+$cfg2 = Join-Path $root 'projects-model.json'
 @{ projects = @(@{ name = '01 导图'; path = $projA; status = '推进中' }, @{ name = 'B 项目'; path = $projB; status = '推进中' },
     @{ name = '叫醒'; path = $projA; status = '推进中'; wake = 'message' }, @{ name = '新开'; path = $projA; status = '推进中'; wake = 'new'; session = 'cli' }, @{ name = '桌面'; path = $projA; status = '推进中'; session = 'desktop' },
     @{ name = '错 session'; path = $projA; status = '推进中'; session = 'web' }, @{ name = '错 wake'; path = $projA; status = '推进中'; wake = 'later' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg -Encoding UTF8
@@ -21,6 +22,7 @@ $leak = @(Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC
 @("cwd=$((Get-Location).Path)", "args=$($args -join '|')", "leak=$leak") | Set-Content -LiteralPath $env:FAKE_LOG -Encoding UTF8
 "backgrounded · abc12345 · $($args[2])"
 '@ | Set-Content -LiteralPath $fake -Encoding UTF8
+@{ model = 'opus'; effort = 'medium'; projects = @(@{ name = '默认'; path = $projA }, @{ name = '覆盖'; path = $projB; model = 'sonnet'; effort = 'high' }, @{ name = '错强度'; path = $projB; effort = 'huge' }) } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $cfg2 -Encoding UTF8
 
 $fail = 0
 function Check($name, $cond) { if ($cond) { "ok   $name" } else { "FAIL $name"; $script:fail++ } }
@@ -105,7 +107,23 @@ try {
     $r = Run @('-Project', $projA, '-Config', $cfg)
     Check 'folder listed in projects.json takes the listed name' ($r.Out[-1] -eq 'launched abc12345 01 导图 next')
 
+    $r = Run @('-Project', '默认', '-Config', $cfg2)
+    Check 'model and effort from the list top level' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|默认 next|--model|opus|--effort|medium|/next')
+    $r = Run @('-Project', '覆盖', '-Config', $cfg2)
+    Check 'a project''s model and effort override the top level' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|覆盖 next|--model|sonnet|--effort|high|/next')
+    $r = Run @('-Project', '覆盖', '-Config', $cfg2, '-Model', 'haiku', '-Effort', 'low')
+    Check 'command line overrides the list' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|覆盖 next|--model|haiku|--effort|low|/next')
+    $r = Run @('-Project', '覆盖', '-Config', $cfg2, '-Effort', 'max')
+    Check 'command line effort alone keeps the listed model' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|覆盖 next|--model|sonnet|--effort|max|/next')
+    $r = Run @('-Project', $projA, '-Model', 'opus')
+    Check 'model without a list: passed, effort left out' ($r.Code -eq 0 -and $r.Log[1] -eq 'args=--bg|--name|项目 A next|--model|opus|/next')
+    $r = Run @('-Project', '错强度', '-Config', $cfg2)
+    Check 'bad effort in the list: exit 1, nothing launched' ($r.Code -eq 1 -and $r.Text -match 'xhigh' -and -not $r.Log)
+    $r = Run @('-Project', '覆盖', '-Config', $cfg2, '-DryRun')
+    Check 'dry run prints the model and effort it would use' ($r.Code -eq 0 -and $r.Text -match '(?m)^model: sonnet$' -and $r.Text -match '(?m)^effort: high$' -and $r.Text -match '--model sonnet --effort high' -and -not $r.Log)
+
     $r = Run @('-Project', $projA, '-DryRun')
+    Check 'dry run with nothing set: says neither is passed' ($r.Code -eq 0 -and $r.Text -match '(?m)^model: 不传' -and $r.Text -match '(?m)^effort: 不传' -and $r.Text -notmatch '--model|--effort')
     Check 'dry run: exit 0, launches nothing' ($r.Code -eq 0 -and $r.Text -match 'claude --bg' -and -not $r.Log)
 
     $r = Run @('-Project', 'nowhere', '-Config', $cfg)

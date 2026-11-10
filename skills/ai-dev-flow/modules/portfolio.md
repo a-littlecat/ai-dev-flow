@@ -38,6 +38,7 @@ exit $LASTEXITCODE
 
 ```json
 {
+  "model": "<模型名或别名>", "effort": "medium",
   "projects": [
     { "name": "导图", "path": "<本机路径>", "status": "推进中", "priority": 1, "trunk": "master",
       "queue": "docs/queue.md", "dependsOn": ["引擎"], "note": "<一句话：这个项目是什么>",
@@ -46,7 +47,7 @@ exit $LASTEXITCODE
 }
 ```
 
-`name`、`path`、`status` 必填；`trunk` 不写就用主检出当前所在的分支；`queue` 不写就是 `docs/queue.md`。`wake`、`session` 决定总览怎么叫这个项目（第 4 节）：`wake` 写 `new`（不叫醒旧会话，新开）或 `message`（有会话就发消息），不写是 `new`（用户 2026-11-08 定）；`session` 写 `cli`（命令行后台）或 `desktop`（桌面应用，要用户看效果的项目用它），不写是 `cli`。信任等级不写在清单里，脚本从项目 `AGENTS.md` 的"信任等级 Lx"读，等级只有一个出处。
+`name`、`path`、`status` 必填；`trunk` 不写就用主检出当前所在的分支；`queue` 不写就是 `docs/queue.md`。`wake`、`session` 决定总览怎么叫这个项目（第 4 节）：`wake` 写 `new`（不叫醒旧会话，新开）或 `message`（有会话就发消息），不写是 `new`（用户 2026-11-08 定）；`session` 写 `cli`（命令行后台）或 `desktop`（桌面应用，要用户看效果的项目用它），不写是 `cli`。`model`、`effort` 是 `launch.ps1` 开会话时传给 `claude --bg` 的 `--model`、`--effort`（`effort` 只能写 `low`、`medium`、`high`、`xhigh`、`max`）：清单顶层写全体默认，单个项目可以覆盖，命令行的 `-Model`、`-Effort` 优先；都没写就不传，用 `claude` 自己的默认。用户定的"项目会话一律中等思考"写在顶层 `"effort": "medium"`。信任等级不写在清单里，脚本从项目 `AGENTS.md` 的"信任等级 Lx"读，等级只有一个出处。
 
 `goals` 是本周目标，由周会写。`items` 里的队列项都"完成"时，状态页自动打勾；挂不到队列项的目标，由周会把 `done` 改成 `true`。
 
@@ -92,9 +93,9 @@ pwsh -NoProfile -File scripts/status.ps1 -Project '<名字>,<名字>' -Since '7 
 1. **清单写 `"wake": "message"` 的，先看那个项目有没有会话**：用 `ListAgents` 看（同一台电脑上桌面应用、命令行、后台的会话都列得出）。有，就用 `SendMessage` 发给它：要它做什么、写在 `docs/requests.md` 哪一节，用户的话照原文引。正在做别的也照发，它在两步之间会读到。没写 `wake` 或写 `new` 的跳过这一步，不叫醒旧会话，直接按下一步新开，旧会话的名字列在脚本输出里。
 2. **开一个**：
    ```
-   pwsh -NoProfile -File <skill>/scripts/launch.ps1 -Project '<清单里的名字>' -Config projects.json -Max <INTENT.md 里同时开着的会话上限> [-Prompt '/next #编号 <用户原话>']
+   pwsh -NoProfile -File <skill>/scripts/launch.ps1 -Project '<清单里的名字>' -Config projects.json -Max <INTENT.md 里同时开着的会话上限> [-Prompt '/next #编号 <用户原话>'] [-Model <模型>] [-Effort <强度>]
    ```
-   在 PowerShell 里运行：Git Bash 会把以 `/` 开头的参数改成路径，脚本发现后会拒绝。开的是命令行后台会话（`claude --bg`），用命令行登录的账号。用户在终端运行 `claude agents` 能看到全部后台会话，回车进去接着聊；它等用户批权限或回答时，`notify.ps1` 推到手机（第 6 节）。退出码 3：`wake` 是 `message`，项目里其实已有活着的会话，按第 1 步发消息；4：在做的会话已到上限，排着，告诉用户哪几个在做；5：清单写着 `"session": "desktop"`，按第 3 步开。进程已经停了的后台会话（没人连着约一小时后会被停掉）收不到消息，脚本不算它，照常开新的。
+   在 PowerShell 里运行：Git Bash 会把以 `/` 开头的参数改成路径，脚本发现后会拒绝。开的是命令行后台会话（`claude --bg`），用命令行登录的账号，模型和思考强度按第 2 节清单里的 `model`、`effort`；`-DryRun` 打印实际会用的。用户在终端运行 `claude agents` 能看到全部后台会话，回车进去接着聊；它等用户批权限或回答时，`notify.ps1` 推到手机（第 6 节）。退出码 3：`wake` 是 `message`，项目里其实已有活着的会话，按第 1 步发消息；4：在做的会话已到上限，排着，告诉用户哪几个在做；5：清单写着 `"session": "desktop"`，按第 3 步开。进程已经停了的后台会话（没人连着约一小时后会被停掉）收不到消息，脚本不算它，照常开新的。
 3. **要开在桌面应用里**（清单写着 `"session": "desktop"`，或者命令行那个账号额度紧，或者用户想在侧边栏看）：用桌面应用的开会话工具，工作目录选项目文件夹，开场发 `/next`。这个工具只在用户刚说完话的那一轮能直接开；被别的会话的消息叫醒的那一轮只能弹卡片，等用户点。
 4. **开场只发 `/next`**（或带答复的 `/next #编号 <原话>`）。要做什么、怎么做写进 `docs/requests.md` 和项目的队列，由项目会话按自己的规则做，不在开场指令里另外布置。
 5. 汇报里一行一个：开了哪个、给哪个发了什么。
