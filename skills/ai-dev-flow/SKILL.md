@@ -96,7 +96,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 这些是防返工、防损失的底线，再赶也要做：
 
 - 没跑过的验证不说"通过"，没做过的验证不说"已验证"。
-- 执行方不批准自己的工作：合并前要有独立验证方的结论，而且对应要合并的那个版本（`modules/verify.md`）。唯一的例外是只改纯文档，见 `verify.md` 第 1 节。
+- 执行方不批准自己的工作：合并前要有独立验证方的结论，而且对应要合并的那个版本（`modules/verify.md`）。写和审不是同一个会话，审的模型不低于写的；单向门档跨厂商。唯一的例外是只改纯文档，见 `verify.md` 第 1 节。
 - 证明在真实产物上做，并亲手改坏一次，确认测试真的会红。
 - 修 bug 之前，先要有能判定对错的信号。
 - 主干验证红了，立刻往前修或 revert，不等人。
@@ -146,7 +146,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `modules/land.md` | 合并落地：rebase、在最终版本上复跑、提交正文模板、往前修和 revert |
 | `modules/diagnose.md` | bug、变慢、原因不明的失败、验收没通过 |
 | `modules/orchestrate.md` | 自动推进：队列、派后台子 agent 或外部 agent、接力、并行上限、关联项目 |
-| `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、DSH 等）写或审，项目配置在 `scripts/dispatch.json` |
+| `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、Claude 的 `claude -p`、DSH 等）写或审，项目配置在 `scripts/dispatch.json`，每个 agent 可配模型 |
 | `modules/garden.md` | 复盘、教训升级、复盘摘要、清理 |
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
 | `modules/direction.md` | 新方向先做原型比基准，方向性选择报决定卡，基准和收敛，一页流程图 |

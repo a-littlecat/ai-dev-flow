@@ -6,7 +6,7 @@
 
 | 档 | 验证 |
 |---|---|
-| 自走 | 一轮。同厂商的子 agent 可以，模型不低于执行方 |
+| 自走 | 一轮。写和审不是同一个会话，审的模型不低于写的；同厂商的子 agent 可以 |
 | 看一眼 | 一轮，另加用户看 |
 | 单向门 | 跨厂商（Claude 和 Codex 互审），一直验到没有 P0 / P1 |
 | 只改纯文档（不改代码、脚本、hook、CI 和配置） | 不跑全量快检，不必请验证方：把文档里写的路径、命令、章节引用逐条实际查一遍或跑一遍，项目有文档格式检查的跑它。这是总览第 5 节"合并前要有独立结论"唯一的例外 |
@@ -89,6 +89,8 @@ codex exec --ephemeral --sandbox workspace-write -m <model> -c model_reasoning_e
 `workspace-write` 把写权限限制在 `<tmp>` 里；其余要求写在说明里，结束后按上面的方法核对。
 
 **Codex 执行的项**：自走、看一眼档用 Codex 原生的子 agent，工作目录设为 `<tmp>`；单向门档请 Claude（在 `<tmp>` 里运行 `claude -p`，只允许它写 `<tmp>`）。
+
+**项目配了 `scripts/dispatch.json` 的**：用 `scripts/dispatch.ps1 -Review <分支> -Agent <agent>` 派，Codex、Claude 哪个配了、哪边有额度用哪个（`orchestrate.md` 第 3 节）。规则同上：写和审不是同一个会话，审的模型不低于写的（`-Model` 指定）；单向门档选另一家厂商的 agent。
 
 ### 首选验证方不可用时
 

@@ -28,7 +28,7 @@ skills/ai-dev-flow/
   modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
   modules/direction.md     新方向先做原型比基准，方向性选择报决定卡，基准和收敛，一页流程图
   templates/               决定卡和流程图的模板
-  scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、DSH 等）写或审
+  scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、Claude 的 claude -p、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
   scripts/direction.ps1    读一个项目的基准、预算、决定卡和流程图，判断方向要不要停（只读）
   scripts/launch.ps1       在一个项目里开命令行后台会话（默认 /next），按清单决定新开、发消息还是开在桌面，以及模型和思考强度
@@ -135,6 +135,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.22.0**（2026-11-11）：执行方和审查方做成配置：`scripts/dispatch.json` 里 Codex、Claude（`claude -p`，写 `"vendor": "claude"`，运行时去掉继承来的 `CLAUDE_*`、`ANTHROPIC_*` 变量）都能配成写或审，哪边有额度派哪边，不改项目规矩；每个 agent 可配 `model`，命令里用 `{model}`，`-Model` 优先，没配不传；分工规则统一成"写和审不是同一个会话，审的模型不低于写的"，单向门档仍跨厂商。
 - **2.21.0**（2026-11-10）：`/next` 开场少读。新增 `scripts/archive-requests.ps1`：把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场先跑它，请求单只读还要转的；写法说不准的（进行中、通知、后面还写着待或问号的）留在主文件，代码块里的 `##` 不当小节，有未提交改动时不动。导图的请求单 88 KB 里还要转的只有 2 KB。
 - **2.19.4**（2026-11-10）：`cleanup.ps1` 列出停在分离头、提交不在主干里的 worktree（审查用过、候选后来改写了的），过了和删除同样的检查（锁、派活、会话、改动、被忽略的文件、最近有动静）才附删除命令，否则只写原因，都不删；`verify.md` 写明验证方交回结论前删掉自己另开的 worktree，派它的会话再看一眼。
 - **2.19.3**（2026-11-10）：`launch.ps1` 加 `-Model`、`-Effort`，传给 `claude --bg` 的 `--model`、`--effort`；默认从清单读（顶层给全体默认，项目可以覆盖），命令行优先，都没写就不传；`-DryRun` 打印实际用的；开在桌面应用的项目退出 5 时也写上该用的模型和思考强度。
