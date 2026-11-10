@@ -5,42 +5,102 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><项目名>：流程图</title>
 <style>
-:root{--bg:#f6f6f3;--card:#fff;--fg:#1d1d1b;--muted:#6f6f69;--line:#e4e4df;--model:#3d5a99;--modelbg:#e6ecf8;--program:#17703a;--programbg:#e2f3e7;--person:#a85d00;--personbg:#fdf1dc;--external:#6f6f69;--externalbg:#efefea}
-@media (prefers-color-scheme:dark){:root{--bg:#151514;--card:#1f1f1d;--fg:#ececea;--muted:#a0a09a;--line:#33332f;--model:#93b0ee;--modelbg:#1c2740;--program:#6ad08c;--programbg:#15301f;--person:#f5b24a;--personbg:#3a2c12;--external:#a0a09a;--externalbg:#2a2a27}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,"Microsoft YaHei",sans-serif}
-main{max-width:720px;margin:0 auto;padding:24px 16px 56px}h1{font-size:22px;margin:0 0 6px}h2{font-size:16px;margin:28px 0 8px}.muted{color:var(--muted);font-size:13px}
-.who{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
-.model{color:var(--model);background:var(--modelbg)}.program{color:var(--program);background:var(--programbg)}.person{color:var(--person);background:var(--personbg)}.external{color:var(--external);background:var(--externalbg)}
-.flow{list-style:none;margin:16px 0 0;padding:0}
-.step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.step h3{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;margin:0 0 4px}.step p{margin:0 0 6px}
-.step dl{display:grid;grid-template-columns:4em 1fr;gap:2px 10px;margin:0;font-size:14px}.step dt{color:var(--muted)}.step dd{margin:0;min-width:0}
-.pass{color:var(--muted);font-size:13px;padding:6px 0 6px 22px;position:relative}.pass::before{content:"↓";position:absolute;left:6px;color:var(--fg);font-size:15px}
+:root{color-scheme:light dark;--bg:#f2f1ec;--ink:#121210;--mut:#6b6b64;--rule:rgba(18,18,16,.2);--sig:#d9360f;--sans:"Segoe UI Variable Text","Segoe UI","PingFang SC","Microsoft YaHei UI",system-ui,sans-serif;--display:"Segoe UI Variable Display","Segoe UI","Helvetica Neue",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#101010;--ink:#eeede8;--mut:#a09f98;--rule:rgba(238,237,232,.22);--sig:#ff5a2b}}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{max-width:1320px;margin:0 auto;padding:56px 40px 72px;overflow-wrap:anywhere}
+h1{margin:0;font:200 72px/1.05 var(--display);letter-spacing:-.035em}
+.sub{max-width:40em;margin:16px 0 0;font-size:17px;color:var(--mut)}
+#map{display:block;width:100%;height:auto;margin:36px 0 28px;overflow:visible}#map:empty{display:none}
+#map text{font-family:var(--sans);fill:var(--ink)}#map .n{font:200 44px var(--display);letter-spacing:-.03em}#map .nm{font-size:21px;font-weight:500}#map .w{font-size:13px;fill:var(--mut)}
+#map .br{fill:none;stroke:var(--rule);stroke-width:1.25;transition:stroke .15s,stroke-width .15s}
+#map .dot{fill:var(--bg);stroke:var(--ink);stroke-width:2;transition:r .18s}
+#map .s{cursor:pointer;outline:none}#map .s:focus-visible .nm{text-decoration:underline}
+#map .s.person .dot{fill:var(--sig);stroke:var(--sig)}#map .s.person .n,#map .s.person .w{fill:var(--sig)}
+#map .s.on .br{stroke:var(--ink);stroke-width:2}#map .s.person.on .br{stroke:var(--sig)}#map .s.on .nm{font-weight:700}
+#map .s.end .dot{fill:var(--ink)}
+#map .hit{fill:transparent}
+#map .trunk{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+#more{display:none;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:24px 40px;min-height:150px;padding-top:20px;border-top:2.5px solid var(--ink)}
+#more.ready{display:grid}#more h2{grid-column:1/-1;margin:0;font-size:24px;font-weight:600}#more h3{margin:0 0 6px;font-size:12.5px;font-weight:400;color:var(--mut)}#more p{margin:0}
+.flow{list-style:none;counter-reset:s;margin:36px 0 0 8px;padding:0 0 0 30px;border-left:2.5px solid var(--ink)}
+.flow li{position:relative}.step,.end{counter-increment:s;padding:4px 0 0}.step::before,.end::before{content:"";position:absolute;left:-39px;top:12px;width:12px;height:12px;border:2px solid var(--ink);border-radius:50%;background:var(--bg)}.end::before{background:var(--ink)}.step:has(.person)::before{background:var(--sig);border-color:var(--sig)}
+.flow h3{margin:0;font-size:19px;font-weight:600}.step h3::before{content:counter(s) "　";font-weight:200}.step:has(.person) h3::before{color:var(--sig)}
+.who{margin-left:6px;font-size:12.5px;font-weight:400;color:var(--mut)}.who.person{color:var(--sig)}
+.leaves p{max-width:44em;margin:6px 0 0}.leaves dl{display:grid;grid-template-columns:4.5em minmax(0,1fr);gap:2px 12px;margin:8px 0 0;font-size:14px}.leaves dl div{display:contents}.leaves dt{color:var(--mut)}.leaves dd{margin:0}
+.pass{margin:14px 0 18px;font-size:13px;color:var(--mut)}.foot{margin:40px 0 0;font-size:12.5px;color:var(--mut)}
+.js .flow{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:860px){main{padding:32px 18px 48px}h1{font-size:44px}.sub{font-size:15px}#more{grid-template-columns:minmax(0,1fr)}}
 </style>
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 <main>
-<!-- 照着改：一步一个 li.step，步骤之间一个 li.pass。谁做只用四种：model 模型、program 程序、person 人、external 外部服务；一步有几方就写几个。 -->
-<h1><项目名>：从输入到输出</h1>
-<p><一两句白话：这个项目拿什么进来，交出什么去。></p>
-<p class="muted">谁做：<span class="who model">模型</span> <span class="who program">程序</span> <span class="who person">人</span> <span class="who external">外部服务</span>　　更新于 <YYYY-MM-DD></p>
-
+<!-- 照着改：一步一个 li.step，步骤之间一个 li.pass，最后一个 li.end 写交出去的东西。页面把它们画成一条主干，各步交替向上下分出去，选中哪步下面显示它的细节；编号自动生成。
+     谁做只用四种：model 模型、program 程序、person 人、external 外部服务；一步有几方就写几个。轮到人的步骤自动标朱红，别的颜色不加。
+     样式和脚本不用改（测试看着它和 ai-dev-flow 仓库自己那页一样）。状态页里嵌的这页不跑脚本，看到的是同样内容的竖排主干。 -->
+<h1><项目名></h1>
+<p class="sub"><一两句白话：这个项目拿什么进来，交出什么去。></p>
+<svg id="map" role="group" aria-label="流程主干"></svg>
+<section id="more" aria-live="polite"></section>
 <ol class="flow">
   <li class="step">
-    <h3>1. <这一步叫什么> <span class="who program">程序</span></h3>
-    <p><白话：这一步做什么。></p>
-    <dl><dt>怎么量</dt><dd><这一步好不好看什么数或什么样例></dd><dt>短板</dt><dd><已知做得不好的地方；没有写"暂无"></dd></dl>
+    <h3><这一步叫什么> <span class="who program">程序</span></h3>
+    <div class="leaves"><p><span><白话：这一步做什么。></span></p><dl><div><dt>怎么量</dt><dd><这一步好不好看什么数或什么样例></dd></div><div><dt>短板</dt><dd><已知做得不好的地方；没有写"暂无"></dd></div></dl></div>
   </li>
   <li class="pass">传给下一步：<传什么数据，白话></li>
   <li class="step">
-    <h3>2. <这一步叫什么> <span class="who model">模型</span></h3>
-    <p><白话：这一步做什么。></p>
-    <dl><dt>怎么量</dt><dd><…></dd><dt>短板</dt><dd><…></dd></dl>
+    <h3><这一步叫什么> <span class="who model">模型</span> <span class="who person">人</span></h3>
+    <div class="leaves"><p><span><白话：这一步做什么。></span></p><dl><div><dt>怎么量</dt><dd><…></dd></div><div><dt>短板</dt><dd><…></dd></div></dl></div>
+  </li>
+  <li class="pass">传给下一步：<…></li>
+  <li class="end">
+    <h3><交出去的东西叫什么></h3>
+    <div class="leaves"><p><span><最终交付物是什么；它和基准比的差距怎么量（和 docs/benchmark.json 的 northStar 一致）。></span></p></div>
   </li>
 </ol>
-
-<h2>最后交出去的是什么</h2>
-<p><最终交付物；它和基准比的差距怎么量（和 docs/benchmark.json 的 northStar 一致）。></p>
+<p class="foot">更新于 <日期，YYYY-MM-DD></p>
 </main>
+<script>
+(function(){
+var NS='http://www.w3.org/2000/svg',map=document.getElementById('map'),more=document.getElementById('more');
+var data=[].map.call(document.querySelectorAll('.step,.end'),function(n){
+  var next=n.nextElementSibling,dd=n.querySelectorAll('dd'),h=n.querySelector('h3'),p=n.querySelector('.leaves p'),whos=[].map.call(n.querySelectorAll('h3 .who'),function(w){return w.textContent});
+  return{name:h&&h.firstChild?h.firstChild.textContent.trim():'',who:whos,person:!!n.querySelector('.who.person'),end:n.classList.contains('end'),what:p?p.textContent:'',measure:dd[0]&&dd[0].textContent,weak:dd[1]&&dd[1].textContent,pass:next&&next.classList.contains('pass')?next.textContent.replace(/^传给下一步：/,''):''};
+});
+var cur=0,groups=[];
+function el(t,a,txt){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+function pick(i){cur=i;groups.forEach(function(g,k){g.classList.toggle('on',k===i);g.querySelector('.dot').setAttribute('r',k===i?11:7)});
+  more.textContent='';var d=data[i],h=document.createElement('h2');h.textContent=d.end?d.name:(i+1)+'　'+d.name;more.appendChild(h);
+  [[d.end?'交出去的是什么':'做什么',d.what],['怎么量',d.measure],['短板',d.weak],['传给下一步',d.pass]].forEach(function(p){if(!p[1])return;var b=document.createElement('div'),t=document.createElement('h3'),c=document.createElement('p');t.textContent=p[0];c.textContent=p[1];b.appendChild(t);b.appendChild(c);more.appendChild(b)})}
+function draw(){
+  map.textContent='';groups=[];var narrow=innerWidth<=860,n=data.length,W=narrow?340:1240,H=narrow?n*78+30:440;
+  map.setAttribute('viewBox','0 0 '+W+' '+H);
+  map.appendChild(el('path',{class:'trunk',d:narrow?'M18 6V'+(H-8)+'M12 '+(H-16)+'L18 '+(H-8)+'L24 '+(H-16):'M6 220H'+(W-8)+'M'+(W-18)+' 212L'+(W-8)+' 220L'+(W-18)+' 228'}));
+  data.forEach(function(d,i){
+    var g=el('g',{class:'s'+(d.person?' person':'')+(d.end?' end':''),tabindex:0,role:'button','aria-label':d.name}),x,y,lx,ly,path;
+    if(narrow){x=18;y=44+i*78;lx=62;ly=y+6;path='M18 '+y+'C34 '+y+' 40 '+ly+' 56 '+ly+'H'+(W-6)}
+    else{x=40+(i+.3)*(1140/n);y=220;var up=i%2===0;ly=up?92:348;lx=x+64;path='M'+x+' 220C'+x+' '+(up?150:290)+' '+(x+12)+' '+ly+' '+(x+58)+' '+ly+'H'+Math.min(x+270,W)}
+    g.appendChild(el('rect',narrow?{class:'hit',x:0,y:y-36,width:W,height:76}:{class:'hit',x:x-14,y:up?30:210,width:290,height:180}));
+    g.appendChild(el('path',{class:'br',d:path}));
+    if(!d.end)g.appendChild(el('text',{class:'n',x:lx,y:ly-10},i+1));
+    g.appendChild(el('text',{class:'nm',x:lx+(d.end?0:34),y:ly-12},d.name));
+    if(d.who.length)g.appendChild(el('text',{class:'w',x:lx,y:ly+21},d.who.join(' · ')));
+    g.appendChild(el('circle',{class:'dot',cx:x,cy:y,r:7}));
+    g.addEventListener('click',function(){pick(i)});g.addEventListener('mouseenter',function(){pick(i)});g.addEventListener('focus',function(){pick(i)});
+    g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(i)}});
+    map.appendChild(g);groups.push(g);
+    var ts=g.querySelectorAll('text'),r=0;[].forEach.call(ts,function(t){var b=t.getBBox();r=Math.max(r,b.x+b.width)});
+    var over=r-(W-4),room=narrow?0:Math.min(over,lx-x-14);
+    if(over>0){[].forEach.call(ts,function(t){t.setAttribute('x',t.getAttribute('x')-room)});
+      var nm=g.querySelector('.nm'),w=nm.getBBox().width;if(over>room&&w)nm.style.fontSize=Math.max(13,21*(w-over+room)/w)+'px'}
+  });
+  more.classList.add('ready');pick(cur);
+}
+try{draw()}catch(e){document.documentElement.classList.remove('js');if(map)map.textContent='';if(more)more.classList.remove('ready');return}
+matchMedia('(max-width:860px)').addEventListener('change',draw);
+})();
+</script>
 </body>
 </html>

@@ -252,8 +252,14 @@ try {
     $here = Join-Path $PSScriptRoot '..'
     foreach ($page in 'skills/ai-dev-flow/templates/flow.html', 'docs/flow.html') {
         $t = Get-Content -LiteralPath (Join-Path $here $page) -Raw -Encoding UTF8
-        Check "$page has steps, who, what passes, how to measure, weak spots" ($t -match 'class="step"' -and $t -match 'class="who ' -and $t -match 'class="pass"' -and $t -match '<dt>怎么量</dt>' -and $t -match '<dt>短板</dt>')
+        Check "$page has steps, who, what passes, how to measure, weak spots, what is handed over" ($t -match 'class="step"' -and $t -match 'class="who ' -and $t -match 'class="pass"' -and $t -match '<dt>怎么量</dt>' -and $t -match '<dt>短板</dt>' -and $t -match 'class="end"')
     }
+    # 这个仓库的那页和模板的样式、脚本一样，别各改各的；页里所有 <style>、<script> 都比
+    $flowTpl = Get-Content -LiteralPath (Join-Path $here 'skills/ai-dev-flow/templates/flow.html') -Raw -Encoding UTF8
+    $flowOwn = Get-Content -LiteralPath (Join-Path $here 'docs/flow.html') -Raw -Encoding UTF8
+    $part = { param($t, $tag) ((@([regex]::Matches($t, "(?s)<$tag>.*?</$tag>") | ForEach-Object Value) -join "`n") -replace '\r', '') }
+    Check 'flow page and template share style and script' ((& $part $flowOwn 'style') -and (& $part $flowOwn 'style') -ceq (& $part $flowTpl 'style') -and (& $part $flowOwn 'script') -match 'getElementById\(.map.\)' -and (& $part $flowOwn 'script') -ceq (& $part $flowTpl 'script'))
+    Check 'flow steps are numbered by the page, not by hand' (-not ($flowTpl -match '<h3>\d') -and -not ($flowOwn -match '<h3>\d'))
     $card = Get-Content -LiteralPath (Join-Path $here 'skills/ai-dev-flow/templates/decision-card.md') -Raw -Encoding UTF8
     Check 'decision card template has what a card needs' ($card -match '状态：待定' -and $card -match '## 选项' -and $card -match '做法' -and $card -match '质量 / 成本 / 时间' -and $card -match '风险' -and $card -match '## 推荐' -and $card -match '## 不定的代价' -and $card -match '!\[')
     $r = Run $here
