@@ -20,7 +20,7 @@ param(
 # 只在有上次没推过的事时才用 user：和上次推过的一样，就降成 info，只弹系统通知，不再推手机。通知发不出去时不记，下次照常推。
 # 状态脚本标成"像搁置"的待用户项（Hint，见 status.ps1）照常算要你管，排在最后、标"像已搁置"，附改成搁置的命令；判断靠关键词，可能判错，所以不拿掉。
 # 推进中的项目没有在做的项、但最近 StaleMinutes 分钟内有动静的，标"刚有动静"，不算空着：会话可能正在两项之间。
-# 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（并排图缩略图，点开看大图）、"差距趋势"（按周小图）、"流程图"（docs/flow.html 的链接）三行；
+# 基准和决定卡（status.ps1 的 Direction，modules/direction.md）：每张项目卡多"和基准比"（差距、基准和按周小图）、"并排图"（缩略图，点开看大图）、"流程图"（docs/flow.html 的链接）三样；
 # 待定的决定卡显示在"要你管"：挂在提到它的待用户项下面，没有这样的项就单独一条。方向要停、又没有在处理的（待用户或在做的项目标写着"方向复盘：<这个方向>"）也进"要你管"。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
