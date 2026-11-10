@@ -10,7 +10,7 @@ description: 在当前项目里按队列一项接一项往下做：每项做完�
 ## 1. 读
 
 1. 项目 `AGENTS.md`、队列（默认 `docs/queue.md`，`AGENTS.md` 另有写法的以它为准）、`docs/requests.md`。
-   读请求单之前先跑 ai-dev-flow 的 `scripts/archive-requests.ps1 -Repo .`：它把已转、已处理这类处理完的小节整段移到 `docs/requests-done.md`，移了就单独提交（`requests: archive handled items`）。请求单只读主文件，`requests-done.md` 不读，要查当初怎么定的再去搜。
+   读请求单之前先跑 ai-dev-flow 的 `scripts/archive-requests.ps1 -Repo .`：它把已转、已处理这类处理完的小节整段移到 `docs/requests-done.md`，移了就单独提交（`requests: archive handled items`）；这两个文件有未提交改动时它这次不移。请求单只读主文件，`requests-done.md` 不读；队列或别处按日期引用的请求在主文件里找不到，就去 `requests-done.md` 搜那个日期。
    队列超过 10 行"完成"时，先把较早的"完成"行删掉，只留最近 10 行，单独提交（`queue: trim done items`）。队列每次开工和每次压缩后都要整份读，留太多很费额度；删掉的提交记录里有，状态脚本把队列里找不到的依赖编号按已完成算。
 2. 项目没有 `AGENTS.md`、verify 或队列的，先按 ai-dev-flow 的 `modules/harness.md` 把它们搭起来，当作第一项。
 3. `docs/requests.md` 里状态是"待转"的，先转进队列，并把状态改成"已转（队列 #编号）"。
