@@ -1,0 +1,4 @@
+覆盖：0b15017..a138df3；claude-opus-5-5 子 agent 推理强度 high → Pass（首轮 a9d7f09 Pass 带 5 条 P2，全部采纳；复审 a138df3 Pass）
+跑了：pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1 → 退出 0（head a138df3）
+没跑：不适用（只改文档）
+核对：证据 8 个 sha 逐个看过；verify.md 第 3 节、garden.md 第 2 节第 5 步引用准确
