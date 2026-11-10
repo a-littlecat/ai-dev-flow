@@ -6,13 +6,14 @@ param(
     [string]$Review,
     [string]$Continue,
     [string]$Config,
+    [string]$Model,
     [switch]$Wait,
     [switch]$Full,
     [switch]$List,
     [switch]$CleanReviews,
     [switch]$KeepEvidence
 )
-# 派活：把一项任务交给外部 CLI agent（Codex、DSH 等）在后台做，总览只派活、核对、汇报。
+# 派活：把一项任务交给外部 CLI agent（Codex、Claude 的 claude -p、DSH 等）在后台做，总览只派活、核对、汇报。
 # 在项目仓库里任意目录运行，或用 -Config 指定配置（仓库按配置所在位置找）；
 # 项目配置默认读 <仓库>/scripts/dispatch.json（格式见 ai-dev-flow modules/orchestrate.md）。
 #   派活  dispatch.ps1 -Name <分支名> -Agent <agent> -BriefFile <任务说明.md> [-Base main]
@@ -29,6 +30,8 @@ param(
 #         -KeepEvidence：已合并的也复制（审查刚结束时脚本自己用）。
 #   加 -Wait：等执行方跑完才返回，打印它的最终回复。退出码：执行方的退出码；写代码的轮次没有新提交或留了未提交改动时为 4。
 #   加 -Full：配置了稀疏检出时改为检出全部文件。
+#   加 -Model <模型>：这一次用的模型，优先于 agent 配置里的 model；命令模板里的 {model} 换成 "<modelFlag> '<模型>'"（modelFlag 默认 --model），都没写时换成空，不传模型。
+# agent 配置写 "vendor": "claude" 的（claude -p），运行前去掉继承来的 CLAUDE_*、ANTHROPIC_* 环境变量（同 launch.ps1），只在后台那个进程里去掉，调用方的不变；env 里写的照样设上。
 # 执行方遇接口 400 时自动重试：等待秒数取配置的 retry400Seconds，默认 120、300、900，写 [] 就不重试。审查结束自动删它的 worktree，配置 keepReviewWorktree 为 true 时不删。
 # 任务说明之后自动附上固定要求（边界、自查、verify、改坏验证、提交正文、三行交付）；只改文档时免 verify 和改坏验证。
 # 配置 minFreeMemoryMB 时，可用内存低于它就不派，退出码 6，并列出还在跑的运行；不写不查。
@@ -177,6 +180,12 @@ if ($cfg.minFreeMemoryMB) {
     }
 }
 $agentCfg = $cfg.agents.$Agent
+# 模板和模型在开 worktree 之前查好，配错了什么都不留。
+$template = if ($Review -and $agentCfg.review) { $agentCfg.review } else { $agentCfg.build }
+if (-not $template) { throw "Agent '$Agent' needs a ""build"" command in the config" }
+$useModel = if ($Model) { $Model } elseif ($agentCfg.model) { [string]$agentCfg.model } else { '' }
+if ($useModel -and $template -notmatch '\{model\}') { throw "Agent '$Agent' has a model ('$useModel') but its $(if ($Review -and $agentCfg.review) { 'review' } else { 'build' }) command has no {model}" }
+$claudeVendor = [string]$agentCfg.vendor -eq 'claude'
 $readFirst = if ($cfg.readFirst) { @($cfg.readFirst) } else { @('AGENTS.md') }
 $docsPatterns = if ($cfg.docsOnly) { @($cfg.docsOnly) } else { @('*.md') }
 $sparse = if ($cfg.sparse -and -not $Full) { @($cfg.sparse) } else { @() }
@@ -291,14 +300,15 @@ $(($rules) -join "`n")
 $prompt = Join-Path $runDir 'prompt.md'; $log = Join-Path $runDir 'run.log'; $final = Join-Path $runDir 'final.md'; $exitFile = Join-Path $runDir 'exit.json'
 Set-Content -LiteralPath $prompt -Value ($brief.TrimEnd() + "`n" + $footer) -Encoding utf8NoBOM
 
-# 配置里的命令模板：{prompt} {final} {log} {wt} {root} 一次替换成加了单引号的路径，由 PowerShell 执行。
+# 配置里的命令模板：{prompt} {final} {log} {wt} {root} 一次替换成加了单引号的路径，{model} 换成模型参数或空，由 PowerShell 执行。
 # 必须一次替换：逐个替换时，前面换进去的路径里若含 {log} 之类的字样，会被再换一遍、拆坏引号。
 $q = { param($s) "'" + ($s -replace "'", "''") + "'" }
-$template = if ($mode -eq 'review' -and $agentCfg.review) { $agentCfg.review } else { $agentCfg.build }
-if (-not $template) { throw "Agent '$Agent' needs a ""build"" command in the config" }
-$slots = @{ prompt = $prompt; final = $final; log = $log; wt = $wt; root = $root }
-$command = [regex]::Replace($template, '\{(prompt|final|log|wt|root)\}', { param($m) & $q $slots[$m.Groups[1].Value] })
-$envLines = if ($agentCfg.env) { foreach ($p in $agentCfg.env.PSObject.Properties) { "`$env:$($p.Name) = $(& $q ([string]$p.Value))" } } else { @() }
+$modelFlag = if ($agentCfg.modelFlag) { [string]$agentCfg.modelFlag } else { '--model' }
+$slots = @{ prompt = & $q $prompt; final = & $q $final; log = & $q $log; wt = & $q $wt; root = & $q $root; model = $(if ($useModel) { "$modelFlag $(& $q $useModel)" } else { '' }) }
+$command = [regex]::Replace($template, '\{(prompt|final|log|wt|root|model)\}', { param($m) $slots[$m.Groups[1].Value] })
+# 先去掉继承来的登录变量，再设配置里的 env，所以 env 里写的 ANTHROPIC_* 仍然生效。
+$envLines = @(if ($claudeVendor) { "Get-ChildItem env: | Where-Object { `$_.Name -match '^(CLAUDE|ANTHROPIC)' } | ForEach-Object { Remove-Item -LiteralPath `"env:`$(`$_.Name)`" }" }) +
+    @(if ($agentCfg.env) { foreach ($p in $agentCfg.env.PSObject.Properties) { "`$env:$($p.Name) = $(& $q ([string]$p.Value))" } })
 $startHead = git -C $wt rev-parse HEAD
 $runner = Join-Path $runDir 'run.ps1'
 $retryDelays = if ($null -ne $cfg.retry400Seconds) { @($cfg.retry400Seconds | ForEach-Object { [int]$_ }) } else { @(120, 300, 900) }
@@ -340,9 +350,9 @@ exit `$code
 "@
 # 参数整体传一个带引号的字符串：路径含空格时，数组形式会被拆开。
 $process = Start-Process -FilePath (Get-Command pwsh).Source -ArgumentList "-NoProfile -File `"$runner`"" -WindowStyle Hidden -PassThru
-[ordered]@{ Name = $Name; Agent = $Agent; Mode = $mode; Sparse = [bool]$sparse; Branch = $(if ($Review) { $Review } elseif ($Continue) { $Continue } else { $Name }); Worktree = $wt; Base = $Base; BaseSha = $baseSha; ReviewedHead = $(if ($Review) { $headSha }); Started = (Get-Date).ToString('o'); Pid = $process.Id } |
+[ordered]@{ Name = $Name; Agent = $Agent; Model = $(if ($useModel) { $useModel }); Mode = $mode; Sparse = [bool]$sparse; Branch = $(if ($Review) { $Review } elseif ($Continue) { $Continue } else { $Name }); Worktree = $wt; Base = $Base; BaseSha = $baseSha; ReviewedHead = $(if ($Review) { $headSha }); Started = (Get-Date).ToString('o'); Pid = $process.Id } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $runDir 'meta.json') -Encoding utf8NoBOM
-Write-Output "started $Agent $mode '$Name' (pid $($process.Id)); worktree $wt; records $runDir"
+Write-Output "started $Agent$(if ($useModel) { " ($useModel)" }) $mode '$Name' (pid $($process.Id)); worktree $wt; records $runDir"
 if ($Wait) {
     $process.WaitForExit()
     $exit = if (Test-Path -LiteralPath $exitFile) { Get-Content -LiteralPath $exitFile -Raw | ConvertFrom-Json } else { $null }

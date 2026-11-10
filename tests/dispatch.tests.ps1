@@ -19,10 +19,11 @@ G -C $repo commit -q -m init
 $brief = Join-Path $root 'brief.md'
 Set-Content -LiteralPath $brief -Encoding utf8NoBOM -Value '任务'
 
-# 假执行方：按 plan 里这一次的动作行事。400 / err / ok；可加 +commit、+dirty、+evidence、+touch、+ignored、+big。
+# 假执行方：按 plan 里这一次的动作行事。400 / err / ok；可加 +commit、+dirty、+evidence、+touch、+ignored、+big；
+# +show 把它看到的 CLAUDE_*、ANTHROPIC_* 变量名和多出来的参数（模型）写进最终回复。
 $fake = Join-Path $root 'fake.ps1'
 Set-Content -LiteralPath $fake -Encoding utf8NoBOM -Value @'
-param($final, $counter, $plan)
+param($final, $counter, $plan, [Parameter(ValueFromRemainingArguments)][string[]]$rest)
 $n = if (Test-Path -LiteralPath $counter) { [int](Get-Content -LiteralPath $counter -Raw) } else { 0 }
 Set-Content -LiteralPath $counter -Value ($n + 1)
 $step = ($plan -split ',')[$n]
@@ -33,6 +34,10 @@ if ($step -match 'ignored') { $null = New-Item -ItemType Directory -Force -Path 
 if ($step -match 'touch') { Set-Content -LiteralPath 'AGENTS.md' -Value changed }
 if ($step -match 'move') { git checkout -q --detach main }
 if ($step -match 'big') { $s = [IO.File]::Create((Join-Path $PWD 'big.bin')); $s.SetLength(501MB); $s.Dispose() }
+if ($step -match 'show') {
+    $names = @(Get-ChildItem env: | Where-Object { $_.Name -match '^(CLAUDE|ANTHROPIC)' } | ForEach-Object Name | Sort-Object)
+    Set-Content -LiteralPath $final -Encoding utf8NoBOM -Value "env=$($names -join ',')`nargs=$($rest -join '|')"; exit 0
+}
 if ($step -match '^400') { 'ERROR: {"error":{"message":"Codex: Bad Request"},"status":400,"type":"error"}'; exit 1 }
 if ($step -match '^err') { 'ERROR: something else'; exit 1 }
 if ($step -match 'timed') { Set-Content -LiteralPath $final -Encoding utf8NoBOM -Value "结论：Pass`n快检用时：725 秒"; exit 0 }
@@ -43,15 +48,21 @@ exit 0
 
 function Write-Config($extra) {
     $call = "& (Get-Process -Id `$PID).Path -NoProfile -File '$($fake -replace "'", "''")' {final} `$env:FAKE_COUNTER `$env:FAKE_PLAN *> {log}"
-    $cfg = [ordered]@{ verify = 'echo ok'; agents = @{ fake = @{ build = $call; review = $call } } }
+    # fake 像现有的 codex/dsh 配置：没有 vendor、model、{model}。claude 是 claude -p 那样的执行方；nomodel 留了 {model} 没配模型；mflag 换了模型参数名。
+    $cfg = [ordered]@{ verify = 'echo ok'; agents = [ordered]@{
+            fake    = @{ build = $call; review = $call }
+            claude  = @{ vendor = 'claude'; model = 'cfg-model'; build = "$call {model}"; review = "$call {model}"; env = @{ ANTHROPIC_FROM_CONFIG = 'x' } }
+            nomodel = @{ build = "$call {model}" }
+            mflag   = @{ model = 'm-model'; modelFlag = '--mflag'; build = "$call {model}" }
+        } }
     foreach ($k in $extra.Keys) { $cfg[$k] = $extra[$k] }
     $cfg | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $repo 'scripts/dispatch.json') -Encoding utf8NoBOM
 }
 $runs = Join-Path $repo '.agents/runs'
-function Run($name, $plan, [string[]]$more = @()) {
+function Run($name, $plan, [string[]]$more = @(), $agent = 'fake') {
     $env:FAKE_PLAN = $plan
     $env:FAKE_COUNTER = Join-Path $root "$name.count"
-    $out = & (Get-Process -Id $PID).Path -NoProfile -File $Script -Name $name -Agent fake -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait @more 2>&1
+    $out = & (Get-Process -Id $PID).Path -NoProfile -File $Script -Name $name -Agent $agent -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait @more 2>&1
     [pscustomobject]@{ Code = $LASTEXITCODE; Out = ($out -join "`n"); Exit = (Get-Content -LiteralPath (Join-Path $runs "$name/exit.json") -Raw | ConvertFrom-Json); Count = [int](Get-Content -LiteralPath $env:FAKE_COUNTER -Raw) }
 }
 function Wt($n) { Join-Path $repo ".agents/worktrees/$n" }
@@ -90,6 +101,32 @@ try {
     $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-related/prompt.md') -Raw
     Check 'builderVerify related: builder skips full verify' ($prompt -match '与改动相关的测试' -and $prompt -match '不跑完整的 `echo ok`' -and $prompt -notmatch '完成前在本目录运行' -and $prompt -match '跑了：构建和相关测试的结果')
     Check 'builderVerify related: break check still required' ($prompt -match '确认会变红')
+
+    # 执行方换成 Claude：继承来的登录变量只在执行方进程里去掉，env 里配的照样设上；模型从配置读，-Model 优先，没配不传。
+    Write-Config @{ retry400Seconds = @() }
+    $env:CLAUDE_DISPATCH_TEST = 'inherited'; $env:ANTHROPIC_DISPATCH_TEST = 'inherited'
+    function Final($n) { Get-Content -LiteralPath (Join-Path $runs "$n/final.md") -Raw -Encoding UTF8 }
+    $r = Run 'claude-build' 'show+commit' @() 'claude'
+    $seen = Final 'claude-build'
+    Check 'claude builder: inherited CLAUDE_*/ANTHROPIC_* removed, config env kept' ($r.Code -eq 0 -and $seen -match '(?m)^env=ANTHROPIC_FROM_CONFIG\s*$')
+    Check 'claude builder: model read from the config' ($seen -match '(?m)^args=--model\|cfg-model\s*$')
+    Check 'claude builder: model recorded in meta.json' ((Get-Content -LiteralPath (Join-Path $runs 'claude-build/meta.json') -Raw | ConvertFrom-Json).Model -eq 'cfg-model')
+    Check 'claude builder: caller keeps its variables' ($env:CLAUDE_DISPATCH_TEST -eq 'inherited' -and $env:ANTHROPIC_DISPATCH_TEST -eq 'inherited')
+    $env:FAKE_PLAN = 'show+commit'; $env:FAKE_COUNTER = Join-Path $root 'claude-inproc.count'
+    $inproc = (& (Get-Process -Id $PID).Path -NoProfile -Command "& '$($Script -replace "'", "''")' -Name claude-inproc -Agent claude -BriefFile '$($brief -replace "'", "''")' -Config '$((Join-Path $repo 'scripts/dispatch.json') -replace "'", "''")' -Wait | Out-Null; 'after=' + `$env:CLAUDE_DISPATCH_TEST + ',' + `$env:ANTHROPIC_DISPATCH_TEST" 2>&1) -join "`n"
+    Check 'claude builder run in the caller''s process: variables there restored' ($inproc -match 'after=inherited,inherited' -and (Final 'claude-inproc') -match '(?m)^env=ANTHROPIC_FROM_CONFIG\s*$')
+    $r = Run 'claude-cli-model' 'show+commit' @('-Model', 'cli model') 'claude'
+    Check '-Model overrides the configured model' ($r.Code -eq 0 -and (Final 'claude-cli-model') -match '(?m)^args=--model\|cli model\s*$')
+    $r = Run 'nomodel' 'show+commit' @() 'nomodel'
+    Check 'no model configured: {model} passes nothing' ($r.Code -eq 0 -and (Final 'nomodel') -match '(?m)^args=\s*$' -and $null -eq (Get-Content -LiteralPath (Join-Path $runs 'nomodel/meta.json') -Raw | ConvertFrom-Json).Model)
+    $r = Run 'mflag' 'show+commit' @() 'mflag'
+    Check 'modelFlag sets the flag; agent without vendor keeps the variables' ($r.Code -eq 0 -and (Final 'mflag') -match '(?m)^args=--mflag\|m-model\s*$' -and (Final 'mflag') -match 'ANTHROPIC_DISPATCH_TEST' -and (Final 'mflag') -match 'CLAUDE_DISPATCH_TEST')
+    $r = Run 'fake-plain' 'show+commit'
+    $seen = Final 'fake-plain'
+    Check 'config without Claude or models: same command, same variables' ($r.Code -eq 0 -and $seen -match '(?m)^args=\s*$' -and $seen -match 'ANTHROPIC_DISPATCH_TEST' -and $seen -match 'CLAUDE_DISPATCH_TEST' -and $seen -notmatch 'ANTHROPIC_FROM_CONFIG')
+    $env:FAKE_PLAN = 'ok+commit'; $env:FAKE_COUNTER = Join-Path $root 'model-refused.count'
+    $out = (& (Get-Process -Id $PID).Path -NoProfile -File $Script -Name 'model-refused' -Agent fake -Model x -BriefFile $brief -Config (Join-Path $repo 'scripts/dispatch.json') -Wait 2>&1) -join "`n"
+    Check '-Model for a command without {model}: refused before starting' ($LASTEXITCODE -ne 0 -and $out -match 'has no \{model\}' -and -not (Test-Path -LiteralPath (Join-Path $runs 'model-refused')) -and -not (Test-Path -LiteralPath (Wt 'model-refused')) -and -not (git -C $repo branch --list model-refused))
 
     Write-Config @{ retry400Seconds = @(); builderVerify = 'none' }
     $env:FAKE_PLAN = 'ok+commit'
@@ -151,6 +188,11 @@ try {
     Check 'review: result recorded' ($r.Exit.ReviewWorktree -eq 'removed' -and $r.Code -eq 0)
     Check 'review: candidate branch untouched' ((git -C $repo rev-parse candidate) -eq $candidateHead)
     Check 'review: footer says where evidence goes' ((Get-Content -LiteralPath (Join-Path $runs 'rev-clean/prompt.md') -Raw) -match 'worktree-files')
+
+    $r = Run 'claude-review' 'show' @('-Review', 'candidate') 'claude'
+    $seen = Final 'claude-review'
+    Check 'claude reviewer: inherited variables removed, model passed, worktree cleaned' ($r.Code -eq 0 -and $seen -match '(?m)^env=ANTHROPIC_FROM_CONFIG\s*$' -and $seen -match '(?m)^args=--model\|cfg-model\s*$' -and $r.Exit.ReviewWorktree -eq 'removed')
+    Remove-Item Env:CLAUDE_DISPATCH_TEST, Env:ANTHROPIC_DISPATCH_TEST
 
     $vl = Join-Path $repo '.agents/verify-last.json'
     Check 'verify time: no line in the reply, no record' (-not (Test-Path -LiteralPath $vl))
