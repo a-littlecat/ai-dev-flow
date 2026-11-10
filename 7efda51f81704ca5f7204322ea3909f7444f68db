@@ -1,0 +1,6 @@
+覆盖：bb1351d..7efda51；rebase 带进 #35 后复验：claude-opus-5-5 子 agent → Pass（#39 补丁和 c39354e 逐字相同，只差 README 版本历史冲突解决；和 launch.ps1 无交叉影响）；原审查 c39354e 的 Pass（推理强度 high，第一轮 Fail 的 P1 已修）一并算数
+跑了：pwsh -NoProfile -File tests/run-all.ps1 → 退出 0（head 7efda51）；复验方 tests/cleanup.tests.ps1、tests/launch.tests.ps1、check-md.ps1 → 退出 0
+快检用时：346 秒
+没跑：无
+没采纳：P2-3 路径含单引号或弯引号（构造出来的输入）
+排进队列：#47（刚开出来、不在主干的分离头夹具，待放行）
