@@ -386,6 +386,12 @@ try {
     Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value ($shelfText -replace '\| 状态 \|', '| 状況 |')
     $pShB = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
     Check 'shelf file: no table there is reported and a dependency found nowhere stays unmet' ([bool]($pShB.Problems -match '^queue-shelved\.md 里没有带「状态」列的表') -and (($pShB.Next | ForEach-Object Id) -join ',') -eq '4')
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value "# 搁置`n`n| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|"
+    $pShH = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: only a header is fine, a dependency found nowhere counts as done' (-not ($pShH.Problems -match '没有带「状态」列') -and (($pShH.Next | ForEach-Object Id) -join ',') -eq '2,4')
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value ''
+    $pShE = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: an empty one counts as none' (-not ($pShE.Problems -match '没有带「状态」列') -and (($pShE.Next | ForEach-Object Id) -join ',') -eq '2,4')
     Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value $shelfText
     Check 'shelf file: commits touching only it are not counted as unreviewed' ($pSh.Unreviewed -eq 1)
     $tSh = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgShelf -Out (Join-Path $root 'shelf.html') -NoNotify | Out-String

@@ -103,6 +103,7 @@ function Read-Queue([string]$file) {
         $cells = @(($line.Trim() -replace '^\||\|$', '') -split '(?<!\\)\|' | ForEach-Object { $_.Trim() })
         if ($header) {
             $cols = if (-not @($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count) { $header }
+            if ($cols) { $script:queueTableSeen = $true }
             $header = $null
             continue
         }
@@ -225,14 +226,16 @@ function Get-ProjectStatus($p) {
         $items = @(Read-Queue $queueFile)
         if (-not $items.Count) { $r.Problems.Add("$queueRel 里没有带「状态」列的表") }
         # 搁置的行放在队列旁的搁置文件里（skills/next/SKILL.md 第 1 节），和主文件一起算：依赖它的照样算没满足，状态页照样列出。
-        # 搁置文件里的项一律不算可领（/next 开工不读它）；它读不出表时，两份都找不到的依赖编号不再按已完成算。
+        # 搁置文件里的项一律不算可领（/next 开工不读它）。它有内容却认不出带状态列的表时，两份都找不到的依赖编号不再按已完成算；
+        # 只有表头（最后一项恢复了）是正常的，空文件当作没有。
         $shelfFile = Get-ShelfPath $queueFile
         $shelfBroken = $false
         $shelf = @()
-        if (Test-Path -LiteralPath $shelfFile) {
+        if ((Test-Path -LiteralPath $shelfFile) -and "$(Get-Content -LiteralPath $shelfFile -Raw -Encoding UTF8)".Trim()) {
             $shelfLeaf = Split-Path $shelfFile -Leaf
+            $script:queueTableSeen = $false
             $shelf = @(Read-Queue $shelfFile)
-            if (-not $shelf.Count) { $shelfBroken = $true; $r.Problems.Add("$shelfLeaf 里没有带「状态」列的表：依赖编号两份都找不到的项先不算可领") }
+            if (-not $script:queueTableSeen) { $shelfBroken = $true; $r.Problems.Add("$shelfLeaf 里没有带「状态」列的表：依赖编号两份都找不到的项先不算可领") }
             $notShelved = @($shelf | Where-Object State -ne '搁置')
             if ($notShelved) { $r.Problems.Add("$shelfLeaf 里有不是搁置的项：$(($notShelved | ForEach-Object { if ($_.Id) { Format-Id $_.Id } else { Short $_.Goal 12 } }) -join '、')；移回 $queueRel（在那里不算可领）") }
             $mainIds = @($items | ForEach-Object { ($_.Id -replace '^#', '').Trim() } | Where-Object { $_ })
