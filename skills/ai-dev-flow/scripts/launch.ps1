@@ -10,7 +10,7 @@ param(
     [switch]$New,
     [switch]$DryRun
 )
-# 替用户在一个项目里开命令行后台会话（claude --bg），用终端里登录的账号，不用桌面应用的账号。总览替用户开或叫醒项目会话时用它（portfolio.md 第 4 节）。
+# 替用户在一个项目里开命令行后台会话（claude --bg），用终端里登录的账号，不用桌面应用的账号。总览替用户开项目会话时用它（portfolio.md 第 4 节）。
 #   -Project  项目文件夹，或 -Config 清单里的项目名
 #   -Prompt   开场指令，默认 /next
 #   -Name     会话名，在 claude agents 里显示、跨会话消息按它找；默认"<项目名> next"
