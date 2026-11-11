@@ -146,21 +146,11 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | `modules/land.md` | 合并落地：rebase、在最终版本上复跑、提交正文模板、往前修和 revert |
 | `modules/diagnose.md` | bug、变慢、原因不明的失败、验收没通过 |
 | `modules/orchestrate.md` | 自动推进：队列、派后台子 agent 或外部 agent、接力、并行上限、关联项目 |
-| `scripts/dispatch.ps1` | 把一项交给外部 CLI agent（Codex、Claude 的 `claude -p`、DSH 等）写或审，项目配置在 `scripts/dispatch.json`，每个 agent 可配模型 |
 | `modules/garden.md` | 复盘、教训升级、复盘摘要、清理 |
 | `modules/portfolio.md` | 多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训 |
 | `modules/direction.md` | 新方向先做原型比基准，方向性选择报决定卡，基准和收敛，一页流程图 |
 | `templates/decision-card.md`、`templates/flow.html` | 决定卡和流程图的模板 |
-| `scripts/status.ps1` | 按总览仓库的 `projects.json` 收各项目的状态，只读 |
-| `scripts/direction.ps1` | 读一个项目的基准、预算、决定卡和流程图，判断方向要不要停、有什么要补，只读（`modules/direction.md` 第 5 节） |
-| `scripts/launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面，按 `model`、`effort`（或 `-Model`、`-Effort`）定模型和思考强度（`portfolio.md` 第 4 节） |
-| `scripts/daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
-| `scripts/notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
-| `scripts/watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"时推一次手机 |
-| `scripts/check-md.ps1` | 文档格式检查：`.md` 里的控制字符、被拆断的表格行；各项目放进快检 |
-| `scripts/archive-requests.ps1` | 把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场只读还要转的（`skills/next/SKILL.md` 第 1 节） |
-| `scripts/cleanup.ps1` | 合并后清理：删已合进主干、没有未提交改动的 worktree 和分支（`land.md` 第 6 节） |
-| `scripts/land-check.ps1` | 合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进（`land.md` 第 2 节） |
+| `scripts/README.md` | 自带脚本的清单：派活（`dispatch.ps1`）、状态和通知、方向检查、开后台会话、合并前检查、清理、文档格式检查，用到哪个再查 |
 | `skills/next`、`skills/week` | 与本 skill 同仓库的两个入口：`/next` 按队列往下做，`/week` 周会 |
 
 能并行的独立工作交给隔离的子 agent，各自在自己的 worktree 里做；验证放到后台跑。你负责整合结果，并对最终质量负责。

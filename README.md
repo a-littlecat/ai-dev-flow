@@ -28,6 +28,7 @@ skills/ai-dev-flow/
   modules/portfolio.md     多项目总览：项目清单、状态页和通知、收件箱、周会、跨项目教训
   modules/direction.md     新方向先做原型比基准，方向性选择报决定卡，基准和收敛，一页流程图
   templates/               决定卡和流程图的模板
+  scripts/README.md        自带脚本的清单，总览只留一行指针，用到才读
   scripts/dispatch.ps1     把一项交给外部 CLI agent（Codex、Claude 的 claude -p、DSH 等）写或审
   scripts/status.ps1       按总览仓库的项目清单收各项目的状态（只读）
   scripts/direction.ps1    读一个项目的基准、预算、决定卡和流程图，判断方向要不要停（只读）
@@ -40,6 +41,7 @@ skills/ai-dev-flow/
   scripts/archive-requests.ps1  请求单里处理完的小节移到 docs/requests-done.md，/next 开场只读还要转的
   scripts/cleanup.ps1      合并后清理：删已合进主干、没有未提交改动的 worktree 和分支
 skills/next/SKILL.md       /next：在项目里按队列一项接一项做，直到需要你才收尾、发通知
+skills/next/cloud.md       /next 收云端、在云端会话里做一项，用到才读
 skills/week/SKILL.md       /week：在总览仓库里开周会
 tests/status.tests.ps1     status.ps1、daily.ps1、notify.ps1、watch.ps1 的检查：pwsh -NoProfile -File tests/status.tests.ps1
 tests/direction.tests.ps1  direction.ps1 的检查：pwsh -NoProfile -File tests/direction.tests.ps1
@@ -135,6 +137,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.24.0**（2026-11-11）：`/next` 开场少读之三：压缩后不整份重读，只看正在做的那一行和 `/next` 第 3～6 节，领下一项时只看候选那几行；"收云端""在云端会话里"两节移到 `skills/next/cloud.md`，总览的脚本清单移到 `scripts/README.md`，用到才读。"先停"在总览里的说法和 `/next` 第 6 节一致：队列只留一句，细节进提交正文。
 - **2.23.0**（2026-11-11）：`/next` 开场少读之二，队列只放领得到的：搁置的行移到队列旁的 `docs/queue-shelved.md`，`status.ps1`（状态页、`/week` 都用它）两份一起算，依赖搁置项的照样算没满足，搁置文件里写着不是搁置的项会提示；"完成"只留最近 5 行；接力说明只留一句，细节进提交正文；加新项前先搜搁置文件。对真实清单模拟搬一次，可领、待用户、依赖都不变，导图队列 77 KB 降到 37 KB。
 - **2.22.0**（2026-11-11）：执行方和审查方做成配置：`scripts/dispatch.json` 里 Codex、Claude（`claude -p`，写 `"vendor": "claude"`，运行时去掉继承来的 `CLAUDE_*`、`ANTHROPIC_*` 变量）都能配成写或审，哪边有额度派哪边，不改项目规矩；每个 agent 可配 `model`，命令里用 `{model}`，`-Model` 优先，没配不传；分工规则统一成"写和审不是同一个会话，审的模型不低于写的"，单向门档仍跨厂商。
 - **2.21.0**（2026-11-10）：`/next` 开场少读。新增 `scripts/archive-requests.ps1`：把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场先跑它，请求单只读还要转的；写法说不准的（进行中、通知、后面还写着待或问号的）留在主文件，代码块里的 `##` 不当小节，有未提交改动时不动。导图的请求单 88 KB 里还要转的只有 2 KB。

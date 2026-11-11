@@ -17,11 +17,11 @@
   - 改了 `skills/ai-dev-flow/scripts/launch.ps1`：跑 `pwsh -NoProfile -File tests/launch.tests.ps1`，退出码 0 才算通过。它用假的 `claude` 命令；真的开后台会话、看它用哪个账号，要在本机实开一次。
   - 改了 `skills/ai-dev-flow/scripts/archive-requests.ps1`：跑 `pwsh -NoProfile -File tests/archive-requests.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/cleanup.ps1`：跑 `pwsh -NoProfile -File tests/cleanup.tests.ps1`，退出码 0 才算通过。
-  - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-08 约 5 分钟，串行时 10～12 分钟）；验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
+  - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-11 空机器上 401 秒；同时跑两份时能到 14 分钟，量用时要在机器空着时量）；验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
   - 改了任何 `.md`：跑 `pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1`，退出码 0 才算通过。
   - 只改文档的，另按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。
-- **云端会话**：这个仓库有远程，可以在云端会话里做。云端没有用户级 skill，开头写"按 `skills/next/SKILL.md` 做 #n"；云端只推分支，回到本地用 `/next 收云端` 合并（`skills/next/SKILL.md` 第 6、7 节）。
+- **云端会话**：这个仓库有远程，可以在云端会话里做。云端没有用户级 skill，开头写"按 `skills/next/SKILL.md` 做 #n"；云端只推分支，回到本地用 `/next 收云端` 合并（`skills/next/cloud.md`）。
 - **推送**（用户 2026-10-29 定）：改动审查通过、合进 `main`、同步到本机安装之后，把 `main` 和 `refs/notes/verify` 推到 `origin`。推之前做两件事：
   - 看 `git log origin/main..main`，确认要推的提交都审过；
   - 查一遍提交和 note，确认没有本机路径和密钥。
