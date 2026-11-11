@@ -127,6 +127,9 @@ function Read-Queue([string]$file) {
     }
 }
 
+# 搁置文件：和队列同目录，文件名加 -shelved（docs/queue.md → docs/queue-shelved.md）。
+function Get-ShelfPath([string]$queueFile) { [IO.Path]::Combine([IO.Path]::GetDirectoryName($queueFile), [IO.Path]::GetFileNameWithoutExtension($queueFile) + '-shelved' + [IO.Path]::GetExtension($queueFile)) }
+
 function Get-ProjectStatus($p) {
     $r = [ordered]@{
         Name = $p.name; Status = $p.status; Priority = $p.priority
@@ -176,9 +179,10 @@ function Get-ProjectStatus($p) {
         $text = Get-Content -LiteralPath $lessonsFile -Raw -Encoding UTF8
         $m = [regex]::Match($text, 'reviewed-through:\s*([0-9a-fA-F]{4,40})')
         if ($m.Success) {
-            # 只改队列文件的提交（认领、改状态）不算：它们占一大半，按总数算会天天触发复盘。
-            $qRel = if ($p.queue) { $p.queue } else { 'docs/queue.md' }
-            $count = git -C $path rev-list --count --full-history "$($m.Groups[1].Value)..$head" -- . ":(exclude)$($qRel -replace '\\', '/')" 2>$null
+            # 只改队列文件和它的搁置文件的提交（认领、改状态、搬行）不算：它们占一大半，按总数算会天天触发复盘。
+            $qRel = $(if ($p.queue) { $p.queue } else { 'docs/queue.md' }) -replace '\\', '/'
+            $shelfRel = (Get-ShelfPath $qRel) -replace '\\', '/'
+            $count = git -C $path rev-list --count --full-history "$($m.Groups[1].Value)..$head" -- . ":(exclude)$qRel" ":(exclude)$shelfRel" 2>$null
             if ($LASTEXITCODE) { $r.Problems.Add("LESSONS.md 的 reviewed-through 不是有效提交：$($m.Groups[1].Value)") } else { $r.Unreviewed = [int]$count }
         }
         $all = @(foreach ($sec in ($text -split '(?m)^(?=##\s)') | Where-Object { $_ -match '^##\s' }) {
@@ -220,6 +224,14 @@ function Get-ProjectStatus($p) {
     if (Test-Path -LiteralPath $queueFile) {
         $items = @(Read-Queue $queueFile)
         if (-not $items.Count) { $r.Problems.Add("$queueRel 里没有带「状态」列的表") }
+        # 搁置的行放在队列旁的搁置文件里（skills/next/SKILL.md 第 1 节），和主文件一起算：依赖它的照样算没满足，状态页照样列出。
+        $shelfFile = Get-ShelfPath $queueFile
+        if (Test-Path -LiteralPath $shelfFile) {
+            $shelf = @(Read-Queue $shelfFile)
+            $notShelved = @($shelf | Where-Object State -ne '搁置')
+            if ($notShelved) { $r.Problems.Add("$(Split-Path $shelfFile -Leaf) 里有不是搁置的项：$(($notShelved | ForEach-Object { if ($_.Id) { Format-Id $_.Id } else { Short $_.Goal 12 } }) -join '、')；移回 $queueRel") }
+            $items += $shelf
+        }
         $counts = [ordered]@{}
         foreach ($s in $states + '其他') { $counts[$s] = @($items | Where-Object State -eq $s).Count }
         $r.Queue = $counts

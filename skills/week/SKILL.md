@@ -8,7 +8,7 @@ description: 每周一次的周会，在多项目总览仓库里开：收齐全�
 在总览仓库里开，用完就关。做法照 ai-dev-flow（`$env:AI_DEV_FLOW`，默认 `~/.agents/skills/ai-dev-flow`）的 `modules/portfolio.md`，这里只给步骤。
 
 1. 读总览的 `AGENTS.md`、`INTENT.md`、`projects.json`、`decisions.md`。
-2. 收状态，只跑脚本，不挨个进项目读：
+2. 收状态，只跑脚本，不挨个进项目读（脚本把各项目的队列和搁置文件一起算，搁置的项也在里面）：
    ```
    pwsh -NoProfile -File scripts/status.ps1 -Since '7 days ago' -Lessons
    ```

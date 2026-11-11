@@ -47,7 +47,7 @@ exit $LASTEXITCODE
 }
 ```
 
-`name`、`path`、`status` 必填；`trunk` 不写就用主检出当前所在的分支；`queue` 不写就是 `docs/queue.md`。`wake`、`session` 决定总览怎么叫这个项目（第 4 节）：`wake` 写 `new`（不叫醒旧会话，新开）或 `message`（有会话就发消息），不写是 `new`（用户 2026-11-08 定）；`session` 写 `cli`（命令行后台）或 `desktop`（桌面应用，要用户看效果的项目用它），不写是 `cli`。`model`、`effort` 是 `launch.ps1` 开会话时传给 `claude --bg` 的 `--model`、`--effort`（`effort` 只能写 `low`、`medium`、`high`、`xhigh`、`max`）：清单顶层写全体默认，单个项目可以覆盖，命令行的 `-Model`、`-Effort` 优先；都没写就不传，用 `claude` 自己的默认。用户定的"项目会话一律中等思考"写在顶层 `"effort": "medium"`。信任等级不写在清单里，脚本从项目 `AGENTS.md` 的"信任等级 Lx"读，等级只有一个出处。
+`name`、`path`、`status` 必填；`trunk` 不写就用主检出当前所在的分支；`queue` 不写就是 `docs/queue.md`；搁置的项放在它旁边的搁置文件（`docs/queue.md` 对应 `docs/queue-shelved.md`），状态脚本两份一起读。`wake`、`session` 决定总览怎么叫这个项目（第 4 节）：`wake` 写 `new`（不叫醒旧会话，新开）或 `message`（有会话就发消息），不写是 `new`（用户 2026-11-08 定）；`session` 写 `cli`（命令行后台）或 `desktop`（桌面应用，要用户看效果的项目用它），不写是 `cli`。`model`、`effort` 是 `launch.ps1` 开会话时传给 `claude --bg` 的 `--model`、`--effort`（`effort` 只能写 `low`、`medium`、`high`、`xhigh`、`max`）：清单顶层写全体默认，单个项目可以覆盖，命令行的 `-Model`、`-Effort` 优先；都没写就不传，用 `claude` 自己的默认。用户定的"项目会话一律中等思考"写在顶层 `"effort": "medium"`。信任等级不写在清单里，脚本从项目 `AGENTS.md` 的"信任等级 Lx"读，等级只有一个出处。
 
 `goals` 是本周目标，由周会写。`items` 里的队列项都"完成"时，状态页自动打勾；挂不到队列项的目标，由周会把 `done` 改成 `true`。
 

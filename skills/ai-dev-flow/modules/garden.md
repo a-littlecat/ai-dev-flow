@@ -6,7 +6,7 @@
 
 ## 1. 什么时候做
 
-- 不设每晚的定时任务。`LESSONS.md` 的 `reviewed-through` 之后攒了 20 个以上提交（只改队列文件的不算，口径同 `scripts/status.ps1` 的"未复盘"：`git rev-list --count --full-history <reviewed-through>..<主干> -- . ":(exclude)<队列文件>"`），或者距上次复盘已经 7 天，下一次 `/next` 开工前先做复盘，做完接着领正事，不单独占一个会话（`skills/next/SKILL.md` 第 1 节）。这样合得多的项目复盘得勤，没动静的项目不白花额度。
+- 不设每晚的定时任务。`LESSONS.md` 的 `reviewed-through` 之后攒了 20 个以上提交（只改队列文件和它的搁置文件的不算，口径同 `scripts/status.ps1` 的"未复盘"：`git rev-list --count --full-history <reviewed-through>..<主干> -- . ":(exclude)<队列文件>" ":(exclude)<搁置文件>"`），或者距上次复盘已经 7 天，下一次 `/next` 开工前先做复盘，做完接着领正事，不单独占一个会话（`skills/next/SKILL.md` 第 1 节）。这样合得多的项目复盘得勤，没动静的项目不白花额度。
 - 用户说"复盘"时当场做。
 
 ## 2. 复盘
@@ -67,7 +67,7 @@ Seen：<不同日期的数量>（<日期列表>）
 - 对照代码校正 `docs/feature-map.md` 和子系统文档。
 - 精简 `AGENTS.md`，保持 100 行以内的目录；长内容移到 `docs/`。
 - 状态类文档（进度、现状）压到一页以内的白话；sha 和长日志只留在提交正文和证据目录里。
-- 整理队列：关掉过时的项，合并重复的项；"完成"的只留最近 10 行。
+- 整理队列：关掉过时的项，合并重复的项；"完成"的只留最近 5 行，"搁置"的移到搁置文件（`skills/next/SKILL.md` 第 1 节）。
 - 盘点分支和 worktree：已经结束的审查 worktree 按 `land.md` 第 6 节用 `-CleanReviews` 清；已经合进主干、没有未提交改动的，按 `land.md` 第 6 节运行 `cleanup.ps1` 直接删，不等周会批。没合并的或有未提交改动的，只列出来说明情况，不动。
 
 ## 5. 不留的

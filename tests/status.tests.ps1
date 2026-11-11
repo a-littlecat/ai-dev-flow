@@ -345,6 +345,44 @@ try {
     Check 'state aliases: counted as the standard state' ($pAlias.Queue.'完成' -eq 2 -and $pAlias.Queue.'在做' -eq 1 -and $pAlias.Queue.'搁置' -eq 1 -and (($pAlias.Doing | ForEach-Object Detail) -join ',') -eq 'r2')
     Check 'state aliases: pause at a safe point and unclear words are still reported' ((($pAlias.Other | ForEach-Object Id) -join ',') -eq '5,6,9,10,11,12,13,14,15,16,17,18' -and [bool]($pAlias.Problems -match '认不出.*#5.*#6') -and -not ($pAlias.Problems -match '认不出.*#[1-4]（'))
     Check 'state aliases: dependencies follow the standard state' ($pAlias.Next.Id -contains '8' -and $pAlias.Next.Id -notcontains '7')
+
+    # 搁置文件：docs/queue-shelved.md 和主队列一起算
+    $sh = Join-Path $root 'shelf'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $sh 'docs')
+    G init -q $sh
+    $shQueue = @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 甲 | 无 | 完成 |
+| 2 | 依赖搁置的项 | 3 | 待做 |
+| 4 | 没有依赖 | 无 | 待做 |
+'@
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue.md') -Encoding utf8NoBOM -Value $shQueue
+    @'
+# 搁置
+
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 3 | 放着的项 | 无 | 搁置（等上线） |
+| 5 | 放错地方的项 | 无 | 待做 |
+'@ | Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM
+    G -C $sh add -A; G -C $sh commit -q -m 's1'
+    Set-Content -LiteralPath (Join-Path $sh 'LESSONS.md') -Encoding utf8NoBOM -Value "reviewed-through: $(git -C $sh rev-parse HEAD)"
+    G -C $sh add -A; G -C $sh commit -q -m 's2'
+    Add-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value '| 6 | 又放一项 | 无 | 搁置 |'
+    G -C $sh add -A; G -C $sh commit -q -m 's3 shelf only'
+    $cfgShelf = Join-Path $root 'projects-shelf.json'
+    @{ projects = @(@{ name = '搁置文件'; path = $sh; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgShelf -Encoding utf8NoBOM
+    $pSh = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: a dependency there is not met' ($pSh.Available -eq 2 -and (($pSh.Next | ForEach-Object Id) -join ',') -eq '4,5' -and -not @($pSh.Items | Where-Object { $_.Id -eq '2' -and $_.Claimable }).Count)
+    Check 'shelf file: its rows are listed and counted' ((($pSh.Items | ForEach-Object Id) -join ',') -eq '1,2,4,3,5,6' -and $pSh.Queue.'搁置' -eq 2 -and @($pSh.Items | Where-Object { $_.Id -eq '3' -and $_.State -eq '搁置' }).Count)
+    Check 'shelf file: a row there that is not shelved is reported' ([bool]($pSh.Problems -match 'queue-shelved\.md 里有不是搁置的项：#5；移回 docs/queue\.md') -and -not ($pSh.Problems -match '不是搁置的项：.*#[36]'))
+    Check 'shelf file: commits touching only it are not counted as unreviewed' ($pSh.Unreviewed -eq 1)
+    $tSh = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgShelf -Out (Join-Path $root 'shelf.html') -NoNotify | Out-String
+    Check 'shelf file: the status page counts its rows as before' ((Get-Content -LiteralPath (Join-Path $root 'shelf.html') -Raw -Encoding UTF8) -match '另有 2 项搁置')
+    Remove-Item -LiteralPath (Join-Path $sh 'docs/queue-shelved.md')
+    $pSh0 = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: without it, a missing dependency counts as done as before' ($pSh0.Available -eq 2 -and (($pSh0.Next | ForEach-Object Id) -join ',') -eq '2,4' -and $pSh0.Queue.'搁置' -eq 0 -and -not ($pSh0.Problems -match '不是搁置'))
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
     Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')
