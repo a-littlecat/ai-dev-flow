@@ -69,7 +69,8 @@
                  "build": "Get-Content -Raw -Encoding UTF8 {prompt} | codex exec --profile <完全访问的 profile> {model} -C {wt} -o {final} - *> {log}",
                  "review": "Get-Content -Raw -Encoding UTF8 {prompt} | codex exec --sandbox workspace-write {model} -C {wt} -o {final} - *> {log}" },
       "claude": { "vendor": "claude", "model": "<模型名>",
-                  "build": "Get-Content -Raw -Encoding UTF8 {prompt} | claude -p {model} --permission-mode bypassPermissions 2> {log} | Set-Content -LiteralPath {final} -Encoding utf8NoBOM" },
+                  "build": "Get-Content -Raw -Encoding UTF8 {prompt} | claude -p {model} --permission-mode bypassPermissions 2> {log} | Set-Content -LiteralPath {final} -Encoding utf8NoBOM",
+                  "review": "Get-Content -Raw -Encoding UTF8 {prompt} | claude -p {model} --permission-mode acceptEdits --allowedTools 'Bash(pwsh -NoProfile -File *)' 'Bash(git *)' 2> {log} | Set-Content -LiteralPath {final} -Encoding utf8NoBOM" },
       "dsh":   { "build": "Get-Content -Raw -Encoding UTF8 {prompt} | & '<dsh.cmd 的路径>' headless - 2> {log} | Set-Content -LiteralPath {final} -Encoding utf8NoBOM",
                  "env": { "DSH_PERMISSION_MODE": "danger-full-access" } }
     }
@@ -77,9 +78,9 @@
   ```
   遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。快检太慢、项目决定执行方不跑全量的（启用条件见 `build.md` 第 3 节），写 `"builderVerify": "related"`；不写等于 `"full"`。内存紧张、派活被杀过的项目写 `"minFreeMemoryMB": <兆字节>`：可用内存低于它，脚本不派，退出码 6，并列出还在跑的运行；等其中一个结束再派，不要硬派。`-List` 里没有退出记录、进程也不在了的运行显示 `died`，多半是被杀了；同一分支后来没再派过的，要重派。
 
-  `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。没写 `review` 的 agent 审查时也用 `build` 的命令。
+  `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。没写 `review` 的 agent 审查时也用 `build` 的命令，也就带着 `build` 的权限；`build` 是完全访问的（如样例里 Claude 的 `bypassPermissions`），另写一条收紧的 `review`，审查方只需要改它自己的 worktree、跑项目的 verify 和 `git`。
 
-  每个 agent 可以配模型：`model` 写默认模型，派活时 `-Model <模型名>` 优先；命令里的 `{model}` 换成 `--model '<模型名>'`，参数名不是 `--model` 的写 `"modelFlag"`（如 `"-m"`）；两边都没写时 `{model}` 换成空，不传模型，由 CLI 用它自己的默认。配了模型、命令里却没有 `{model}` 的，脚本不派，免得以为换了模型其实没换。`vendor` 写 `"claude"` 的（`claude -p`），脚本在后台那个进程里去掉继承来的 `CLAUDE_*`、`ANTHROPIC_*` 环境变量再运行，和 `launch.ps1` 一样，用命令行登录的账号，不沿用桌面应用的登录；派活的会话自己的环境不变，`env` 里写的照样设上。只配了 Codex、DSH、没写这几个字段的配置，行为和以前一样。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
+  每个 agent 可以配模型：`model` 写默认模型，派活时 `-Model <模型名>` 优先；命令里的 `{model}` 换成 `--model '<模型名>'`，参数名不是 `--model` 的写 `"modelFlag"`（如 `"-m"`）；两边都没写时 `{model}` 换成空，不传模型，由 CLI 用它自己的默认。配了模型、命令里却没有 `{model}` 的，脚本不派，免得以为换了模型其实没换。`vendor` 写 `"claude"` 的（`claude -p`），脚本在后台那个进程里去掉继承来的、名字以 `CLAUDE` 或 `ANTHROPIC` 开头的环境变量（含 `CLAUDECODE`，不分大小写）再运行，和 `launch.ps1` 一样，用命令行登录的账号，不沿用桌面应用的登录；派活的会话自己的环境不变，`env` 里写的照样设上。只配了 Codex、DSH、没写这几个字段的配置，行为和以前一样。用完全访问前，先按 `harness.md` 第 4 节把底线收进脚本，并取得用户同意。
 - **项目里的入口**：在项目里放一个几行的 `scripts/dispatch.ps1` 转调本 skill 的脚本，`AGENTS.md` 里写这个入口就行，接手的 AI 不用知道 skill 装在哪：
   ```powershell
   # 派活入口：转调 ai-dev-flow 的通用派活脚本，本项目的设置在 scripts/dispatch.json。参数见 ai-dev-flow modules/orchestrate.md。
@@ -99,7 +100,7 @@
   - 提交正文按 `land.md` 模板。不写长报告，最后的回复只写三行白话：结果 / 跑了 / 风险。这样对方的输出你读得快，也不会把难懂的长文转给用户。
 - **按难度分工**：便宜的那个只接照章执行的机械活（批量跑回归、补用例、按明确规则整理文件）；要逐条核对事实、做判断、改核心代码的交给能力强的那个。看起来简单的文档活往往要逐条核对事实，不算机械活。具体分工写在项目 `AGENTS.md`。
 - **记得给要查历史证据的活加 `-Full`**：稀疏检出里没有的文件，对方会当作"不存在"。
-- **谁审谁**：写和审不是同一个会话，审的模型不低于写的。可以换一个 agent 审，也可以用同一个 agent 新开的会话审（`-Review` 每次都是新会话，用 `-Model` 保证模型不低于写的那次，写的那次用的模型记在 `.agents/runs/<运行名>/meta.json` 的 `Model`）。单向门档仍按 `verify.md` 跨厂商：Claude 写的派 Codex 审，Codex 写的派 Claude 审。
+- **谁审谁**：写和审不是同一个会话，审的模型不低于写的。可以换一个 agent 审，也可以用同一个 agent 新开的会话审（`-Review` 每次都是新会话，用 `-Model` 保证模型不低于写的那次，写的那次用的模型记在 `.agents/runs/<运行名>/meta.json` 的 `Model`；那里是空的，说明写的那次没传模型、用的是 CLI 自己的默认，审查也不传或传更强的）。单向门档仍按 `verify.md` 跨厂商：Claude 写的派 Codex 审，Codex 写的派 Claude 审。
 - **你怎么核对**：不读完整 diff。只看三样东西：对方的三行回复、验证方跑的快检结果（命令、退出码、对应的 head）、验证方的结论。三者对不上，或结论是 Fix，再去看 diff 的相关部分。
 - **跟用户汇报**：用你自己的话写，不转发对方原文。
 
