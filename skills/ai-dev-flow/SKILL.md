@@ -27,7 +27,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | "现在到哪了" | 按第 6 节给三行汇报 |
 | "可以""通过了""可以合并" | 读 `modules/land.md` |
 | "不对""有问题"、报错 | 读 `modules/diagnose.md`，先分类再动手 |
-| "先停" | 停在安全点：提交或保留 worktree，把剩下的步骤、试过不行的路线写进队列里对应的那一项 |
+| "先停" | 停在安全点：提交或保留 worktree，队列里对应的那一项只写一句（做到哪、下一步、分支），剩下的步骤、试过不行的路线写进那次队列提交的正文（`skills/next/SKILL.md` 第 6 节） |
 | "复盘""今天怎么样"，或 `/next` 发现该复盘了 | 读 `modules/garden.md` |
 | "早报""各项目怎么样""周会"（`/week`），新开、暂停或恢复一个项目，或当前仓库是多项目总览仓库 | 读 `modules/portfolio.md`；周会照 `skills/week/SKILL.md` |
 | 第一次进入项目，或项目没有 verify 命令 | 读 `modules/harness.md` |
