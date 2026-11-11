@@ -374,9 +374,19 @@ try {
     $cfgShelf = Join-Path $root 'projects-shelf.json'
     @{ projects = @(@{ name = '搁置文件'; path = $sh; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgShelf -Encoding utf8NoBOM
     $pSh = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
-    Check 'shelf file: a dependency there is not met' ($pSh.Available -eq 2 -and (($pSh.Next | ForEach-Object Id) -join ',') -eq '4,5' -and -not @($pSh.Items | Where-Object { $_.Id -eq '2' -and $_.Claimable }).Count)
+    Check 'shelf file: a dependency there is not met' ($pSh.Available -eq 1 -and (($pSh.Next | ForEach-Object Id) -join ',') -eq '4' -and -not @($pSh.Items | Where-Object { $_.Id -eq '2' -and $_.Claimable }).Count)
     Check 'shelf file: its rows are listed and counted' ((($pSh.Items | ForEach-Object Id) -join ',') -eq '1,2,4,3,5,6' -and $pSh.Queue.'搁置' -eq 2 -and @($pSh.Items | Where-Object { $_.Id -eq '3' -and $_.State -eq '搁置' }).Count)
-    Check 'shelf file: a row there that is not shelved is reported' ([bool]($pSh.Problems -match 'queue-shelved\.md 里有不是搁置的项：#5；移回 docs/queue\.md') -and -not ($pSh.Problems -match '不是搁置的项：.*#[36]'))
+    Check 'shelf file: a row there that is not shelved is reported and not claimable' ([bool]($pSh.Problems -match 'queue-shelved\.md 里有不是搁置的项：#5；移回 docs/queue\.md') -and -not ($pSh.Problems -match '不是搁置的项：.*#[36]') -and -not @($pSh.Items | Where-Object { $_.Id -eq '5' -and $_.Claimable }).Count)
+    Check 'shelf file: no duplicate ids, no duplicate hint' (-not ($pSh.Problems -match '都有的编号|没有带「状态」列'))
+    $shelfText = Get-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Raw -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue.md') -Encoding utf8NoBOM -Value ($shQueue.TrimEnd() + "`n| 3 | 忘了删的旧行 | 无 | 待做 |")
+    $pShD = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: an id in both files is reported' ([bool]($pShD.Problems -match '^docs/queue\.md 和 queue-shelved\.md 里都有的编号：#3；'))
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue.md') -Encoding utf8NoBOM -Value $shQueue
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value ($shelfText -replace '\| 状态 \|', '| 状況 |')
+    $pShB = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
+    Check 'shelf file: no table there is reported and a dependency found nowhere stays unmet' ([bool]($pShB.Problems -match '^queue-shelved\.md 里没有带「状态」列的表') -and (($pShB.Next | ForEach-Object Id) -join ',') -eq '4')
+    Set-Content -LiteralPath (Join-Path $sh 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value $shelfText
     Check 'shelf file: commits touching only it are not counted as unreviewed' ($pSh.Unreviewed -eq 1)
     $tSh = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgShelf -Out (Join-Path $root 'shelf.html') -NoNotify | Out-String
     Check 'shelf file: the status page counts its rows as before' ((Get-Content -LiteralPath (Join-Path $root 'shelf.html') -Raw -Encoding UTF8) -match '另有 2 项搁置')

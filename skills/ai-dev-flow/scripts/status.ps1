@@ -11,7 +11,7 @@ param(
     [int]$CleanupOver = 10,
     [int]$SlowVerifyMinutes = 10
 )
-# 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件的不算）、队列各状态的项数和待用户项、
+# 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件和它的搁置文件的不算）、队列各状态的项数和待用户项、
 # 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标、该升级的教训、还没转的请求。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
 # 在总览仓库里任意目录运行，或用 -Config 指定清单（默认 <仓库>/projects.json）。
 #   默认      推进中的项目全量；维护中的只列提交数、队列和待用户项；暂停的只列名字
@@ -25,7 +25,7 @@ param(
 #   -SlowVerifyMinutes  快检超过这么多分钟算太慢（默认 10，harness.md 第 2 节）；项目 AGENTS.md 写"快检提速阈值：<分钟> 分钟"的以项目为准
 #   -CleanupOver   已合进主干的分支或 worktree 超过这么多个，提示运行 cleanup.ps1（默认 10）
 # 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
-# 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（编号不在队列里的按已完成算，完成的项一周后会删）；
+# 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（队列和搁置文件里都找不到的按已完成算，完成的项会删；搁置文件读不出表时不这么算），而且不在搁置文件里；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
 # 全部项（Items，只在 -Json 里）：队列每一项的编号、目标、状态、说明、依赖原文和是否可领（Claimable），状态页画全景图用。
@@ -225,11 +225,19 @@ function Get-ProjectStatus($p) {
         $items = @(Read-Queue $queueFile)
         if (-not $items.Count) { $r.Problems.Add("$queueRel 里没有带「状态」列的表") }
         # 搁置的行放在队列旁的搁置文件里（skills/next/SKILL.md 第 1 节），和主文件一起算：依赖它的照样算没满足，状态页照样列出。
+        # 搁置文件里的项一律不算可领（/next 开工不读它）；它读不出表时，两份都找不到的依赖编号不再按已完成算。
         $shelfFile = Get-ShelfPath $queueFile
+        $shelfBroken = $false
+        $shelf = @()
         if (Test-Path -LiteralPath $shelfFile) {
+            $shelfLeaf = Split-Path $shelfFile -Leaf
             $shelf = @(Read-Queue $shelfFile)
+            if (-not $shelf.Count) { $shelfBroken = $true; $r.Problems.Add("$shelfLeaf 里没有带「状态」列的表：依赖编号两份都找不到的项先不算可领") }
             $notShelved = @($shelf | Where-Object State -ne '搁置')
-            if ($notShelved) { $r.Problems.Add("$(Split-Path $shelfFile -Leaf) 里有不是搁置的项：$(($notShelved | ForEach-Object { if ($_.Id) { Format-Id $_.Id } else { Short $_.Goal 12 } }) -join '、')；移回 $queueRel") }
+            if ($notShelved) { $r.Problems.Add("$shelfLeaf 里有不是搁置的项：$(($notShelved | ForEach-Object { if ($_.Id) { Format-Id $_.Id } else { Short $_.Goal 12 } }) -join '、')；移回 $queueRel（在那里不算可领）") }
+            $mainIds = @($items | ForEach-Object { ($_.Id -replace '^#', '').Trim() } | Where-Object { $_ })
+            $dup = @($shelf | ForEach-Object { ($_.Id -replace '^#', '').Trim() } | Where-Object { $_ -and $mainIds -contains $_ } | Select-Object -Unique)
+            if ($dup) { $r.Problems.Add("$queueRel 和 $shelfLeaf 里都有的编号：$(($dup | ForEach-Object { "#$_" }) -join '、')；搬行时删掉其中一份") }
             $items += $shelf
         }
         $counts = [ordered]@{}
@@ -255,11 +263,13 @@ function Get-ProjectStatus($p) {
         if ($noId) { $r.Problems.Add("队列里没有编号的项：" + (($noId | ForEach-Object { if ($_.Goal) { Short $_.Goal 20 } else { '未命名' } }) -join '、')) }
         $done = @($items | Where-Object State -eq '完成' | ForEach-Object { $_.Id -replace '^#', '' })
         $open = @($items | Where-Object State -ne '完成' | ForEach-Object { $_.Id -replace '^#', '' })
-        $availItems = @($items | Where-Object { $_.State -eq '待做' } | Where-Object {
+        $known = @($done) + @($open)
+        $availItems = @($items | Where-Object { $_.State -eq '待做' } | Where-Object { $it = $_; -not @($shelf | Where-Object { [object]::ReferenceEquals($_, $it) }).Count } | Where-Object {
             $d = ($_.Deps -replace '\*', '').Trim()
             if ($d -match '^(无|-|—|)$') { return $true }
             $nums = @([regex]::Matches($d, '\d+') | ForEach-Object Value)
             if ($d -notmatch '^[#\d\s,，、]+$' -or -not $nums) { return $false }
+            if ($shelfBroken -and @($nums | Where-Object { $known -notcontains $_ }).Count) { return $false }
             -not @($nums | Where-Object { $open -contains $_ }).Count
         })
         $availItems = @($availItems | Where-Object { $t = [regex]::Match("$($_.Goal)", $tagRe); -not ($t.Success -and $stoppedDirs -contains $t.Groups[2].Value) })
