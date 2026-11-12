@@ -621,6 +621,27 @@ try {
     @{ '从没提到' = @{ head = (git -C $gNever rev-parse HEAD); time = (Get-Date).AddHours(-30).ToString('yyyy-MM-dd HH:mm') } } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $goalHq '.agents/status-marks.json') -Encoding utf8NoBOM
     $pNever = (pwsh -NoProfile -File $Script -Config (Join-Path $goalHq 'projects.json') -Json | ConvertFrom-Json).Projects[0]
     Check 'goal stalled: never mentioned since the weekly mark 30 hours ago, flagged' ($pNever.GoalStalled -and [bool](@($pNever.Problems) -match '^本周目标没动：.*#1 已 30 小时'))
+    # 队列读不出表、搁置文件读不出表时，找不到的目标项不算完成：不打勾，照样提示没动
+    $mkBroken = {
+        param([string]$name, [string]$queue, [string]$shelf)
+        $dir = Join-Path $root $name
+        $null = New-Item -ItemType Directory -Force -Path (Join-Path $dir 'docs')
+        G init -q $dir
+        Set-Content -LiteralPath (Join-Path $dir 'docs/queue.md') -Encoding utf8NoBOM -Value $queue
+        if ($shelf) { Set-Content -LiteralPath (Join-Path $dir 'docs/queue-shelved.md') -Encoding utf8NoBOM -Value $shelf }
+        $env:GIT_COMMITTER_DATE = (Get-Date).AddHours(-30).ToString('yyyy-MM-ddTHH:mm:ss')
+        G -C $dir add -A; G -C $dir commit -q -m 'queue: claim #1'
+        Remove-Item Env:GIT_COMMITTER_DATE
+        G -C $dir commit -q --allow-empty -m 'other work (queue #2)'
+        $dir
+    }
+    $gbT = & $mkBroken 'goal-broken-table' "| # | 目标 | 依赖 | 进度 |`n|---|---|---|---|`n| 1 | 目标挂的项 | 无 | 在做 |" ''
+    $gbS = & $mkBroken 'goal-broken-shelf' "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n| 2 | 别的 | 无 | 在做 |" "# 搁置`n`n- #1 目标挂的项：搁置（等硬件）"
+    $cfgGb = Join-Path $root 'projects-goal-broken.json'
+    @{ projects = @(@{ name = '表坏了'; path = $gbT; status = '推进中'; goals = @(@{ text = '做完 #1'; items = @('1') }) }, @{ name = '搁置坏了'; path = $gbS; status = '推进中'; goals = @(@{ text = '做完 #1'; items = @('1') }) }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGb -Encoding utf8NoBOM
+    $pGb = (pwsh -NoProfile -File $Script -Config $cfgGb -Json | ConvertFrom-Json).Projects
+    Check 'goal stalled: a queue without a readable table does not tick the goal' (-not $pGb[0].Goals[0].Done)
+    Check 'goal stalled: a broken shelf file does not tick the goal nor hide that it is not moving' (-not $pGb[1].Goals[0].Done -and $pGb[1].GoalStalled -and (@($pGb[1].GoalStalled.Ids) -join ',') -eq '1')
     $gState = Join-Path $root 'out/watch-goal.json'
     $cfgGoalW = Join-Path $root 'projects-goal-watch.json'
     @{ projects = @(@{ name = '目标没动'; path = $gStuck; status = '推进中'; goals = $goals }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGoalW -Encoding utf8NoBOM
