@@ -329,7 +329,8 @@ function Get-ProjectStatus($p) {
     }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {
         $ids = @($g.items | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' })
-        $byItems = $ids.Count -and $done -and -not @($ids | Where-Object { $done -notcontains $_ }).Count
+        # 挂的项都不在队列和搁置文件里没完成的那些中（完成了，或完成后删掉了），就算完成；读不到队列时不算。
+        $byItems = $ids.Count -and $r.Queue -and -not @($ids | Where-Object { $open -contains $_ }).Count
         [pscustomobject]@{ Text = $g.text; Done = [bool]($g.done -eq $true -or $byItems) }
     })
 

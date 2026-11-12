@@ -605,7 +605,7 @@ try {
     Check 'goal stalled: a recent commit on the goal item, not flagged' (-not $pGoal[1].GoalStalled -and -not (@($pGoal[1].Problems) -match '本周目标没动'))
     Check 'goal stalled: no new commits at all, not flagged' (-not $pGoal[2].GoalStalled)
     Check 'goal stalled: no goals, not flagged' (-not $pGoal[3].GoalStalled)
-    Check 'goal stalled: goal items done and trimmed from the queue count as done, not flagged' (-not $pGoal[4].GoalStalled)
+    Check 'goal stalled: goal items done and trimmed from the queue count as done, not flagged' (-not $pGoal[4].GoalStalled -and $pGoal[4].Goals[0].Done -and -not $pGoal[0].Goals[0].Done)
     $pGoal48 = (pwsh -NoProfile -File $Script -Config $cfgGoal -Json -GoalHours 48 | ConvertFrom-Json).Projects
     Check 'goal stalled: the threshold can be raised' (-not $pGoal48[0].GoalStalled -and -not $pGoal48[2].GoalStalled)
     $gNever = Join-Path $root 'goal-never'
