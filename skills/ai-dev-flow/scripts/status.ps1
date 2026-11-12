@@ -8,6 +8,7 @@ param(
     [switch]$Mark,
     [switch]$Json,
     [int]$StaleMinutes = 60,
+    [int]$IdleHours = 12,
     [int]$CleanupOver = 10,
     [int]$SlowVerifyMinutes = 10
 )
@@ -23,6 +24,7 @@ param(
 #   -Json     输出 JSON
 #   -StaleMinutes  推进中的项目有"在做"的项、最后活动又早于这么多分钟前，提示"可能停滞"（默认 60）
 #   -SlowVerifyMinutes  快检超过这么多分钟算太慢（默认 10，harness.md 第 2 节）；项目 AGENTS.md 写"快检提速阈值：<分钟> 分钟"的以项目为准
+#   -IdleHours     推进中的项目有可领的项、没有"在做"的、最后活动又早于这么多小时前，提示"有活没人做"（默认 12），不管有没有待用户项
 #   -CleanupOver   已合进主干的分支或 worktree 超过这么多个，提示运行 cleanup.ps1（默认 10）
 # 最后活动：所有本地分支里最新的提交时间，和 .agents/runs 下（两层以内）最新的文件改动时间，取较晚者。
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（队列和搁置文件里都找不到的按已完成算，完成的项会删；搁置文件读不出表时不这么算），而且不在搁置文件里；
@@ -364,6 +366,10 @@ function Get-ProjectStatus($p) {
         $r.IdleMinutes = [int][math]::Floor(((Get-Date) - $last).TotalMinutes)
         if ($p.status -eq '推进中' -and $r.Queue -and $r.Queue['在做'] -and $r.IdleMinutes -ge $StaleMinutes) {
             $r.Problems.Add("可能停滞：在做 $($r.Queue['在做']) 项，已 $(Format-Idle $r.IdleMinutes)没有动静")
+        }
+        # 有活没人做：可领的项摆着、没有会话在做。待用户项再多也照样提示，用户可能以为项目在等自己，其实还有别的能做。
+        if ($p.status -eq '推进中' -and $r.Available -and -not ($r.Queue -and $r.Queue['在做']) -and $r.IdleMinutes -ge $IdleHours * 60) {
+            $r.Problems.Add("有活没人做：$($r.Available) 项可领，没有在做的，已 $(Format-Idle $r.IdleMinutes)没有动静；在这个项目发 /next")
         }
     }
     # 死掉的运行：dispatch.ps1 的运行没有 exit.json，记下的进程也不在了（或进程号已被别的进程复用），多半被杀了。只看 7 天内开始的，更早的没人再管；

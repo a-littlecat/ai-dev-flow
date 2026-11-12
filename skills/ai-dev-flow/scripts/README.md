@@ -10,7 +10,7 @@ ai-dev-flow 自带的 PowerShell 脚本，都用 `pwsh -NoProfile -File <skill>/
 | `launch.ps1` | 在一个项目里开命令行后台会话（`claude --bg`，默认 `/next`），用命令行登录的账号；按清单的 `wake`、`session` 决定新开、发消息还是开在桌面，按 `model`、`effort`（或 `-Model`、`-Effort`）定模型和思考强度（`modules/portfolio.md` 第 4 节） |
 | `daily.ps1` | 把状态写成一页 HTML 并发通知，给计划任务定时跑 |
 | `notify.ps1` | 发系统通知，要用户出手的再推到手机；本机配置在 `%APPDATA%\ai-dev-flow\notify.json` |
-| `watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"时推一次手机 |
+| `watch.ps1` | 给计划任务每 15 分钟跑：项目新变成"可能停滞"，或有活没人做超过 12 小时（`-IdleHours`）时推一次手机 |
 | `check-md.ps1` | 文档格式检查：`.md` 里的控制字符、被拆断的表格行；各项目放进快检 |
 | `archive-requests.ps1` | 把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场只读还要转的（`skills/next/SKILL.md` 第 1 节） |
 | `cleanup.ps1` | 合并后清理：删已合进主干、没有未提交改动的 worktree 和分支（`modules/land.md` 第 6 节） |

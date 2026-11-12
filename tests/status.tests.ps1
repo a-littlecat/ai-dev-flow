@@ -527,6 +527,51 @@ try {
     $w4 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun 2>$null | Out-String
     $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 2>$null
     Check 'watch: broken state file does not stop alerts and is rewritten' ($w4 -match '可能停了' -and $LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|' -and -not (Test-Path -LiteralPath "$wstate.tmp"))
+    # 有活没人做：有可领的项、没有在做的、超过 -IdleHours 没动静才提示；有待用户项照样提示；同一次只推一次
+    $idleRepo = Join-Path $root 'idle'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $idleRepo 'docs')
+    G init -q $idleRepo
+    @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 能领的项 | 无 | 待做 |
+| 2 | 等你定的 | 无 | 待用户（选 A 还是 B，推荐 A） |
+'@ | Set-Content -LiteralPath (Join-Path $idleRepo 'docs/queue.md') -Encoding utf8NoBOM
+    $env:GIT_COMMITTER_DATE = (Get-Date).AddHours(-20).ToString('yyyy-MM-ddTHH:mm:ss')
+    G -C $idleRepo add -A; G -C $idleRepo commit -q -m 'i1'
+    $blocked = Join-Path $root 'idle-none'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $blocked 'docs')
+    G init -q $blocked
+    @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 等你定的 | 无 | 待用户（定） |
+| 2 | 依赖没满足 | 1 | 待做 |
+'@ | Set-Content -LiteralPath (Join-Path $blocked 'docs/queue.md') -Encoding utf8NoBOM
+    G -C $blocked add -A; G -C $blocked commit -q -m 'n1'
+    Remove-Item Env:GIT_COMMITTER_DATE
+    $cfgIdle = Join-Path $root 'projects-idle.json'
+    @{ projects = @(@{ name = '空着的'; path = $idleRepo; status = '推进中' }, @{ name = '没可领'; path = $blocked; status = '推进中' }, @{ name = '刚动过'; path = $sh; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgIdle -Encoding utf8NoBOM
+    $pIdle = (pwsh -NoProfile -File $Script -Config $cfgIdle -Json | ConvertFrom-Json).Projects
+    Check 'unattended: claimable, nobody on it, over 12 hours, flagged even with an ask' ([bool](@($pIdle[0].Problems) -match '^有活没人做：1 项可领，没有在做的，已 20 小时没有动静') -and @($pIdle[0].Waiting).Count -eq 1)
+    Check 'unattended: nothing claimable, not flagged' (-not (@($pIdle[1].Problems) -match '有活没人做'))
+    Check 'unattended: recent activity, not flagged' ($pIdle[2].Available -ge 1 -and -not (@($pIdle[2].Problems) -match '有活没人做'))
+    $pIdle24 = (pwsh -NoProfile -File $Script -Config $cfgIdle -Json -IdleHours 24 | ConvertFrom-Json).Projects
+    Check 'unattended: the threshold can be raised' (-not (@($pIdle24[0].Problems) -match '有活没人做'))
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $iState = Join-Path $root 'out/watch-idle.json'
+    $wi1 = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState -DryRun | Out-String
+    Check 'unattended: watch pushes it to the phone' ($wi1 -match 'title: \S+ 1 个项目有活没人做' -and $wi1 -match 'bark: yes' -and $wi1 -match '空着的：有 1 项可领，没人在做，已 20 小时没动静')
+    $env:AI_DEV_FLOW_NOTIFY = $wq
+    $null = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $wi2 = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState -DryRun | Out-String
+    Check 'unattended: the same one is pushed only once' ($LASTEXITCODE -eq 0 -and $wi2 -match 'no new stall')
+    $wi3 = pwsh -NoProfile -File $watch -Config $cfgIdle -State (Join-Path $root 'out/watch-idle24.json') -IdleHours 24 -DryRun | Out-String
+    Check 'unattended: watch passes the threshold on' ($wi3 -match 'no new stall')
+    $null = pwsh -NoProfile -File $daily -Config $cfgIdle -Out (Join-Path $root 'idle.html') -NoNotify
+    $htmlIdle = Get-Content -LiteralPath (Join-Path $root 'idle.html') -Raw -Encoding UTF8
+    Check 'unattended: the status page marks it apart from the idle line' ($htmlIdle -match '<b>有活没人做</b>：空着的（1 项可领，已 20 小时没动静）' -and $htmlIdle -notmatch '有空可以开工：[^<]*空着的')
     $dstate = Join-Path $root 'out/daily-state.json'
     $env:AI_DEV_FLOW_NOTIFY = $ncfg
     $d1 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String

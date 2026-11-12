@@ -3,6 +3,7 @@ param(
     [string]$Config,
     [string]$Out,
     [int]$StaleMinutes = 60,
+    [int]$IdleHours = 12,
     [string]$State,
     [switch]$NoNotify,
     [switch]$DryRun
@@ -30,7 +31,7 @@ $Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($
 if (-not $State) { $State = Join-Path $env:LOCALAPPDATA 'ai-dev-flow/daily-state.json' }
 $State = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($State)
 
-$statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes)
+$statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes, '-IdleHours', $IdleHours)
 if ($Config) { $statusArgs += '-Config', $Config }
 $json = & pwsh -NoProfile -File (Join-Path $here 'status.ps1') @statusArgs | Out-String
 if ($LASTEXITCODE) { throw "status.ps1 failed: $json" }
@@ -117,7 +118,9 @@ $active = @($s.Projects)
 $waiting = @(foreach ($p in $active) { foreach ($w in Asks $p) { [pscustomobject]@{ Project = $p.Name; Item = $w } } })
 $waiting = @(@($waiting | Where-Object { $_.Item.Hint -ne '像搁置' }) + @($waiting | Where-Object { $_.Item.Hint -eq '像搁置' }))
 $stalled = @($active | Where-Object { IsStalled $_ })
-$free = @($active | Where-Object { $_.Status -eq '推进中' -and $_.Available -and -not @($_.Doing).Count -and -not (IsStalled $_) -and -not (Recent $_) })
+# 有活没人做（status.ps1 的提示，-IdleHours 小时没动静）：单独一行写明空了多久，不管有没有等你定的项；其余空着的照旧并成一行。
+$unattended = @($active | Where-Object { @($_.Problems) -match '^有活没人做' })
+$free = @($active | Where-Object { $_.Status -eq '推进中' -and $_.Available -and -not @($_.Doing).Count -and -not (IsStalled $_) -and -not (Recent $_) -and $unattended -notcontains $_ })
 $cards = @(foreach ($p in $active) { foreach ($c in @($p.Direction.Cards) | Where-Object { $_ }) {
     $leaf = Split-Path $c.File -Leaf
     $owner = @(@($p.Waiting) | Where-Object { "$($_.Detail)".Contains($leaf) })[0]
@@ -490,6 +493,7 @@ foreach ($mo in $models | Where-Object { IsStalled $_.P }) {
 $null = $b.Append('<h2>要你管<small>到对应项目新建会话，发卡片上的命令</small></h2>')
 if ($cardsHtml.Count) { $null = $b.Append("<ol class=`"cards`">$($cardsHtml -join '')</ol>") }
 else { $null = $b.Append('<div class="none">暂时没有要你处理的事</div>') }
+if ($unattended) { $null = $b.Append("<div class=`"free`"><b>有活没人做</b>：$(($unattended | ForEach-Object { Enc "$(Nick $_.Name)（$($_.Available) 项可领，已 $(Ago $_.IdleMinutes)没动静）" }) -join '、')。到这个项目新建会话，发 <code>/next</code></div>") }
 if ($free) { $null = $b.Append("<div class=`"free`">有空可以开工：$(($free | ForEach-Object { Enc "$(Nick $_.Name)（$($_.Available) 项）" }) -join '、')。到这个项目新建会话，发 <code>/next</code></div>") }
 
 # 本周目标
@@ -626,8 +630,9 @@ if (-not $NoNotify) {
     foreach ($e in $asks | Select-Object -First 5) { $lines.Add((& $show $e)) }
     if ($asks.Count -gt 5) { $lines.Add("另有 $($asks.Count - 5) 件等你定，见状态页") }
     foreach ($e in $events | Where-Object { -not $_.Ask }) { $lines.Add((& $show $e)) }
+    foreach ($p in $unattended) { $lines.Add("$(Nick $p.Name)：有 $($p.Available) 项可领，已 $(Ago $p.IdleMinutes)没人做，可以发 /next") }
     if ($free) { $lines.Add("$((@($free | ForEach-Object { Nick $_.Name })) -join '、') 空着，可以发 /next 开工") }
-    $title = if ($n -and -not $fresh) { "要你管 $n 件事（都推过）" } elseif ($n) { "要你管 $n 件事" } elseif ($free) { '有项目可以开工' } else { '暂时没有要你管的事' }
+    $title = if ($n -and -not $fresh) { "要你管 $n 件事（都推过）" } elseif ($n) { "要你管 $n 件事" } elseif ($free -or $unattended) { '有项目可以开工' } else { '暂时没有要你管的事' }
     if (-not $lines.Count) { $lines.Add('点开看各项目进度') }
     $level = if ($fresh) { 'user' } else { 'info' }
     $notifyArgs = @('-Title', $title, '-Body', ($lines -join "`n"), '-Level', $level, '-Open', $Out)
