@@ -1,0 +1,1 @@
+覆盖：05d8cba..766facf41a146d3b338ee407b51665f03d5dcb40；claude-opus-5-5 子 agent（推理强度同会话）→ Pass，无 P0–P2；跑了：tests/run-all.ps1 → 退出 0（766facf41a146d3b338ee407b51665f03d5dcb40），快检用时：332 秒；改坏：daily.ps1 方向没人看标签改字 → unwatched: the status page tags the project 红；没跑：无；没采纳：备注 1–3（flow.html 粒度不到领项顺序；点名和答复的项仍排在登记基准前；正在登记的项目标签仍显示方向没人看），都按审查方判断合理
