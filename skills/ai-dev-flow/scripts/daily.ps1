@@ -4,6 +4,7 @@ param(
     [string]$Out,
     [int]$StaleMinutes = 60,
     [int]$IdleHours = 12,
+    [int]$GoalHours = 24,
     [string]$State,
     [switch]$NoNotify,
     [switch]$DryRun
@@ -31,7 +32,7 @@ $Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($
 if (-not $State) { $State = Join-Path $env:LOCALAPPDATA 'ai-dev-flow/daily-state.json' }
 $State = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($State)
 
-$statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes, '-IdleHours', $IdleHours)
+$statusArgs = @('-Json', '-StaleMinutes', $StaleMinutes, '-IdleHours', $IdleHours, '-GoalHours', $GoalHours)
 if ($Config) { $statusArgs += '-Config', $Config }
 $json = & pwsh -NoProfile -File (Join-Path $here 'status.ps1') @statusArgs | Out-String
 if ($LASTEXITCODE) { throw "status.ps1 failed: $json" }
@@ -429,6 +430,12 @@ if ($pageCount) {
     $null = $b.Append("<p class=`"sub`">$(if ($subParts) { ($subParts -join '，') + '。' })</p>")
 } else {
     $null = $b.Append('<h1>暂时没有要你管的事</h1><p class="sub"></p>')
+}
+# 本周目标没动（status.ps1 的 GoalStalled）：放在最上面，项目在忙别的、目标挂的项却没动，用户不看细节也能看出偏了。
+$goalStuck = @($active | Where-Object { $_.GoalStalled })
+foreach ($p in $goalStuck) {
+    $g = $p.GoalStalled
+    $null = $b.Append("<div class=`"alert`">本周目标没动：$(Enc (Nick $p.Name)) 有新提交，本周目标挂的 $(Enc ((@($g.Ids) | ForEach-Object { "#$_" }) -join '、')) 已 $(Ago $g.Minutes)没进展。在这个项目问一句在做什么，或者周会改目标</div>")
 }
 $null = $b.Append("<div class=`"mapwrap`">$mapSvg</div>$mapNote")
 

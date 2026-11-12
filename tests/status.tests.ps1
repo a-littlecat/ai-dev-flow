@@ -572,6 +572,68 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfgIdle -Out (Join-Path $root 'idle.html') -NoNotify
     $htmlIdle = Get-Content -LiteralPath (Join-Path $root 'idle.html') -Raw -Encoding UTF8
     Check 'unattended: the status page marks it apart from the idle line' ($htmlIdle -match '<b>有活没人做</b>：空着的（1 项可领，已 20 小时没动静）' -and $htmlIdle -notmatch '有空可以开工：[^<]*空着的')
+    # 本周目标没动：有新提交、本周目标挂的项超过 -GoalHours 没有提交提到它才提示；同一次只推一次
+    $goalQ = @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 目标挂的项 | 无 | 待做 |
+| 2 | 别的项 | 无 | 在做 |
+| 3 | 目标里做完的 | 无 | 完成 |
+'@
+    $mkGoal = {
+        param([string]$name, [int]$goalHoursAgo, [int]$otherHoursAgo)
+        $dir = Join-Path $root $name
+        $null = New-Item -ItemType Directory -Force -Path (Join-Path $dir 'docs')
+        G init -q $dir
+        Set-Content -LiteralPath (Join-Path $dir 'docs/queue.md') -Encoding utf8NoBOM -Value $goalQ
+        $env:GIT_COMMITTER_DATE = (Get-Date).AddHours(-$goalHoursAgo).ToString('yyyy-MM-ddTHH:mm:ss')
+        G -C $dir add -A; G -C $dir commit -q -m 'queue: claim #1'
+        $env:GIT_COMMITTER_DATE = (Get-Date).AddHours(-$otherHoursAgo).ToString('yyyy-MM-ddTHH:mm:ss')
+        G -C $dir commit -q --allow-empty -m 'other work (queue #2, not #10)'
+        Remove-Item Env:GIT_COMMITTER_DATE
+        $dir
+    }
+    $gStuck = & $mkGoal 'goal-stuck' 30 0
+    $gMoving = & $mkGoal 'goal-moving' 2 0
+    $gQuiet = & $mkGoal 'goal-quiet' 30 30
+    $goals = @(@{ text = '做完第 1 项'; items = @('1', '3') })
+    $cfgGoal = Join-Path $root 'projects-goal.json'
+    @{ projects = @(@{ name = '目标没动'; path = $gStuck; status = '推进中'; goals = $goals }, @{ name = '目标在动'; path = $gMoving; status = '推进中'; goals = $goals },
+        @{ name = '都没动'; path = $gQuiet; status = '推进中'; goals = $goals }, @{ name = '没目标'; path = $gStuck; status = '推进中' }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGoal -Encoding utf8NoBOM
+    $pGoal = (pwsh -NoProfile -File $Script -Config $cfgGoal -Json | ConvertFrom-Json).Projects
+    Check 'goal stalled: new commits but the goal item untouched for 30 hours, flagged with only open items' ($pGoal[0].GoalStalled -and (@($pGoal[0].GoalStalled.Ids) -join ',') -eq '1' -and [bool](@($pGoal[0].Problems) -match '^本周目标没动：有新提交，本周目标挂的 #1 已 30 小时没有提交提到它们'))
+    Check 'goal stalled: a recent commit on the goal item, not flagged' (-not $pGoal[1].GoalStalled -and -not (@($pGoal[1].Problems) -match '本周目标没动'))
+    Check 'goal stalled: no new commits at all, not flagged' (-not $pGoal[2].GoalStalled)
+    Check 'goal stalled: no goals, not flagged' (-not $pGoal[3].GoalStalled)
+    $pGoal48 = (pwsh -NoProfile -File $Script -Config $cfgGoal -Json -GoalHours 48 | ConvertFrom-Json).Projects
+    Check 'goal stalled: the threshold can be raised' (-not $pGoal48[0].GoalStalled -and -not $pGoal48[2].GoalStalled)
+    $gNever = Join-Path $root 'goal-never'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $gNever 'docs')
+    G init -q $gNever
+    Set-Content -LiteralPath (Join-Path $gNever 'docs/queue.md') -Encoding utf8NoBOM -Value $goalQ
+    G -C $gNever add -A; G -C $gNever commit -q -m 'other work (queue #2)'
+    $goalHq = Join-Path $root 'goalhq'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $goalHq '.agents')
+    @{ projects = @(@{ name = '从没提到'; path = $gNever; status = '推进中'; goals = $goals }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $goalHq 'projects.json') -Encoding utf8NoBOM
+    $pNever0 = (pwsh -NoProfile -File $Script -Config (Join-Path $goalHq 'projects.json') -Json | ConvertFrom-Json).Projects[0]
+    Check 'goal stalled: never mentioned and no mark, no start to count from, not flagged' (-not $pNever0.GoalStalled)
+    @{ '从没提到' = @{ head = (git -C $gNever rev-parse HEAD); time = (Get-Date).AddHours(-30).ToString('yyyy-MM-dd HH:mm') } } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $goalHq '.agents/status-marks.json') -Encoding utf8NoBOM
+    $pNever = (pwsh -NoProfile -File $Script -Config (Join-Path $goalHq 'projects.json') -Json | ConvertFrom-Json).Projects[0]
+    Check 'goal stalled: never mentioned since the weekly mark 30 hours ago, flagged' ($pNever.GoalStalled -and [bool](@($pNever.Problems) -match '^本周目标没动：.*#1 已 30 小时'))
+    $gState = Join-Path $root 'out/watch-goal.json'
+    $cfgGoalW = Join-Path $root 'projects-goal-watch.json'
+    @{ projects = @(@{ name = '目标没动'; path = $gStuck; status = '推进中'; goals = $goals }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGoalW -Encoding utf8NoBOM
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $wg1 = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState -DryRun | Out-String
+    Check 'goal stalled: watch pushes it' ($wg1 -match 'title: \S+ 1 个项目本周目标没动' -and $wg1 -match 'bark: yes' -and $wg1 -match '目标没动：本周目标挂的 #1 已 30 小时没进展，项目却有新提交')
+    $env:AI_DEV_FLOW_NOTIFY = $wq
+    $null = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState
+    $env:AI_DEV_FLOW_NOTIFY = $ncfg
+    $wg2 = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState -DryRun | Out-String
+    Check 'goal stalled: the same one is pushed only once' ($wg2 -match 'no new stall')
+    $null = pwsh -NoProfile -File $daily -Config $cfgGoal -Out (Join-Path $root 'goal.html') -NoNotify
+    $htmlGoal = Get-Content -LiteralPath (Join-Path $root 'goal.html') -Raw -Encoding UTF8
+    Check 'goal stalled: the status page says so above the map' ($htmlGoal -match '(?s)<div class="alert">本周目标没动：目标没动 有新提交，本周目标挂的 #1 已 30 小时没进展.*<div class="mapwrap">' -and ([regex]::Matches($htmlGoal, '<div class="alert">本周目标没动：')).Count -eq 1)
     $dstate = Join-Path $root 'out/daily-state.json'
     $env:AI_DEV_FLOW_NOTIFY = $ncfg
     $d1 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String
