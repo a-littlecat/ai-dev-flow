@@ -125,6 +125,7 @@ description: 开发工作的总入口。用户提出任何开发相关的请求�
 | 待办和进行中的项 | 队列：有远程用 issues，没有用 `docs/queue.md` |
 | 跨多天的计划、单向门的方案 | `docs/plans/<主题>.md` |
 | 要用户定的方向性选择 | 决定卡 `docs/decisions/<日期>-<主题>.md`，模板是 `templates/decision-card.md` |
+| 用户在项目会话里做的方向性决定 | `docs/decision-log.md`，一行一条带日期和原话（`modules/direction.md` 第 3 节） |
 | 基准、差距、方向的预算 | `docs/benchmark.json`（`modules/direction.md` 第 4 节） |
 | 项目怎么运转的一页白话和图 | `docs/flow.html`，模板是 `templates/flow.html`（`modules/direction.md` 第 6 节） |
 | 反复出现的问题 | `LESSONS.md`，由复盘维护 |

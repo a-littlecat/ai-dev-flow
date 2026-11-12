@@ -672,6 +672,10 @@ try {
 - $dNew（换路线）：改用新识别路线 原话："按新路线做"
 - 2026-13-40（预算）：日期写错 原话："x"
 - $dNew 少了类别和原话
+- 2026/11/13（换路线）：日期写成斜杠 原话："按 A 做"
+- **$dNew**（子系统）：日期加粗 原话："拆"
+1. $dNew（预算）：编号列表 原话："再给两天"
+- 普通的说明，不是决定
 "@ | Set-Content -LiteralPath (Join-Path $dl 'docs/decision-log.md') -Encoding utf8NoBOM
     G -C $dl add -A; G -C $dl commit -q -m 'd1'
     $dlHq = Join-Path $root 'declog-hq'
@@ -679,7 +683,7 @@ try {
     @{ projects = @(@{ name = '决定'; path = $dl; status = '推进中' }, @{ name = '没记录'; path = $idleRepo; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dlHq 'projects.json') -Encoding utf8NoBOM
     $pDl = (pwsh -NoProfile -File $Script -Config (Join-Path $dlHq 'projects.json') -Json | ConvertFrom-Json).Projects
     Check 'decisions: without a mark, the last 7 days are listed with kind and quote' ((($pDl[0].Decisions | ForEach-Object { "$($_.Date)|$($_.Kind)|$($_.Text)|$($_.Quote)" }) -join ';') -eq "$dMid|上线范围|先不做手机端|手机端以后再说;$dNew|换路线|改用新识别路线|按新路线做")
-    Check 'decisions: lines it cannot read are reported by line' ([bool](@($pDl[0].Problems) -match '^docs/decision-log\.md 里认不出的决定：第 8 行、第 9 行；'))
+    Check 'decisions: lines it cannot read are reported by line' ([bool](@($pDl[0].Problems) -match '^docs/decision-log\.md 里认不出的决定：第 8 行、第 9 行、第 10 行、第 11 行、第 12 行；'))
     Check 'decisions: no log file, nothing listed and no hint' (-not @($pDl[1].Decisions).Count -and -not (@($pDl[1].Problems) -match 'decision-log'))
     @{ '决定' = @{ head = (git -C $dl rev-parse HEAD); time = (Get-Date).AddDays(-1).ToString('yyyy-MM-dd HH:mm') } } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $dlHq '.agents/status-marks.json') -Encoding utf8NoBOM
     $pDlM = (pwsh -NoProfile -File $Script -Config (Join-Path $dlHq 'projects.json') -Json | ConvertFrom-Json).Projects[0]
