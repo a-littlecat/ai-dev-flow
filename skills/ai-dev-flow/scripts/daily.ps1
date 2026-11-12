@@ -568,6 +568,8 @@ function ProjectCard($mo) {
     if ($blockedRows) { $facts.Add("<dt>被挡住</dt><dd>$blockedRows</dd>") }
     # 会话自己加、还没人放行的项（/next 第 4 节）：不领，等你或周会说做再改成待做。
     if ($p.Pending) { $facts.Add("<dt>待放行</dt><dd>$(ListHtml $p.Pending)<div class=`"how`">会话自己加的，你或周会说做，才改成待做</div></dd>") }
+    # 用户在项目会话里做的方向性决定（status.ps1 的 Decisions，上次周会标记以来），周会和 INTENT.md 对一遍。
+    if ($p.Decisions) { $facts.Add("<dt>新决定</dt><dd><ul class=`"items`">$((@($p.Decisions) | ForEach-Object { "<li>$(Enc $_.Date) $(Enc (Cut (Plain $_.Text) 60))</li>" }) -join '')</ul></dd>") }
     if ($p.Recent) { $facts.Add("<dt>最近完成</dt><dd>$(ListHtml $p.Recent)</dd>") }
     $x = [Text.StringBuilder]::new()
     $null = $x.Append("<section class=`"proj`" id=`"p$($mo.Index)`"><div class=`"proj-h`"><h3>$(Enc (Nick $p.Name))</h3><span class=`"tag $($st[1])`">$(Enc $st[0])</span><span class=`"right`">$flow$(Progress $p)$(if ($null -ne $p.Priority) { "<span>优先级 $(Enc $p.Priority)</span>" })</span></div>")

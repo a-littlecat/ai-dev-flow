@@ -656,6 +656,38 @@ try {
     $null = pwsh -NoProfile -File $daily -Config $cfgGoal -Out (Join-Path $root 'goal.html') -NoNotify
     $htmlGoal = Get-Content -LiteralPath (Join-Path $root 'goal.html') -Raw -Encoding UTF8
     Check 'goal stalled: the status page says so above the map' ($htmlGoal -match '(?s)<div class="alert">本周目标没动：目标没动 有新提交，本周目标挂的 #1 已 30 小时没进展.*<div class="mapwrap">' -and ([regex]::Matches($htmlGoal, '<div class="alert">本周目标没动：')).Count -eq 1)
+    # 决定回流：docs/decision-log.md 里上次标记以来的决定列出来，写错的提示
+    $dl = Join-Path $root 'declog'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $dl 'docs')
+    G init -q $dl
+    Set-Content -LiteralPath (Join-Path $dl 'docs/queue.md') -Encoding utf8NoBOM -Value "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n| 1 | 甲 | 无 | 待做 |"
+    $dOld = (Get-Date).AddDays(-10).ToString('yyyy-MM-dd'); $dMid = (Get-Date).AddDays(-3).ToString('yyyy-MM-dd'); $dNew = (Get-Date).ToString('yyyy-MM-dd')
+    @"
+# 用户的决定
+
+一行一条，新的写在后面。
+
+- $dOld（评分口径）：过关标准改成 95% 原话："先按 95% 来"
+- $dMid（上线范围）：先不做手机端 原话：“手机端以后再说”
+- $dNew（换路线）：改用新识别路线 原话："按新路线做"
+- 2026-13-40（预算）：日期写错 原话："x"
+- $dNew 少了类别和原话
+"@ | Set-Content -LiteralPath (Join-Path $dl 'docs/decision-log.md') -Encoding utf8NoBOM
+    G -C $dl add -A; G -C $dl commit -q -m 'd1'
+    $dlHq = Join-Path $root 'declog-hq'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $dlHq '.agents')
+    @{ projects = @(@{ name = '决定'; path = $dl; status = '推进中' }, @{ name = '没记录'; path = $idleRepo; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dlHq 'projects.json') -Encoding utf8NoBOM
+    $pDl = (pwsh -NoProfile -File $Script -Config (Join-Path $dlHq 'projects.json') -Json | ConvertFrom-Json).Projects
+    Check 'decisions: without a mark, the last 7 days are listed with kind and quote' ((($pDl[0].Decisions | ForEach-Object { "$($_.Date)|$($_.Kind)|$($_.Text)|$($_.Quote)" }) -join ';') -eq "$dMid|上线范围|先不做手机端|手机端以后再说;$dNew|换路线|改用新识别路线|按新路线做")
+    Check 'decisions: lines it cannot read are reported by line' ([bool](@($pDl[0].Problems) -match '^docs/decision-log\.md 里认不出的决定：第 8 行、第 9 行；'))
+    Check 'decisions: no log file, nothing listed and no hint' (-not @($pDl[1].Decisions).Count -and -not (@($pDl[1].Problems) -match 'decision-log'))
+    @{ '决定' = @{ head = (git -C $dl rev-parse HEAD); time = (Get-Date).AddDays(-1).ToString('yyyy-MM-dd HH:mm') } } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $dlHq '.agents/status-marks.json') -Encoding utf8NoBOM
+    $pDlM = (pwsh -NoProfile -File $Script -Config (Join-Path $dlHq 'projects.json') -Json | ConvertFrom-Json).Projects[0]
+    Check 'decisions: after a mark only those from the mark day on' ((($pDlM.Decisions | ForEach-Object Date) -join ',') -eq $dNew)
+    $tDl = pwsh -NoProfile -File $Script -Config (Join-Path $dlHq 'projects.json') | Out-String
+    Check 'decisions: text lists them' ($tDl -match "  新决定 $dNew（换路线）改用新识别路线 原话：`"按新路线做`"")
+    $null = pwsh -NoProfile -File $daily -Config (Join-Path $dlHq 'projects.json') -Out (Join-Path $root 'declog.html') -NoNotify
+    Check 'decisions: the status page lists them' ((Get-Content -LiteralPath (Join-Path $root 'declog.html') -Raw -Encoding UTF8) -match "<dt>新决定</dt><dd><ul class=`"items`"><li>$dNew 改用新识别路线</li></ul>")
     $dstate = Join-Path $root 'out/daily-state.json'
     $env:AI_DEV_FLOW_NOTIFY = $ncfg
     $d1 = pwsh -NoProfile -File $daily -Config $cfg -Out $page -State $dstate -DryRun | Out-String

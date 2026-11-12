@@ -35,6 +35,8 @@ param(
 # 待放行（Pending）：会话自己加、还没人放行的项（skills/next/SKILL.md 第 4 节），不算可领，依赖它的也没满足，文本和状态页逐条列出。
 # 全部项（Items，只在 -Json 里）：队列每一项的编号、目标、状态、说明、依赖原文和是否可领（Claimable），状态页画全景图用。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
+# 新决定（Decisions）：docs/decision-log.md 里用户在项目会话做的方向性决定（direction.md 第 3 节），一行一条：- <YYYY-MM-DD>（<类别>）：<决定> 原话："<用户原话>"。
+#   只列上次 -Mark 那天及以后的（没有标记就是近 7 天），周会拿去和 INTENT.md 对；以 "- <日期>" 开头却认不出的行写成提示。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
@@ -144,7 +146,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Items = @(); Waiting = @(); Pending = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
+        Lessons = @(); LessonsDue = @(); Requests = @(); Decisions = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @(); Unwatched = $false; GoalStalled = $null
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -213,6 +215,24 @@ function Get-ProjectStatus($p) {
             }
         })
         if ($r.Requests) { $r.Problems.Add("还没转进队列的请求 $($r.Requests.Count) 条：" + (($r.Requests | ForEach-Object { Short $_.Title 30 }) -join '、')) }
+    }
+    $logFile = Join-Path $path 'docs/decision-log.md'
+    if (Test-Path -LiteralPath $logFile) {
+        $from = (Get-Date).Date.AddDays(-7)
+        $mt = [datetime]::MinValue
+        if ($mark -and [datetime]::TryParseExact("$($mark.time)", 'yyyy-MM-dd HH:mm', $null, 'None', [ref]$mt)) { $from = $mt.Date }
+        $bad = [Collections.Generic.List[string]]::new()
+        $n = 0
+        $r.Decisions = @(foreach ($line in Get-Content -LiteralPath $logFile -Encoding UTF8) {
+            $n++
+            if ($line -notmatch '^\s*[-*]\s*\d{4}-\d') { continue }
+            $m = [regex]::Match($line, '^\s*[-*]\s*(\d{4}-\d{2}-\d{2})\s*[（(]([^）)]+)[）)]\s*[：:]\s*(.+?)\s*原话\s*[：:]\s*[“"](.+)[”"]\s*$')
+            $d = [datetime]::MinValue
+            if (-not $m.Success -or -not [datetime]::TryParseExact($m.Groups[1].Value, 'yyyy-MM-dd', $null, 'None', [ref]$d)) { $bad.Add("第 $n 行"); continue }
+            if ($d -lt $from) { continue }
+            [pscustomobject]@{ Date = $m.Groups[1].Value; Kind = $m.Groups[2].Value.Trim(); Text = $m.Groups[3].Value.Trim(); Quote = $m.Groups[4].Value }
+        })
+        if ($bad.Count) { $r.Problems.Add("docs/decision-log.md 里认不出的决定：$($bad -join '、')；写成 - <YYYY-MM-DD>（<类别>）：<决定> 原话：`"<用户原话>`"（direction.md 第 3 节）") }
     }
 
     $stoppedDirs = @()
@@ -473,6 +493,7 @@ foreach ($r in $results) {
     }
     foreach ($c in @($r.Direction.Cards | Where-Object { $_ })) { $out.Add("  决定卡 $(Short $c.Title 60)：$($c.File)") }
     foreach ($w in $r.Waiting) { $out.Add("  待用户$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) })$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
+    foreach ($d in $r.Decisions) { $out.Add("  新决定 $($d.Date)（$($d.Kind)）$(Short $d.Text 60) 原话：`"$(Short $d.Quote 60)`"") }
     foreach ($w in $r.Pending) { $out.Add("  待放行$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
     if ($r.Digest -and -not $brief) {
         $out.Add("最近摘要 $($r.Digest.Date)")
