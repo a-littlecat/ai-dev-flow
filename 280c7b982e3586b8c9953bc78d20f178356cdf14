@@ -1,0 +1,1 @@
+覆盖：4cee066..280c7b982e3586b8c9953bc78d20f178356cdf14；沿用 8ee0648 的 Pass（claude-opus-5-5 子 agent），rebase 前 e78d56c 的 note 同；之后只多了文档：docs/queue.md，全是主干带进来的，不涉及；跑了：tests/run-all.ps1 → 退出 0（8ee0648），快检用时：338 秒；没跑：无；没采纳：V2 豁免由用户 2026-11-12 回"可以，推送吧"确认
