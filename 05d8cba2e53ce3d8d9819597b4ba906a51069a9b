@@ -1,0 +1,1 @@
+覆盖：51c1658..05d8cba2e53ce3d8d9819597b4ba906a51069a9b；claude-opus-5-5 子 agent（推理强度同会话）→ Pass，无 P0–P2；跑了：tests/run-all.ps1 → 退出 0（05d8cba2e53ce3d8d9819597b4ba906a51069a9b），快检用时：327 秒；改坏：watch.ps1 不把 idle 项目放进 $now → unattended: watch pushes it to the phone 红；本机实发：分支版 watch.ps1 对真实清单跑一次，退出 0；没跑：无；没采纳：备注里 watch.ps1 开头说明和 no new stall 措辞没提有活没人做，只是措辞
