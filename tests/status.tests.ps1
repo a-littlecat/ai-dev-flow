@@ -596,15 +596,16 @@ try {
     $gStuck = & $mkGoal 'goal-stuck' 30 0
     $gMoving = & $mkGoal 'goal-moving' 2 0
     $gQuiet = & $mkGoal 'goal-quiet' 30 30
-    $goals = @(@{ text = '做完第 1 项'; items = @('1', '3') })
+    $goals = @(@{ text = '做完第 1 项'; items = @('1', '3', '99') })
     $cfgGoal = Join-Path $root 'projects-goal.json'
     @{ projects = @(@{ name = '目标没动'; path = $gStuck; status = '推进中'; goals = $goals }, @{ name = '目标在动'; path = $gMoving; status = '推进中'; goals = $goals },
-        @{ name = '都没动'; path = $gQuiet; status = '推进中'; goals = $goals }, @{ name = '没目标'; path = $gStuck; status = '推进中' }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGoal -Encoding utf8NoBOM
+        @{ name = '都没动'; path = $gQuiet; status = '推进中'; goals = $goals }, @{ name = '没目标'; path = $gStuck; status = '推进中' }, @{ name = '目标的项已删'; path = $gStuck; status = '推进中'; goals = @(@{ text = '早做完了'; items = @('99') }) }) } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $cfgGoal -Encoding utf8NoBOM
     $pGoal = (pwsh -NoProfile -File $Script -Config $cfgGoal -Json | ConvertFrom-Json).Projects
     Check 'goal stalled: new commits but the goal item untouched for 30 hours, flagged with only open items' ($pGoal[0].GoalStalled -and (@($pGoal[0].GoalStalled.Ids) -join ',') -eq '1' -and [bool](@($pGoal[0].Problems) -match '^本周目标没动：有新提交，本周目标挂的 #1 已 30 小时没有提交提到它们'))
     Check 'goal stalled: a recent commit on the goal item, not flagged' (-not $pGoal[1].GoalStalled -and -not (@($pGoal[1].Problems) -match '本周目标没动'))
     Check 'goal stalled: no new commits at all, not flagged' (-not $pGoal[2].GoalStalled)
     Check 'goal stalled: no goals, not flagged' (-not $pGoal[3].GoalStalled)
+    Check 'goal stalled: goal items done and trimmed from the queue count as done, not flagged' (-not $pGoal[4].GoalStalled)
     $pGoal48 = (pwsh -NoProfile -File $Script -Config $cfgGoal -Json -GoalHours 48 | ConvertFrom-Json).Projects
     Check 'goal stalled: the threshold can be raised' (-not $pGoal48[0].GoalStalled -and -not $pGoal48[2].GoalStalled)
     $gNever = Join-Path $root 'goal-never'

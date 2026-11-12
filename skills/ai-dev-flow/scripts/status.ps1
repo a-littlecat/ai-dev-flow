@@ -381,8 +381,8 @@ function Get-ProjectStatus($p) {
     }
     # 本周目标没动：GoalHours 小时内有新提交，本周目标挂的、还没完成的项却这么久没有提到它的提交（"#<编号>"，认领、合并、队列改状态都带编号）。
     # 进展只认提交：在做的项写着在做，却一直没提交，也算没动。起点是最近一次提到它们的提交，和周会定目标后的 -Mark 时间，取较晚者；
-    # 两样都没有（目标刚定、还没 -Mark）不知道从哪天算，不提示。
-    $goalIds = @($p.goals | Where-Object { $_ -and $_.done -ne $true } | ForEach-Object { @($_.items) } | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' } | Where-Object { $_ -match '^\d+$' -and $done -notcontains $_ } | Select-Object -Unique)
+    # 两样都没有（目标刚定、还没 -Mark）不知道从哪天算，不提示。只看队列和搁置文件里还在、没完成的编号：找不到的按已完成算（完成的项会删），同依赖。
+    $goalIds = @($p.goals | Where-Object { $_ -and $_.done -ne $true } | ForEach-Object { @($_.items) } | Where-Object { $_ } | ForEach-Object { "$_" -replace '^#', '' } | Where-Object { $_ -match '^\d+$' -and $open -contains $_ } | Select-Object -Unique)
     $lastCommit = @(git -C $path for-each-ref refs/heads --format='%(committerdate:unix)' | Where-Object { $_ } | ForEach-Object { [long]$_ } | Measure-Object -Maximum).Maximum
     if ($p.status -eq '推进中' -and $goalIds -and $lastCommit) {
         $nowUnix = [DateTimeOffset]::Now.ToUnixTimeSeconds()
