@@ -102,12 +102,13 @@ function CardBody($c) {
     }) -join ''
     "<details class=`"dc`" open><summary>决定卡：$(Enc $c.Title)</summary>$rows<div class=`"how`">$(Enc $c.File)</div></details>"
 }
-# 状态标签：可能停了 > 等你 > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
+# 状态标签：可能停了 > 等你 > 方向要停 > 方向没人看（没登记基准，status.ps1 的 Unwatched） > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
 function State($p) {
     if ($p.Status -eq '维护') { return @('维护中', 'muted') }
     if (IsStalled $p) { return @('可能停了', 'bad') }
     if ((Asks $p).Count) { return @('等你', 'warn') }
     if (@(StoppedOpen $p).Count) { return @('方向要停', 'bad') }
+    if ($p.Unwatched) { return @('方向没人看', 'bad') }
     if (@($p.Doing).Count) { return @('在做', 'ok') }
     if ($p.Available -and (Recent $p)) { return @('刚有动静', 'ok') }
     if ($p.Available) { return @('空着，可开工', 'idle') }
@@ -578,7 +579,7 @@ function ProjectCard($mo) {
     if ($bench -and $bench.FlowUrl) { $null = $x.Append("<details class=`"flowbox`"><summary>展开流程图：这个项目从输入到输出，每一步谁做</summary><iframe src=`"$(Enc $bench.FlowUrl)`" loading=`"lazy`" sandbox title=`"$(Enc (Nick $p.Name)) 的流程图`"></iframe></details>") }
     if ($bench -and $bench.Benchmark -ne 'notApplicable' -and $p.Status -eq '推进中') {
         $lack = @(if ($bench.Benchmark -eq 'none') { '还没登记基准' }; if (-not $bench.FlowUrl) { '还没有流程图' })
-        if ($lack) { $null = $x.Append("<div class=`"missing`">$($lack -join '，')：下次在这个项目发 /next 会自动加</div>") }
+        if ($lack) { $null = $x.Append("<div class=`"missing`">$(if ($p.Unwatched) { '方向没人看：' })$($lack -join '，')：下次在这个项目发 /next 会先做</div>") }
     }
     $det = [Collections.Generic.List[string]]::new()
     $other = @($p.Other)

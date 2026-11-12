@@ -655,6 +655,9 @@ try {
     Check 'direction: active project without a baseline or flow page gets hints' (($pg.Problems -join '|') -match '还没登记基准' -and ($pg.Problems -join '|') -match '还没有流程图' -and $pg.Available -eq 1)
     Check 'direction: already queued, no hint' (((& $get '项目 G2').Problems -join '|') -notmatch '还没登记基准|还没有流程图')
     Check 'direction: a project in maintenance is not asked to register' (((& $get '项目 G3').Problems -join '|') -notmatch '还没登记基准|还没有流程图')
+    Check 'unwatched: no baseline and no reason, flagged' ((& $get '项目 G').Unwatched -and [bool](@((& $get '项目 G').Problems) -match '^方向没人看：'))
+    Check 'unwatched: queued but not registered yet, still flagged' ((& $get '项目 G2').Unwatched -and [bool](@((& $get '项目 G2').Problems) -match '^方向没人看：'))
+    Check 'unwatched: registered, a reason written, or in maintenance, not flagged' (-not ($pf.Unwatched -or (& $get '项目 G5').Unwatched -or (& $get '项目 G3').Unwatched) -and -not (@($pf.Problems) + @((& $get '项目 G5').Problems) + @((& $get '项目 G3').Problems) -match '方向没人看'))
     Check 'direction: a broken file is flagged even in maintenance' (((& $get '项目 G4').Problems -join '|') -match 'benchmark.json 读不了')
     Check 'direction: notApplicable has no hints' (((& $get '项目 G5').Problems -join '|') -notmatch '基准|流程图' -and (& $get '项目 G5').Direction.Benchmark -eq 'notApplicable')
     $tf = pwsh -NoProfile -File $Script -Config $cfgF -Project '项目 F' | Out-String
@@ -714,7 +717,8 @@ try {
     Check 'page: settled cards are not listed' ($html -notmatch '早定了的卡')
     Check 'page: a stopped direction is listed with its reason, its name escaped everywhere' ($html -match '方向 A&lt;b&gt; 要停：预算 5 天花完了' -and $dh -match '方向 A<b> 要停' -and $html -match '<div class="alert">' -and $html -match '<dt>方向</dt><dd>A&lt;b&gt;（进行中）</dd>' -and $html -notmatch 'A<b>')
     Check 'page: the count includes loose cards and stopped directions' ($html -match '<h1><em>3</em> 件事要你管</h1>')
-    Check 'page: no baseline says so; notApplicable shows no row' ($html -match '<div class="missing">还没登记基准，还没有流程图：' -and ([regex]::Matches($html, 'class="missing"')).Count -eq 2 -and ([regex]::Matches($html, '<div class="bench">')).Count -eq 1)
+    Check 'page: no baseline says so; notApplicable shows no row' ($html -match '<div class="missing">方向没人看：还没登记基准，还没有流程图：' -and ([regex]::Matches($html, 'class="missing"')).Count -eq 2 -and ([regex]::Matches($html, '<div class="bench">')).Count -eq 1)
+    Check 'unwatched: the status page tags the project' ([regex]::Matches($html, '<span class="tag bad">方向没人看</span>').Count -eq 1 -and $html -match '下次在这个项目发 /next 会先做')
     Check 'page: no flow page says so' ($html -match '<div class="missing">还没有流程图：')
     Set-Content -LiteralPath (Join-Path $h 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
     $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify

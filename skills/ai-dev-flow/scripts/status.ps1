@@ -143,7 +143,7 @@ function Get-ProjectStatus($p) {
         Queue = $null; Items = @(); Waiting = @(); Pending = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
-        LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
+        LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @(); Unwatched = $false
         Problems = [Collections.Generic.List[string]]::new()
     }
     if ($statusOrder.Keys -notcontains $p.status) { $r.Problems.Add("状态应为 推进中 / 维护 / 暂停，现在是：$($p.status)") }
@@ -289,6 +289,11 @@ function Get-ProjectStatus($p) {
         $r.Recent = @($items | Where-Object State -eq '完成' | Select-Object -Last 3)
     } else { $r.Problems.Add("没有队列文件 $queueRel") }
     if ($r.Direction) {
+        # 方向没人看：推进中的项目没有 docs/benchmark.json，也没写不登记的理由（notApplicable）。排进队列了也照样标，登记了才算有人看（direction.md 第 4 节）。
+        if ($p.status -eq '推进中' -and $r.Direction.Benchmark -eq 'none') {
+            $r.Unwatched = $true
+            $r.Problems.Add('方向没人看：没有 docs/benchmark.json，也没写不登记的理由；/next 开场先做 登记基准')
+        }
         $openGoals = @($items | Where-Object { $_.State -notin '完成', '搁置' } | ForEach-Object { "$($_.Goal)" })
         foreach ($a in @($r.Direction.Actions)) {
             if ($p.status -ne '推进中' -and $a -notmatch '^改好') { continue }
