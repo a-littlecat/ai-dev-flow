@@ -28,6 +28,7 @@ param(
 # 可领：状态"待做"、依赖为空或"无"、依赖的编号在本队列里都已"完成"（队列和搁置文件里都找不到的按已完成算，完成的项会删；搁置文件读不出表时不这么算），而且不在搁置文件里；
 #   依赖里写了编号以外的东西（例如别的项目的项）就不算可领。
 # 接下来（Next）：可领的前 3 项；最近完成（Recent）：队列里最后 3 个"完成"的项。
+# 待放行（Pending）：会话自己加、还没人放行的项（skills/next/SKILL.md 第 4 节），不算可领，依赖它的也没满足，文本和状态页逐条列出。
 # 全部项（Items，只在 -Json 里）：队列每一项的编号、目标、状态、说明、依赖原文和是否可领（Claimable），状态页画全景图用。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
@@ -64,7 +65,7 @@ if (Test-Path -LiteralPath $marksFile) {
     (Get-Content -LiteralPath $marksFile -Raw -Encoding UTF8 | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $marks[$_.Name] = $_.Value }
 }
 
-$states = '待做', '在做', '待验证', '待用户', '完成', '搁置'
+$states = '待做', '在做', '待验证', '待用户', '待放行', '完成', '搁置'
 # 常见的另一种写法归到标准状态。只认这个词单独写或后面紧跟括号：归错会放行依赖、藏掉提示，说不准的（"已完成部分""暂停于安全点""部分已定"）不归，照常提示。
 # 括号里还有半截话的也不归（已合并（到分支，待验证）、暂停（要不要继续））；暂停里写着安全点、接力的是接力（/next 第 3 节当待做），不算搁置。
 $aliasUnsure = '部分|一半|阶段|到分支|未|待|等你|等您|要不要|[?？]'
@@ -87,7 +88,7 @@ function Short([string]$s, [int]$n) {
 # 队列项的编号写成 #7；没有编号的返回空，别显示成一个孤零零的 #。
 function Format-Id([string]$id, [int]$n = 12) { $v = ($id -replace '^#', '').Trim(); if ($v) { '#' + (Short $v $n) } else { '' } }
 
-# 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 完成 / 搁置 开头，后面可以跟括号说明。
+# 队列：Markdown 表格，表头里有"状态"列、下一行是分隔行；状态格以 待做 / 在做 / 待验证 / 待用户 / 待放行 / 完成 / 搁置 开头，后面可以跟括号说明。
 # 首尾竖线可有可无；代码块里的不算（围栏按 CommonMark：同种字符、不短于开头、整行只有围栏才算结束；表格外缩进 4 格的行算缩进代码）。
 function Read-Queue([string]$file) {
     $cols = $header = $fence = $null
@@ -137,7 +138,7 @@ function Get-ProjectStatus($p) {
         DependsOn = @($p.dependsOn | Where-Object { $_ })
         Trust = $null; Trunk = $null; Head = $null; HeadDate = $null
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
-        Queue = $null; Items = @(); Waiting = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
+        Queue = $null; Items = @(); Waiting = @(); Pending = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
         Lessons = @(); LessonsDue = @(); Requests = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @()
@@ -257,6 +258,7 @@ function Get-ProjectStatus($p) {
         if ($shelvedLike) { $r.Problems.Add("待用户项像是搁置（写着先不做或在等别处）：$(($shelvedLike | ForEach-Object $label) -join '、')；用户说过先不做的改成 搁置（<恢复条件>）") }
         $logLike = @($r.Waiting | Where-Object Hint -eq '过程记录')
         if ($logLike) { $r.Problems.Add("待用户项的状态格写成了过程记录（超过 300 字）：$(($logLike | ForEach-Object $label) -join '、')；只留现在要用户定的，过程写进提交正文") }
+        $r.Pending = @($items | Where-Object State -eq '待放行')
         $r.Doing = @($items | Where-Object State -eq '在做')
         $other = @($items | Where-Object State -eq '其他')
         $r.Other = $other
@@ -424,7 +426,7 @@ foreach ($r in $results) {
             if ($r.NewCount -gt 8) { $out.Add("  …另 $($r.NewCount - 8) 条") }
         }
     }
-    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -notin '其他', '搁置' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
+    if ($r.Queue) { $out.Add('队列：' + (($r.Queue.GetEnumerator() | Where-Object { $_.Key -notin '其他', '搁置', '待放行' -or $_.Value } | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ' · ') + "；可领 $($r.Available)") }
     if ($r.Goals) { $out.Add("本周目标 $(@($r.Goals | Where-Object Done).Count)/$($r.Goals.Count)：" + (($r.Goals | ForEach-Object { "$(if ($_.Done) { '✓' } else { '○' }) $(Short $_.Text 40)" }) -join '；')) }
     if ($r.LastActivity) { $out.Add("最后活动 $($r.LastActivity)（$(Format-Idle $r.IdleMinutes)前）") }
     if ($r.Direction -and $r.Direction.Benchmark -eq 'ok' -and -not $brief) {
@@ -434,6 +436,7 @@ foreach ($r in $results) {
     }
     foreach ($c in @($r.Direction.Cards | Where-Object { $_ })) { $out.Add("  决定卡 $(Short $c.Title 60)：$($c.File)") }
     foreach ($w in $r.Waiting) { $out.Add("  待用户$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) })$(if ($w.Tier) { " [$($w.Tier)]" }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
+    foreach ($w in $r.Pending) { $out.Add("  待放行$(if ($w.Id) { ' ' + (Format-Id $w.Id 40) }) $(Short $w.Goal 60)$(if ($w.Detail) { "：$(Short $w.Detail 80)" })") }
     if ($r.Digest -and -not $brief) {
         $out.Add("最近摘要 $($r.Digest.Date)")
         foreach ($l in $r.Digest.Lines) { $out.Add("  $(Short $l 120)") }

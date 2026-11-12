@@ -399,6 +399,30 @@ try {
     Remove-Item -LiteralPath (Join-Path $sh 'docs/queue-shelved.md')
     $pSh0 = (pwsh -NoProfile -File $Script -Config $cfgShelf -Json | ConvertFrom-Json).Projects[0]
     Check 'shelf file: without it, a missing dependency counts as done as before' ($pSh0.Available -eq 2 -and (($pSh0.Next | ForEach-Object Id) -join ',') -eq '2,4' -and $pSh0.Queue.'搁置' -eq 0 -and -not ($pSh0.Problems -match '不是搁置'))
+    # 待放行：会话自己加、还没放行的项，不算可领，依赖它的也没满足，文本和状态页都列出
+    $rl = Join-Path $root 'release'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $rl 'docs')
+    G init -q $rl
+    @'
+| # | 目标 | 依赖 | 状态 |
+|---|---|---|---|
+| 1 | 用户要的 | 无 | 待做 |
+| 2 | 复盘自己加的 | 无 | 待放行（复盘 11-12 加；不挂本周目标） |
+| 3 | 依赖待放行的项 | 2 | 待做 |
+'@ | Set-Content -LiteralPath (Join-Path $rl 'docs/queue.md') -Encoding utf8NoBOM
+    G -C $rl add -A; G -C $rl commit -q -m 'r1'
+    $cfgRel = Join-Path $root 'projects-release.json'
+    @{ projects = @(@{ name = '待放行'; path = $rl; status = '推进中' }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgRel -Encoding utf8NoBOM
+    $pRl = (pwsh -NoProfile -File $Script -Config $cfgRel -Json | ConvertFrom-Json).Projects[0]
+    Check 'pending release: counted as its own state, not unknown' ($pRl.Queue.'待放行' -eq 1 -and $pRl.Queue.'其他' -eq 0 -and -not ($pRl.Problems -match '认不出'))
+    Check 'pending release: not claimable, and blocks what depends on it' ($pRl.Available -eq 1 -and (($pRl.Next | ForEach-Object Id) -join ',') -eq '1' -and -not @($pRl.Items | Where-Object { $_.Id -in '2', '3' -and $_.Claimable }).Count)
+    Check 'pending release: listed with its note' ((($pRl.Pending | ForEach-Object Id) -join ',') -eq '2' -and $pRl.Pending[0].Detail -eq '复盘 11-12 加；不挂本周目标')
+    $tRl = pwsh -NoProfile -File $Script -Config $cfgRel | Out-String
+    Check 'pending release: text lists it' ($tRl -match '待放行 1' -and $tRl -match '  待放行 #2 复盘自己加的：复盘 11-12 加')
+    $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgRel -Out (Join-Path $root 'release.html') -NoNotify
+    $htmlRl = Get-Content -LiteralPath (Join-Path $root 'release.html') -Raw -Encoding UTF8
+    Check 'pending release: the status page lists it and notes it off the map' ($htmlRl -match '<dt>待放行</dt><dd><ul class="items"><li>[^<]*<span class="num">#2</span>' -and $htmlRl -match '1 项待放行，没画在图上' -and $htmlRl -match '等你 0 &#183; 待放行 1 &#183;')
+    Check 'pending release: none, no line for it' (-not ($tSh -match '待放行') -and -not ((Get-Content -LiteralPath (Join-Path $root 'shelf.html') -Raw -Encoding UTF8) -match '待放行'))
     Check 'shelved: counted, not reported as unknown' ($pc.Queue.'搁置' -eq 1 -and $pc.Queue.'其他' -eq 1 -and -not ($pc.Problems -match '先放着|等数据') -and $tc -match '搁置 1')
     Check 'shelved: still an unknown state next to it is reported' ([bool]($pc.Problems -match '认不出.*#4'))
     Check 'shelved: not available, and blocks what depends on it' ($pc.Available -eq 1 -and $pc.Next[0].Id -eq '3')

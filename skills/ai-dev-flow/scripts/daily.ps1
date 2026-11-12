@@ -283,7 +283,7 @@ $followers = @{}; foreach ($dc in $decisions) { foreach ($o in $dc.Down) { $foll
 $askCount = @($models | ForEach-Object { Of $_ '待用户' }).Count
 $pageCount = $decisions.Count + $looseCards.Count + $stalled.Count + $stops.Count
 $allItems = @($models | ForEach-Object { $_.Items })
-$totals = @{}; foreach ($st in '完成', '在做', '待验证', '待用户', '搁置', '其他') { $totals[$st] = @($allItems | Where-Object State -eq $st).Count }
+$totals = @{}; foreach ($st in '完成', '在做', '待验证', '待用户', '待放行', '搁置', '其他') { $totals[$st] = @($allItems | Where-Object State -eq $st).Count }
 $openCount = @($allItems | Where-Object { $_.State -eq '待做' -and $_.Claimable }).Count
 $blockedCount = @($allItems | Where-Object { $_.State -eq '待做' -and -not $_.Claimable }).Count
 
@@ -406,6 +406,7 @@ $mapSvg = "<svg id=`"map`" viewBox=`"0 0 $mapW $(Num $mapH)`" role=`"img`" aria-
 $legend = (@(@('done', '完成'), @('ask', '等你'), @('doing', '在做'), @('verify', '待验证'), @('idle', '可以开工'), @('wait', '被挡住')) | ForEach-Object { "<span><i class=`"$($_[0])`"></i>$($_[1])</span>" }) -join ''
 $mapNotes = @(
     if ($totals['搁置']) { "另有 $($totals['搁置']) 项搁置" }
+    if ($totals['待放行']) { "$($totals['待放行']) 项待放行" }
     if ($totals['其他']) { "$($totals['其他']) 项写法不标准" }
     foreach ($mo in $models) { if (-not $mo.Items.Count) { "$(Nick $mo.P.Name) 没读到队列" } }
 )
@@ -553,6 +554,8 @@ function ProjectCard($mo) {
     if ($p.Next) { $facts.Add("<dt>接下来</dt><dd>$(ListHtml $p.Next)</dd>") }
     $blockedRows = BlockedHtml $mo
     if ($blockedRows) { $facts.Add("<dt>被挡住</dt><dd>$blockedRows</dd>") }
+    # 会话自己加、还没人放行的项（/next 第 4 节）：不领，等你或周会说做再改成待做。
+    if ($p.Pending) { $facts.Add("<dt>待放行</dt><dd>$(ListHtml $p.Pending)<div class=`"how`">会话自己加的，你或周会说做，才改成待做</div></dd>") }
     if ($p.Recent) { $facts.Add("<dt>最近完成</dt><dd>$(ListHtml $p.Recent)</dd>") }
     $x = [Text.StringBuilder]::new()
     $null = $x.Append("<section class=`"proj`" id=`"p$($mo.Index)`"><div class=`"proj-h`"><h3>$(Enc (Nick $p.Name))</h3><span class=`"tag $($st[1])`">$(Enc $st[0])</span><span class=`"right`">$flow$(Progress $p)$(if ($null -ne $p.Priority) { "<span>优先级 $(Enc $p.Priority)</span>" })</span></div>")
@@ -576,7 +579,7 @@ function ProjectCard($mo) {
     $det = [Collections.Generic.List[string]]::new()
     $other = @($p.Other)
     if ($other) { $det.Add("队列里有 $($other.Count) 项的状态写法不标准，下次在这个项目发 /next 会顺手改好") }
-    if ($p.Queue) { $q = $p.Queue; $det.Add("队列：在做 $($q.'在做') · 待做 $($q.'待做')（可领 $($p.Available)） · 待验证 $($q.'待验证') · 等你 $($q.'待用户') · 完成 $($q.'完成')$(if ($q.'搁置') { " · 搁置 $($q.'搁置')" })$(if ($q.'其他') { " · 写法不标准 $($q.'其他')" })") }
+    if ($p.Queue) { $q = $p.Queue; $det.Add("队列：在做 $($q.'在做') · 待做 $($q.'待做')（可领 $($p.Available)） · 待验证 $($q.'待验证') · 等你 $($q.'待用户')$(if ($q.'待放行') { " · 待放行 $($q.'待放行')" }) · 完成 $($q.'完成')$(if ($q.'搁置') { " · 搁置 $($q.'搁置')" })$(if ($q.'其他') { " · 写法不标准 $($q.'其他')" })") }
     if ($p.LastActivity) { $det.Add("最后动静 $($p.LastActivity)（$(Ago $p.IdleMinutes)前）；主干新提交 $($p.NewCount)（$($p.NewSince)）") }
     if ($null -ne $p.Worktrees -and ($p.WorktreesMerged + $p.WorktreesDetached + $p.BranchesMerged)) { $det.Add("可以清理：已合并的分支 $($p.BranchesMerged) 个，临时工作目录 $($p.Worktrees) 个") }
     if ($p.Trust) { $det.Add("信任等级 $($p.Trust)") }
