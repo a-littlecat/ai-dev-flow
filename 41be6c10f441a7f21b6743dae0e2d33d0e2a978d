@@ -1,0 +1,1 @@
+覆盖：084242b..41be6c10f441a7f21b6743dae0e2d33d0e2a978d；只改纯文档，按 verify.md 第 1 节例外逐条核对 → Pass：git log -1 --grep='^目标对照：' 在临时仓库能找到正文行以它开头的提交；INTENT.md、projects.json goals 的位置同 portfolio.md 第 2 节；/next 第 5 节停下清单、第 6 节汇报都引用了第 5 节；docs/flow.html 复盘和周会一步已更新；check-md.ps1 → 退出 0；快检：不适用；没跑：不适用
