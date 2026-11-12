@@ -1,0 +1,1 @@
+覆盖：a9429a2..d06fc17（队列 #46）；沿用 fd1000d 的 Pass（见 fd1000d 的 note）；rebase 到主干，range-diff 各提交内容不变；之后只多了文档：docs/queue.md ，全是主干带进来的，不涉及；没跑：同原 note；没采纳：同原 note
