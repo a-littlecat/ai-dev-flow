@@ -88,9 +88,9 @@ pwsh -NoProfile -File scripts/status.ps1 -Project '<名字>,<名字>' -Since '7 
 
 ### 开会话和叫醒会话
 
-写完跨项目的请求后，由你叫项目接；用户要答复项目的问题、而那个项目没有开着的会话时，也由你开一个，让用户去那里答：
+写完跨项目的请求后，由你叫项目接（项目往别的项目写请求后怎么叫，见 `orchestrate.md` 第 6 节和本文第 7 节）；用户要答复项目的问题、而那个项目没有开着的会话时，也由你开一个，让用户去那里答：
 
-1. **清单写 `"wake": "message"` 的，先看那个项目有没有会话**：用 `ListAgents` 看（同一台电脑上桌面应用、命令行、后台的会话都列得出）。有，就用 `SendMessage` 发给它：要它做什么、写在 `docs/requests.md` 哪一节。正在做别的也照发，它在两步之间会读到。没写 `wake` 或写 `new` 的跳过这一步，不叫醒旧会话，直接按下一步新开，旧会话的名字列在脚本输出里。
+1. **清单写 `"wake": "message"` 的，先看那个项目有没有会话**：用 `ListAgents` 看（同一台电脑上桌面应用、命令行、后台的会话都列得出）。有，就用 `SendMessage` 发给它：要它做什么、写在 `docs/requests.md` 哪一节。列表里分不清哪个会话是这个项目的，先问用户，不猜着发。正在做别的也照发，它在两步之间会读到。没写 `wake` 或写 `new` 的跳过这一步，不叫醒旧会话，直接按下一步新开，旧会话的名字列在脚本输出里。
 2. **开一个**：
    ```
    pwsh -NoProfile -File <skill>/scripts/launch.ps1 -Project '<清单里的名字>' -Config projects.json -Max <INTENT.md 里同时开着的会话上限> [-Model <模型>] [-Effort <强度>]
@@ -149,6 +149,7 @@ pwsh -NoProfile -File <skill>/scripts/daily.ps1 -Config <总览仓库>/projects.
   - 仓库路径看总览 `projects.json` 里 ai-dev-flow 那一行；清单里没有就写进汇报的"要你做"，不猜路径。
   - 照那份文件已有的格式写一个 `## <日期> 来自一个推进中项目：<主题>` 小节，含"现象""用户决定"（没有就写"无"）"请求"，状态写"待转"；不写项目名和本机路径，那是公开仓库。
   - 只改这一个文件，单独提交（`requests: <主题>`）；那边有未提交的改动或正在提交时，等一会再提交，不动别的文件。
+  - 提交后叫对方：`docs/requests.md` 只在 `/next` 开工时读，正在跑的会话看不到。用 `ListAgents` 看 ai-dev-flow 仓库有没有会话在跑，有就用 `SendMessage` 发一句"请求单新加了 `## <日期> …` 一节"，别的不说；没有就不开，等它下次开工或状态页。列表里分不清哪个会话属于哪个项目的，先问用户再发，不猜。
   - 回到本项目，在那条教训里加一行 `升级：已请求 ai-dev-flow（<日期>）`。ai-dev-flow 发出带这条的版本、本机装好之后，下次复盘把它从 `LESSONS.md` 删掉。
 - 转进队列以后，项目的 `/next` 开场用 `scripts/archive-requests.ps1` 把处理完的小节移到 `docs/requests-done.md`，主文件只留还要转的。总览和项目往 `docs/requests.md` 里写新请求照旧，不用管归档。
 - 状态脚本把 Seen 达到 3 还没写"升级："的教训，和各项目 `docs/requests.md` 里还没转的请求（ai-dev-flow 自己的也算）都列进"提示"，不靠周会才看见。
