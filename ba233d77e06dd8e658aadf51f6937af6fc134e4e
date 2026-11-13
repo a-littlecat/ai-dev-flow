@@ -1,0 +1,1 @@
+覆盖：9061a05d4e38c8629b38f3cc5abfbdfb7d854330..ba233d77e06dd8e658aadf51f6937af6fc134e4e；只改纯文档（portfolio.md、README.md、VERSION），按 verify.md 第 1 节逐条核对，不请验证方 → Pass；跑了：check-md.ps1 → 退出 0；核对：orchestrate.md 第 6 节、portfolio.md 第 4、7 节存在，ListAgents、SendMessage 同第 4 节第 1 步；没跑：不适用；没采纳：无
