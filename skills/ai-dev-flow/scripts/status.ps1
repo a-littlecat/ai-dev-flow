@@ -36,7 +36,7 @@ param(
 # 全部项（Items，只在 -Json 里）：队列每一项的编号、目标、状态、说明、依赖原文和是否可领（Claimable），状态页画全景图用。
 # 该升级的教训（LessonsDue）：LESSONS.md 里 Seen 达到 3、又没写"升级："一行的教训（garden.md 第 2 节第 5 步）。
 # 新决定（Decisions）：docs/decision-log.md 里用户在项目会话做的方向性决定（direction.md 第 3 节），一行一条：- <YYYY-MM-DD>（<类别>）：<决定> 原话："<用户原话>"。
-#   只列上次 -Mark 那天及以后的（没有标记就是近 7 天），周会拿去和 INTENT.md 对；像决定（列表项，开头是年份或写着原话）却认不出的行写成提示。
+#   只列上次 -Mark 那天及以后的（没有标记就是近 7 天），周会拿去和 INTENT.md 对；像决定（列表项，开头是年份或写着"原话："）却认不出的行写成提示。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
 # 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
@@ -225,8 +225,8 @@ function Get-ProjectStatus($p) {
         $n = 0
         $r.Decisions = @(foreach ($line in Get-Content -LiteralPath $logFile -Encoding UTF8) {
             $n++
-            # 像决定的行（列表项，开头是年份或写着原话）都要认得出，认不出就提示，免得写法稍偏就悄悄丢了。
-            if ($line -notmatch '^\s*(?:[-*]|\d+\.)\s+(?:\**\s*\d{4}\s*[-/年.]|.*原话)') { continue }
+            # 像决定的行（列表项，开头是年份或写着"原话："）都要认得出，认不出就提示，免得写法稍偏就悄悄丢了。
+            if ($line -notmatch '^\s*(?:[-*]|\d+\.)\s+(?:\**\s*\d{4}\s*[-/年.]|.*原话\s*[：:])') { continue }
             $m = [regex]::Match($line, '^\s*[-*]\s*(\d{4}-\d{2}-\d{2})\s*[（(]([^）)]+)[）)]\s*[：:]\s*(.+?)\s*原话\s*[：:]\s*[“"](.+)[”"]\s*$')
             $d = [datetime]::MinValue
             if (-not $m.Success -or -not [datetime]::TryParseExact($m.Groups[1].Value, 'yyyy-MM-dd', $null, 'None', [ref]$d)) { $bad.Add("第 $n 行"); continue }
