@@ -1,0 +1,1 @@
+覆盖：6c635dcba10a798a791a9858954239a8092d0b6c..65a627b1146b88c5b560f415d887cabb2334c98b；沿用 ba233d7 的 Pass（只改纯文档，按 verify.md 第 1 节逐条核对）；rebase 到主干，README 版本行和 VERSION 冲突按两条都留、版本取 2.32.0 解决，portfolio.md 改动不变；之后只多了文档：主干带进来的 #60 文档、LESSONS.md、docs/queue.md、docs/requests.md，不涉及；跑了：check-md.ps1 → 退出 0；没跑：不适用；没采纳：无
