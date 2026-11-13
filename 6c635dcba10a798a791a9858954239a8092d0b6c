@@ -1,0 +1,1 @@
+覆盖：dd4d774d635261c2565e1105953c764d4b1116f0..6c635dcba10a798a791a9858954239a8092d0b6c；沿用 3f11f36 的 Pass（只改纯文档，按 verify.md 第 1 节逐条核对）；rebase 到主干，range-diff 内容不变；之后只多了文档：LESSONS.md、docs/queue.md、docs/requests.md，全是主干带进来的，不涉及；没跑：不适用；没采纳：无
