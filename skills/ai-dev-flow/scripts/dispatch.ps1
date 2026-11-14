@@ -229,7 +229,7 @@ if ($Continue) {
 elseif (Test-Path -LiteralPath $wt) { throw "Worktree path already exists: $wt" }
 
 $trunkVerify = $cfg.trunkVerify -eq $true
-$relatedCheck = '只跑项目 AGENTS.md “改了哪里跑哪些”对照表按 diff 选出的测试和必要构建，把命令、退出码和 head 写进回复；对照表选不出来时跑全量。全量：合并后由 trunk-check 跑'
+$relatedCheck = '只跑项目 AGENTS.md “改了哪里跑哪些”对照表按 diff 选出的测试和必要构建，把命令、退出码和 head 写进回复'
 $readNote = '先读 ' + (Format-Code $readFirst) + '。'
 if ($Review) {
     $headSha = git -C $root rev-parse --verify "refs/heads/$Review^{commit}"
@@ -255,14 +255,14 @@ if ($Review) {
 - 你是独立审查方。工作目录是临时 worktree ``$wt``，检出分支 ``$Review`` 的 $headSha。审查范围：``git diff $baseSha..$headSha``。$sparseNote
 - 只在这个目录里工作。不提交，不改任何分支，不碰其他目录。构建产物可以留在这里；做改坏检查时可以临时改源码，改完改回原样，并用 ``git diff --stat`` 确认没有差异。这个目录审完就删，未跟踪的文件（不含 .gitignore 忽略的）会复制到 ``$runDir/worktree-files/``，回复里提到证据文件时写相对这个目录的路径。
 $(($rules) -join "`n")
-- $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } elseif ($trunkVerify) { $relatedCheck } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。它按代码树记账：这棵树已经跑绿过的，它打出那条记录就结束、不再重跑，照它打出的写进回复；你的工作改成读代码、写针对性的复现、做改坏检查。改坏检查只跑相关的那一段，恢复后不再重跑。" })
+- $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } elseif ($trunkVerify) { "$relatedCheck。对照表选不出来的改动，改成跑一次 ``$verifyReview``（按代码树记账，这棵树已绿就不再重跑），并在回复里加一行快检用时。全量：合并后由 trunk-check 跑" } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。它按代码树记账：这棵树已经跑绿过的，它打出那条记录就结束、不再重跑，照它打出的写进回复；你的工作改成读代码、写针对性的复现、做改坏检查。改坏检查只跑相关的那一段，恢复后不再重跑。" })
 - 结果是新写的评分、读回、比较工具判出来的：核对它拿已知对、已知错各跑过一例，判定脚本和证据都在提交里；缺了，这次判定不算证据。
 - 对照上面的目标和完成标准审。不报命名、格式、写法偏好。只报 P0–P2，每条附可执行的证明（命令、会失败的测试、具体输入和输出）；拿不出证明的写进"没覆盖"。没有带证明的 P0/P1，就给 Pass。
 - 不写长报告。最后的回复只写下面六行，用白话：
 
 结论：Pass 或 Fix
 门禁：verify 的命令、退出码、head；只改文档写"不适用"
-$(if ($trunkVerify) { '全量：合并后由 trunk-check 跑' } else { '快检用时：<秒数> 秒（这一次完整 verify 从开始到结束；只改文档写"不适用"）' })
+$(if ($trunkVerify) { '全量：合并后由 trunk-check 跑（对照表选不出来、跑了全量的，下面另加一行：快检用时：<秒数> 秒）' } else { '快检用时：<秒数> 秒（这一次完整 verify 从开始到结束；只改文档写"不适用"）' })
 没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"
 问题：无，或每条一行：P级 ｜ 文件:行 ｜ 问题 ｜ 证明
 没覆盖：一句话
@@ -275,7 +275,7 @@ else {
         New-Worktree $wt @('-b', $Name, $wt, $baseSha)
     }
     $mode = if ($Continue) { 'continue' } else { 'build' }
-    $builderCheck = if ($trunkVerify) { $relatedCheck } elseif ($builderVerify -eq 'related') { "完成前跑构建和与改动相关的测试，退出码必须是 0，跑了什么列在回复里。不跑完整的 ``$($cfg.verify)``：这个项目由审查方在候选 head 上跑一次，那次才算门禁结果" } else { "提交后在本目录运行 ``$(Ledger $cfg.verify)``，退出码必须是 0（它按代码树记账，提交后跑才记得上，审查方看到同一棵树已绿就不再重跑；没过就修了再提交、再跑）" }
+    $builderCheck = if ($trunkVerify) { "$relatedCheck，退出码必须是 0。对照表选不出来的改动，提交后改成运行 ``$(Ledger $cfg.verify)``，退出码必须是 0（按代码树记账，审查方看到同一棵树已绿就不再重跑）。全量：合并后由 trunk-check 跑" } elseif ($builderVerify -eq 'related') { "完成前跑构建和与改动相关的测试，退出码必须是 0，跑了什么列在回复里。不跑完整的 ``$($cfg.verify)``：这个项目由审查方在候选 head 上跑一次，那次才算门禁结果" } else { "提交后在本目录运行 ``$(Ledger $cfg.verify)``，退出码必须是 0（它按代码树记账，提交后跑才记得上，审查方看到同一棵树已绿就不再重跑；没过就修了再提交、再跑）" }
     $builderRan = if ($trunkVerify) { '对照表选出的测试和构建结果；全量：合并后由 trunk-check 跑' } elseif ($builderVerify -eq 'related') { '构建和相关测试的结果' } else { 'verify 结果' }
     $footer = @"
 

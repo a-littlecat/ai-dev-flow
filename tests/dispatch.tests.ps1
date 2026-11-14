@@ -225,12 +225,13 @@ try {
     Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head' -and (Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '(?m)^没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"')
 
     Write-Config @{ retry400Seconds = @(); trunkVerify = $true }
+    Set-Content -LiteralPath $vl -Encoding utf8NoBOM -Value '{"head":"before","seconds":1}'
     $beforeTime = Get-Content -LiteralPath $vl -Raw
-    $null = Run 'rev-trunk' 'ok' @('-Review', 'candidate')
+    $null = Run 'rev-trunk' 'timed' @('-Review', 'candidate')
     $reviewPrompt = Get-Content -LiteralPath (Join-Path $runs 'rev-trunk/prompt.md') -Raw
     $null = Run 'build-trunk' 'ok+commit'
     $buildPrompt = Get-Content -LiteralPath (Join-Path $runs 'build-trunk/prompt.md') -Raw
-    Check 'trunkVerify: selected tests for both roles, no full verify timing, previous timing preserved' ($reviewPrompt -match '只跑项目 AGENTS.md.*对照表按 diff 选出的测试' -and $buildPrompt -match '只跑项目 AGENTS.md.*对照表按 diff 选出的测试' -and $reviewPrompt -match '(?m)^全量：合并后由 trunk-check 跑' -and $reviewPrompt -notmatch '自己运行一次|快检用时' -and $buildPrompt -notmatch '提交后在本目录运行|由审查方在候选 head 上跑一次' -and (Get-Content -LiteralPath $vl -Raw) -ceq $beforeTime)
+    Check 'trunkVerify: selected tests for both roles, no full verify timing, previous timing preserved' ($reviewPrompt -match '只跑项目 AGENTS.md.*对照表按 diff 选出的测试' -and $buildPrompt -match '只跑项目 AGENTS.md.*对照表按 diff 选出的测试' -and $reviewPrompt -match '(?m)^全量：合并后由 trunk-check 跑' -and $reviewPrompt -notmatch '自己运行一次|(?m)^快检用时' -and $reviewPrompt -match '选不出来的改动，改成跑一次 `pwsh -NoProfile -File "[^"]*verify-ledger\.ps1" -Command ''echo ok''`' -and $buildPrompt -match '选不出来的改动，提交后改成运行 `pwsh -NoProfile -File "[^"]*verify-ledger\.ps1" -Command ''echo ok''`' -and $buildPrompt -notmatch '提交后在本目录运行|由审查方在候选 head 上跑一次' -and (Get-Content -LiteralPath $vl -Raw) -ceq $beforeTime)
 
     Write-Config @{ retry400Seconds = @(); keepReviewWorktree = $true }
     $r = Run 'rev-keep' 'ok+evidence' @('-Review', 'candidate')
