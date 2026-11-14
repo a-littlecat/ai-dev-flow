@@ -76,7 +76,7 @@
     }
   }
   ```
-  遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。快检太慢、项目决定执行方不跑全量的（启用条件见 `build.md` 第 3 节），写 `"builderVerify": "related"`；不写等于 `"full"`。项目开了合并后全量（总览清单配了 `trunkVerify`，`build.md` 第 3 节）的，配置里写 `"trunkVerify": true`：执行方和审查方都只跑对照表选出的测试，审查回复写"全量：合并后由 trunk-check 跑"、不写快检用时，脚本也不再把审查回复的用时记进 `verify-last.json`；它优先于 `builderVerify`。内存紧张、派活被杀过的项目写 `"minFreeMemoryMB": <兆字节>`：可用内存低于它，脚本不派，退出码 6，并列出还在跑的运行；等其中一个结束再派，不要硬派。`-List` 里没有退出记录、进程也不在了的运行显示 `died`，多半是被杀了；同一分支后来没再派过的，要重派。
+  遇接口 400 脚本会自己等一等再试（默认等 120、300、900 秒，配置 `retry400Seconds` 可改，写 `[]` 不重试），不用手动重派；试完还不行，`-Wait` 会说明。审查结束脚本自己删 worktree，要留着写 `"keepReviewWorktree": true`。快检太慢、项目决定执行方不跑全量的（启用条件见 `build.md` 第 3 节），写 `"builderVerify": "related"`；不写等于 `"full"`。项目开了合并后全量（总览清单配了 `trunkVerify`，`build.md` 第 3 节）的，配置里写 `"trunkVerify": true`：执行方和审查方都只跑对照表选出的测试，审查回复写"全量：合并后由 trunk-check 跑"；对照表选不出来的改动，照 `build.md` 第 3 节经 `verify-ledger.ps1` 跑一次全量，审查回复另加一行快检用时。开了它，脚本不把审查回复的用时记进 `verify-last.json`，用时由 trunk-check 记；它优先于 `builderVerify`。内存紧张、派活被杀过的项目写 `"minFreeMemoryMB": <兆字节>`：可用内存低于它，脚本不派，退出码 6，并列出还在跑的运行；等其中一个结束再派，不要硬派。`-List` 里没有退出记录、进程也不在了的运行显示 `died`，多半是被杀了；同一分支后来没再派过的，要重派。
 
   `verify` 必填；`readFirst`、`protected`、`rules` 会写进每份任务说明；`docsOnly` 按文件名匹配（如 `*.md`、`*.txt`），不按目录；`sparse` 填了就做稀疏检出（`-Full` 关掉），大仓库开 worktree 从几分钟降到几秒；`env` 只对那一个 agent 进程生效，不改用户的全局配置。没写 `review` 的 agent 审查时也用 `build` 的命令，也就带着 `build` 的权限；`build` 是完全访问的（如样例里 Claude 的 `bypassPermissions`），另写一条收紧的 `review`，审查方只需要改它自己的 worktree、跑项目的 verify 和 `git`。
 
@@ -92,7 +92,7 @@
   ```
 - `.agents/` 写进 `.gitignore`：派活的 worktree 在 `.agents/worktrees/`，每次的说明、日志、回复在 `.agents/runs/`。用 `.agents` 而不是某个工具专属的目录，换别的 AI 接手也找得到。
 - **任务说明的固定尾部**由脚本自动附上，你写说明时只写目标、完成标准和提示：
-  - 改了代码、脚本或配置的：完成前跑 verify，退出码必须是 0，并做一次改坏验证（改坏后只跑相关的测试，不再跑一遍完整 verify）。配置了 `"builderVerify": "related"` 的，执行方把 verify 换成构建和相关测试，审查方照旧跑一次完整 verify；配置了 `"trunkVerify": true` 的，两边都只跑对照表选出的测试。
+  - 改了代码、脚本或配置的：完成前跑 verify，退出码必须是 0，并做一次改坏验证（改坏后只跑相关的测试，不再跑一遍完整 verify）。配置了 `"builderVerify": "related"` 的，执行方把 verify 换成构建和相关测试，审查方照旧跑一次完整 verify；配置了 `"trunkVerify": true` 的，两边都只跑对照表选出的测试，对照表选不出来的才经 `verify-ledger.ps1` 跑全量。
   - 只改了文档的：不跑 verify、不做改坏验证，改成把文档里写的路径、命令逐条实际查一遍或跑一遍。审查时脚本按 diff 自动判断（改名算删＋增，子模块和链接不算文档）。只改文档也跑全量 verify，每轮会白花好几分钟。
   - 写下的每条事实都要先自己用命令确认过，确认不了的写"未查到"。不这样要求，对方会写出想当然的路径和命令，审查一轮只能挑出一部分，要来回好几轮。
   - 临时文件放系统临时目录，结束时工作区只能有已提交的改动。
