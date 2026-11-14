@@ -12,7 +12,7 @@
 ## 2. 复盘
 
 1. 读 `LESSONS.md` 头部的 `reviewed-through: <sha>`，列出从那以后合进主干的全部提交。项目还没有 `LESSONS.md` 的，先按 `harness.md` 第 2 节第 7 条建一个；这次复盘看最近 7 天合进主干的提交（`git log --since="7 days ago" <主干>`），不翻全部历史，做完照第 6 步把 `reviewed-through` 写成最新提交。
-2. 在主干上跑 verify:full（没有 CI 的项目以这次为准）。
+2. 在主干上跑 verify:full（没有 CI 的项目以这次为准）。要跑快检的，同样经 `verify-ledger.ps1` 跑，主干这棵树账上已绿就不再跑（`build.md` 第 3 节）。
 3. 逐个提交找三类问题：
    - **返工了的**：后面有提交在"修复"一行指向它，或者它被 revert 了；
    - **不该合的**：不在目标范围内、违反已有标准、本该是单向门却自走了；

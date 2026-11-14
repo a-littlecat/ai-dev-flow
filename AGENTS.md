@@ -12,6 +12,7 @@
   - 改了 `skills/ai-dev-flow/scripts/dispatch.ps1`：跑 `pwsh -NoProfile -File tests/dispatch.tests.ps1`，退出码 0 才算通过。它用假的执行方，只覆盖 400 重试、审查 worktree 清理、Claude 执行方去掉登录变量和模型参数，其余部分（包括真的 `claude -p`、`codex exec` 能不能跑通）还要靠独立审查实跑。
   - 改了 `skills/ai-dev-flow/scripts/direction.ps1`：跑 `pwsh -NoProfile -File tests/direction.tests.ps1` 和 `tests/status.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/check-md.ps1`：跑 `pwsh -NoProfile -File tests/check-md.tests.ps1`，退出码 0 才算通过。
+  - 改了 `skills/ai-dev-flow/scripts/verify-ledger.ps1`：跑 `pwsh -NoProfile -File tests/verify-ledger.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/land-check.ps1`：跑 `pwsh -NoProfile -File tests/land-check.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/launch.ps1`：跑 `pwsh -NoProfile -File tests/launch.tests.ps1`，退出码 0 才算通过。它用假的 `claude` 命令；真的开后台会话、看它用哪个账号，要在本机实开一次。
   - 改了 `skills/ai-dev-flow/scripts/archive-requests.ps1`：跑 `pwsh -NoProfile -File tests/archive-requests.tests.ps1`，退出码 0 才算通过。

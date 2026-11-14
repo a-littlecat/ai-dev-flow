@@ -161,6 +161,8 @@ $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $cfg.verify) { throw 'dispatch config needs "verify"' }
 $builderVerify = if ($cfg.builderVerify) { [string]$cfg.builderVerify } else { 'full' }
 if ($builderVerify -notin 'full', 'related') { throw "dispatch config: builderVerify must be full or related, got '$builderVerify'" }
+# 快检经 verify-ledger.ps1 跑：同一棵代码树已绿就不再跑（build.md 第 3 节）。命令里的单引号按 PowerShell 写法双写。
+function Ledger([string]$cmd) { "pwsh -NoProfile -File `"$(Join-Path $PSScriptRoot 'verify-ledger.ps1')`" -Command '$($cmd.Replace("'", "''"))'" }
 $agents = @($cfg.agents.PSObject.Properties.Name)
 if (-not $Name -or -not $Agent -or -not $BriefFile) { throw 'Need -Name, -Agent and -BriefFile (or -List)' }
 if ($Agent -notin $agents) { throw "Unknown agent '$Agent'; config has: $($agents -join ', ')" }
@@ -240,7 +242,7 @@ if ($Review) {
             $leaf = [IO.Path]::GetFileName($path)
             -not ($docsPatterns | Where-Object { $leaf -like $_ })
         })
-    $verifyReview = if ($cfg.verifyReview) { $cfg.verifyReview.Replace('{base}', $baseSha) } else { $cfg.verify }
+    $verifyReview = Ledger $(if ($cfg.verifyReview) { $cfg.verifyReview.Replace('{base}', $baseSha) } else { $cfg.verify })
     $footer = @"
 
 ---
@@ -249,7 +251,7 @@ if ($Review) {
 - 你是独立审查方。工作目录是临时 worktree ``$wt``，检出分支 ``$Review`` 的 $headSha。审查范围：``git diff $baseSha..$headSha``。$sparseNote
 - 只在这个目录里工作。不提交，不改任何分支，不碰其他目录。构建产物可以留在这里；做改坏检查时可以临时改源码，改完改回原样，并用 ``git diff --stat`` 确认没有差异。这个目录审完就删，未跟踪的文件（不含 .gitignore 忽略的）会复制到 ``$runDir/worktree-files/``，回复里提到证据文件时写相对这个目录的路径。
 $(($rules) -join "`n")
-- $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。改坏检查只跑相关的那一段，恢复后不再重跑。" })
+- $readNote$(if ($docsOnly) { '这次只改了文档，不跑 verify；把文档里写的路径、命令、源码位置逐条实际查一遍或跑一遍。' } else { "自己运行一次 ``$verifyReview``（只跑这一次），把命令、退出码和 head 写进回复。它按代码树记账：这棵树已经跑绿过的，它打出那条记录就结束、不再重跑，照它打出的写进回复；你的工作改成读代码、写针对性的复现、做改坏检查。改坏检查只跑相关的那一段，恢复后不再重跑。" })
 - 结果是新写的评分、读回、比较工具判出来的：核对它拿已知对、已知错各跑过一例，判定脚本和证据都在提交里；缺了，这次判定不算证据。
 - 对照上面的目标和完成标准审。不报命名、格式、写法偏好。只报 P0–P2，每条附可执行的证明（命令、会失败的测试、具体输入和输出）；拿不出证明的写进"没覆盖"。没有带证明的 P0/P1，就给 Pass。
 - 不写长报告。最后的回复只写下面六行，用白话：
@@ -269,7 +271,7 @@ else {
         New-Worktree $wt @('-b', $Name, $wt, $baseSha)
     }
     $mode = if ($Continue) { 'continue' } else { 'build' }
-    $builderCheck = if ($builderVerify -eq 'related') { "完成前跑构建和与改动相关的测试，退出码必须是 0，跑了什么列在回复里。不跑完整的 ``$($cfg.verify)``：这个项目由审查方在候选 head 上跑一次，那次才算门禁结果" } else { "完成前在本目录运行 ``$($cfg.verify)``，退出码必须是 0" }
+    $builderCheck = if ($builderVerify -eq 'related') { "完成前跑构建和与改动相关的测试，退出码必须是 0，跑了什么列在回复里。不跑完整的 ``$($cfg.verify)``：这个项目由审查方在候选 head 上跑一次，那次才算门禁结果" } else { "提交后在本目录运行 ``$(Ledger $cfg.verify)``，退出码必须是 0（它按代码树记账，提交后跑才记得上，审查方看到同一棵树已绿就不再重跑；没过就修了再提交、再跑）" }
     $builderRan = if ($builderVerify -eq 'related') { '构建和相关测试的结果' } else { 'verify 结果' }
     $footer = @"
 

@@ -94,12 +94,12 @@ try {
     $null = Run 'builder-default' 'ok+commit'
     $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-default/prompt.md') -Raw
     Check 'builder: new judge tools run on known truth first' ($prompt -match '已知对、已知错各跑一例')
-    Check 'builderVerify default: builder runs full verify' ($prompt -match '完成前在本目录运行 `echo ok`' -and $prompt -match '跑了：verify 结果' -and $prompt -notmatch '不跑完整的')
+    Check 'builderVerify default: builder runs full verify' ($prompt -match '提交后在本目录运行 `pwsh -NoProfile -File "[^"]*verify-ledger\.ps1" -Command ''echo ok''' -and $prompt -match '跑了：verify 结果' -and $prompt -notmatch '不跑完整的')
 
     Write-Config @{ retry400Seconds = @(); builderVerify = 'related' }
     $null = Run 'builder-related' 'ok+commit'
     $prompt = Get-Content -LiteralPath (Join-Path $runs 'builder-related/prompt.md') -Raw
-    Check 'builderVerify related: builder skips full verify' ($prompt -match '与改动相关的测试' -and $prompt -match '不跑完整的 `echo ok`' -and $prompt -notmatch '完成前在本目录运行' -and $prompt -match '跑了：构建和相关测试的结果')
+    Check 'builderVerify related: builder skips full verify' ($prompt -match '与改动相关的测试' -and $prompt -match '不跑完整的 `echo ok`' -and $prompt -notmatch '提交后在本目录运行' -and $prompt -match '跑了：构建和相关测试的结果')
     Check 'builderVerify related: break check still required' ($prompt -match '确认会变红')
 
     # 执行方换成 Claude：继承来的登录变量只在执行方进程里去掉，env 里配的照样设上；模型从配置读，-Model 优先，没配不传。
@@ -219,7 +219,7 @@ try {
 
     Write-Config @{ retry400Seconds = @(); builderVerify = 'related' }
     $null = Run 'rev-related' 'ok' @('-Review', 'candidate')
-    Check 'builderVerify related: reviewer still runs full verify' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '自己运行一次 `echo ok`')
+    Check 'builderVerify related: reviewer still runs full verify' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '自己运行一次 `pwsh -NoProfile -File "[^"]*verify-ledger\.ps1" -Command ''echo ok''`')
 
     Check 'review: judge tools were run on known truth' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '已知对、已知错各跑过一例')
     Check 'review: reply reports the gate and what was not run' ((Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '门禁：verify 的命令、退出码、head' -and (Get-Content -LiteralPath (Join-Path $runs 'rev-related/prompt.md') -Raw) -match '(?m)^没跑：因环境原因没跑的检查和原因，由总览补跑；全跑了写"无"')
