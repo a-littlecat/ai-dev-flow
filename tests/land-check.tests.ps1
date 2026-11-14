@@ -196,7 +196,7 @@ try {
     Check 'verify time: recorded from the note, worktree stays clean' ($rt.Code -eq 0 -and $rec.seconds -eq 725 -and $rec.head -eq $tb -and -not (G status --short))
     $led = Join-Path $repo '.agents/verify-ledger.jsonl'
     $ledTree = G rev-parse "$tb^{tree}"
-    Check 'ledger: the Pass note puts the head tree into the ledger as green' ((Test-Path -LiteralPath $led) -and [bool](@(Get-Content -LiteralPath $led | ConvertFrom-Json) | Where-Object { $_.tree -eq $ledTree -and $_.result -eq 'green' -and $_.seconds -eq 725 }))
+    Check 'ledger: a Pass note is not written into the ledger, only real runs are' (-not (Test-Path -LiteralPath $led) -or -not [bool](@(Get-Content -LiteralPath $led | ConvertFrom-Json) | Where-Object { $_.tree -eq $ledTree }))
     $null = G checkout -q timed; $tc = Commit 'b.md' "x`n"; $null = G checkout -q main
     $null = G notes --ref=verify add -f -m "覆盖：$($mainSha.Substring(0, 7))..$($tc.Substring(0, 7))；沿用 $($tb.Substring(0, 7)) 的 Pass；没跑：同原 note" $tc
     Remove-Item -LiteralPath $vl

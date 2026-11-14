@@ -16,7 +16,7 @@ param(
 #      按 verify.md 第 5 节写的沿用 note（"沿用 <sha>"），把那个 sha 的 note 也算进来：原 note 没跑又没补跑的，沿用了也要补跑。冒号全角半角都认。
 #   pwsh -NoProfile -File <skill>/scripts/land-check.ps1 -Branch <分支> [-Trunk main] [-Repo <主项目目录>]
 # 全部满足时，note 里写了"快检用时：<秒> 秒"的（沿用的 note 顺着找），记到 .agents/verify-last.json（只在 .agents 被 Git 忽略时写，不弄脏工作区），状态页和 /next 靠它发现快检太慢；
-#   同时在快检账上给 head 的树记一条 green（verify-ledger.ps1）。note 没写快检用时、账上这棵树已绿的，用账上的用时。
+#   note 没写快检用时、快检账（verify-ledger.ps1）上这棵树已绿的，用账上的用时；账本身这里不写，只由真跑过的记。
 # 全部满足退出 0，最后一行是可以直接运行的合并命令；有不满足的逐条打出原因，退出 1；参数或仓库不对，退出 2。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -113,15 +113,12 @@ $t = if ($note.Out) { $note.Out -join "`n" } else { '' }
 $hops = 0
 while ($t -and $t -notmatch '快检用时[：:]\s*\d+\s*秒' -and $t -match '沿用[ \t　]*([0-9a-fA-F]{7,40})' -and $hops++ -lt 50) { $t = (Invoke-Git @('notes', '--ref=verify', 'show', $Matches[1])).Out -join "`n" }
 $sec = [regex]::Match($t, '快检用时[：:]\s*(\d+)\s*秒')
-# 快检记账（verify-ledger.ps1）：note 写了快检用时的，这棵树记一条 green（来源 verify note）；note 没写的，用账上这棵树已绿的那条的用时。
+# 快检记账（verify-ledger.ps1）：账只由真跑过的记，这里不写；note 没写快检用时的，用账上这棵树已绿的那条的用时（只填 verify-last.json）。
 $ledgerScript = Join-Path $PSScriptRoot 'verify-ledger.ps1'
 $secValue = if ($sec.Success) { [int]$sec.Groups[1].Value } else { $null }
-if (-not ($docsOnly -and $noteMissing)) {
-    if ($null -ne $secValue) { $null = pwsh -NoProfile -File $ledgerScript -Repo $top.Out[0] -Record -Rev $head -Result green -Seconds $secValue -Where "verify note $short" }
-    else {
-        $lj = try { (pwsh -NoProfile -File $ledgerScript -Repo $top.Out[0] -Check -Rev $head -Json) -join "`n" | ConvertFrom-Json } catch { $null }
-        if ($lj -and $lj.green -and $null -ne $lj.entry.seconds) { $secValue = [int]$lj.entry.seconds; $info.Add("快检记账：这棵树已绿（$($lj.entry.where)，$secValue 秒）") }
-    }
+if ($null -eq $secValue -and -not ($docsOnly -and $noteMissing)) {
+    $lj = try { (pwsh -NoProfile -File $ledgerScript -Repo $top.Out[0] -Check -Rev $head -Json) -join "`n" | ConvertFrom-Json } catch { $null }
+    if ($lj -and $lj.green -and $null -ne $lj.entry.seconds) { $secValue = [int]$lj.entry.seconds; $info.Add("快检记账：这棵树已绿（$($lj.entry.where)，$secValue 秒）") }
 }
 if ($null -ne $secValue) {
     $null = git -C $Repo check-ignore -q .agents/verify-last.json 2>$null

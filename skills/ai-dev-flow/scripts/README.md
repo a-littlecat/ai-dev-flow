@@ -14,5 +14,5 @@ ai-dev-flow 自带的 PowerShell 脚本，都用 `pwsh -NoProfile -File <skill>/
 | `check-md.ps1` | 文档格式检查：`.md` 里的控制字符、被拆断的表格行；各项目放进快检 |
 | `archive-requests.ps1` | 把 `docs/requests.md` 里已转、已处理的小节移到 `docs/requests-done.md`，`/next` 开场只读还要转的（`skills/next/SKILL.md` 第 1 节） |
 | `cleanup.ps1` | 合并后清理：删已合进主干、没有未提交改动的 worktree 和分支（`modules/land.md` 第 6 节） |
-| `land-check.ps1` | 合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进（`modules/land.md` 第 2 节）；通过时把 Pass note 的结果记进快检账 |
-| `verify-ledger.ps1` | 快检记账：按代码树记绿红、用时、在哪跑，同一棵树已绿就不再跑（`modules/build.md` 第 3 节） |
+| `land-check.ps1` | 合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进（`modules/land.md` 第 2 节）；note 没写快检用时的，用快检账上的 |
+| `verify-ledger.ps1` | 快检记账：按代码树和命令记绿红、用时、在哪跑，同一棵树、同一条命令已绿就不再跑（`modules/build.md` 第 3 节） |
