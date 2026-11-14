@@ -1,0 +1,1 @@
+覆盖：273f063..43d52dd；沿用 273f063 的 Pass；之后只多了文档：orchestrate.md 补兜底全量（复审 P2-3），按 verify.md 第 1 节核对；跑了：check-md.ps1 → 退出 0；没跑：同原 note；没采纳：同原 note
