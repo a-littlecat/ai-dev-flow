@@ -12,12 +12,14 @@
   - 改了 `skills/ai-dev-flow/scripts/dispatch.ps1`：跑 `pwsh -NoProfile -File tests/dispatch.tests.ps1`，退出码 0 才算通过。它用假的执行方，只覆盖 400 重试、审查 worktree 清理、Claude 执行方去掉登录变量和模型参数，其余部分（包括真的 `claude -p`、`codex exec` 能不能跑通）还要靠独立审查实跑。
   - 改了 `skills/ai-dev-flow/scripts/direction.ps1`：跑 `pwsh -NoProfile -File tests/direction.tests.ps1` 和 `tests/status.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/check-md.ps1`：跑 `pwsh -NoProfile -File tests/check-md.tests.ps1`，退出码 0 才算通过。
+  - 改了 `skills/ai-dev-flow/scripts/trunk-check.ps1`：跑 `pwsh -NoProfile -File tests/trunk-check.tests.ps1`，退出码 0 才算通过。真的被 `watch.ps1` 拉起、在后台跑完一个项目的全量，要在本机实跑一次。
   - 改了 `skills/ai-dev-flow/scripts/verify-ledger.ps1`：跑 `pwsh -NoProfile -File tests/verify-ledger.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/land-check.ps1`：跑 `pwsh -NoProfile -File tests/land-check.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/launch.ps1`：跑 `pwsh -NoProfile -File tests/launch.tests.ps1`，退出码 0 才算通过。它用假的 `claude` 命令；真的开后台会话、看它用哪个账号，要在本机实开一次。
   - 改了 `skills/ai-dev-flow/scripts/archive-requests.ps1`：跑 `pwsh -NoProfile -File tests/archive-requests.tests.ps1`，退出码 0 才算通过。
   - 改了 `skills/ai-dev-flow/scripts/cleanup.ps1`：跑 `pwsh -NoProfile -File tests/cleanup.tests.ps1`，退出码 0 才算通过。
-  - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-11 空机器上 401 秒；同时跑两份时能到 14 分钟，量用时要在机器空着时量）；验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
+  - **这份检查清单就是"改了哪里跑哪些"对照表**（`skills/ai-dev-flow/modules/harness.md` 第 2 节第 1 条）：合并前只跑上面按改动列出的那几条；没列到的脚本、`tests/run-all.ps1` 本身或几个脚本都改了，跑下面的全部检查。合并后的全量由总览清单里这个项目的 `trunkVerify` 在本机后台跑；清单里还没配 `trunkVerify` 时，这条不生效，照旧跑全部检查。
+  - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-11 空机器上 401 秒；同时跑两份时能到 14 分钟，量用时要在机器空着时量）；对照表选不出来时验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
   - 改了任何 `.md`：跑 `pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1`，退出码 0 才算通过。
   - 只改文档的，另按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。

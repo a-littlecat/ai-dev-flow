@@ -5,7 +5,8 @@ param(
     [int]$IdleHours = 12,
     [int]$GoalHours = 24,
     [string]$State,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoTrunkCheck
 )
 # 停滞检查：跑 status.ps1，只在有项目新变成"可能停滞"时发一条 stuck 通知（按 notify.json 的配置会推到手机）。给计划任务每 15 分钟跑，不花模型额度；停住后最晚约 StaleMinutes + 15 分钟收到。
 #   -Config        总览仓库的 projects.json（同 status.ps1）
@@ -15,6 +16,7 @@ param(
 #   -State         上次已经提醒过哪些停滞，默认 %LOCALAPPDATA%\ai-dev-flow\watch-state.json
 #   -DryRun        通知只打印不发（传给 notify.ps1），也不改 -State
 # 同一次停滞只提醒一次：项目、在做的项和最后活动时间都没变，就不再发。项目动过以后又停住，算新的一次。"有活没人做"同样按项目和最后活动时间只提醒一次。
+#   -NoTrunkCheck  这一轮不拉起 trunk-check.ps1（合并后在后台跑全量，见那个脚本）；-DryRun 时也不拉起
 # 通知发不出去时不记下这次停滞，下次检查会再发；退出码同 notify.ps1。状态文件读不出来时当作没提醒过，照常检查。
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -69,5 +71,11 @@ if (-not $DryRun -and -not $code) {
     $tmp = "$State.tmp"
     [ordered]@{ checked = (Get-Date).ToString('yyyy-MM-dd HH:mm'); stalled = @($now.Keys) } | ConvertTo-Json | Set-Content -LiteralPath $tmp -Encoding utf8NoBOM
     Move-Item -LiteralPath $tmp -Destination $State -Force
+}
+# 合并后的全量：另起一个隐藏的低优先级进程跑 trunk-check.ps1，不等它；它自己管不叠跑。
+if (-not $DryRun -and -not $NoTrunkCheck) {
+    $tcArgs = @('-NoProfile', '-File', (Join-Path $here 'trunk-check.ps1'))
+    if ($Config) { $tcArgs += '-Config', $Config }
+    try { $null = Start-Process -FilePath (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source -ArgumentList (($tcArgs | ForEach-Object { '"' + $_ + '"' }) -join ' ') -WindowStyle Hidden -PassThru } catch { [Console]::Error.WriteLine("watch.ps1 could not start trunk-check: $($_.Exception.Message)") }
 }
 exit $code

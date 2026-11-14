@@ -155,7 +155,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Items = @(); Waiting = @(); Pending = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @(); Decisions = @(); DeadRuns = @(); VerifySeconds = $null; VerifyDate = $null; VerifyLimitMinutes = $null; VerifySlowRed = $false; SpeedUpStalled = $null; Direction = $null
+        Lessons = @(); LessonsDue = @(); Requests = @(); Decisions = @(); DeadRuns = @(); VerifySeconds = $null; VerifyDate = $null; VerifyLimitMinutes = $null; VerifySlowRed = $false; SpeedUpStalled = $null; TrunkRed = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @(); Unwatched = $false; GoalStalled = $null
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -399,6 +399,22 @@ function Get-ProjectStatus($p) {
         if ($r.VerifySeconds -gt $limit * 60 * 2) {
             $r.VerifySlowRed = $true
             $r.Problems.Add("快检超过阈值 2 倍：最近一次用了 $mins 分钟，阈值 $limit 分钟；合并照常，状态页标红")
+        }
+    }
+    # 主干全量（trunk-check.ps1 跑、verify-ledger.ps1 记的账）：主干这棵树、trunkVerify 这条命令最近一条是红的，标 TrunkRed 并提示，/next 开场先修。
+    # 别的命令（单个测试、审查方带 -Base 的）在这棵树上红了不算；没配 trunkVerify 的项目不看。
+    $ledgerFile = Join-Path $path '.agents/verify-ledger.jsonl'
+    $trunkCmd = [string]$p.trunkVerify
+    if ($trunkCmd -and $p.status -ne '暂停') {
+        $null = git -C $path check-ignore -q .agents/verify-ledger.jsonl 2>$null
+        if ($LASTEXITCODE) { $r.Problems.Add('配了合并后全量（trunkVerify），但 .agents/ 没被 Git 忽略：记不了账，后台不跑（harness.md 第 2 节第 8 条）') }
+    }
+    if ($head -and $trunkCmd -and (Test-Path -LiteralPath $ledgerFile)) {
+        $trunkTree = git -C $path rev-parse "$head^{tree}" 2>$null
+        $lastRec = @(foreach ($l in @(Get-Content -LiteralPath $ledgerFile -Encoding UTF8 -ErrorAction SilentlyContinue)) { $e = try { $l | ConvertFrom-Json -ErrorAction Stop } catch { $null }; if ($e -and $e.tree -eq $trunkTree -and $e.command -eq $trunkCmd) { $e } }) | Select-Object -Last 1
+        if ($lastRec -and $lastRec.result -eq 'red') {
+            $r.TrunkRed = [pscustomobject]@{ Commit = "$head".Substring(0, 7); Where = $lastRec.where; Time = $lastRec.time }
+            if ($p.status -ne '暂停') { $r.Problems.Add("主干全量红了：$($r.Trunk) $("$head".Substring(0, 7)) 在 $($lastRec.where) 跑没过（$($lastRec.time)）；下次 /next 开场先修（skills/next/SKILL.md 第 1 节）") }
         }
     }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {

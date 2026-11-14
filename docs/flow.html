@@ -59,12 +59,12 @@ h1{margin:0;font:200 72px/1.05 var(--display);letter-spacing:-.035em}
   <li class="pass">传给下一步：定稿的提交，只给目标、完成标准和改动，不给执行方的自述</li>
   <li class="step">
     <h3>独立验证 <span class="who model">模型</span> <span class="who program">程序</span></h3>
-    <div class="leaves"><p><span>全新上下文的验证方自己重跑快检，专门找问题，只报拿得出证明的。结论挂在提交上。</span></p><dl><div><dt>怎么量</dt><dd>合并后 48 小时内的返工率</dd></div><div><dt>短板</dt><dd>同一厂商的模型可能犯同样的错；只有撤不回的事才跨厂商</dd></div></dl></div>
+    <div class="leaves"><p><span>全新上下文的验证方自己跑检查（同一棵代码树已经跑绿过的不重跑；开了合并后全量的项目只跑改动碰到的测试），专门找问题，只报拿得出证明的。结论挂在提交上。</span></p><dl><div><dt>怎么量</dt><dd>合并后 48 小时内的返工率</dd></div><div><dt>短板</dt><dd>同一厂商的模型可能犯同样的错；只有撤不回的事才跨厂商</dd></div></dl></div>
   </li>
   <li class="pass">传给下一步：对应这个版本的 Pass 结论</li>
   <li class="step">
     <h3>合并 <span class="who person">人</span> <span class="who program">程序</span></h3>
-    <div class="leaves"><p><span>机械检查过了，按信任等级合：低等级问用户，高等级直接合。合完自动删工作目录和分支。</span></p><dl><div><dt>怎么量</dt><dd>被用户打回的比例；单向门事故数</dd></div><div><dt>短板</dt><dd>用户看不懂技术改动时，打回率总是 0，所以还要看返工率</dd></div></dl></div>
+    <div class="leaves"><p><span>机械检查过了，按信任等级合：低等级问用户，高等级直接合。合完自动删工作目录和分支。开了合并后全量的项目，本机后台每 15 分钟看一次主干，变了就在干净目录跑一次全量，全机一次一个；红了推手机，下一次 /next 先修。</span></p><dl><div><dt>怎么量</dt><dd>被用户打回的比例；单向门事故数</dd></div><div><dt>短板</dt><dd>用户看不懂技术改动时，打回率总是 0，所以还要看返工率</dd></div></dl></div>
   </li>
   <li class="pass">传给下一步：主干上的提交和验证记录</li>
   <li class="step">
@@ -76,7 +76,7 @@ h1{margin:0;font:200 72px/1.05 var(--display);letter-spacing:-.035em}
     <div class="leaves"><p><span>每条规则都做进脚本、测试或文档，合进主干后装到本机，Claude Code 和 Codex 都从这里读。它本身没有能和通用模型并排比的交付物，所以这个仓库不登记基准（<code>docs/benchmark.json</code> 写明了原因）；效果看的是各项目的差距和返工率。</span></p></div>
   </li>
 </ol>
-<p class="foot">更新于 2026-11-10</p>
+<p class="foot">更新于 2026-11-14</p>
 </main>
 <script>
 (function(){

@@ -599,16 +599,16 @@ try {
     Check 'watch: new stall goes to the phone with what to do' ($w1 -match 'title: 🔴 1 个项目可能停了' -and $w1 -match 'bark: yes' -and $w1 -match '项目 A：#4 跑回归 已 .*没动静.*/next')
     Check 'watch: dry run keeps no state' (-not (Test-Path -LiteralPath $wstate))
     $env:AI_DEV_FLOW_NOTIFY = $wq
-    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0
+    $null = pwsh -NoProfile -File $watch -NoTrunkCheck -Config $cfg -State $wstate -StaleMinutes 0
     Check 'watch: sent stall is remembered' ($LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|')
     $w2 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
     Check 'watch: same stall is not sent again' ($w2 -match 'no new stall')
-    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate
+    $null = pwsh -NoProfile -File $watch -NoTrunkCheck -Config $cfg -State $wstate
     $w3 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun | Out-String
     Check 'watch: stall after it cleared is sent again' ($w3 -match '可能停了')
     '{"stalled":[' | Set-Content -LiteralPath $wstate
     $w4 = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 -DryRun 2>$null | Out-String
-    $null = pwsh -NoProfile -File $watch -Config $cfg -State $wstate -StaleMinutes 0 2>$null
+    $null = pwsh -NoProfile -File $watch -NoTrunkCheck -Config $cfg -State $wstate -StaleMinutes 0 2>$null
     Check 'watch: broken state file does not stop alerts and is rewritten' ($w4 -match '可能停了' -and $LASTEXITCODE -eq 0 -and (Get-Content -LiteralPath $wstate -Raw) -match '项目 A\|4\|' -and -not (Test-Path -LiteralPath "$wstate.tmp"))
     # 有活没人做：有可领的项、没有在做的、超过 -IdleHours 没动静才提示；有待用户项照样提示；同一次只推一次
     $idleRepo = Join-Path $root 'idle'
@@ -646,7 +646,7 @@ try {
     $wi1 = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState -DryRun | Out-String
     Check 'unattended: watch pushes it to the phone' ($wi1 -match 'title: \S+ 1 个项目有活没人做' -and $wi1 -match 'bark: yes' -and $wi1 -match '空着的：有 1 项可领，没人在做，已 20 小时没动静')
     $env:AI_DEV_FLOW_NOTIFY = $wq
-    $null = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState
+    $null = pwsh -NoProfile -File $watch -NoTrunkCheck -Config $cfgIdle -State $iState
     $env:AI_DEV_FLOW_NOTIFY = $ncfg
     $wi2 = pwsh -NoProfile -File $watch -Config $cfgIdle -State $iState -DryRun | Out-String
     Check 'unattended: the same one is pushed only once' ($LASTEXITCODE -eq 0 -and $wi2 -match 'no new stall')
@@ -732,7 +732,7 @@ try {
     $wg1 = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState -DryRun | Out-String
     Check 'goal stalled: watch pushes it' ($wg1 -match 'title: \S+ 1 个项目本周目标没动' -and $wg1 -match 'bark: yes' -and $wg1 -match '目标没动：本周目标挂的 #1 已 30 小时没进展，项目却有新提交')
     $env:AI_DEV_FLOW_NOTIFY = $wq
-    $null = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState
+    $null = pwsh -NoProfile -File $watch -NoTrunkCheck -Config $cfgGoalW -State $gState
     $env:AI_DEV_FLOW_NOTIFY = $ncfg
     $wg2 = pwsh -NoProfile -File $watch -Config $cfgGoalW -State $gState -DryRun | Out-String
     Check 'goal stalled: the same one is pushed only once' ($wg2 -match 'no new stall')

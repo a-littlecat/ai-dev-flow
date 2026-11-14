@@ -76,7 +76,7 @@ function Add-Entry($e) {
     catch { "没记账：写不进 $ledger（$($_.Exception.Message)），沙箱里跑的常见；结果照样以退出码为准"; return }
     "记账：树 $($tree.Substring(0, 12)) $($e.result)$(if ($null -ne $e.seconds) { "，$($e.seconds) 秒" })（$($e.where)）"
 }
-function Show($e) { "树 $($tree.Substring(0, 12)) 已绿：$($e.time) 在 $($e.where) 跑过$(if ($null -ne $e.seconds) { "，快检用时：$($e.seconds) 秒" })（提交 $("$($e.commit)".Substring(0, [Math]::Min(7, "$($e.commit)".Length)))）" }
+function Show($e) { "树 $($tree.Substring(0, 12)) 已绿：$($e.time) 在 $($e.where) 跑过$(if ($null -ne $e.seconds) { "，用时：$($e.seconds) 秒" })（提交 $("$($e.commit)".Substring(0, [Math]::Min(7, "$($e.commit)".Length)))）" }
 function New-Entry([string]$r, $sec, [string]$w) { [ordered]@{ tree = $tree; command = $For; result = $r; seconds = $sec; where = $w; commit = $commit; time = (Get-Date).ToString('yyyy-MM-dd HH:mm') } }
 
 if ($Check) {
@@ -94,14 +94,14 @@ if ($Record) {
 $dirty = @(git -C $top status --porcelain --untracked-files=all 2>$null)
 $g = if (-not $dirty) { Get-Green $tree }
 if ($g -and -not $Force) { Show $g; '不再重跑（同一份代码只跑一次）；要重跑加 -Force'; exit 0 }
-$w = if ($Where) { $Where } else { "本机 $env:COMPUTERNAME" }
+$w = if ($Where) { $Where } else { "本机" }
 $sw = [Diagnostics.Stopwatch]::StartNew()
 Push-Location $top
 try { & pwsh -NoProfile -Command $Command; $code = $LASTEXITCODE } finally { Pop-Location }
 $sw.Stop()
 if ($null -eq $code) { $code = 0 }
 $sec = [int][math]::Round($sw.Elapsed.TotalSeconds)
-"快检退出码：$code；快检用时：$sec 秒"
+"退出码：$code；用时：$sec 秒"
 if ($dirty) { "没记账：有 $($dirty.Count) 处没提交的改动（含没被忽略的未跟踪文件），树对不上这份代码" }
 else { Add-Entry (New-Entry $(if ($code -eq 0) { 'green' } else { 'red' }) $sec $w) }
 exit $code

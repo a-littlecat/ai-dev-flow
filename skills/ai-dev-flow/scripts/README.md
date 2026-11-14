@@ -16,3 +16,4 @@ ai-dev-flow 自带的 PowerShell 脚本，都用 `pwsh -NoProfile -File <skill>/
 | `cleanup.ps1` | 合并后清理：删已合进主干、没有未提交改动的 worktree 和分支（`modules/land.md` 第 6 节） |
 | `land-check.ps1` | 合并前的机械检查：note 覆盖要合并的 head、工作区干净、能快进（`modules/land.md` 第 2 节） |
 | `verify-ledger.ps1` | 快检记账：按代码树和命令记绿红、用时、在哪跑，同一棵树、同一条命令已绿就不再跑（`modules/build.md` 第 3 节） |
+| `trunk-check.ps1` | 合并后在本机后台跑全量：`watch.ps1` 每 15 分钟拉起，主干变了就在干净 worktree 里经 `verify-ledger.ps1` 跑一次，全机一次一个、低优先级，红了推手机（`modules/harness.md` 第 2 节第 1 条） |
