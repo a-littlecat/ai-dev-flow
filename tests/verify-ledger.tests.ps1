@@ -30,23 +30,23 @@ try {
     G -C $repo worktree add -q --detach $wt HEAD
     $r = Run $wt @('-Command', $verify)
     Check 'same tree in another worktree: already green, not rerun' ($r.Code -eq 0 -and (& $runs) -eq 1 -and ($r.Out -join "`n") -match '已绿')
-    Check 'check: green tree exits 0' ((Run $wt @('-Check')).Code -eq 0)
+    Check 'check: green tree exits 0' ((Run $wt @('-Check', '-For', $verify)).Code -eq 0)
     $r = Run $wt @('-Command', ($verify + ' # -Base main'))
     Check 'same tree, different command (reviewer adds -Base): runs, not skipped' ($r.Code -eq 0 -and (& $runs) -eq 2 -and ($r.Out -join "`n") -notmatch '已绿')
 
     G -C $wt commit -q --allow-empty -m 'same tree, new commit'
-    Check 'a new commit with the same tree still counts' ((Run $wt @('-Check')).Code -eq 0)
+    Check 'a new commit with the same tree still counts' ((Run $wt @('-Check', '-For', $verify)).Code -eq 0)
 
     Set-Content -LiteralPath (Join-Path $wt 'a.txt') -Encoding utf8NoBOM -Value '2'
     G -C $wt commit -q -am two
-    $r = Run $wt @('-Check')
+    $r = Run $wt @('-Check', '-For', $verify)
     Check 'tree changed: check exits 3' ($r.Code -eq 3)
     $env:FAKE_EXIT = '1'
     try { $r = Run $wt @('-Command', $verify) } finally { Remove-Item Env:FAKE_EXIT }
     Check 'red run: exit code passed through and recorded red' ($r.Code -eq 1 -and (& $runs) -eq 3 -and ($r.Out -join "`n") -match 'red')
-    Check 'red does not count' ((Run $wt @('-Check')).Code -eq 3)
+    Check 'red does not count' ((Run $wt @('-Check', '-For', $verify)).Code -eq 3)
     $r = Run $wt @('-Command', $verify)
-    Check 'after red: runs again, green now counts' ($r.Code -eq 0 -and (& $runs) -eq 4 -and (Run $wt @('-Check')).Code -eq 0)
+    Check 'after red: runs again, green now counts' ($r.Code -eq 0 -and (& $runs) -eq 4 -and (Run $wt @('-Check', '-For', $verify)).Code -eq 0)
 
     Set-Content -LiteralPath (Join-Path $wt 'a.txt') -Encoding utf8NoBOM -Value 'dirty'
     $r = Run $wt @('-Command', $verify)
@@ -58,12 +58,17 @@ try {
     Remove-Item -LiteralPath (Join-Path $wt 'forgot.ps1')
 
     Set-Content -LiteralPath $ledger -Encoding utf8NoBOM -Value 'not json'
-    Check 'unreadable ledger counts as not run' ((Run $wt @('-Check')).Code -eq 3)
+    Check 'unreadable ledger counts as not run' ((Run $wt @('-Check', '-For', $verify)).Code -eq 3)
 
     $r = Run $repo @('-Record', '-Rev', 'HEAD', '-Result', 'green', '-For', 'ci', '-Seconds', '42', '-Where', 'CI')
     $c = Run $repo @('-Check', '-For', 'ci', '-Json')
     $j = ($c.Out -join "`n") | ConvertFrom-Json
     Check 'record: a result from elsewhere goes into the ledger' ($c.Code -eq 0 -and $j.entry.seconds -eq 42 -and $j.entry.where -eq 'CI' -and $j.last.command -eq 'ci')
+    Check 'check without -For: refused (exit 2)' ((Run $repo @('-Check')).Code -eq 2)
+    Set-Content -LiteralPath (Join-Path $repo 'a.txt') -Encoding utf8NoBOM -Value 'narrow'
+    G -C $repo commit -q -am narrow
+    $r = Run $repo @('-Command', 'exit 0')
+    Check 'a narrow command green (one test, check-md): the quick check is still not green' ($r.Code -eq 0 -and ($r.Out -join "`n") -match 'green' -and (Run $repo @('-Check', '-For', $verify)).Code -eq 3 -and (Run $repo @('-Check', '-For', 'exit 0')).Code -eq 0)
 }
 finally {
     if ($Keep) { "fixture kept: $root" } else { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

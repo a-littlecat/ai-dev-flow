@@ -19,8 +19,8 @@ param(
 #   跑：  pwsh -NoProfile -File verify-ledger.ps1 -Command '<快检命令>' [-Repo <目录>] [-Where <在哪跑>] [-Force]
 #         在 -Repo 里看 HEAD 的树：已绿就不跑，打出那条记录，退出 0；没绿就在 -Repo 里跑命令，按退出码记一条，退出码照传。
 #         有没提交的改动（含没被忽略的未跟踪文件，比如漏了 git add 的）时照样跑，但不看账、不记账（树对不上这份代码）。-Force 已绿也重跑。
-#   查：  pwsh -NoProfile -File verify-ledger.ps1 -Check [-Rev <提交>] [-For '<命令>'] [-Json]    已绿退出 0，没绿退出 3；不给 -For 时任何命令的记录都算
-#         -Json 里 entry 是算已绿的那条，last 是这棵树（和 -For 的命令）最近的一条，不管红绿
+#   查：  pwsh -NoProfile -File verify-ledger.ps1 -Check -For '<快检命令>' [-Rev <提交>] [-Json]    已绿退出 0，没绿退出 3；-For 必给，只认这条命令的记录（单个测试、check-md 绿了不算快检绿）
+#         -Json 里 entry 是算已绿的那条，last 是这棵树、这条命令最近的一条，不管红绿
 #   记：  pwsh -NoProfile -File verify-ledger.ps1 -Record -Rev <提交> -Result green|red -For '<命令>' [-Seconds <秒>] -Where <来源>
 #         别处真跑过的结果补进账（例如外部 CI、跑之前就失败的装依赖）。
 # 退出码：跑的模式照传快检命令的退出码；查的模式 0 已绿、3 没绿；参数或仓库不对 2。
@@ -31,7 +31,7 @@ function Fail([string]$m) { Write-Error $m -ErrorAction Continue; exit 2 }
 $modes = @($Check, $Record, [bool]$Command) | Where-Object { $_ }
 if ($modes.Count -ne 1) { Fail '要给 -Command、-Check、-Record 里的一个' }
 if ($Record -and -not $Result) { Fail '-Record 要给 -Result green 或 red' }
-if ($Record -and -not $For) { Fail '-Record 要给 -For <命令>：账按树和命令记' }
+if (($Record -or $Check) -and -not $For) { Fail "-$(if ($Check) { 'Check' } else { 'Record' }) 要给 -For <命令>：账按树和命令记" }
 if ($Command) { $For = $Command }
 
 $top = @(git -C $Repo rev-parse --show-toplevel 2>$null)
@@ -57,7 +57,7 @@ function Read-Ledger {
         if ($e -and $e.tree -is [string] -and $e.result -in 'green', 'red') { $e }
     })
 }
-function Get-Last([string]$t) { @(Read-Ledger | Where-Object { $_.tree -eq $t -and (-not $For -or $_.command -eq $For) }) | Select-Object -Last 1 }
+function Get-Last([string]$t) { @(Read-Ledger | Where-Object { $_.tree -eq $t -and $_.command -eq $For }) | Select-Object -Last 1 }
 function Get-Green([string]$t) {
     $last = Get-Last $t
     if ($last -and $last.result -eq 'green') { $last }
