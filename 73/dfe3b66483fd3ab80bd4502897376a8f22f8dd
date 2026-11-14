@@ -1,0 +1,1 @@
+覆盖：a1eb664..73dfe3b；GPT-6.1 Sol（T3 delegate_task，推理强度 high，全新上下文）→ Pass（第二轮；第一轮 Fix R1：verify.md 真实数据那条没限定改了功能，已修复核）；只改文档：按 verify.md 第 1 节逐条核对路径和章节引用；跑了：check-md.ps1 → 退出 0；没跑：不适用；没采纳：无
