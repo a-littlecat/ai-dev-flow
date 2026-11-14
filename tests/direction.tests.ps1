@@ -54,6 +54,15 @@ try {
     $r = Run (New-Repo (Base @((Pt '2026-11-23' 0.5), (Pt '2026-11-30' 0.3))) -NoFlow)
     Check 'missing flow page is an action' ($r.Code -eq 3 -and ($r.Actions -join '') -match '流程图' -and -not $r.FlowUrl)
 
+    # 流程图写成 docs/flow.md 也算；两个都有用 html
+    $repo = New-Repo (Base @((Pt '2026-11-23' 0.5), (Pt '2026-11-30' 0.3))) -NoFlow
+    Set-Content -LiteralPath (Join-Path $repo 'docs/flow.md') -Encoding utf8NoBOM -Value '# 流程图'
+    $r = Run $repo
+    Check 'a flow page in docs/flow.md counts' ($r.Code -eq 0 -and ($r.Actions -join '') -notmatch '流程图' -and $r.FlowUrl -like '*/docs/flow.md')
+    Set-Content -LiteralPath (Join-Path $repo 'docs/flow.html') -Encoding utf8NoBOM -Value '<html></html>'
+    $r = Run $repo
+    Check 'with both, the html page is the one linked' ($r.Code -eq 0 -and $r.FlowUrl -like '*/docs/flow.html')
+
     # 收敛
     $r = Run (New-Repo (Base @((Pt '2026-11-16' 0.5), (Pt '2026-11-23' 0.4), (Pt '2026-11-30' 0.3)) @((D 'A'))))
     Check 'shrinking gap: nothing stopped, exit 0' ($r.Code -eq 0 -and -not @($r.Stopped).Count -and $r.Gap -eq 0.3 -and @($r.Trend).Count -eq 3)

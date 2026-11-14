@@ -4,7 +4,7 @@ param(
     [switch]$Json,
     [string]$Today
 )
-# 方向检查（ai-dev-flow modules/direction.md）：读一个项目的 docs/benchmark.json、docs/decisions/*.md、docs/flow.html，判断要不要停、要不要补。只读。
+# 方向检查（ai-dev-flow modules/direction.md）：读一个项目的 docs/benchmark.json、docs/decisions/*.md、docs/flow.html（或 docs/flow.md），判断要不要停、要不要补。只读。
 #   pwsh -NoProfile -File direction.ps1 [-Repo <项目>] [-Json]
 # 退出码：0 没有要处理的；3 有要处理的（Actions 逐条列出，/next 开场按它做）；1 脚本自己出错。
 #   -Today   按这一天算（yyyy-MM-dd，测试用），默认今天
@@ -195,9 +195,10 @@ if ($b -and $b.notApplicable -is [string] -and $b.notApplicable.Trim()) {
     $actions.Add('还没登记基准（docs/benchmark.json）：加一项 登记基准（direction.md 第 4 节）')
 }
 
-$flow = Join-Path $repoFull 'docs/flow.html'
-if (Test-Path -LiteralPath $flow -PathType Leaf) { $result.FlowUrl = ([Uri]$flow).AbsoluteUri }
-elseif ($result.Benchmark -ne 'notApplicable') { $actions.Add('还没有流程图（docs/flow.html）：加一项 流程图（direction.md 第 6 节）') }
+# 流程图：docs/flow.html 或 docs/flow.md 都算，两个都有用 html（direction.md 第 6 节）。
+$flow = @('docs/flow.html', 'docs/flow.md' | ForEach-Object { Join-Path $repoFull $_ } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1)
+if ($flow.Count) { $result.FlowUrl = ([Uri]$flow[0]).AbsoluteUri }
+elseif ($result.Benchmark -ne 'notApplicable') { $actions.Add('还没有流程图（docs/flow.html 或 docs/flow.md）：加一项 流程图（direction.md 第 6 节）') }
 
 # 决定卡：docs/decisions/*.md，开头 10 行里写着"状态：待定"的。正文按行给状态页，图换成地址。
 if (Test-Path -LiteralPath $cardDir) {

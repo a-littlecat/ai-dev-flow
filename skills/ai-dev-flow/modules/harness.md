@@ -25,7 +25,7 @@
 7. **空的 `LESSONS.md` 和 `docs/code-standards.md`**。`LESSONS.md` 头部写 `reviewed-through: <当前主干 sha>`。
 8. **`.agents/` 写进 `.gitignore`**。原始验证输出放在 `.agents/evidence/` 下，不入库（`build.md` 第 3 节）。要把执行交给外部 agent 的，再写 `scripts/dispatch.json`（格式见 `orchestrate.md`）。
 9. **verify 能并行跑**：几个 worktree 同时跑 verify 不能互相破坏。共用的缓存（例如按提交号缓存的基准构建）要加进程间锁，并且只认构建成功后写下的完成标记，不认目录里有没有某个文件；删到一半、建到一半的缓存里也可能留着那个文件。
-10. **基准和流程图**：`docs/benchmark.json` 和 `docs/flow.html`（`direction.md` 第 4、6 节）。没有基准可比的项目写明原因。
+10. **基准和流程图**：`docs/benchmark.json` 和 `docs/flow.html` 或 `docs/flow.md`（`direction.md` 第 4、6 节）。没有基准可比的项目写明原因。
 
 ## 3. hooks
 

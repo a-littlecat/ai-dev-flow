@@ -842,10 +842,14 @@ try {
     Check 'page: no baseline says so; notApplicable shows no row' ($html -match '<div class="missing">方向没人看：还没登记基准，还没有流程图：' -and ([regex]::Matches($html, 'class="missing"')).Count -eq 2 -and ([regex]::Matches($html, '<div class="bench">')).Count -eq 1)
     Check 'unwatched: the status page tags the project' ([regex]::Matches($html, '<span class="tag bad">方向没人看</span>').Count -eq 1 -and $html -match '下次在这个项目发 /next 会先做')
     Check 'page: no flow page says so' ($html -match '<div class="missing">还没有流程图：')
+    Set-Content -LiteralPath (Join-Path $h 'docs/flow.md') -Value '# 流程图' -Encoding utf8NoBOM
+    $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
+    $htmlFlowMd = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
+    Check 'page: a flow page in docs/flow.md gets the link and no missing note' ($htmlFlowMd -match '<a href="file:///[^"]*/docs/flow\.md" target="_blank">流程图</a>' -and $htmlFlowMd -match '<iframe src="file:///[^"]*/docs/flow\.md"' -and $htmlFlowMd -notmatch '<div class="missing">还没有流程图：')
     Set-Content -LiteralPath (Join-Path $h 'docs/flow.html') -Value '<html></html>' -Encoding utf8NoBOM
     $null = pwsh -NoProfile -File $daily -Config $cfgH -Out $pageH -NoNotify
     $htmlFlow = Get-Content -LiteralPath $pageH -Raw -Encoding UTF8
-    Check 'page: a flow page gets a link and opens in place without scripts' ($htmlFlow -match '<a href="file:///[^"]*/docs/flow\.html" target="_blank">流程图</a>' -and $htmlFlow -match '<details class="flowbox"><summary>[^<]*</summary><iframe src="file:///[^"]*/docs/flow\.html" loading="lazy" sandbox ')
+    Check 'page: a flow page gets a link and opens in place without scripts; with both, the html one' ($htmlFlow -notmatch '"file:///[^"]*/docs/flow\.md"' -and $htmlFlow -match '<a href="file:///[^"]*/docs/flow\.html" target="_blank">流程图</a>' -and $htmlFlow -match '<details class="flowbox"><summary>[^<]*</summary><iframe src="file:///[^"]*/docs/flow\.html" loading="lazy" sandbox ')
     Check 'page: no chart for a project without runs' ([regex]::Matches($html, '<svg class="spark"').Count -eq 1)
     # 已有人在处理的方向复盘不再催
     (Get-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Raw -Encoding UTF8) -replace '\| 1 \| 方向复盘：A<b> \| 无 \| 待做 \|', '| 1 | 方向复盘：A<b> | 无 | 在做 |' | Set-Content -LiteralPath (Join-Path $h 'docs/queue.md') -Encoding utf8NoBOM

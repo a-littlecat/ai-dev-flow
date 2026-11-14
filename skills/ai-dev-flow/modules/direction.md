@@ -109,7 +109,7 @@ pwsh -NoProfile -File <skill>/scripts/direction.ps1 -Repo . [-Json]
 
 ## 6. 一页流程图
 
-用户不该靠翻会话过程才知道项目在干什么。每个推进中的项目维护一页 `docs/flow.html`，照 `<skill>/templates/flow.html` 改，白话说明加一张图：
+用户不该靠翻会话过程才知道项目在干什么。每个推进中的项目维护一页 `docs/flow.html`，照 `<skill>/templates/flow.html` 改，白话说明加一张图。首选这个模板；已经写成 `docs/flow.md` 的也算有流程图，`scripts/direction.ps1` 两种都认，两个都有时状态页链接 html 那页。不管哪种，都要写清：
 
 - 从输入到输出几步；
 - 每步谁做（模型、程序、人、外部服务）；
