@@ -1,0 +1,1 @@
+覆盖：0ad0861..bb14638；Claude Opus 5.5 子 agent（全新上下文，推理强度 high）→ Pass（第三轮；第一轮 Fix R1–R6、第二轮 Fix F1–F6，已修复核）；跑了：verify-ledger.ps1 -Command 'pwsh -NoProfile -File tests/run-all.ps1' → 退出 0，11 项全过；快检用时：203 秒；改坏检查：Test-LockLive 不比启动时间 → trunk-check.tests 7 条 FAIL，已恢复；没跑：无；没采纳：N1 trunk-red.json 不对 head、N2 用时含 trunkSetup、N3 land.md 第 6 节没提合并后全量、F4 dispatch 审查方仍跑全量，均为 P2，另排待放行
