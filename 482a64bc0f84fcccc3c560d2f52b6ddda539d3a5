@@ -1,0 +1,1 @@
+覆盖：acc473c31711492bcb7e0838c759dd73c61db0a9..482a64bc0f84fcccc3c560d2f52b6ddda539d3a5；只改纯文档（build.md、harness.md、verify.md、README.md、VERSION），按 verify.md 第 1 节逐条核对，不请验证方 → Pass；跑了：check-md.ps1 → 退出 0；核对：harness.md 第 2 节第 8 条已把 .agents/ 写进 .gitignore，build.md 第 3 节、verify.md 第 6 节存在；没跑：不适用；没采纳：无
