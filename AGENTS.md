@@ -6,7 +6,6 @@
 
 - **信任等级**：未写，按总览第 4 节为 L0（合并前问用户）。等级由用户在这里改。
 - **队列**：`docs/queue.md`，只由编排会话维护。
-- **额度**（用户 2026-11-10）：5 小时限额用到 95% 时停下交接：手上的项按 `skills/next/SKILL.md` 第 6 节写成"停在安全点"，等新开会话接着做。用量用桌面应用的 `get_usage` 看；没有这个工具的，在汇报里说明没法看。
 - **检查**：
   - 改了 `skills/ai-dev-flow/scripts/` 下的 `status.ps1`、`daily.ps1`、`notify.ps1` 或 `watch.ps1`：跑 `pwsh -NoProfile -File tests/status.tests.ps1`，退出码 0 才算通过。测试里 notify 只走 `-DryRun`；真的弹通知、推到手机，要在本机实发一次。
   - 改了 `status.ps1` 解析队列或别的文档的写法：另外对本机总览清单只读跑一次 `status.ps1 -Config <总览仓库>/projects.json -All -Json`，看真实队列的结果对不对，写进提交正文。夹具里的写法总是比真实队列少（10-31、11-05、11-06、11-08 四次都是真实写法没考虑到）。
