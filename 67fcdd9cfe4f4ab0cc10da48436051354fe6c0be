@@ -1,0 +1,1 @@
+覆盖：bfc0aa6b0d5016ef2ff65a72c2e3215ba319afef..67fcdd9cfe4f4ab0cc10da48436051354fe6c0be；沿用 482a64bc0f84fcccc3c560d2f52b6ddda539d3a5 的 Pass（只改纯文档，按 verify.md 第 1 节逐条核对）；rebase 到主干，内容不变；之后只多了文档：docs/queue.md，主干带进来的，不涉及；没跑：不适用；没采纳：无
