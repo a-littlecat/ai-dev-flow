@@ -312,6 +312,54 @@ try {
     Set-Content -LiteralPath (Join-Path $slow '.agents/verify-last.json') -Encoding utf8NoBOM -Value '{"seconds":'
     $q = & $slowRun
     Check 'slow verify: broken record is ignored' (-not (& $slowHint $q) -and $null -eq $q.VerifySeconds)
+    Check 'verify unknown: broken record is reported as unknown' ([bool](@($q.Problems) -match '^快检用时未知：.*读不出'))
+
+    # 快检提醒补全：提速项挂着不动、用时未知、超过阈值 2 倍
+    $stall = Join-Path $root 'stall'
+    $null = New-Item -ItemType Directory -Force -Path (Join-Path $stall 'docs'), (Join-Path $stall '.agents')
+    G init -q $stall
+    Set-Content -LiteralPath (Join-Path $stall '.gitignore') -Encoding utf8NoBOM -Value '.agents/'
+    Set-Content -LiteralPath (Join-Path $stall 'AGENTS.md') -Encoding utf8NoBOM -Value '- **信任等级 L1**'
+    $stallQ = { param($goal) "| # | 目标 | 依赖 | 状态 |`n|---|---|---|---|`n| 1 | 别的事 | 无 | 待做 |`n| 7 | $goal | 无 | 待做 |" | Set-Content -LiteralPath (Join-Path $stall 'docs/queue.md') -Encoding utf8NoBOM }
+    & $stallQ '快检提速：并行'
+    $old = (Get-Date).AddDays(-5).ToString('yyyy-MM-ddTHH:mm:ss')
+    $env:GIT_AUTHOR_DATE = $old; $env:GIT_COMMITTER_DATE = $old
+    try { G -C $stall add -A; G -C $stall commit -q -m 'queue: add #7 speed up verify' } finally { Remove-Item Env:GIT_AUTHOR_DATE, Env:GIT_COMMITTER_DATE }
+    Set-Content -LiteralPath (Join-Path $stall 'a.txt') -Encoding utf8NoBOM -Value 'x'
+    G -C $stall add -A; G -C $stall commit -q -m 'other work #1, not #70'
+    $cfgStall = Join-Path $root 'projects-stall.json'
+    $stallCfg = { param($status) @{ projects = @(@{ name = '提速挂着'; path = $stall; status = $status }) } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $cfgStall -Encoding utf8NoBOM }
+    $stallRun = { param([string[]]$more) (pwsh -NoProfile -File $Script -Config $cfgStall -All -Json @more | ConvertFrom-Json).Projects[0] }
+    $stallRec = { param($sec, $date) Set-Content -LiteralPath (Join-Path $stall '.agents/verify-last.json') -Encoding utf8NoBOM -Value "{`"head`":`"abc`",`"seconds`":$sec,`"date`":`"$date`"}" }
+    $today = (Get-Date).ToString('yyyy-MM-dd')
+    $stallHint = { param($q) @(@($q.Problems) -match '^快检提速项挂着不动') }
+    $unknownHint = { param($q) @(@($q.Problems) -match '^快检用时未知') }
+    & $stallCfg '推进中'
+    $q = & $stallRun
+    Check 'verify unknown: no verify-last.json: hint' ((& $unknownHint $q).Count -eq 1 -and [bool]((& $unknownHint $q) -match '没有 \.agents/verify-last\.json.*land-check 或 dispatch'))
+    & $stallRec 1200 $today
+    $q = & $stallRun
+    Check 'speed-up stalled: item untouched for 5 days: hint with only the current time when no note has one' ((& $stallHint $q).Count -eq 1 -and [bool]((& $stallHint $q) -match '#7 已 5 天没有提交提到它.*取不到.*现在 1200 秒') -and @($q.SpeedUpStalled.Ids) -contains '7' -and $null -eq $q.SpeedUpStalled.FromSeconds)
+    Check 'verify unknown: fresh record: no hint' (-not (& $unknownHint $q).Count -and $q.VerifyDate -eq $today -and $q.VerifyLimitMinutes -eq 10)
+    Check 'verify red: exactly 2x the threshold: not red' (-not $q.VerifySlowRed -and -not (@($q.Problems) -match '2 倍'))
+    $first = (G -C $stall rev-list --max-parents=0 HEAD) | Select-Object -First 1
+    G -C $stall notes --ref=verify add -m '覆盖：x；跑了：verify → 退出 0，快检用时：700 秒；没跑：无' $first
+    $q = & $stallRun
+    Check 'speed-up stalled: growth from the verify note at the start' ([bool]((& $stallHint $q) -match '从 700 秒.*到现在 1200 秒，涨了 500 秒') -and $q.SpeedUpStalled.FromSeconds -eq 700)
+    Set-Content -LiteralPath (Join-Path $stall 'b.txt') -Encoding utf8NoBOM -Value 'x'
+    G -C $stall add -A; G -C $stall commit -q -m 'verify: run groups in parallel (#7)'
+    $q = & $stallRun
+    Check 'speed-up stalled: a recent commit mentions the item: no hint' (-not (& $stallHint $q).Count -and $null -eq $q.SpeedUpStalled -and -not (@($q.Problems) -match '^快检最近一次'))
+    & $stallRec 1201 $today
+    $q = & $stallRun
+    Check 'verify red: over 2x the threshold: flagged even with a fresh speed-up item' ($q.VerifySlowRed -eq $true -and [bool](@($q.Problems) -match '^快检超过阈值 2 倍：.*20 分钟.*阈值 10 分钟；合并照常'))
+    $page = Join-Path $root 'out/status-red.html'
+    $null = pwsh -NoProfile -File (Join-Path (Split-Path $Script) 'daily.ps1') -Config $cfgStall -Out $page -NoNotify
+    $html = Get-Content -LiteralPath $page -Raw -Encoding UTF8
+    Check 'verify red: the daily page marks the project red' ($html -match '<span class="tag bad">快检太慢</span>' -and $html -match '<div class="alert">快检太慢：最近一次 20 分钟，超过阈值 10 分钟的 2 倍')
+    & $stallRec 1201 (Get-Date).AddDays(-8).ToString('yyyy-MM-dd')
+    $q = & $stallRun
+    Check 'verify unknown: record older than 7 days: hint' ([bool]((& $unknownHint $q) -match '是 \d{4}-\d{2}-\d{2} 的，超过 7 天'))
 
     $alias = Join-Path $root 'alias'
     $null = New-Item -ItemType Directory -Force -Path (Join-Path $alias 'docs')

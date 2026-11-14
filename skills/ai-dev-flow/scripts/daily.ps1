@@ -103,13 +103,15 @@ function CardBody($c) {
     }) -join ''
     "<details class=`"dc`" open><summary>决定卡：$(Enc $c.Title)</summary>$rows<div class=`"how`">$(Enc $c.File)</div></details>"
 }
-# 状态标签：可能停了 > 等你 > 方向要停 > 方向没人看（没登记基准，status.ps1 的 Unwatched） > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
+# 状态标签：可能停了 > 等你 > 方向要停 > 方向没人看（没登记基准，status.ps1 的 Unwatched） > 快检太慢（超过阈值 2 倍，status.ps1 的 VerifySlowRed） > 在做 > 刚有动静 > 空着 > 没活；维护中的项目单列
+# 快检太慢的项目被排在前面的标签盖住时，标题旁另加一个红色"快检太慢"，卡片里写出用时和阈值：标红不拦合并。
 function State($p) {
     if ($p.Status -eq '维护') { return @('维护中', 'muted') }
     if (IsStalled $p) { return @('可能停了', 'bad') }
     if ((Asks $p).Count) { return @('等你', 'warn') }
     if (@(StoppedOpen $p).Count) { return @('方向要停', 'bad') }
     if ($p.Unwatched) { return @('方向没人看', 'bad') }
+    if ($p.VerifySlowRed) { return @('快检太慢', 'bad') }
     if (@($p.Doing).Count) { return @('在做', 'ok') }
     if ($p.Available -and (Recent $p)) { return @('刚有动静', 'ok') }
     if ($p.Available) { return @('空着，可开工', 'idle') }
@@ -572,7 +574,7 @@ function ProjectCard($mo) {
     if ($p.Decisions) { $facts.Add("<dt>新决定</dt><dd><ul class=`"items`">$((@($p.Decisions) | ForEach-Object { "<li>$(Enc $_.Date) $(Enc (Cut (Plain $_.Text) 60))</li>" }) -join '')</ul></dd>") }
     if ($p.Recent) { $facts.Add("<dt>最近完成</dt><dd>$(ListHtml $p.Recent)</dd>") }
     $x = [Text.StringBuilder]::new()
-    $null = $x.Append("<section class=`"proj`" id=`"p$($mo.Index)`"><div class=`"proj-h`"><h3>$(Enc (Nick $p.Name))</h3><span class=`"tag $($st[1])`">$(Enc $st[0])</span><span class=`"right`">$flow$(Progress $p)$(if ($null -ne $p.Priority) { "<span>优先级 $(Enc $p.Priority)</span>" })</span></div>")
+    $null = $x.Append("<section class=`"proj`" id=`"p$($mo.Index)`"><div class=`"proj-h`"><h3>$(Enc (Nick $p.Name))</h3><span class=`"tag $($st[1])`">$(Enc $st[0])</span>$(if ($p.VerifySlowRed -and $st[0] -ne '快检太慢') { '<span class="tag bad">快检太慢</span>' })<span class=`"right`">$flow$(Progress $p)$(if ($null -ne $p.Priority) { "<span>优先级 $(Enc $p.Priority)</span>" })</span></div>")
     $benchHtml = ''
     if ($bench -and $bench.Benchmark -eq 'ok') {
         $gapNote = if ($bench.Note) { '<div class="why">' + (Enc (Cut (Plain $bench.Note) 60)) + '</div>' } else { '' }
@@ -585,6 +587,7 @@ function ProjectCard($mo) {
     }
     $null = $x.Append("<div class=`"pgrid$(if ($benchHtml) { ' two' })`"><dl class=`"facts`">$($facts -join '')</dl>$benchHtml</div>")
     if ($bench -and $bench.Benchmark -eq 'ok') { foreach ($d in @($bench.Stopped) | Where-Object { $_ }) { $null = $x.Append("<div class=`"alert`">方向 $(Enc $d.Name) 要停：$(Enc (Cut $d.Reason 120))</div>") } }
+    if ($p.VerifySlowRed) { $null = $x.Append("<div class=`"alert`">快检太慢：最近一次 $([math]::Round($p.VerifySeconds / 60)) 分钟，超过阈值 $($p.VerifyLimitMinutes) 分钟的 2 倍；合并照常，状态页标红到它降下来</div>") }
     if ($bench -and $bench.FlowUrl) { $null = $x.Append("<details class=`"flowbox`"><summary>展开流程图：这个项目从输入到输出，每一步谁做</summary><iframe src=`"$(Enc $bench.FlowUrl)`" loading=`"lazy`" sandbox title=`"$(Enc (Nick $p.Name)) 的流程图`"></iframe></details>") }
     if ($bench -and $bench.Benchmark -ne 'notApplicable' -and $p.Status -eq '推进中') {
         $lack = @(if ($bench.Benchmark -eq 'none') { '还没登记基准' }; if (-not $bench.FlowUrl) { '还没有流程图' })

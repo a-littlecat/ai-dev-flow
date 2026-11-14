@@ -11,7 +11,9 @@ param(
     [int]$IdleHours = 12,
     [int]$GoalHours = 24,
     [int]$CleanupOver = 10,
-    [int]$SlowVerifyMinutes = 10
+    [int]$SlowVerifyMinutes = 10,
+    [int]$SpeedUpStallHours = 48,
+    [int]$VerifyStaleDays = 7
 )
 # 收状态：按总览仓库的项目清单 projects.json，列出每个项目的事实——主干新提交、未复盘的提交（只改队列文件和它的搁置文件的不算）、队列各状态的项数和待用户项、
 # 最近一份复盘摘要、worktree 和分支、未提交改动、最后活动时间、可领的项、本周目标、该升级的教训、还没转的请求。只收事实，判断和汇报由总览做（格式见 ai-dev-flow modules/portfolio.md）。
@@ -25,6 +27,8 @@ param(
 #   -Json     输出 JSON
 #   -StaleMinutes  推进中的项目有"在做"的项、最后活动又早于这么多分钟前，提示"可能停滞"（默认 60）
 #   -SlowVerifyMinutes  快检超过这么多分钟算太慢（默认 10，harness.md 第 2 节）；项目 AGENTS.md 写"快检提速阈值：<分钟> 分钟"的以项目为准
+#   -SpeedUpStallHours  快检超过阈值、队列里有提速项，提速项却这么多小时没有提交提到它，照样提醒（默认 48）
+#   -VerifyStaleDays    .agents/verify-last.json 的 date 早于这么多天前，算快检用时未知（默认 7）
 #   -IdleHours     推进中的项目有可领的项、没有"在做"的、最后活动又早于这么多小时前，提示"有活没人做"（默认 12），不管有没有待用户项
 #   -GoalHours     推进中的项目这么多小时内有新提交，本周目标挂的、还没完成的项却这么久没有提到它的提交，提示"本周目标没动"（默认 24）
 #   -CleanupOver   已合进主干的分支或 worktree 超过这么多个，提示运行 cleanup.ps1（默认 10）
@@ -38,7 +42,12 @@ param(
 # 新决定（Decisions）：docs/decision-log.md 里用户在项目会话做的方向性决定（direction.md 第 3 节），一行一条：- <YYYY-MM-DD>（<类别>）：<决定> 原话："<用户原话>"。
 #   只列上次 -Mark 那天及以后的（没有标记就是近 7 天），周会拿去和 INTENT.md 对；像决定（列表项，开头是年份或写着"原话："）却认不出的行写成提示。
 # 还没转的请求（Requests）：docs/requests.md 里状态"待转"或没写状态的 ## 小节（portfolio.md 第 7 节）。
-# 快检太慢（VerifySeconds 和提示）：推进中的项目 .agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项。
+# 快检（VerifySeconds、VerifyDate、VerifyLimitMinutes 和提示），只看推进中的项目：
+#   太慢：.agents/verify-last.json 的用时超过阈值，队列里又没有目标写着"快检提速"、还没完成的项；
+#   提速项挂着不动（SpeedUpStalled）：超过阈值、有提速项，提速项却 -SpeedUpStallHours 小时没有提交提到它（"#<编号>"；没有这样的提交就看队列文件里改到它那一行的提交），照样提醒，
+#     写出这段时间用时涨了多少（起点那时的用时取 verify note 里的"快检用时：<秒> 秒"，取不到只写现在的）；
+#   用时未知：没有 verify-last.json、读不出、没写 date 或 date 早于 -VerifyStaleDays 天前，提示让项目把用时接进 land-check 或 dispatch 的记录；
+#   超过阈值 2 倍（VerifySlowRed）：只加标记和提示，daily.ps1 的状态页把项目标红，合并照常。
 # 该清理（提示）：已合进主干的分支或 worktree 超过 -CleanupOver 个（land.md 第 6 节）。
 # 基准和方向（Direction）：判定都在 direction.ps1（modules/direction.md），这里接过来。要停或已结束的方向，它的 [方向 X]、[方向原型 X] 项不算可领；队列里有 [方向 X] 项、
 #   方向却没写成"进行中"的（没定就排了）提示。推进中的项目把 Actions 写成提示；benchmark.json 写错的任何状态都提示。
@@ -146,7 +155,7 @@ function Get-ProjectStatus($p) {
         NewSince = $null; NewCount = 0; NewCommits = @(); Unreviewed = $null
         Queue = $null; Items = @(); Waiting = @(); Pending = @(); Doing = @(); Other = @(); Next = @(); Recent = @(); Digest = $null
         Uncommitted = $null; Untracked = $null; Worktrees = $null; WorktreesMerged = $null; WorktreesDetached = $null; WorktreesMissing = $null; BranchesMerged = $null
-        Lessons = @(); LessonsDue = @(); Requests = @(); Decisions = @(); DeadRuns = @(); VerifySeconds = $null; Direction = $null
+        Lessons = @(); LessonsDue = @(); Requests = @(); Decisions = @(); DeadRuns = @(); VerifySeconds = $null; VerifyDate = $null; VerifyLimitMinutes = $null; VerifySlowRed = $false; SpeedUpStalled = $null; Direction = $null
         LastActivity = $null; IdleMinutes = $null; Available = $null; Goals = @(); Unwatched = $false; GoalStalled = $null
         Problems = [Collections.Generic.List[string]]::new()
     }
@@ -335,17 +344,61 @@ function Get-ProjectStatus($p) {
         }
     }
     $verifyFile = Join-Path $path '.agents/verify-last.json'
+    $limit = $SlowVerifyMinutes
+    $agentsFile = Join-Path $path 'AGENTS.md'
+    if (Test-Path -LiteralPath $agentsFile) {
+        $lm = [regex]::Match((Get-Content -LiteralPath $agentsFile -Raw -Encoding UTF8), '快检提速阈值\**[：:]\s*\**\s*(\d+)\s*分钟')
+        if ($lm.Success) { $limit = [int]$lm.Groups[1].Value }
+    }
+    $r.VerifyLimitMinutes = $limit
+    $unknown = $null
     if (Test-Path -LiteralPath $verifyFile) {
-        try { $r.VerifySeconds = [int](Get-Content -LiteralPath $verifyFile -Raw -Encoding UTF8 | ConvertFrom-Json).seconds } catch { $r.VerifySeconds = $null }
-        $limit = $SlowVerifyMinutes
-        $agentsFile = Join-Path $path 'AGENTS.md'
-        if (Test-Path -LiteralPath $agentsFile) {
-            $lm = [regex]::Match((Get-Content -LiteralPath $agentsFile -Raw -Encoding UTF8), '快检提速阈值\**[：:]\s*\**\s*(\d+)\s*分钟')
-            if ($lm.Success) { $limit = [int]$lm.Groups[1].Value }
-        }
+        $vj = $null
+        try { $vj = Get-Content -LiteralPath $verifyFile -Raw -Encoding UTF8 | ConvertFrom-Json; $r.VerifySeconds = [int]$vj.seconds } catch { $r.VerifySeconds = $null }
+        $vd = [datetime]::MinValue
+        if ($vj -and [datetime]::TryParseExact("$($vj.date)", 'yyyy-MM-dd', $null, 'None', [ref]$vd)) { $r.VerifyDate = $vd.ToString('yyyy-MM-dd') }
+        if ($null -eq $r.VerifySeconds) { $unknown = '.agents/verify-last.json 读不出用时' }
+        elseif (-not $r.VerifyDate) { $unknown = '.agents/verify-last.json 没写日期' }
+        elseif (((Get-Date).Date - $vd).TotalDays -gt $VerifyStaleDays) { $unknown = ".agents/verify-last.json 是 $($r.VerifyDate) 的，超过 $VerifyStaleDays 天" }
+    } else { $unknown = '没有 .agents/verify-last.json' }
+    if ($p.status -eq '推进中') {
+        if ($unknown) { $r.Problems.Add("快检用时未知：$unknown；让项目把快检用时接进 land-check 或 dispatch 的记录（verify note 或审查方回复写`"快检用时：<秒> 秒`"，harness.md 第 2 节）") }
+        $mins = if ($null -ne $r.VerifySeconds) { [math]::Round($r.VerifySeconds / 60) }
         $speedUp = @($items | Where-Object { $_.State -ne '完成' -and "$($_.Goal)" -match '快检提速' })
-        if ($p.status -eq '推进中' -and $r.VerifySeconds -gt $limit * 60 -and -not $speedUp) {
-            $r.Problems.Add("快检最近一次用了 $([math]::Round($r.VerifySeconds / 60)) 分钟，超过 $limit 分钟，队列里没有快检提速的项：下次 /next 开场自动加（skills/next/SKILL.md 第 1 节）")
+        if ($r.VerifySeconds -gt $limit * 60 -and -not $speedUp) {
+            $r.Problems.Add("快检最近一次用了 $mins 分钟，超过 $limit 分钟，队列里没有快检提速的项：下次 /next 开场自动加（skills/next/SKILL.md 第 1 节）")
+        }
+        # 提速项挂着不动：起点是最近一次提到它编号（"#<编号>"）的提交；没有这样的提交，就用队列文件里改到"快检提速"那一行的最近一次提交。
+        if ($r.VerifySeconds -gt $limit * 60 -and $speedUp) {
+            $suIds = @($speedUp | ForEach-Object { ($_.Id -replace '^#', '').Trim() } | Where-Object { $_ -match '^\d+$' } | Select-Object -Unique)
+            $lastSu = if ($suIds) { git -C $path log --branches -1 -E -i "--grep=#($($suIds -join '|'))([^0-9]|$)" --format=%ct 2>$null | Select-Object -First 1 }
+            if (-not $lastSu) { $lastSu = git -C $path log --branches -1 -G '快检提速' --format=%ct -- $queueRel ((Get-ShelfPath $queueRel) -replace '\\', '/') 2>$null | Select-Object -First 1 }
+            if ($lastSu) {
+                $nowUnix = [DateTimeOffset]::Now.ToUnixTimeSeconds()
+                $suAge = [int][math]::Floor(($nowUnix - [long]$lastSu) / 60)
+                if ($suAge -ge $SpeedUpStallHours * 60) {
+                    # 这段时间用时涨了多少：起点那时的用时取 verify note 里的"快检用时：<秒> 秒"（起点以前最近的一条，没有就取起点以后最早的一条），取不到只写现在的。
+                    $hist = @(foreach ($rec in ((git -C $path log --branches --notes=verify "--since=@$([long]$lastSu - 30 * 86400)" '--format=%x1e%ct%x09%h%x09%N' 2>$null) -join "`n") -split [char]0x1e) {
+                        $hm = [regex]::Match($rec, '^\s*(\d+)\t(\w+)\t[\s\S]*?快检用时[：:]\s*(\d+)\s*秒')
+                        if ($hm.Success) { [pscustomobject]@{ Time = [long]$hm.Groups[1].Value; Sha = $hm.Groups[2].Value; Seconds = [int]$hm.Groups[3].Value } }
+                    })
+                    $before = @($hist | Where-Object { $_.Time -le [long]$lastSu } | Sort-Object Time | Select-Object -Last 1)
+                    if (-not $before) { $before = @($hist | Sort-Object Time | Select-Object -First 1) }
+                    $fromSec = if ($before) { $before[0].Seconds }
+                    $growth = if ($before) {
+                        $diff = $r.VerifySeconds - $fromSec
+                        "这段时间快检从 $fromSec 秒（$($before[0].Sha) 的 verify note，$([DateTimeOffset]::FromUnixTimeSeconds($before[0].Time).LocalDateTime.ToString('MM-dd'))）到现在 $($r.VerifySeconds) 秒，$(if ($diff -ge 0) { "涨了 $diff 秒" } else { "少了 $(-$diff) 秒" })"
+                    } else { "取不到这段时间以前的用时（verify note 里没有快检用时），现在 $($r.VerifySeconds) 秒" }
+                    $suLabel = ($speedUp | ForEach-Object { if (Format-Id $_.Id) { Format-Id $_.Id } else { "「$(Short $_.Goal 20)」" } }) -join '、'
+                    $r.SpeedUpStalled = [pscustomobject]@{ Ids = $suIds; Minutes = $suAge; Since = [DateTimeOffset]::FromUnixTimeSeconds([long]$lastSu).LocalDateTime.ToString('yyyy-MM-dd HH:mm'); FromSeconds = $fromSec; Seconds = $r.VerifySeconds }
+                    $r.Problems.Add("快检提速项挂着不动：$suLabel 已 $(Format-Idle $suAge)没有提交提到它，快检最近一次用了 $mins 分钟，超过 $limit 分钟；$growth")
+                }
+            }
+        }
+        # 超过阈值 2 倍：只加标记（状态页标红），合并照常。
+        if ($r.VerifySeconds -gt $limit * 60 * 2) {
+            $r.VerifySlowRed = $true
+            $r.Problems.Add("快检超过阈值 2 倍：最近一次用了 $mins 分钟，阈值 $limit 分钟；合并照常，状态页标红")
         }
     }
     $r.Goals = @(foreach ($g in @($p.goals | Where-Object { $_ })) {

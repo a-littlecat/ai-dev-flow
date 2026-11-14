@@ -137,6 +137,7 @@ foreach ($n in 'ai-dev-flow', 'next', 'week') {
 
 ## 版本
 
+- **2.35.0**（2026-11-14）：快检变慢不再悄悄过去。`status.ps1` 在快检超过阈值、提速项却超过 48 小时（`-SpeedUpStallHours`）没有提交提到它时照样提示，写出这段时间用时涨了多少（起点的用时取 verify note 里的"快检用时"，取不到只写现在的）；推进中的项目没有 `.agents/verify-last.json` 或记录超过 7 天（`-VerifyStaleDays`）时提示"快检用时未知"；超过阈值 2 倍的标 `VerifySlowRed`，`daily.ps1` 状态页把项目标红，合并照常。
 - **2.34.0**（2026-11-14）：流程图写成 `docs/flow.md` 也算。`scripts/direction.ps1` 认 `docs/flow.html` 和 `docs/flow.md` 两种，有一个就不再提示"还没有流程图"；状态页项目卡的"流程图"链接和就地展开指向实际存在的那页，两个都有时用 html。`templates/flow.html` 仍是首选模板（`modules/direction.md` 第 6 节）。起因：一个项目的流程图写在 `docs/flow.md`，状态页一直说它没有流程图。
 - **2.33.0**（2026-11-14）：原始验证输出不进仓库。判定入库的只有脚本、真值样本和一页结论；导出、日志、图纸副本、编译产物放仓库外的 `.agents/evidence/<项编号>/`，提交正文写路径和摘要。`build.md` 第 3 节，`harness.md`、`verify.md` 同步。
 - **2.32.0**（2026-11-14）：写完请求要叫对方。项目往 ai-dev-flow 写了请求，提交后用 `ListAgents` 看那边有没有会话在跑，有就发一句"请求单新加了哪一节"，没有就等它开工；会话列表分不清是哪个项目的，先问用户再发。总览叫项目时也一样。`portfolio.md` 第 4、7 节。
