@@ -22,6 +22,12 @@
   - 全部检查（`tests/*.tests.ps1` 和 `check-md.ps1`）并行跑：`pwsh -NoProfile -File tests/run-all.ps1`，退出码 0 才算通过，最后一行是快检用时（2026-11-11 空机器上 401 秒；同时跑两份时能到 14 分钟，量用时要在机器空着时量）；对照表选不出来时验证方跑这一条。改了 `tests/run-all.ps1` 另跑 `tests/run-all.tests.ps1`。
   - 改了任何 `.md`：跑 `pwsh -NoProfile -File skills/ai-dev-flow/scripts/check-md.ps1`，退出码 0 才算通过。
   - 只改文档的，另按 `skills/ai-dev-flow/modules/verify.md` 第 1 节逐条核对文档里写的路径、命令和章节引用。
+- **分工**（用户 2026-11-14："可以"；全项目的模型分工见总览 `INTENT.md` 模型分工一节，以那里为准）：
+  - 改流程规则和模块文档（`SKILL.md`、`modules/*.md`、`skills/next/`、`skills/week/`）：Opus 写，Sol（GPT-6.1 Sol，推理强度 high）审。
+  - 脚本和测试（`skills/ai-dev-flow/scripts/`、`tests/`），完成标准写得清楚的：Sol（medium）和 Gemini 4 Hydrogen（high）按项轮流写。Sol 写的给 Opus（high，新会话）审，Gemini 写的给 Sol（high）审。
+  - 一项既改脚本又改大段规则的，按主要改动定：脚本为主就派给执行模型，规则文字由 Opus 在送审前补上，审查按写脚本的那一方定。
+  - 队列整理、请求转写、复盘由编排会话自己做，不单独审。
+  - 派法：在 T3 里用 `delegate_task`，Sol 是 `codex` 的 `gpt-6.1-sol`（`reasoningEffort` 要显式写），Gemini 是 `antigravity` 的 `gemini-4-hydrogen`（`thinking_level`），每项一个独立 worktree；派完在本会话等结果。审查说明照 `skills/ai-dev-flow/modules/verify.md` 第 3 节写。
 - **安装同步**：合进 `main` 以后，把 `skills/` 下的 `ai-dev-flow`、`next`、`week` 复制到 `~/.agents/skills/`（见 README 的安装一节），再用 `diff -rq` 逐个确认两边一致。Claude Code 的 `~/.claude/skills/<名字>` 是指向它们的目录链接，不用另外复制。
 - **云端会话**：这个仓库有远程，可以在云端会话里做。云端没有用户级 skill，开头写"按 `skills/next/SKILL.md` 做 #n"；云端只推分支，回到本地用 `/next 收云端` 合并（`skills/next/cloud.md`）。
 - **推送**（用户 2026-10-29 定）：改动审查通过、合进 `main`、同步到本机安装之后，把 `main` 和 `refs/notes/verify` 推到 `origin`。推之前做两件事：
