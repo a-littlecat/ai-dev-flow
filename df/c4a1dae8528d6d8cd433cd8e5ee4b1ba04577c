@@ -1,0 +1,1 @@
+覆盖：d77f374..dfc4a1d；复验 Pass（Agent 子 agent，Claude Opus 5.5，派发时设 effort=high；子 agent 自报 low）：rebase 带进 #55 的改动，两边合在一起成立，README、VERSION 冲突合对；跑了：tests/run-all.ps1 → 退出 0，快检用时：873 秒；改坏检查和真实清单见 9ad26d1 的 note；没跑：无；没采纳：无
