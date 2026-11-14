@@ -7,6 +7,41 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ("status-fixture-" + [guid]::NewGui
 $fail = 0
 function Check($name, $cond) { if ($cond) { "ok   $name" } else { "FAIL $name"; $script:fail++ } }
 function G { git -c user.name=t -c user.email=t@t -c init.defaultBranch=main @args; if ($LASTEXITCODE) { throw "git $args" } }
+# 快检提速（队列 #70）：下面一百多处 `pwsh -NoProfile -File <脚本> ...` 改在本进程里跑，省掉每次新起 pwsh 的几秒。
+# 这个函数比 pwsh.exe 先被找到，被测脚本里再调 `& pwsh -NoProfile -File ...`（daily.ps1、watch.ps1 调 status.ps1、notify.ps1）也走这里。
+# 输出照子进程那样转成字符串，异常当退出码 1，退出码照传，当前目录跑完恢复。真起子进程的检查用 $PwshExe。
+$PwshExe = (Get-Command pwsh -CommandType Application | Select-Object -First 1).Source
+function pwsh {
+    # 管道送进来的（notify.ps1 -Hook 从标准输入读事件）照旧起子进程：本进程里调用读不到标准输入。
+    $piped = @($input)
+    if ($piped.Count) { $piped | & $PwshExe @args; return }
+    $i = 0
+    while ($i -lt $args.Count -and "$($args[$i])" -in '-NoProfile', '-NonInteractive') { $i++ }
+    if ("$($args[$i])" -ne '-File') { & $PwshExe @args; return }
+    $file = $args[$i + 1]
+    $rest = @($args | Select-Object -Skip ($i + 2))
+    # 按命令行的规矩绑参数：数组展开（daily.ps1 的 @statusArgs）进来的 '-Json' 只是字符串，要对着脚本的参数表认出来。
+    $params = (Get-Command -Name $file -CommandType ExternalScript).Parameters
+    $named = @{}; $pos = [Collections.Generic.List[object]]::new()
+    for ($k = 0; $k -lt $rest.Count; $k++) {
+        $tok = $rest[$k]
+        $m = if ($tok -is [string]) { [regex]::Match($tok, '^-([A-Za-z]\w*)(?::(.*))?$') }
+        $hit = if ($m -and $m.Success) { @($params.Keys | Where-Object { $_ -like "$($m.Groups[1].Value)*" }) }
+        if ($hit.Count -eq 1 -or ($hit -contains $m.Groups[1].Value)) {
+            $name = if ($hit -contains $m.Groups[1].Value) { $m.Groups[1].Value } else { $hit[0] }
+            if ($params[$name].SwitchParameter) { $named[$name] = if ($m.Groups[2].Success) { $m.Groups[2].Value -notin '$false', 'false', '0' } else { $true } }
+            elseif ($m.Groups[2].Success) { $named[$name] = $m.Groups[2].Value }
+            else { $k++; $named[$name] = $rest[$k] }
+        }
+        else { $pos.Add($tok) }
+    }
+    $posArr = $pos.ToArray()
+    $global:LASTEXITCODE = 0
+    Push-Location -LiteralPath (Get-Location).Path
+    try { & $file @named @posArr | ForEach-Object { if ($_ -is [Management.Automation.ErrorRecord]) { $_ } else { "$_" } } }
+    catch { Write-Error -ErrorRecord $_ -ErrorAction Continue; $global:LASTEXITCODE = 1 }
+    finally { Pop-Location }
+}
 
 $a = Join-Path $root '项目 A'
 $null = New-Item -ItemType Directory -Force -Path (Join-Path $a 'docs'), (Join-Path $a '.agents/digest')
