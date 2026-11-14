@@ -23,7 +23,7 @@
 5. **北极星数字**：一个能看出离目标还有多远的数，量最终交付物和基准的差距（`direction.md` 第 4 节），不量中间结果；没有基准可比的项目才用兼容矩阵里通过的格数、评测集分数、端到端通过率这类。口径写死在 `AGENTS.md`，每次汇报和摘要都用同一个口径；改口径是用户的决定（`direction.md` 第 3 节）。
 6. **`AGENTS.md` 改成目录**，100 行以内：verify 命令、信任等级、北极星口径、单向门补充、预算、禁止项、各文档入口。长内容移到 `docs/`，`AGENTS.md` 只留链接。规则多写"要达到什么、怎么量、哪些不能碰"，少规定具体做法：做法写死了，模型变强也用不上。
 7. **空的 `LESSONS.md` 和 `docs/code-standards.md`**。`LESSONS.md` 头部写 `reviewed-through: <当前主干 sha>`。
-8. **`.agents/` 写进 `.gitignore`**。要把执行交给外部 agent 的，再写 `scripts/dispatch.json`（格式见 `orchestrate.md`）。
+8. **`.agents/` 写进 `.gitignore`**。原始验证输出放在 `.agents/evidence/` 下，不入库（`build.md` 第 3 节）。要把执行交给外部 agent 的，再写 `scripts/dispatch.json`（格式见 `orchestrate.md`）。
 9. **verify 能并行跑**：几个 worktree 同时跑 verify 不能互相破坏。共用的缓存（例如按提交号缓存的基准构建）要加进程间锁，并且只认构建成功后写下的完成标记，不认目录里有没有某个文件；删到一半、建到一半的缓存里也可能留着那个文件。
 10. **基准和流程图**：`docs/benchmark.json` 和 `docs/flow.html`（`direction.md` 第 4、6 节）。没有基准可比的项目写明原因。
 
