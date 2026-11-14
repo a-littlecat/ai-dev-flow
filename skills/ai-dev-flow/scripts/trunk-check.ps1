@@ -14,6 +14,7 @@ param(
 # 主干不写就用主检出当前所在的分支（和 status.ps1 一样）。项目的 .agents/ 没被 Git 忽略的不跑（记不了账，会每轮重跑），状态页提示。
 # 跑完账上还是没有记录的（写不进账），这棵树记进 -Lock 旁边的 trunk-check-norecord.txt，不再跑，推一次手机。
 # 跑绿了把用时写进 <项目>/.agents/verify-last.json（source 写 trunk-check）：合并前不跑全量以后，note 里没有全量用时，状态页靠这里看快检慢不慢。
+# seconds 只算全量命令（不含 trunkSetup）；setup 失败没跑全量时，红账保留失败 setup 的耗时和退出位置，不更新 verify-last.json。
 # 红了在 <项目>/.agents/trunk-red.json 留一份记录（主干、命令、清单路径、日志），项目会话的 /next 开场看它就知道主干红了、怎么重跑；之后跑绿了删掉。
 # 红了推一次手机（notify.ps1 -Level stuck）；红的树账上有记录，不会重跑，也就只推这一次。状态页和 /next 从账上看到主干红了（status.ps1）。
 # 不叠跑：-Lock 文件（默认 %LOCALAPPDATA%\ai-dev-flow\trunk-check.lock）用独占新建拿锁，里面记持锁进程的 PID 和启动时间，进程不在了或启动时间对不上算陈旧锁；
@@ -112,7 +113,9 @@ try {
             }
             if (-not $code) {
                 $out.Add("> $($pick.Verify)")
+                $sw.Restart()
                 & pwsh -NoProfile -Command $pick.Verify *>&1 | ForEach-Object { $out.Add("$_") }
+                $sw.Stop()
                 $code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
             }
         }

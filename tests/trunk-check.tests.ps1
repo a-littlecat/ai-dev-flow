@@ -80,10 +80,17 @@ try {
     Check 'lock PID reused by another process (start time differs): stale, runs' ((& $runs) -eq 4 -and $r.Text -match '：green' -and -not (Test-Path -LiteralPath $lock))
 
     & $commit 'd.txt'
-    & $writeCfg $verify 'Set-Content copied.dat x'
+    $setupStart = Join-Path $root 'setup-start.txt'
+    $verifyEnd = Join-Path $root 'verify-end.txt'
+    $timedVerify = "try { $verify } finally { [IO.File]::WriteAllText('$verifyEnd', [string][datetime]::UtcNow.Ticks) }"
+    & $writeCfg $timedVerify "[IO.File]::WriteAllText('$setupStart', [string][datetime]::UtcNow.Ticks); Start-Sleep -Seconds 6; Set-Content copied.dat x"
     $r = Run
     $r2 = Run
     Check 'trunkSetup copies a file into the worktree: still recorded, not rerun' ((& $runs) -eq 5 -and $r.Text -match '：green' -and $r2.Text -match '没有要跑的' -and $r2.Text -match '账上是 green')
+    $timing = Get-Content -LiteralPath $last -Raw | ConvertFrom-Json
+    $entry = Get-Content -LiteralPath $ledger -Tail 1 | ConvertFrom-Json
+    $elapsed = ([long](Get-Content -LiteralPath $verifyEnd -Raw) - [long](Get-Content -LiteralPath $setupStart -Raw)) / [timespan]::TicksPerSecond
+    Check 'trunkSetup: ledger and verify-last seconds exclude setup sleep' ($timing.seconds -lt ($elapsed - 3) -and $entry.seconds -ge 0 -and $entry.seconds -eq $timing.seconds)
     & $writeCfg $verify
 
     Set-Content -LiteralPath (Join-Path $proj 'fail.txt') -Encoding utf8NoBOM -Value 'x'
