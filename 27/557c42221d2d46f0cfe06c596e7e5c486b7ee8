@@ -1,0 +1,1 @@
+覆盖：4c62380b4b377d75e49d698bf6a56ce49b9079a5..27557c42221d2d46f0cfe06c596e7e5c486b7ee8；沿用 47c5f2b 的 Pass（Agent 子 agent，Claude Opus 5.5，派发时设 effort=high）；rebase 到主干，内容不变；之后只多了文档：docs/queue.md，主干带进来的，不涉及；没跑：同原 note；没采纳：同原 note
